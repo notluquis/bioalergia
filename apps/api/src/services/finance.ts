@@ -514,6 +514,7 @@ async function applyAutoCategoryRuleRow(
 ) {
   const needsReleaseJoin =
     rule.matchAmountOn === "gross" ||
+    rule.descriptionContains != null ||
     rule.paymentMethods.length > 0 ||
     rule.amountsExact.length > 0;
 
@@ -550,10 +551,14 @@ async function applyAutoCategoryRuleRow(
 
   // amountSource / paymentMethod are trusted column EXPRESSIONS (never user
   // input) → sql.raw. Everything derived from `rule.*` goes through ${bind}.
-  const amountSourceSql =
+  const exactAmountSourceSql =
     rule.matchAmountOn === "gross"
       ? sql.raw("COALESCE(rt.gross_amount, st.transaction_amount, ABS(ft.amount))")
       : sql.raw("ABS(ft.amount)");
+  const boundedAmountSourceSql =
+    rule.matchAmountOn === "gross"
+      ? sql.raw("COALESCE(rt.gross_amount, st.transaction_amount, ABS(ft.amount))")
+      : sql.raw("ft.amount");
   const paymentMethodSql = sql.raw("COALESCE(rt.payment_method_type, st.payment_method_type)");
 
   const conditions: ReturnType<typeof sql>[] = [sql`ft.type = ${rule.type}`];
@@ -590,15 +595,15 @@ async function applyAutoCategoryRuleRow(
     conditions.push(
       sql`EXISTS (
         SELECT 1 FROM (VALUES ${valueRows}) AS amounts_exact(v)
-        WHERE ABS(${amountSourceSql} - amounts_exact.v) <= ${AMOUNT_MATCH_EPSILON}
+        WHERE ABS(${exactAmountSourceSql} - amounts_exact.v) <= ${AMOUNT_MATCH_EPSILON}
       )`
     );
   } else {
     if (rule.minAmount != null) {
-      conditions.push(sql`${amountSourceSql} >= ${Number(rule.minAmount)}`);
+      conditions.push(sql`${boundedAmountSourceSql} >= ${Number(rule.minAmount)}`);
     }
     if (rule.maxAmount != null) {
-      conditions.push(sql`${amountSourceSql} <= ${Number(rule.maxAmount)}`);
+      conditions.push(sql`${boundedAmountSourceSql} <= ${Number(rule.maxAmount)}`);
     }
   }
 

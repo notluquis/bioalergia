@@ -265,11 +265,12 @@ describe("applyAutoCategoryRuleRow raw-SQL branch (compiled Kysely)", () => {
     expect(parameters).toContain(100);
   });
 
-  it("net matchAmountOn uses ABS(ft.amount) (NOT gross COALESCE)", async () => {
+  it("net matchAmountOn bounds use signed ft.amount (NOT gross COALESCE)", async () => {
     await runRuleRow({ matchAmountOn: "net", paymentMethods: ["visa"], minAmount: 50 }, 1n);
     const { sql } = lastCaptured();
     const lower = sql.toLowerCase();
-    expect(lower).toContain("abs(ft.amount)");
+    expect(lower).toContain("ft.amount >=");
+    expect(lower).not.toContain("abs(ft.amount) >=");
     expect(lower).not.toContain("coalesce(rt.gross_amount");
   });
 
@@ -312,6 +313,33 @@ describe("applyAutoCategoryRuleRow raw-SQL branch (compiled Kysely)", () => {
     expect(lower).toContain("rt.sale_detail ilike");
     expect(lower).toContain("st.sale_detail ilike");
     expect(parameters).toContain("%abc%");
+  });
+
+  it("descriptionContains alone routes through the release/settlement join path", async () => {
+    await runRuleRow({ descriptionContains: "sale detail only", matchAmountOn: "net" }, 1n);
+    const { parameters, sql } = lastCaptured();
+    const lower = sql.toLowerCase();
+    expect(m.txnUpdateMany).not.toHaveBeenCalled();
+    expect(lower).toContain("left join release_transactions");
+    expect(lower).toContain("left join settlement_transactions");
+    expect(lower).toContain("rt.sale_detail ilike");
+    expect(lower).toContain("st.sale_detail ilike");
+    expect(parameters).toContain("%sale detail only%");
+  });
+
+  it("descriptionContains net bounds preserve signed transaction amounts", async () => {
+    await runRuleRow(
+      { descriptionContains: "expense", matchAmountOn: "net", maxAmount: -100, minAmount: -1000 },
+      1n
+    );
+    const { parameters, sql } = lastCaptured();
+    const lower = sql.toLowerCase();
+    expect(lower).toContain("ft.amount >= ");
+    expect(lower).toContain("ft.amount <= ");
+    expect(lower).not.toContain("abs(ft.amount) >= ");
+    expect(lower).not.toContain("abs(ft.amount) <= ");
+    expect(parameters).toContain(-1000);
+    expect(parameters).toContain(-100);
   });
 
   it("paymentMethods emits IN (…) over COALESCE payment_method_type with bound values", async () => {

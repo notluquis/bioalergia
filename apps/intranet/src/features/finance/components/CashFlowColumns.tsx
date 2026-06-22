@@ -191,6 +191,27 @@ const buildAccountLine = (params: {
     maskAccountNumber(params.accountNumber),
   ]).join(" · ");
 
+export function shouldShowOfficialWithdrawDetails(params: {
+  manualAccountLine: string;
+  manualIdentificationNumber: null | string | undefined;
+  manualName: string;
+  officialIdentificationNumber: null | string | undefined;
+  officialName: string;
+  withdrawAccountLine: string;
+}) {
+  const manualNameKey = normalizeComparable(params.manualName);
+  const officialNameKey = normalizeComparable(params.officialName);
+  const manualIdentificationNumberKey = normalizeComparable(params.manualIdentificationNumber);
+  const officialIdentificationNumberKey = normalizeComparable(params.officialIdentificationNumber);
+
+  return (
+    Boolean(officialNameKey || officialIdentificationNumberKey || params.withdrawAccountLine) &&
+    (officialNameKey !== manualNameKey ||
+      officialIdentificationNumberKey !== manualIdentificationNumberKey ||
+      params.withdrawAccountLine !== params.manualAccountLine)
+  );
+}
+
 export const columns: ColumnDef<CashFlowTransaction>[] = [
   {
     id: "select",
@@ -319,11 +340,14 @@ export const columns: ColumnDef<CashFlowTransaction>[] = [
       });
       const manualName = transaction.counterpart?.bankAccountHolder?.trim() ?? "";
       const officialName = transaction.withdrawBankAccountHolder?.trim() ?? "";
-      const manualNameKey = normalizeComparable(manualName);
-      const officialNameKey = normalizeComparable(officialName);
-      const showOfficialWithdraw =
-        Boolean(officialNameKey || withdrawAccountLine) &&
-        (officialNameKey !== manualNameKey || withdrawAccountLine !== manualAccountLine);
+      const showOfficialWithdraw = shouldShowOfficialWithdrawDetails({
+        manualAccountLine,
+        manualIdentificationNumber: transaction.counterpart?.identificationNumber,
+        manualName,
+        officialIdentificationNumber: transaction.withdrawIdentificationNumber,
+        officialName,
+        withdrawAccountLine,
+      });
 
       if (transaction.counterpart || showOfficialWithdraw) {
         return (
