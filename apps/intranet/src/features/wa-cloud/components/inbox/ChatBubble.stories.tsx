@@ -142,6 +142,7 @@ export const OutboundQuotedReply: Story = {
       quotedSnippet: {
         body: "¿Podrías dejarme la receta para retirar mañana?",
         out: false,
+        type: "TEXT",
       },
     };
     return (

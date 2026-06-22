@@ -77,7 +77,14 @@ export type ChatMessageRow = {
   errorTitle?: string | null;
   errorDetails?: string | null;
   templateName?: string | null;
-  quotedSnippet?: { body: string; out: boolean } | null;
+  quotedSnippet?: {
+    body: string;
+    out: boolean;
+    type: string;
+    // messageId of the target when it's renderable media (img/video/sticker),
+    // so the quote can show a small thumbnail via the media proxy.
+    thumbnailMessageId?: number;
+  } | null;
   reactions?: ReactionInfo[];
   payload?: unknown;
   groupStart: boolean;
@@ -174,13 +181,17 @@ export function buildChatRows(messages: RawMessage[], pending: PendingRaw[]): Ch
       m.timestamp.getTime() - prev.ts <= GROUP_WINDOW_MS;
     if (continuation && prev) prev.row.groupEnd = false;
 
-    let quoted: { body: string; out: boolean } | null = null;
+    let quoted: ChatMessageRow["quotedSnippet"] = null;
     if (m.contextMetaMessageId) {
       const target = byMetaId.get(m.contextMetaMessageId);
       if (target) {
+        const t = target.type;
+        const thumbable = t === "IMAGE" || t === "VIDEO" || t === "STICKER";
         quoted = {
-          body: target.body ?? typeNoun(target.type),
+          body: target.body ?? typeNoun(t),
           out: target.direction === "OUTBOUND",
+          type: t,
+          thumbnailMessageId: thumbable && typeof target.id === "number" ? target.id : undefined,
         };
       }
     }
