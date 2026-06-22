@@ -125,7 +125,7 @@ function AttachMenu({
     );
   }
   return (
-    <Dropdown>
+    <Dropdown isOpen={open} onOpenChange={setOpen}>
       <Dropdown.Trigger>
         <Button
           size="sm"
@@ -143,7 +143,13 @@ function AttachMenu({
             <ListBox.Item
               key={it.id}
               id={it.id}
-              onAction={it.run}
+              onAction={() => {
+                // Close the menu before the action opens a modal/picker — else
+                // the popover lingers behind the modal (HeroUI doesn't auto-close
+                // when focus jumps into a freshly-mounted overlay).
+                setOpen(false);
+                it.run();
+              }}
               className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm data-[hovered]:bg-default-100"
             >
               {it.icon}
