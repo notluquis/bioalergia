@@ -11520,6 +11520,93 @@ export class SchemaType implements SchemaDef {
                 locationKey_forecastDate_pollenType: { locationKey: { type: "String" }, forecastDate: { type: "DateTime" }, pollenType: { type: "PollenType" } }
             }
         },
+        OccupationalLead: {
+            name: "OccupationalLead",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                empresa: {
+                    name: "empresa",
+                    type: "String"
+                },
+                contactName: {
+                    name: "contactName",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("contact_name") }] }] as readonly AttributeApplication[]
+                },
+                email: {
+                    name: "email",
+                    type: "String"
+                },
+                phone: {
+                    name: "phone",
+                    type: "String",
+                    optional: true
+                },
+                rut: {
+                    name: "rut",
+                    type: "String",
+                    optional: true
+                },
+                sector: {
+                    name: "sector",
+                    type: "OccupationalSector",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("GENERAL") }] }] as readonly AttributeApplication[],
+                    default: "GENERAL" as FieldDefault
+                },
+                headcount: {
+                    name: "headcount",
+                    type: "Int",
+                    optional: true
+                },
+                message: {
+                    name: "message",
+                    type: "String",
+                    optional: true
+                },
+                status: {
+                    name: "status",
+                    type: "ReactivoLeadStatus",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("NUEVO") }] }] as readonly AttributeApplication[],
+                    default: "NUEVO" as FieldDefault
+                },
+                source: {
+                    name: "source",
+                    type: "String",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("salud-ocupacional") }] }] as readonly AttributeApplication[],
+                    default: "salud-ocupacional" as FieldDefault
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                }
+            },
+            attributes: [
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read,create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("ReactivoLeadStatus", [ExpressionUtils.field("status")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("createdAt")]) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("occupational_leads") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
         DTEPurchaseDetail: {
             name: "DTEPurchaseDetail",
             fields: {
@@ -20168,6 +20255,16 @@ export class SchemaType implements SchemaDef {
             values: {
                 GOOGLE: "GOOGLE",
                 CALENDAR: "CALENDAR"
+            }
+        },
+        OccupationalSector: {
+            name: "OccupationalSector",
+            values: {
+                MINERIA: "MINERIA",
+                TRANSPORTE: "TRANSPORTE",
+                CONSTRUCCION: "CONSTRUCCION",
+                GENERAL: "GENERAL",
+                OTRO: "OTRO"
             }
         },
         DTEType: {

@@ -103,4 +103,5 @@ export * from "./wa-cloud.ts";
 // reads de reactivos/alérgenos no se reconocen y fallan cerrado como mutación.
 export { reactivosContract, type ReactivosContract } from "./reactivos.ts";
 export { pollenContract, type PollenContract } from "./pollen.ts";
+export { occupationalContract, type OccupationalContract } from "./occupational.ts";
 export { clinicalAllergensContract, type ClinicalAllergensContract } from "./clinical-allergens.ts";
