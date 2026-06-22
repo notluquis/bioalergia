@@ -31,6 +31,7 @@ import { quotesOpenAPIHandler, quotesORPCHandler } from "./orpc/quotes.ts";
 import { reactivosOpenAPIHandler, reactivosORPCHandler } from "./orpc/reactivos.ts";
 import { pollenOpenAPIHandler, pollenORPCHandler } from "./orpc/pollen.ts";
 import { occupationalOpenAPIHandler, occupationalORPCHandler } from "./orpc/occupational.ts";
+import { adherenceORPCHandler } from "./orpc/adherence.ts";
 import {
   clinicalAllergensOpenAPIHandler,
   clinicalAllergensORPCHandler,
@@ -1030,6 +1031,19 @@ app.use("/api/orpc/pollen/rpc/*", async (c, next) => {
 app.use("/api/orpc/occupational/rpc/*", async (c, next) => {
   const { matched, response } = await occupationalORPCHandler.handle(createHonoORPCRequest(c), {
     prefix: "/api/orpc/occupational/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
+app.use("/api/orpc/adherence/rpc/*", async (c, next) => {
+  const { matched, response } = await adherenceORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/adherence/rpc",
     context: { hono: c },
   });
 

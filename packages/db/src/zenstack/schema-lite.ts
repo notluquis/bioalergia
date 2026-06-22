@@ -8144,12 +8144,102 @@ export class SchemaType implements SchemaDef {
                     type: "ClinicalConsent",
                     array: true,
                     relation: { opposite: "patient" }
+                },
+                reminderSchedules: {
+                    name: "reminderSchedules",
+                    type: "ReminderSchedule",
+                    array: true,
+                    relation: { opposite: "patient" }
                 }
             },
             idFields: ["id"],
             uniqueFields: {
                 id: { type: "Int" },
                 personId: { type: "Int" }
+            }
+        },
+        ReminderSchedule: {
+            name: "ReminderSchedule",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                patientId: {
+                    name: "patientId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "patient"
+                    ] as readonly string[]
+                },
+                channel: {
+                    name: "channel",
+                    type: "ReminderChannel",
+                    default: "EMAIL" as FieldDefault
+                },
+                purpose: {
+                    name: "purpose",
+                    type: "String",
+                    default: "ADHERENCE_REMINDER" as FieldDefault
+                },
+                subjectType: {
+                    name: "subjectType",
+                    type: "String"
+                },
+                title: {
+                    name: "title",
+                    type: "String"
+                },
+                body: {
+                    name: "body",
+                    type: "String"
+                },
+                runAt: {
+                    name: "runAt",
+                    type: "DateTime"
+                },
+                status: {
+                    name: "status",
+                    type: "ReminderStatus",
+                    default: "PENDING" as FieldDefault
+                },
+                sentAt: {
+                    name: "sentAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                errorMessage: {
+                    name: "errorMessage",
+                    type: "String",
+                    optional: true
+                },
+                createdBy: {
+                    name: "createdBy",
+                    type: "Int",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                patient: {
+                    name: "patient",
+                    type: "Patient",
+                    relation: { opposite: "reminderSchedules", fields: ["patientId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
             }
         },
         Shipment: {
@@ -16628,6 +16718,22 @@ export class SchemaType implements SchemaDef {
                 UNREACHABLE: "UNREACHABLE",
                 RESCHEDULED: "RESCHEDULED",
                 OTHER: "OTHER"
+            }
+        },
+        ReminderChannel: {
+            name: "ReminderChannel",
+            values: {
+                EMAIL: "EMAIL",
+                WHATSAPP: "WHATSAPP"
+            }
+        },
+        ReminderStatus: {
+            name: "ReminderStatus",
+            values: {
+                PENDING: "PENDING",
+                SENT: "SENT",
+                CANCELLED: "CANCELLED",
+                FAILED: "FAILED"
             }
         },
         BudgetStatus: {

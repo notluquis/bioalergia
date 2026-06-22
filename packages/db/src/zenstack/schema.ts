@@ -9921,6 +9921,12 @@ export class SchemaType implements SchemaDef {
                     type: "ClinicalConsent",
                     array: true,
                     relation: { opposite: "patient" }
+                },
+                reminderSchedules: {
+                    name: "reminderSchedules",
+                    type: "ReminderSchedule",
+                    array: true,
+                    relation: { opposite: "patient" }
                 }
             },
             attributes: [
@@ -9933,6 +9939,110 @@ export class SchemaType implements SchemaDef {
             uniqueFields: {
                 id: { type: "Int" },
                 personId: { type: "Int" }
+            }
+        },
+        ReminderSchedule: {
+            name: "ReminderSchedule",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                patientId: {
+                    name: "patientId",
+                    type: "Int",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("patient_id") }] }] as readonly AttributeApplication[],
+                    foreignKeyFor: [
+                        "patient"
+                    ] as readonly string[]
+                },
+                channel: {
+                    name: "channel",
+                    type: "ReminderChannel",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("EMAIL") }] }] as readonly AttributeApplication[],
+                    default: "EMAIL" as FieldDefault
+                },
+                purpose: {
+                    name: "purpose",
+                    type: "String",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("ADHERENCE_REMINDER") }] }] as readonly AttributeApplication[],
+                    default: "ADHERENCE_REMINDER" as FieldDefault
+                },
+                subjectType: {
+                    name: "subjectType",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("subject_type") }] }] as readonly AttributeApplication[]
+                },
+                title: {
+                    name: "title",
+                    type: "String"
+                },
+                body: {
+                    name: "body",
+                    type: "String"
+                },
+                runAt: {
+                    name: "runAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("run_at") }] }] as readonly AttributeApplication[]
+                },
+                status: {
+                    name: "status",
+                    type: "ReminderStatus",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("PENDING") }] }] as readonly AttributeApplication[],
+                    default: "PENDING" as FieldDefault
+                },
+                sentAt: {
+                    name: "sentAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("sent_at") }] }] as readonly AttributeApplication[]
+                },
+                errorMessage: {
+                    name: "errorMessage",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("error_message") }] }] as readonly AttributeApplication[]
+                },
+                createdBy: {
+                    name: "createdBy",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_by") }] }] as readonly AttributeApplication[]
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                patient: {
+                    name: "patient",
+                    type: "Patient",
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("patientId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "reminderSchedules", fields: ["patientId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            attributes: [
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read,create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("ReminderStatus", [ExpressionUtils.field("status"), ExpressionUtils.field("runAt")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("patientId")]) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("reminder_schedules") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
             }
         },
         Shipment: {
@@ -20202,6 +20312,22 @@ export class SchemaType implements SchemaDef {
                 UNREACHABLE: "UNREACHABLE",
                 RESCHEDULED: "RESCHEDULED",
                 OTHER: "OTHER"
+            }
+        },
+        ReminderChannel: {
+            name: "ReminderChannel",
+            values: {
+                EMAIL: "EMAIL",
+                WHATSAPP: "WHATSAPP"
+            }
+        },
+        ReminderStatus: {
+            name: "ReminderStatus",
+            values: {
+                PENDING: "PENDING",
+                SENT: "SENT",
+                CANCELLED: "CANCELLED",
+                FAILED: "FAILED"
             }
         },
         BudgetStatus: {
