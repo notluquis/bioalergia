@@ -23,10 +23,27 @@ import { type FormEvent, useMemo, useState } from "react";
 import { ContentError, ContentLoading } from "@/components/ContentState";
 import { JsonLd } from "@/components/JsonLd";
 import { PageShell } from "@/components/PageShell";
+import {
+  reactivosBrands,
+  reactivosServices,
+  reactivosSupplier,
+  reactivosTrainings,
+} from "@/data/reactivos";
 import { reactivosClient } from "@/lib/orpc-client";
 import { breadcrumbJsonLd } from "@/lib/seo";
+import { Section } from "@/sections/Section";
 
 const LEAD_FORM_ID = "quiero-reactivos";
+
+/** Viñeta con punto de acento — patrón de lista compartido en el sitio. */
+function Bullet({ children }: { children: string }) {
+  return (
+    <div className="flex items-start gap-3 text-sm leading-relaxed">
+      <span className="mt-2 rounded-full bg-(--accent) size-2" />
+      <span className="text-(--ink-muted)">{children}</span>
+    </div>
+  );
+}
 
 /** Agrupa los ítems de la vitrina por categoría (fallback a la marca). */
 function groupItems(items: ReactivoVitrinaItemDto[]): [string, ReactivoVitrinaItemDto[]][] {
@@ -85,6 +102,100 @@ function VitrinaCard({ item }: { item: ReactivoVitrinaItemDto }) {
         ) : null}
       </Card.Content>
     </Card>
+  );
+}
+
+/** Proveedor mayorista (credenciales, regulatorio, sostenibilidad). */
+function SupplierSection() {
+  const s = reactivosSupplier;
+  return (
+    <Section
+      eyebrow="Nuestro proveedor"
+      title={`En alianza con ${s.name}`}
+      subtitle={s.description}
+    >
+      <div className="grid gap-6 lg:grid-cols-3">
+        <Card className="rounded-3xl" variant="default">
+          <Card.Header className="gap-2">
+            <Card.Title className="text-lg">Trayectoria y calidad</Card.Title>
+            <Card.Description className="text-(--ink-muted) leading-relaxed">
+              +{s.yearsTrajectory} años en diagnóstico, dispositivos médicos y reactivos.
+            </Card.Description>
+          </Card.Header>
+          <Card.Content className="flex flex-wrap gap-2 pb-6">
+            {s.certifications.map((c) => (
+              <Chip key={c} size="sm" variant="secondary">
+                {c}
+              </Chip>
+            ))}
+          </Card.Content>
+        </Card>
+        <Card className="rounded-3xl" variant="default">
+          <Card.Header className="gap-2">
+            <Card.Title className="text-lg">Cumplimiento regulatorio</Card.Title>
+          </Card.Header>
+          <Card.Content className="grid gap-3 pb-6">
+            {s.regulatory.map((r) => (
+              <Bullet key={r}>{r}</Bullet>
+            ))}
+          </Card.Content>
+        </Card>
+        <Card className="rounded-3xl" variant="default">
+          <Card.Header className="gap-2">
+            <Card.Title className="text-lg">Compromiso sostenible</Card.Title>
+          </Card.Header>
+          <Card.Content className="grid gap-3 pb-6">
+            {s.sustainability.map((item) => (
+              <Bullet key={item}>{item}</Bullet>
+            ))}
+          </Card.Content>
+        </Card>
+      </div>
+    </Section>
+  );
+}
+
+/** Servicios del proveedor + capacitaciones disponibles. */
+function ServicesAndTrainingSection() {
+  return (
+    <Section
+      eyebrow="Servicios"
+      title="Más que reactivos"
+      subtitle="Droguería, distribución, capacitaciones y soporte técnico para tu laboratorio o clínica."
+    >
+      <div className="grid gap-6 lg:grid-cols-2">
+        {reactivosServices.map((service) => (
+          <Card className="rounded-3xl" key={service.slug} variant="default">
+            <Card.Header className="gap-2">
+              <Card.Title className="text-lg">{service.name}</Card.Title>
+              <Card.Description className="text-(--ink-muted) leading-relaxed">
+                {service.description}
+              </Card.Description>
+            </Card.Header>
+            <Card.Content className="grid gap-3 pb-6">
+              {service.details.map((d) => (
+                <Bullet key={d}>{d}</Bullet>
+              ))}
+            </Card.Content>
+          </Card>
+        ))}
+      </div>
+      <Card className="rounded-3xl" variant="secondary">
+        <Card.Header className="gap-2">
+          <Card.Title className="text-lg">Capacitaciones disponibles</Card.Title>
+          <Card.Description className="text-(--ink-muted) leading-relaxed">
+            Formación para equipos clínicos y de laboratorio.
+          </Card.Description>
+        </Card.Header>
+        <Card.Content className="flex flex-wrap gap-2 pb-6">
+          {reactivosTrainings.map((t) => (
+            <Chip key={t.name} size="sm" variant="soft">
+              {t.name}
+            </Chip>
+          ))}
+        </Card.Content>
+      </Card>
+    </Section>
   );
 }
 
@@ -150,7 +261,7 @@ function LeadForm({ vitrinaItems }: { vitrinaItems: ReactivoVitrinaItemDto[] }) 
   return (
     <Card className="rounded-3xl" variant="default">
       <Card.Header className="gap-2">
-        <Card.Title className="text-xl">Quiero reactivos</Card.Title>
+        <Card.Title className="text-xl">Quiero cotizar</Card.Title>
         <Card.Description className="text-(--ink-muted) leading-relaxed">
           Cuéntanos sobre tu empresa o clínica y qué reactivos te interesan. Te enviaremos una
           cotización personalizada sin compromiso.
@@ -261,22 +372,37 @@ function VentaEmpresasPage() {
         <div className="grid gap-3">
           <div className="text-(--ink-muted) text-xs uppercase tracking-[0.2em]">Venta B2B</div>
           <h1 className="font-semibold text-(--ink) text-3xl sm:text-4xl">
-            Reactivos y extractos alergénicos para empresas
+            Reactivos y diagnóstico para clínicas, laboratorios y empresas
           </h1>
           <p className="max-w-3xl text-(--ink-muted) text-base leading-relaxed sm:text-lg">
-            Distribuimos reactivos para pruebas cutáneas y extractos alergénicos a clínicas,
-            laboratorios y centros médicos. Revisa nuestra vitrina y solicita una cotización a la
-            medida de tu institución.
+            En alianza con <span className="font-semibold text-(--ink)">Inmunodiagnóstico</span>{" "}
+            (ISO 9001:2015, +25 años de trayectoria) distribuimos extractos alergénicos, tests
+            rápidos, reactivos químicos, hematología y estándares de toxicología. Revisa el catálogo
+            y solicita una cotización a la medida de tu institución.
           </p>
+          <div className="flex flex-wrap gap-2">
+            {reactivosBrands.map((brand) => (
+              <Chip key={brand} size="sm" variant="secondary">
+                {brand}
+              </Chip>
+            ))}
+          </div>
           <div>
             <Button onPress={() => scrollToForm()} variant="primary">
-              Quiero reactivos
+              Quiero cotizar
             </Button>
           </div>
         </div>
       </section>
 
-      <section className="grid gap-10">
+      <SupplierSection />
+      <ServicesAndTrainingSection />
+
+      <Section
+        eyebrow="Catálogo"
+        title="Productos disponibles"
+        subtitle="Distribuimos el catálogo completo de Inmunodiagnóstico. Marca los productos que te interesan en el formulario para recibir una cotización."
+      >
         {isLoading ? (
           <ContentLoading />
         ) : error || !data ? (
@@ -284,7 +410,7 @@ function VentaEmpresasPage() {
         ) : items.length === 0 ? (
           <Card className="rounded-3xl" variant="secondary">
             <Card.Header className="gap-2">
-              <Card.Title className="text-lg">Vitrina en preparación</Card.Title>
+              <Card.Title className="text-lg">Catálogo en preparación</Card.Title>
               <Card.Description className="text-(--ink-muted) leading-relaxed">
                 Estamos actualizando nuestro catálogo de reactivos. Déjanos tu solicitud y te
                 enviaremos la información disponible.
@@ -292,24 +418,29 @@ function VentaEmpresasPage() {
             </Card.Header>
           </Card>
         ) : (
-          groups.map(([category, groupItemsList]) => (
-            <section className="grid gap-6" key={category}>
-              <div className="grid gap-3">
-                <div className="flex items-center gap-3">
-                  <span className="rounded-full bg-(--accent) size-2.5" />
-                  <h2 className="font-semibold text-(--ink) text-2xl">{category}</h2>
+          <div className="grid gap-10">
+            {groups.map(([category, groupItemsList]) => (
+              <section className="grid gap-6" key={category}>
+                <div className="grid gap-3">
+                  <div className="flex items-center gap-3">
+                    <span className="rounded-full bg-(--accent) size-2.5" />
+                    <h3 className="font-semibold text-(--ink) text-xl">{category}</h3>
+                    <Chip size="sm" variant="soft">
+                      {groupItemsList.length}
+                    </Chip>
+                  </div>
+                  <Separator />
                 </div>
-                <Separator />
-              </div>
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {groupItemsList.map((item) => (
-                  <VitrinaCard item={item} key={item.id} />
-                ))}
-              </div>
-            </section>
-          ))
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                  {groupItemsList.map((item) => (
+                    <VitrinaCard item={item} key={item.id} />
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
         )}
-      </section>
+      </Section>
 
       <section className="grid gap-3 scroll-mt-24" id={LEAD_FORM_ID}>
         <LeadForm vitrinaItems={items} />
@@ -334,7 +465,7 @@ export const Route = createFileRoute("/venta-empresas")({
         {
           name: "description",
           content:
-            "Reactivos para pruebas cutáneas y extractos alergénicos para empresas, clínicas y laboratorios. Revisa nuestra vitrina y solicita una cotización a tu medida en Concepción.",
+            "Distribución B2B de reactivos y diagnóstico en alianza con Inmunodiagnóstico (ISO 9001): extractos alergénicos, tests rápidos, reactivos químicos, hematología y estándares de toxicología para clínicas, laboratorios y empresas.",
         },
         { property: "og:title", content: "Venta a empresas · Bioalergia" },
         { property: "og:type", content: "website" },
