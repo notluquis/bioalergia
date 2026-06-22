@@ -61,7 +61,7 @@ export function serializeVitrinaItem(p: VitrinaRow) {
           category: p.allergen.category,
         }
       : null,
-    documents: (p.documents as VitrinaDocLite[])
+    documents: ((p.documents ?? []) as VitrinaDocLite[])
       .filter((d) => d.visibility === "PUBLIC")
       .sort((a, b) => a.sortOrder - b.sortOrder)
       .map((d) => ({
