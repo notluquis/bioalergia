@@ -85,11 +85,11 @@ export function ForwardedBadge({ payload }: { payload: Payload }) {
   );
 }
 
-// Static mini-map for a location, $0 + nativo liviano: a single OpenStreetMap
-// raster tile (slippy-map math, no dep, no backend) with the pin positioned by
-// its fractional offset inside the tile. Square container = tile renders 1:1 so
-// the pin lands exactly on the point. Attribution required by the OSM tile
-// policy. <img> loads under img-src https: (no CSP change).
+// Static mini-map for a location. Slippy-map math (no dep) picks the tile + pin
+// offset; the tile is served by OUR backend proxy (cached in R2), NOT fetched
+// from OpenStreetMap by the operator's browser — so the patient's shared
+// location (PHI) never leaks to a third party. Square container = tile renders
+// 1:1 so the pin lands exactly on the point.
 function LocationMap({ lat, lng }: { lat: number; lng: number }) {
   const z = 15;
   const n = 2 ** z;
@@ -100,7 +100,7 @@ function LocationMap({ lat, lng }: { lat: number; lng: number }) {
   const y = Math.floor(yF);
   const pinLeft = (xF - x) * 100;
   const pinTop = (yF - y) * 100;
-  const tile = `https://tile.openstreetmap.org/${z}/${x}/${y}.png`;
+  const tile = `/api/wa-cloud/media/map-tile/${z}/${x}/${y}`;
   return (
     <div className="relative aspect-square w-full overflow-hidden bg-default-100">
       <img

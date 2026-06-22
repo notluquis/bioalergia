@@ -3,7 +3,7 @@ import { type Context, Hono } from "hono";
 import { getSessionUser, hasPermission } from "../lib/auth.ts";
 import { logWarn } from "../lib/logger.ts";
 import { decryptSecret } from "../lib/secret-cipher.ts";
-import { getR2Object } from "../modules/cloudflare/r2.ts";
+import { getR2Object, putR2Object } from "../modules/cloudflare/r2.ts";
 import {
   downloadMediaUrl,
   updateBusinessProfile,
@@ -215,6 +215,91 @@ waCloudMediaRoutes.get("/saved-sticker/:id", async (c) => {
     const msg = err instanceof Error ? err.message : String(err);
     logWarn("[wa-cloud.saved-sticker] R2 stream failed", { id, error: msg });
     return c.text("Sticker fetch error", 502);
+  }
+});
+
+/**
+ * Proxy + cache OSM map tiles for location-message mini-maps. Privacy: the
+ * patient's shared location (PHI) must NOT leak to OpenStreetMap from every
+ * operator's browser — so the staff browser hits THIS route, and the server
+ * fetches OSM once (with a policy-compliant User-Agent) and caches the tile in
+ * R2. Subsequent loads serve from R2; OSM is hit only on a cache miss.
+ *
+ * Registered BEFORE the `/:messageId` catch-all.
+ */
+waCloudMediaRoutes.get("/map-tile/:z/:x/:y", async (c) => {
+  const session = await getSessionUser(c);
+  if (!session) return c.text("Unauthorized", 401);
+  if (!(await hasPermission(session, "read", "WaBusinessAccount"))) {
+    return c.text("Forbidden", 403);
+  }
+  const z = Number.parseInt(c.req.param("z"), 10);
+  const x = Number.parseInt(c.req.param("x"), 10);
+  const y = Number.parseInt(c.req.param("y"), 10);
+  const n = 2 ** z;
+  if (
+    !Number.isInteger(z) ||
+    z < 0 ||
+    z > 19 ||
+    !Number.isInteger(x) ||
+    !Number.isInteger(y) ||
+    x < 0 ||
+    y < 0 ||
+    x >= n ||
+    y >= n
+  ) {
+    return c.text("Bad tile coords", 400);
+  }
+
+  const key = `wa-map-tiles/${z}/${x}/${y}.png`;
+  const headers: Record<string, string> = {
+    "Content-Type": "image/png",
+    "X-Content-Type-Options": "nosniff",
+    // Tiles are effectively immutable for our purposes; cache hard.
+    "Cache-Control": "private, max-age=604800, immutable",
+  };
+
+  // Cache hit?
+  try {
+    const obj = await getR2Object(key);
+    if (obj.contentLength != null) headers["Content-Length"] = String(obj.contentLength);
+    return new Response(obj.body, { status: 200, headers });
+  } catch {
+    // miss → fetch from OSM below
+  }
+
+  try {
+    const res = await fetch(`https://tile.openstreetmap.org/${z}/${x}/${y}.png`, {
+      headers: {
+        // OSM tile usage policy requires an identifying User-Agent.
+        "User-Agent": "BioalergiaInbox/1.0 (+https://bioalergia.cl; soporte@bioalergia.cl)",
+      },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!res.ok) {
+      logWarn("[wa-cloud.map-tile] OSM fetch failed", { z, x, y, status: res.status });
+      return c.text("Tile fetch error", 502);
+    }
+    const bytes = new Uint8Array(await res.arrayBuffer());
+    await putR2Object(key, bytes, "image/png").catch((err) => {
+      // Cache write is best-effort; still serve the tile this time.
+      logWarn("[wa-cloud.map-tile] R2 cache write failed", {
+        z,
+        x,
+        y,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    });
+    headers["Content-Length"] = String(bytes.byteLength);
+    return new Response(bytes, { status: 200, headers });
+  } catch (err) {
+    logWarn("[wa-cloud.map-tile] proxy failed", {
+      z,
+      x,
+      y,
+      error: err instanceof Error ? err.message : String(err),
+    });
+    return c.text("Tile error", 502);
   }
 });
 
