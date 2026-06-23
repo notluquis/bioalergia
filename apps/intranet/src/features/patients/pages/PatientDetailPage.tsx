@@ -15,6 +15,7 @@ import {
   FlaskConical,
   HeartPulse,
   Mail,
+  NotebookPen,
   Pencil,
   Phone,
   PlusCircle,
@@ -24,6 +25,7 @@ import {
 import { type ReactNode, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import { AdherencePanel } from "@/features/adherence-reminders/components/AdherencePanel";
+import { DiaryPanel } from "@/features/allergy-diary/components/DiaryPanel";
 import { AddressList } from "@/features/addresses/components/AddressList";
 import { PatientEmailOptInToggle } from "@/features/email/components/PatientEmailOptInToggle";
 import { fetchPatient } from "@/features/patients/api";
@@ -68,6 +70,7 @@ export function PatientDetailsPage() {
     | "certificates"
     | "clinical-records"
     | "clinical-series"
+    | "diary"
     | "docs"
     | "history"
     | "info"
@@ -80,6 +83,7 @@ export function PatientDetailsPage() {
     | "certificates"
     | "clinical-records"
     | "clinical-series"
+    | "diary"
     | "docs"
     | "history"
     | "info"
@@ -157,6 +161,7 @@ export function PatientDetailsPage() {
                 | "certificates"
                 | "clinical-records"
                 | "clinical-series"
+                | "diary"
                 | "docs"
                 | "history"
                 | "info"
@@ -170,6 +175,7 @@ export function PatientDetailsPage() {
                 keyValue === "clinical-series" ||
                 keyValue === "clinical-records" ||
                 keyValue === "adherence" ||
+                keyValue === "diary" ||
                 keyValue === "skin-tests"
                   ? keyValue
                   : "history";
@@ -230,6 +236,11 @@ export function PatientDetailsPage() {
                 <Tabs.Tab id="adherence" className="min-w-max gap-2 font-semibold">
                   <HeartPulse size={18} />
                   <span>Adherencia</span>
+                  <Tabs.Indicator />
+                </Tabs.Tab>
+                <Tabs.Tab id="diary" className="min-w-max gap-2 font-semibold">
+                  <NotebookPen size={18} />
+                  <span>Diario</span>
                   <Tabs.Indicator />
                 </Tabs.Tab>
               </Tabs.List>
@@ -414,6 +425,12 @@ export function PatientDetailsPage() {
             <Tabs.Panel id="adherence" className="py-4">
               {isTabMounted("adherence") ? (
                 <AdherencePanel patientId={patient.id} personId={person.id} />
+              ) : null}
+            </Tabs.Panel>
+
+            <Tabs.Panel id="diary" className="py-4">
+              {isTabMounted("diary") ? (
+                <DiaryPanel patientId={patient.id} personId={person.id} />
               ) : null}
             </Tabs.Panel>
 

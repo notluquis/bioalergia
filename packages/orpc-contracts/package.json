@@ -411,6 +411,12 @@
       "import": "./dist/adherence.js",
       "default": "./dist/adherence.js"
     },
+    "./allergy-diary": {
+      "development": "./src/allergy-diary.ts",
+      "types": "./dist/allergy-diary.d.ts",
+      "import": "./dist/allergy-diary.js",
+      "default": "./dist/allergy-diary.js"
+    },
     "./clinical-allergens": {
       "development": "./src/clinical-allergens.ts",
       "types": "./dist/clinical-allergens.d.ts",

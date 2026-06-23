@@ -38,6 +38,7 @@ const PURPOSE_LABEL: Record<ConsentPurpose, string> = {
   RESEARCH: "Investigación",
   DATA_SHARING: "Cesión a terceros",
   ADHERENCE_REMINDER: "Recordatorios de adherencia",
+  SYMPTOM_DIARY: "Diario de síntomas (eDiary)",
 };
 
 const CHANNEL_LABEL: Record<ConsentChannel, string> = {
