@@ -488,7 +488,10 @@ export function normalizeJobLocation(
 
   if (commune) filterKeys.push(key("commune", commune));
   if (region) filterKeys.push(key("region", region));
-  if (country) filterKeys.push(key("country", country));
+  // Chile keeps its own option; non-Chile países se agrupan en un solo bucket
+  // "Otros países", excepto los remotos (esos viven en remote:international).
+  if (country === "Chile") filterKeys.push(key("country", country));
+  else if (country && mode !== "Remoto") filterKeys.push("country:international");
   if (mode) filterKeys.push(key("mode", mode));
   const remoteScope = remoteScopeKey(mode, country);
   if (remoteScope) filterKeys.push(remoteScope);
@@ -540,6 +543,8 @@ function addLocationOptions(
         key: filterKey,
         label: location.label.split(", ").at(-1) ?? location.label,
       });
+    } else if (filterKey === "country:international") {
+      add({ group: "country", key: filterKey, label: "Otros países" });
     } else if (filterKey.startsWith("country:")) {
       add({
         group: "country",

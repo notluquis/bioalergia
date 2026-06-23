@@ -77,7 +77,7 @@ describe("normalizeJobLocation", () => {
     const location = normalizeJobLocation("Boadilla del Monte");
 
     expect(location.normalized).toBe(true);
-    expect(location.filterKeys).toEqual(["country:espana"]);
+    expect(location.filterKeys).toEqual(["country:international"]);
   });
 
   it("groups country-only Chile values without pretending they are communes", () => {
@@ -109,7 +109,8 @@ describe("normalizeJobLocation", () => {
 
     expect(chile.filterKeys).toContain("country:chile");
     expect(chile.filterKeys).toContain("remote:chile");
-    expect(argentina.filterKeys).toContain("country:argentina");
+    // remote non-Chile no entra al bucket "Otros países": vive en remote:international
+    expect(argentina.filterKeys).not.toContain("country:international");
     expect(argentina.filterKeys).toContain("remote:international");
   });
 
@@ -127,7 +128,10 @@ describe("normalizeJobLocation", () => {
     expect(options.some((option) => option.key === "zone:gran-valparaiso")).toBe(true);
     expect(options.find((option) => option.key === "zone:gran-valparaiso")?.group).toBe("zone");
     expect(options.some((option) => option.key === "zone:gran-santiago")).toBe(false);
-    expect(options.find((option) => option.key === "country:espana")?.group).toBe("country");
+    expect(options.find((option) => option.key === "country:international")).toMatchObject({
+      group: "country",
+      label: "Otros países",
+    });
     expect(options.find((option) => option.key === "mode:hibrido")?.group).toBe("mode");
     expect(options.find((option) => option.key === "remote:chile")).toMatchObject({
       group: "remote",
@@ -139,7 +143,7 @@ describe("normalizeJobLocation", () => {
     });
     expect(options.find((option) => option.key === "unnormalized")?.group).toBe("review");
     expect(matchesLocationFilter(rows[0]!, "zone:gran-valparaiso")).toBe(true);
-    expect(matchesLocationFilter(rows[1]!, "country:espana")).toBe(true);
+    expect(matchesLocationFilter(rows[1]!, "country:international")).toBe(true);
     expect(matchesLocationFilter(rows[2]!, "unnormalized")).toBe(true);
     expect(matchesLocationFilter(rows[3]!, "mode:hibrido")).toBe(true);
     expect(matchesLocationFilter(rows[4]!, "remote:chile")).toBe(true);
