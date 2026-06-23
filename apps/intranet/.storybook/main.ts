@@ -46,6 +46,23 @@ const config: StorybookConfig = {
             new URL("./pwa-register-stub.ts", import.meta.url)
           ),
         },
+        // `msw` (red mock de las stories + addon-vitest) arrastra `graphql@16`,
+        // y @vitest/mocker trae su propia copia bundleada de msw → Vite
+        // pre-empaqueta >1 instancia de graphql en el preview del browser y sus
+        // checks `instanceof` revientan con "Cannot use GraphQLScalarType from
+        // another module or realm" (rompía SocialPage.stories y arrastraba a
+        // UpdateNotification por recarga de chunks). El fix vive en `viteFinal`
+        // (NO en vitest.config.ts): addon-vitest construye el preview del
+        // browser vía `presets.apply("viteFinal")`, así que es el único Vite
+        // config que toca esos módulos. `graphql` se declara como devDep directa
+        // para que pnpm lo resuelva desde la raíz. Ref: storybook#33091.
+        dedupe: ["graphql", "msw", "@mswjs/interceptors"],
+      },
+      optimizeDeps: {
+        // dedupe sola no basta para un paquete CJS/ESM dual como graphql:
+        // forzarlo (y los entrypoints de msw) a un solo bundle optimizado
+        // colapsa todo a una única instancia en runtime.
+        include: ["graphql", "msw", "msw/browser"],
       },
     }),
 };

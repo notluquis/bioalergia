@@ -137,6 +137,7 @@
     "chromatic": "^17.3.0",
     "concurrently": "^10.0.3",
     "glob": "^13.0.6",
+    "graphql": "^16.14.1",
     "husky": "^9.1.7",
     "jsdom": "^29.1.1",
     "lint-staged": "^17.0.7",

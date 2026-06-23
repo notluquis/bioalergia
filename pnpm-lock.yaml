@@ -592,6 +592,9 @@ importers:
       glob:
         specifier: ^13.0.6
         version: 13.0.6
+      graphql:
+        specifier: ^16.14.1
+        version: 16.14.1
       husky:
         specifier: ^9.1.7
         version: 9.1.7
@@ -773,6 +776,9 @@ importers:
       chromatic:
         specifier: ^17.3.0
         version: 17.3.0
+      graphql:
+        specifier: ^16.14.1
+        version: 16.14.1
       msw:
         specifier: ^2.14.6
         version: 2.14.6(@types/node@25.9.2)(typescript@6.0.3)

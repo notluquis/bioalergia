@@ -23,6 +23,16 @@ const config: StorybookConfig = {
         alias: {
           "@": fileURLToPath(new URL("../src", import.meta.url)),
         },
+        // Ver intranet/.storybook/main.ts: `msw` arrastra `graphql@16` y
+        // @vitest/mocker trae su propia copia → Vite pre-empaqueta >1 instancia
+        // de graphql en el preview y revienta con "Cannot use GraphQLScalarType
+        // from another module or realm". El fix vive en `viteFinal` (addon-vitest
+        // construye el preview vía `presets.apply("viteFinal")`). `graphql` es
+        // devDep directa para que pnpm lo resuelva desde la raíz. Ref: storybook#33091.
+        dedupe: ["graphql", "msw", "@mswjs/interceptors"],
+      },
+      optimizeDeps: {
+        include: ["graphql", "msw", "msw/browser"],
       },
     }),
 };
