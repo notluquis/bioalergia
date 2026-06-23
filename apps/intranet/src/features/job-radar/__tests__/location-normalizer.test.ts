@@ -87,11 +87,20 @@ describe("normalizeJobLocation", () => {
     expect(location.filterKeys).toEqual(["country:chile"]);
   });
 
+  it("normalizes country-code-only Chile values", () => {
+    const location = normalizeJobLocation("CL");
+
+    expect(location.normalized).toBe(true);
+    expect(location.label).toBe("Chile");
+    expect(location.filterKeys).toEqual(["country:chile"]);
+  });
+
   it("infers Chile from Chilean communes and regions without matching short foreign aliases", () => {
     const cases: Array<[string, string]> = [
       ["Lo Espejo, Metropolitana, Chile", "Lo Espejo, Región Metropolitana"],
       ["San Pedro de Atacama, Antofagasta, Chile", "San Pedro de Atacama, Antofagasta"],
       ["Illapel, Coquimbo", "Illapel, Coquimbo"],
+      ["Sagrada Familia, Maule", "Sagrada Familia, Maule"],
       ["Independencia, Metropolitana, Chile", "Independencia, Región Metropolitana"],
       ["Peñalolén, Metropolitana, Chile", "Peñalolén, Región Metropolitana"],
       ["Nueva Imperial, La Araucanía", "Nueva Imperial, La Araucanía"],
@@ -104,6 +113,63 @@ describe("normalizeJobLocation", () => {
       expect(location.label).toBe(label);
       expect(location.filterKeys).toContain("country:chile");
       expect(location.filterKeys).not.toContain("country:peru");
+    }
+  });
+
+  it("normalizes Chilean all-caps region labels from Cornerstone", () => {
+    const cases: Array<[string, string, string]> = [
+      ["Mulchén, REGION DEL BIOBIO, CL", "Mulchén, Biobío", "region:biobio"],
+      ["Collipulli, REGIÓN DE LA ARAUCANÍA, CL", "Collipulli, La Araucanía", "region:la araucania"],
+      ["Laja, REGION DEL BIOBIO, CL", "Laja, Biobío", "region:biobio"],
+      ["Yerbas Buenas, REGION DEL MAULE, CL", "Yerbas Buenas, Maule", "region:maule"],
+      ["La Unión, REGIÓN DE LOS RÍOS, CL", "La Unión, Los Ríos", "region:los rios"],
+      ["Diguillín, REGIÓN DE ÑUBLE, CL", "Diguillín, Ñuble", "region:nuble"],
+    ];
+
+    for (const [raw, label, regionKey] of cases) {
+      const location = normalizeJobLocation(raw);
+
+      expect(location.normalized).toBe(true);
+      expect(location.label).toBe(label);
+      expect(location.filterKeys).toContain(regionKey);
+      expect(location.filterKeys).toContain("country:chile");
+      expect(location.filterKeys).not.toContain("unnormalized");
+    }
+  });
+
+  it("normalizes Chilean city plus CL values from Genomawork", () => {
+    const cases: Array<[string, string]> = [
+      ["Puerto Varas, CL", "Puerto Varas, Los Lagos"],
+      ["San Francisco de Mostazal, CL", "San Francisco de Mostazal, O'Higgins"],
+      ["Machalí, CL", "Machalí, O'Higgins"],
+      ["Frutillar, CL", "Frutillar, Los Lagos"],
+    ];
+
+    for (const [raw, label] of cases) {
+      const location = normalizeJobLocation(raw);
+
+      expect(location.normalized).toBe(true);
+      expect(location.label).toBe(label);
+      expect(location.filterKeys).toContain("country:chile");
+      expect(location.filterKeys).not.toContain("unnormalized");
+    }
+  });
+
+  it("normalizes known international remnants into the international country bucket", () => {
+    const cases = [
+      "Englewood Cliffs, NJ",
+      "Independence, MO",
+      "PLAT VG - MONTES CLAROS",
+      "Budapest, Hungary",
+      "Tai Pei, Changhua County, Taiwan",
+    ];
+
+    for (const raw of cases) {
+      const location = normalizeJobLocation(raw);
+
+      expect(location.normalized).toBe(true);
+      expect(location.filterKeys).toContain("country:international");
+      expect(location.filterKeys).not.toContain("unnormalized");
     }
   });
 
