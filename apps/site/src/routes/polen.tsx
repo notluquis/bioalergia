@@ -75,9 +75,10 @@ function formatUpdatedAt(value: Date | string): string {
 }
 
 /**
- * Widget de pronóstico en vivo: gramíneas desde la Google Pollen API (único
- * tipo con datos en Chile) + calendario mensual estimado de árboles/malezas.
- * Si el cache está vacío (sin key o cron sin correr) muestra solo el calendario.
+ * Widget de pronóstico en vivo: gramíneas desde la Google Pollen API (único tipo
+ * con datos reales en Chile). No mostramos árboles ni malezas porque no existe
+ * un dato exacto para Concepción. Si el cache está vacío (sin key o cron sin
+ * correr) cae al nivel estacional estimado de gramíneas.
  */
 function PollenLiveWidget() {
   const { data, isLoading } = useQuery({
@@ -87,18 +88,18 @@ function PollenLiveWidget() {
 
   const liveToday = data?.provenance.grass === "live" ? data.grassForecast[0] : undefined;
   const calendarGrass = data?.calendar.find((t) => t.type === "GRASS");
-  // El polen de gramíneas vive en el hero (en vivo o estimado), así que la tira
-  // de "estimación estacional" solo muestra árboles y malezas — sin duplicar.
-  const estimatedTrio = (data?.calendar ?? []).filter((t) => t.type !== "GRASS");
   const todayYmd = new Date().toLocaleDateString("en-CA");
 
   return (
     <section className="grid gap-6">
       <div className="grid gap-2">
-        <h2 className="font-semibold text-(--ink) text-2xl">Pronóstico de polen — Concepción</h2>
+        <h2 className="font-semibold text-(--ink) text-2xl">
+          Pronóstico de gramíneas — Concepción
+        </h2>
         <p className="max-w-3xl text-(--ink-muted) text-sm leading-relaxed">
-          Las gramíneas se muestran en vivo (Google Pollen API); los árboles y las malezas son una
-          estimación estacional, porque no existe una estación de monitoreo en el Biobío.
+          Mostramos el polen de gramíneas en vivo (Google Pollen API), el único tipo con datos
+          reales para Chile. No publicamos niveles de árboles ni malezas: la API no los entrega en
+          el país y no hay una estación de monitoreo en el Biobío que los mida.
         </p>
       </div>
 
@@ -216,34 +217,33 @@ function PollenLiveWidget() {
             </Card>
           ) : null}
 
-          {/* Estimación estacional: árboles + malezas (gramíneas ya van en el hero) */}
-          {estimatedTrio.length > 0 ? (
-            <div className="grid gap-4 sm:grid-cols-2">
-              {estimatedTrio.map((taxon) => (
-                <Card className="rounded-3xl" key={taxon.type} variant="default">
-                  <Card.Header className="gap-3">
-                    <div className="flex items-center justify-between gap-3">
-                      <Card.Title className="text-lg">{taxon.label}</Card.Title>
-                      <Chip color={API_LEVEL_COLOR[taxon.level]} size="sm" variant="soft">
-                        {API_LEVEL_LABEL[taxon.level]}
-                      </Chip>
-                    </div>
-                    <Card.Description className="text-(--ink-muted) text-xs uppercase tracking-wide">
-                      Estimación estacional
-                    </Card.Description>
-                  </Card.Header>
-                  <Card.Content className="pb-6 text-(--ink-muted) text-sm leading-relaxed">
-                    {taxon.examples.join(", ")}.
-                  </Card.Content>
-                </Card>
-              ))}
-            </div>
-          ) : null}
+          {/* Qué representa el índice de gramíneas */}
+          <Card className="rounded-3xl" variant="secondary">
+            <Card.Header className="gap-1">
+              <Card.Title className="text-base">¿Qué gramíneas mide este índice?</Card.Title>
+            </Card.Header>
+            <Card.Content className="grid gap-3 pb-6 text-(--ink-muted) text-sm leading-relaxed">
+              <p>
+                El índice agrupa el polen de toda la familia de los pastos (Poaceae) en un solo
+                valor: bajo el microscopio sus granos no se distinguen entre especies, así que tanto
+                Google como los estudios de aerobiología los cuentan juntos. En la zona centro-sur
+                las gramíneas alergénicas más comunes son la{" "}
+                <span className="text-(--ink)">ballica</span> (<em>Lolium</em>), el{" "}
+                <span className="text-(--ink)">pasto ovillo</span> (<em>Dactylis</em>), el{" "}
+                <span className="text-(--ink)">pasto miel</span> (<em>Holcus</em>) y la{" "}
+                <span className="text-(--ink)">Poa</span>.
+              </p>
+              <p>
+                Su temporada va de septiembre a marzo, con el peak entre noviembre y enero.
+                Comparten alérgenos, por lo que quien reacciona a un pasto suele reaccionar a varios
+                — clave al planificar la inmunoterapia.
+              </p>
+            </Card.Content>
+          </Card>
 
           <p className="text-(--ink-muted) text-xs leading-relaxed">
-            Gramíneas: Google Pollen API (en vivo). Árboles y malezas: calendario polínico estimado
-            para la zona (referencial). Esta información es educativa y no reemplaza una evaluación
-            médica.
+            Fuente: Google Pollen API (gramíneas en vivo). Información educativa; no reemplaza una
+            evaluación médica.
           </p>
         </div>
       )}
