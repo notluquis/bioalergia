@@ -363,15 +363,36 @@ function formatJobMessage(job: RawJob): string {
 // Filas por statement del bulk upsert (cada fila ~20 params → 400×20=8000 < 65535).
 const UPSERT_CHUNK = 400;
 
+function jobUpsertKey(job: Pick<RawJob, "source" | "company" | "externalId">): string {
+  return `${job.source}\u0000${job.company}\u0000${job.externalId}`;
+}
+
+export function dedupeJobsForUpsert(jobs: RawJob[]): { jobs: RawJob[]; duplicateCount: number } {
+  const byKey = new Map<string, RawJob>();
+  for (const job of jobs) {
+    byKey.set(jobUpsertKey(job), job);
+  }
+  return { jobs: [...byKey.values()], duplicateCount: jobs.length - byKey.size };
+}
+
 async function upsertSourceJobs(
   src: JobSource,
-  jobs: RawJob[],
+  sourceJobs: RawJob[],
   filter: ProfileFilter
 ): Promise<{ inserted: number; updated: number; unchanged: number; closed: number }> {
   let inserted = 0;
   let updated = 0;
   let unchanged = 0;
   const now = new Date();
+  const { jobs, duplicateCount } = dedupeJobsForUpsert(sourceJobs);
+  if (duplicateCount > 0) {
+    logWarn("job_radar.source.duplicates_deduped", {
+      source: src.label,
+      duplicates: duplicateCount,
+      fetched: sourceJobs.length,
+      unique: jobs.length,
+    });
+  }
   const presentIds: string[] = jobs.map((j) => j.externalId);
 
   // Bulk upsert: UN `INSERT … ON CONFLICT DO UPDATE` por chunk en vez de
@@ -423,8 +444,7 @@ async function upsertSourceJobs(
         personal.job_postings.published_at IS DISTINCT FROM EXCLUDED.published_at OR
         personal.job_postings.lastmod IS DISTINCT FROM EXCLUDED.lastmod OR
         personal.job_postings.status IS DISTINCT FROM 'OPEN'::personal."JobPostingStatus" OR
-        personal.job_postings.matched IS DISTINCT FROM EXCLUDED.matched OR
-        personal.job_postings.raw IS DISTINCT FROM EXCLUDED.raw
+        personal.job_postings.matched IS DISTINCT FROM EXCLUDED.matched
       RETURNING (xmax = 0) AS inserted
     `.execute(kysely);
     unchanged += chunk.length - result.rows.length;
