@@ -59,10 +59,31 @@ const config: StorybookConfig = {
         dedupe: ["graphql", "msw", "@mswjs/interceptors"],
       },
       optimizeDeps: {
-        // dedupe sola no basta para un paquete CJS/ESM dual como graphql:
-        // forzarlo (y los entrypoints de msw) a un solo bundle optimizado
-        // colapsa todo a una única instancia en runtime.
-        include: ["graphql", "msw", "msw/browser"],
+        // El builder de Storybook ya pre-escanea todas las stories + preview
+        // como `optimizeDeps.entries` (PR storybook#33875), pero esbuild no
+        // sigue ciertas cadenas dinámicas/transitivas profundas, así que algunas
+        // deps pesadas se descubren TARDE (mid-run) → Vite re-optimiza → recarga
+        // la página → los imports dinámicos en vuelo dan 404 ("Failed to fetch
+        // dynamically imported module" / "Chunk Load Failure"). El fix golden
+        // (documentado: el propio Vitest imprime la lista y pide agregarla acá)
+        // es nombrarlas explícitamente para forzarlas al pre-bundle inicial.
+        // Globs NO sirven en `include` (vitejs/vite#16174) → specifiers exactos.
+        // dedupe sola tampoco basta para un dual CJS/ESM como graphql.
+        include: [
+          "graphql",
+          "msw",
+          "msw/browser",
+          "@sentry/react",
+          "@simplewebauthn/browser",
+          "@tanstack/react-pacer",
+          "@tanstack/react-query-devtools",
+          "@tanstack/router-devtools",
+          "i18next",
+          "react-i18next",
+          "jspdf",
+          "jspdf-autotable",
+          "recharts",
+        ],
       },
     }),
 };
