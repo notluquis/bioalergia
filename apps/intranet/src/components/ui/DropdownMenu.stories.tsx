@@ -1,4 +1,4 @@
-import { Button, Dropdown, Label, Separator } from "@heroui/react";
+import { Dropdown, Label, Separator } from "@heroui/react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
 
@@ -17,8 +17,8 @@ export const Basic: Story = {
     return (
       <div className="flex h-40 items-start justify-start">
         <Dropdown>
-          <Dropdown.Trigger>
-            <Button variant="outline">Abrir menú</Button>
+          <Dropdown.Trigger className="button button--md button--outline">
+            Abrir menú
           </Dropdown.Trigger>
           <Dropdown.Popover>
             <Dropdown.Menu aria-label="Opciones" className="w-48">

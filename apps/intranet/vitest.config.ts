@@ -38,6 +38,20 @@ export default defineConfig({
             "~": import.meta.dirname,
           },
         },
+        optimizeDeps: {
+          include: [
+            "@sentry/react",
+            "@simplewebauthn/browser",
+            "@tanstack/react-pacer",
+            "@tanstack/react-query-devtools",
+            "@tanstack/router-devtools",
+            "i18next",
+            "jspdf",
+            "jspdf-autotable",
+            "react-i18next",
+            "recharts",
+          ],
+        },
         test: {
           name: "storybook",
           browser: {

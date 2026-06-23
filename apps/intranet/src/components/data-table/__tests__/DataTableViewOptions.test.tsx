@@ -17,14 +17,8 @@ const data: Row[] = [
   { id: "2", name: "Bar", status: "Pausado" },
 ];
 
-// HeroUI's Dropdown.Trigger nests <button> under React Aria's
-// pressable wrapper (also rendered as <button>), so getAllByRole returns 2.
-// Pick the outermost trigger (data-slot="dropdown-trigger").
 function getColumnasTrigger() {
-  const buttons = screen.getAllByRole("button", { name: /Columnas/i });
-  const trigger = buttons.find((b) => b.getAttribute("data-slot") === "dropdown-trigger");
-  if (!trigger) throw new Error("dropdown-trigger button not found");
-  return trigger;
+  return screen.getByRole("button", { name: /Columnas/i });
 }
 
 describe("DataTableViewOptions", () => {
