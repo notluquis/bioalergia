@@ -1,17 +1,20 @@
-// Calendario polínico curado para Concepción / Biobío (hemisferio sur).
-// NO hay sensor aerobiológico local (polenes.cl llega a Talca; SINCA mide PM,
-// no polen) ni la Google Pollen API entrega árboles/malezas en Chile, así que el
-// nivel de árboles/malezas/gramíneas es una ESTIMACIÓN estacional cualitativa.
-// Fuente: literatura aerobiológica chilena (estudio Temuco; calendarios clínicos
-// Clínica Alemana). PENDIENTE validación del alergólogo antes de publicar.
+// Calendario estacional de GRAMÍNEAS para Concepción / centro-sur de Chile.
 //
-// Estacionalidad (hemisferio sur): árboles ago–oct; gramíneas sep–ene; malezas
-// nov–feb. Índice por mes 1–12.
+// SOLO gramíneas: la Google Pollen API en Chile (código CL) únicamente entrega el
+// tipo agregado GRASS (familia Poaceae), no árboles ni malezas, y no existe una
+// estación aerobiológica local que los mida (polenes.cl no cubre el Biobío y está
+// fuera de servicio). Por eso NO publicamos niveles de árboles/malezas: no hay un
+// dato exacto que respaldarlos.
+//
+// Este calendario es solo un FALLBACK cualitativo para cuando el pronóstico en
+// vivo de Google no esté disponible. Estacionalidad (hemisferio sur): las
+// gramíneas del sur (Pooideae: ballica, pasto ovillo, pasto miel, Poa) polinizan
+// de septiembre a marzo, con peak práctico nov–ene. Índice por mes 1–12.
 
 import type { PollenCalendarTaxon, PollenLevel } from "@finanzas/orpc-contracts/pollen";
 
 type TaxonDef = {
-  type: "GRASS" | "TREE" | "WEED";
+  type: "GRASS";
   label: string;
   examples: string[];
   // Nivel por mes (índice 0 = enero … 11 = diciembre).
@@ -25,25 +28,11 @@ const N: PollenLevel = "nulo";
 
 const TAXA: TaxonDef[] = [
   {
-    type: "TREE",
-    label: "Árboles",
-    examples: ["Plátano oriental", "Ciprés", "Álamo", "Fresno"],
-    //         E  F  M  A  M  J  J  A  S  O  N  D
-    byMonth: [B, N, N, B, B, B, M, A, A, A, M, B],
-  },
-  {
     type: "GRASS",
     label: "Gramíneas (pastos)",
-    examples: ["Ballica", "Pasto bermuda", "Pasto Timothy", "Poa"],
+    examples: ["Ballica (Lolium)", "Pasto ovillo (Dactylis)", "Pasto miel (Holcus)", "Poa"],
     //         E  F  M  A  M  J  J  A  S  O  N  D
     byMonth: [A, M, B, B, N, N, N, M, A, A, A, A],
-  },
-  {
-    type: "WEED",
-    label: "Malezas",
-    examples: ["Romaza (Rumex)", "Llantén (Plantago)", "Artemisa", "Cenizo"],
-    //         E  F  M  A  M  J  J  A  S  O  N  D
-    byMonth: [A, A, M, B, N, N, N, N, B, M, A, A],
   },
 ];
 

@@ -5,10 +5,10 @@ import { z } from "zod";
  * Pronóstico de polen para el widget público /polen (sin auth).
  *
  * `grassForecast` = pronóstico DIARIO en vivo de gramíneas (Google Pollen API;
- * en Chile solo hay datos de gramíneas). `calendar` = nivel CUALITATIVO mensual
- * de árboles/malezas/gramíneas según un calendario polínico curado para Biobío
- * (no existe sensor local). `provenance` deja explícito de dónde viene cada cosa
- * para no pintar un árbol/maleza "sin dato" de Google como un 0 real.
+ * en Chile solo hay datos de gramíneas). `calendar` = fallback estacional
+ * CUALITATIVO de gramíneas para cuando el pronóstico en vivo no esté disponible.
+ * No publicamos árboles ni malezas: Google no los entrega en Chile y no hay
+ * estación local que los mida, así que no existe un dato exacto que mostrar.
  */
 
 export const pollenLevelSchema = z.enum(["nulo", "bajo", "medio", "alto"]);
@@ -26,7 +26,7 @@ export const pollenGrassDaySchema = z.object({
 });
 
 export const pollenCalendarTaxonSchema = z.object({
-  type: z.enum(["GRASS", "TREE", "WEED"]),
+  type: z.literal("GRASS"),
   label: z.string(),
   level: pollenLevelSchema,
   inSeason: z.boolean(),
@@ -40,7 +40,6 @@ export const pollenForecastResponseSchema = z.object({
   calendar: z.array(pollenCalendarTaxonSchema),
   provenance: z.object({
     grass: z.enum(["live", "unavailable"]),
-    treeWeed: z.literal("calendar"),
   }),
 });
 

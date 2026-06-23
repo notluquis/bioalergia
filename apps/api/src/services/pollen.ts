@@ -17,6 +17,13 @@ import { pollenCalendarForMonth } from "./pollen-calendar.ts";
 
 const POLLEN_API = "https://pollen.googleapis.com/v1/forecast:lookup";
 
+// La GOOGLE_PLACES_API_KEY es una key restringida por HTTP referer (la comparte
+// el Maps JS del frontend). Una llamada server-side (este cron) no manda referer
+// → Google responde 403 API_KEY_HTTP_REFERRER_BLOCKED. Mandamos explícitamente
+// el `Referer` del dominio allowlisted para que la key valide desde el backend.
+// Configurable por si cambia el dominio; default = sitio público.
+const POLLEN_REFERER = process.env.POLLEN_API_REFERER || "https://www.bioalergia.cl";
+
 export const CONCEPCION = {
   key: "concepcion",
   label: "Concepción",
@@ -95,7 +102,10 @@ export async function fetchGrassForecast(
   url.searchParams.set("days", String(days));
   url.searchParams.set("languageCode", "es");
 
-  const res = await fetch(url, { signal: AbortSignal.timeout(15_000) });
+  const res = await fetch(url, {
+    headers: { Referer: POLLEN_REFERER },
+    signal: AbortSignal.timeout(15_000),
+  });
   if (!res.ok) {
     const body = await res.text().catch(() => "");
     throw new DomainError("BAD_REQUEST", `Google Pollen API ${res.status}: ${body.slice(0, 200)}`);
@@ -154,9 +164,10 @@ export async function syncPollenForecast(
 }
 
 /**
- * Lectura pública (db raw): cache de gramíneas (hoy en adelante) + calendario
- * mensual de árboles/malezas. Si el cache está vacío (cron no corrió o falta la
- * key), `provenance.grass = "unavailable"` y solo se devuelve el calendario.
+ * Lectura pública (db raw): cache de gramíneas en vivo (hoy en adelante) + un
+ * fallback estacional cualitativo de gramíneas. Si el cache está vacío (cron no
+ * corrió o falta la key), `provenance.grass = "unavailable"` y solo queda el
+ * calendario. No se devuelven árboles ni malezas: no hay dato exacto en Chile.
  */
 export async function getCachedForecast(
   location: { key: string; label: string } = CONCEPCION
@@ -194,7 +205,6 @@ export async function getCachedForecast(
     calendar: pollenCalendarForMonth(santiagoMonth()),
     provenance: {
       grass: rows.length > 0 ? "live" : "unavailable",
-      treeWeed: "calendar",
     },
   };
 }
