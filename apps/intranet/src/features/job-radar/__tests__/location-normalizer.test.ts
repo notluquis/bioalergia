@@ -87,6 +87,26 @@ describe("normalizeJobLocation", () => {
     expect(location.filterKeys).toEqual(["country:chile"]);
   });
 
+  it("infers Chile from Chilean communes and regions without matching short foreign aliases", () => {
+    const cases: Array<[string, string]> = [
+      ["Lo Espejo, Metropolitana, Chile", "Lo Espejo, Región Metropolitana"],
+      ["San Pedro de Atacama, Antofagasta, Chile", "San Pedro de Atacama, Antofagasta"],
+      ["Illapel, Coquimbo", "Illapel, Coquimbo"],
+      ["Independencia, Metropolitana, Chile", "Independencia, Región Metropolitana"],
+      ["Peñalolén, Metropolitana, Chile", "Peñalolén, Región Metropolitana"],
+      ["Nueva Imperial, La Araucanía", "Nueva Imperial, La Araucanía"],
+    ];
+
+    for (const [raw, label] of cases) {
+      const location = normalizeJobLocation(raw);
+
+      expect(location.normalized).toBe(true);
+      expect(location.label).toBe(label);
+      expect(location.filterKeys).toContain("country:chile");
+      expect(location.filterKeys).not.toContain("country:peru");
+    }
+  });
+
   it("keeps genuinely unknown values in the review bucket", () => {
     const location = normalizeJobLocation("AIR Office");
 
