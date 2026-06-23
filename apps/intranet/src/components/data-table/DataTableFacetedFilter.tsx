@@ -1,4 +1,4 @@
-import { Button, Chip, Dropdown, Label, SearchField, type Selection } from "@heroui/react";
+import { Chip, Dropdown, Label, SearchField, type Selection } from "@heroui/react";
 import type { Column } from "@tanstack/react-table";
 import { Check, PlusCircle } from "lucide-react";
 import { type ComponentType, useMemo, useState } from "react";
@@ -35,19 +35,17 @@ export function DataTableFacetedFilter<TData, TValue>({
 
   return (
     <Dropdown>
-      <Dropdown.Trigger>
-        <Button className="h-8 border-dashed" size="sm" variant="outline">
-          <PlusCircle className="mr-2 size-4" />
-          {title}
-          {selectedKeys.size > 0 && (
-            <>
-              <div className="mx-2 h-4 w-px bg-default-100" />
-              <Chip size="sm" variant="soft">
-                {selectedKeys.size}
-              </Chip>
-            </>
-          )}
-        </Button>
+      <Dropdown.Trigger className="button button--sm button--outline h-8 border-dashed">
+        <PlusCircle className="mr-2 size-4" aria-hidden />
+        {title}
+        {selectedKeys.size > 0 && (
+          <>
+            <div className="mx-2 h-4 w-px bg-default-100" />
+            <Chip size="sm" variant="soft">
+              {selectedKeys.size}
+            </Chip>
+          </>
+        )}
       </Dropdown.Trigger>
       <Dropdown.Popover className="w-50 p-0" placement="bottom start">
         <div className="border-default-200/60 border-b p-2">

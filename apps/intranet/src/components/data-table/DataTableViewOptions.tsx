@@ -1,5 +1,5 @@
 import type { Selection } from "@heroui/react";
-import { Button, Dropdown, Label, SearchField } from "@heroui/react";
+import { Dropdown, Label, SearchField } from "@heroui/react";
 import type { Table } from "@tanstack/react-table";
 import { Check, Settings2 } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -36,11 +36,9 @@ export function DataTableViewOptions<TData>({ table }: DataTableViewOptionsProps
 
   return (
     <Dropdown>
-      <Dropdown.Trigger>
-        <Button className="ml-auto h-8" size="sm" variant="outline">
-          <Settings2 className="mr-2 size-4" />
-          Columnas
-        </Button>
+      <Dropdown.Trigger className="button button--sm button--outline ml-auto h-8">
+        <Settings2 className="mr-2 size-4" aria-hidden />
+        Columnas
       </Dropdown.Trigger>
       <Dropdown.Popover className="min-w-55" placement="bottom end">
         <div className="border-default-200/60 border-b p-2">

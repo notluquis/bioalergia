@@ -125,12 +125,14 @@ const COMMUNE_ALIASES = new Map(
     "Villa Alemana",
     "Antofagasta",
     "Calama",
+    "San Pedro de Atacama",
     "La Serena",
     "Coquimbo",
     "Rancagua",
     "Talca",
     "Chillán",
     "Temuco",
+    "Nueva Imperial",
     "Puerto Montt",
     "Valdivia",
     "Osorno",
@@ -200,12 +202,14 @@ const COMMUNE_REGION: Record<string, string> = {
   Quillota: "Valparaíso",
   Rancagua: "O'Higgins",
   Salamanca: "Coquimbo",
+  "San Pedro de Atacama": "Antofagasta",
   "San Antonio": "Valparaíso",
   "San Vicente": "O'Higgins",
   "Santa Cruz": "O'Higgins",
   "Santa Bárbara": "Biobío",
   Talca: "Maule",
   Temuco: "La Araucanía",
+  "Nueva Imperial": "La Araucanía",
   Valdivia: "Los Ríos",
   Valparaíso: "Valparaíso",
   "Viña del Mar": "Valparaíso",
@@ -466,6 +470,7 @@ function findCountry(parts: string[], normalizedRaw: string): string | null {
     if (country) return country;
   }
   for (const [alias, country] of COUNTRY_ALIASES) {
+    if (alias.length <= 2) continue;
     if (normalizedRaw === alias || normalizedRaw.includes(alias)) return country;
   }
   return null;
@@ -483,7 +488,7 @@ export function normalizeJobLocation(
   const normalizedRaw = raw ? norm(raw) : "";
   const commune = findCommune(parts, normalizedRaw);
   const region = findRegion(parts, commune);
-  const country = findCountry(parts, normalizedRaw);
+  const country = findCountry(parts, normalizedRaw) ?? (commune || region ? "Chile" : null);
   const filterKeys: string[] = [];
 
   if (commune) filterKeys.push(key("commune", commune));
