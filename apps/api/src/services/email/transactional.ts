@@ -292,6 +292,53 @@ export async function sendPublicContactNotification(args: {
 }
 
 /**
+ * Canal Ley Karin (Ley 21.643): avisa al receptor designado que llegó una
+ * denuncia de acoso/violencia laboral. Interno y CONFIDENCIAL: va sólo al buzón
+ * restringido (denuncias@bioalergia.cl); el detalle queda en la bandeja con
+ * acceso restringido, el correo es sólo el aviso + plazos legales. Best-effort.
+ */
+export async function sendKarinReportNotification(args: {
+  to: string;
+  report: {
+    id: string;
+    reportType: string;
+    reporterName: string;
+    reportedPerson: string | null;
+    resguardoDueAt: Date;
+    remitirDueAt: Date;
+    investigationDueAt: Date;
+  };
+}): Promise<EmailSendResult> {
+  const r = args.report;
+  const typeLabels: Record<string, string> = {
+    ACOSO_LABORAL: "Acoso laboral",
+    ACOSO_SEXUAL: "Acoso sexual",
+    VIOLENCIA: "Violencia en el trabajo",
+  };
+  const rows: Array<[string, string]> = [
+    ["Tipo", typeLabels[r.reportType] ?? r.reportType],
+    ["Denunciante", r.reporterName],
+    ["Persona denunciada", r.reportedPerson || "—"],
+    ["Resguardo inmediato", fmtDate(r.resguardoDueAt)],
+    ["Remitir a Inspección del Trabajo", fmtDate(r.remitirDueAt)],
+    ["Cierre de investigación", fmtDate(r.investigationDueAt)],
+  ];
+  const html = shell(
+    "Nueva denuncia Ley Karin",
+    `<p>Llegó una denuncia por el canal Ley Karin (Ley 21.643). <strong>Confidencial y de acceso restringido.</strong> Adopta de inmediato las medidas de resguardo y revisa los plazos legales.</p>
+     <table style="border-collapse:collapse;width:100%;background:#fef2f2;border-radius:8px">${notifyTable(rows)}</table>
+     <p style="margin-top:16px"><a href="${appUrl()}/admin/compliance?tab=karin" style="color:#0e64b7">Ver en la bandeja Karin</a></p>`
+  );
+  return sendEmail({
+    to: args.to,
+    subject: `Denuncia Ley Karin — ${typeLabels[r.reportType] ?? r.reportType}`,
+    html,
+    text: rows.map(([k, v]) => `${k}: ${v}`).join("\n"),
+    idempotencyKey: `karin-report/${r.id}`,
+  });
+}
+
+/**
  * #2 — Honorarios: send the monthly summary email with the PDF attached.
  */
 export async function sendTimesheetEmail(args: {

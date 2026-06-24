@@ -411,6 +411,12 @@
       "import": "./dist/occupational.js",
       "default": "./dist/occupational.js"
     },
+    "./karin": {
+      "development": "./src/karin.ts",
+      "types": "./dist/karin.d.ts",
+      "import": "./dist/karin.js",
+      "default": "./dist/karin.js"
+    },
     "./adherence": {
       "development": "./src/adherence.ts",
       "types": "./dist/adherence.d.ts",

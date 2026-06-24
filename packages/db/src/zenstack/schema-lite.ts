@@ -4210,6 +4210,95 @@ export class SchemaType implements SchemaDef {
                 id: { type: "String" }
             }
         },
+        KarinReport: {
+            name: "KarinReport",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true,
+                    default: ExpressionUtils.call("cuid") as FieldDefault
+                },
+                reportType: {
+                    name: "reportType",
+                    type: "String"
+                },
+                reporterName: {
+                    name: "reporterName",
+                    type: "String"
+                },
+                reporterRut: {
+                    name: "reporterRut",
+                    type: "String",
+                    optional: true
+                },
+                reporterContact: {
+                    name: "reporterContact",
+                    type: "String",
+                    optional: true
+                },
+                reportedPerson: {
+                    name: "reportedPerson",
+                    type: "String",
+                    optional: true
+                },
+                description: {
+                    name: "description",
+                    type: "String"
+                },
+                occurredAt: {
+                    name: "occurredAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                status: {
+                    name: "status",
+                    type: "String",
+                    default: "RECIBIDA" as FieldDefault
+                },
+                receivedAt: {
+                    name: "receivedAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                resguardoDueAt: {
+                    name: "resguardoDueAt",
+                    type: "DateTime"
+                },
+                remitirDueAt: {
+                    name: "remitirDueAt",
+                    type: "DateTime"
+                },
+                investigationDueAt: {
+                    name: "investigationDueAt",
+                    type: "DateTime"
+                },
+                resolution: {
+                    name: "resolution",
+                    type: "String",
+                    optional: true
+                },
+                handledBy: {
+                    name: "handledBy",
+                    type: "Int",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" }
+            }
+        },
         FoliatedBookEntry: {
             name: "FoliatedBookEntry",
             fields: {

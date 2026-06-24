@@ -116,6 +116,7 @@ import { priceListORPCHandler } from "./orpc/price-list.ts";
 import { dataRightsORPCHandler } from "./orpc/data-rights.ts";
 import { breachIncidentsORPCHandler } from "./orpc/breach-incidents.ts";
 import { complaintsORPCHandler } from "./orpc/complaints.ts";
+import { karinORPCHandler } from "./orpc/karin.ts";
 import { securityAlertsORPCHandler } from "./orpc/security-alerts.ts";
 import { processingActivitiesORPCHandler } from "./orpc/processing-activities.ts";
 import { consentORPCHandler } from "./orpc/consent.ts";
@@ -1029,6 +1030,8 @@ app.use("/api/orpc/reactivos/rpc/*", async (c, next) => {
 app.use("/api/orpc/public-clinic/rpc/createComplaint", reactivosLeadRateLimiter);
 app.use("/api/orpc/public-clinic/rpc/createDataRightsRequest", reactivosLeadRateLimiter);
 app.use("/api/orpc/public-clinic/rpc/createContact", reactivosLeadRateLimiter);
+// Denuncia pública Ley Karin: mismo rate-limit por IP (honeypot + CSRF same-origin).
+app.use("/api/orpc/karin/rpc/createReport", reactivosLeadRateLimiter);
 
 app.use("/api/orpc/public-clinic/rpc/*", async (c, next) => {
   const { matched, response } = await publicClinicORPCHandler.handle(createHonoORPCRequest(c), {
@@ -1790,6 +1793,19 @@ app.use("/api/orpc/breach-incidents/rpc/*", async (c, next) => {
 app.use("/api/orpc/complaints/rpc/*", async (c, next) => {
   const { matched, response } = await complaintsORPCHandler.handle(createHonoORPCRequest(c), {
     prefix: "/api/orpc/complaints/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
+app.use("/api/orpc/karin/rpc/*", async (c, next) => {
+  const { matched, response } = await karinORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/karin/rpc",
     context: { hono: c },
   });
 

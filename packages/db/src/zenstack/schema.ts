@@ -5098,6 +5098,116 @@ export class SchemaType implements SchemaDef {
                 id: { type: "String" }
             }
         },
+        KarinReport: {
+            name: "KarinReport",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("cuid") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("cuid") as FieldDefault
+                },
+                reportType: {
+                    name: "reportType",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("report_type") }] }] as readonly AttributeApplication[]
+                },
+                reporterName: {
+                    name: "reporterName",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("reporter_name") }] }] as readonly AttributeApplication[]
+                },
+                reporterRut: {
+                    name: "reporterRut",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("reporter_rut") }] }] as readonly AttributeApplication[]
+                },
+                reporterContact: {
+                    name: "reporterContact",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("reporter_contact") }] }] as readonly AttributeApplication[]
+                },
+                reportedPerson: {
+                    name: "reportedPerson",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("reported_person") }] }] as readonly AttributeApplication[]
+                },
+                description: {
+                    name: "description",
+                    type: "String"
+                },
+                occurredAt: {
+                    name: "occurredAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("occurred_at") }] }] as readonly AttributeApplication[]
+                },
+                status: {
+                    name: "status",
+                    type: "String",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("RECIBIDA") }] }] as readonly AttributeApplication[],
+                    default: "RECIBIDA" as FieldDefault
+                },
+                receivedAt: {
+                    name: "receivedAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("received_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                resguardoDueAt: {
+                    name: "resguardoDueAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("resguardo_due_at") }] }] as readonly AttributeApplication[]
+                },
+                remitirDueAt: {
+                    name: "remitirDueAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("remitir_due_at") }] }] as readonly AttributeApplication[]
+                },
+                investigationDueAt: {
+                    name: "investigationDueAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("investigation_due_at") }] }] as readonly AttributeApplication[]
+                },
+                resolution: {
+                    name: "resolution",
+                    type: "String",
+                    optional: true
+                },
+                handledBy: {
+                    name: "handledBy",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("handled_by") }] }] as readonly AttributeApplication[]
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    attributes: [{ name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }] as readonly AttributeApplication[]
+                }
+            },
+            attributes: [
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,read,update") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("status"), ExpressionUtils.field("remitirDueAt")]) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("karin_reports") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" }
+            }
+        },
         FoliatedBookEntry: {
             name: "FoliatedBookEntry",
             fields: {

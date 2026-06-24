@@ -8,6 +8,7 @@ import {
   Fingerprint,
   LayoutDashboard,
   ListChecks,
+  ShieldAlert,
   ShieldCheck,
   UserCheck,
 } from "lucide-react";
@@ -20,6 +21,7 @@ import { ClinicalConsentPage } from "@/features/clinical-consent/pages/ClinicalC
 import { ComplaintsPage } from "@/features/complaints/pages/ComplaintsPage";
 import { ConsentPage } from "@/features/consent/pages/ConsentPage";
 import { DataRightsPage } from "@/features/data-rights/pages/DataRightsPage";
+import { KarinPage } from "@/features/karin/pages/KarinPage";
 import { ProcessingActivitiesPage } from "@/features/processing-activities/pages/ProcessingActivitiesPage";
 import { RetentionPoliciesPage } from "@/features/settings/pages/RetentionPoliciesPage";
 import { SecurityAlertsPage } from "@/features/settings/pages/SecurityAlertsPage";
@@ -52,6 +54,7 @@ const tabKey = z.enum([
   "rat",
   "brechas",
   "reclamos",
+  "karin",
   "retencion",
   "alertas",
 ]);
@@ -136,6 +139,10 @@ function ComplianceHostPage() {
               <ClipboardList size={14} /> Reclamos
               <Tabs.Indicator />
             </Tabs.Tab>
+            <Tabs.Tab id="karin">
+              <ShieldAlert size={14} /> Denuncias Karin
+              <Tabs.Indicator />
+            </Tabs.Tab>
             <Tabs.Tab id="retencion">
               <Database size={14} /> Retención
               <Tabs.Indicator />
@@ -164,6 +171,13 @@ function ComplianceHostPage() {
         </Tabs.Panel>
         <Tabs.Panel id="reclamos" className="pt-2">
           {isTabMounted("reclamos") ? <ComplaintsPage /> : null}
+        </Tabs.Panel>
+        <Tabs.Panel id="karin" className="pt-2">
+          {isTabMounted("karin") ? (
+            <ProtectedTab action="read" subject="KarinReport">
+              <KarinPage />
+            </ProtectedTab>
+          ) : null}
         </Tabs.Panel>
         <Tabs.Panel id="retencion" className="pt-2">
           {isTabMounted("retencion") ? (

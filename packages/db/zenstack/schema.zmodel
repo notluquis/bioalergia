@@ -1465,6 +1465,43 @@ model Complaint {
   @@map("complaints")
 }
 
+// Canal de denuncia Ley Karin (Ley 21.643 + Decreto 21/2024). Recibe denuncias
+// IDENTIFICADAS de acoso laboral, acoso sexual o violencia en el trabajo (Anexo A).
+// Acceso MÁS restringido que el resto de cumplimiento: sólo el receptor Karin /
+// admin pueden leer/gestionar (subject CASL dedicado `KarinReport`). Plazos del
+// procedimiento: resguardo inmediato (resguardoDueAt), remisión a la Inspección
+// del Trabajo en 3 días hábiles (remitirDueAt) e investigación en 30 días
+// hábiles (investigationDueAt), computados desde la recepción.
+model KarinReport {
+  id                String    @id @default(cuid())
+  // ACOSO_LABORAL | ACOSO_SEXUAL | VIOLENCIA
+  reportType        String    @map("report_type")
+  reporterName      String    @map("reporter_name")
+  reporterRut       String?   @map("reporter_rut")
+  reporterContact   String?   @map("reporter_contact")
+  reportedPerson    String?   @map("reported_person")
+  description       String
+  occurredAt        DateTime? @map("occurred_at")
+  // RECIBIDA | EN_RESGUARDO | REMITIDA_DT | EN_INVESTIGACION | CERRADA
+  status            String    @default("RECIBIDA")
+  receivedAt        DateTime  @default(now()) @map("received_at")
+  resguardoDueAt    DateTime  @map("resguardo_due_at")
+  remitirDueAt      DateTime  @map("remitir_due_at")
+  investigationDueAt DateTime @map("investigation_due_at")
+  resolution        String?
+  handledBy         Int?      @map("handled_by")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  @@deny('all', auth() == null)
+  // Acceso restringido: la política a nivel de fila exige sesión ACTIVA; el
+  // gating fino por receptor Karin se aplica en el router oRPC (subject CASL
+  // `KarinReport`), igual que reactivos/occupational gatean en el handler.
+  @@allow('create,read,update', auth().status == 'ACTIVE')
+  @@index([status, remitirDueAt])
+  @@map("karin_reports")
+}
+
 // #11 — Libros foliados electrónicos (procedimientos / reclamos / inspecciones).
 model FoliatedBookEntry {
   id        String   @id @default(cuid())
