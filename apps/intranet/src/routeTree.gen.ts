@@ -51,6 +51,7 @@ import { Route as AuthedSettingsReactivosCatalogRouteImport } from "./routes/_au
 import { Route as AuthedSettingsQuotesCatalogRouteImport } from "./routes/_authed/settings/quotes-catalog"
 import { Route as AuthedSettingsProcessingActivitiesRouteImport } from "./routes/_authed/settings/processing-activities"
 import { Route as AuthedSettingsPriceListRouteImport } from "./routes/_authed/settings/price-list"
+import { Route as AuthedSettingsOccupationalTestingRouteImport } from "./routes/_authed/settings/occupational-testing"
 import { Route as AuthedSettingsOccupationalRouteImport } from "./routes/_authed/settings/occupational"
 import { Route as AuthedSettingsNoticiasRouteImport } from "./routes/_authed/settings/noticias"
 import { Route as AuthedSettingsImmunotherapyRouteImport } from "./routes/_authed/settings/immunotherapy"
@@ -322,6 +323,12 @@ const AuthedSettingsPriceListRoute = AuthedSettingsPriceListRouteImport.update({
   path: "/price-list",
   getParentRoute: () => AuthedSettingsRoute,
 } as any)
+const AuthedSettingsOccupationalTestingRoute =
+  AuthedSettingsOccupationalTestingRouteImport.update({
+    id: "/occupational-testing",
+    path: "/occupational-testing",
+    getParentRoute: () => AuthedSettingsRoute,
+  } as any)
 const AuthedSettingsOccupationalRoute =
   AuthedSettingsOccupationalRouteImport.update({
     id: "/occupational",
@@ -696,6 +703,7 @@ export interface FileRoutesByFullPath {
   "/settings/immunotherapy": typeof AuthedSettingsImmunotherapyRoute
   "/settings/noticias": typeof AuthedSettingsNoticiasRoute
   "/settings/occupational": typeof AuthedSettingsOccupationalRoute
+  "/settings/occupational-testing": typeof AuthedSettingsOccupationalTestingRoute
   "/settings/price-list": typeof AuthedSettingsPriceListRoute
   "/settings/processing-activities": typeof AuthedSettingsProcessingActivitiesRoute
   "/settings/quotes-catalog": typeof AuthedSettingsQuotesCatalogRoute
@@ -788,6 +796,7 @@ export interface FileRoutesByTo {
   "/settings/immunotherapy": typeof AuthedSettingsImmunotherapyRoute
   "/settings/noticias": typeof AuthedSettingsNoticiasRoute
   "/settings/occupational": typeof AuthedSettingsOccupationalRoute
+  "/settings/occupational-testing": typeof AuthedSettingsOccupationalTestingRoute
   "/settings/price-list": typeof AuthedSettingsPriceListRoute
   "/settings/processing-activities": typeof AuthedSettingsProcessingActivitiesRoute
   "/settings/quotes-catalog": typeof AuthedSettingsQuotesCatalogRoute
@@ -889,6 +898,7 @@ export interface FileRoutesById {
   "/_authed/settings/immunotherapy": typeof AuthedSettingsImmunotherapyRoute
   "/_authed/settings/noticias": typeof AuthedSettingsNoticiasRoute
   "/_authed/settings/occupational": typeof AuthedSettingsOccupationalRoute
+  "/_authed/settings/occupational-testing": typeof AuthedSettingsOccupationalTestingRoute
   "/_authed/settings/price-list": typeof AuthedSettingsPriceListRoute
   "/_authed/settings/processing-activities": typeof AuthedSettingsProcessingActivitiesRoute
   "/_authed/settings/quotes-catalog": typeof AuthedSettingsQuotesCatalogRoute
@@ -990,6 +1000,7 @@ export interface FileRouteTypes {
     | "/settings/immunotherapy"
     | "/settings/noticias"
     | "/settings/occupational"
+    | "/settings/occupational-testing"
     | "/settings/price-list"
     | "/settings/processing-activities"
     | "/settings/quotes-catalog"
@@ -1082,6 +1093,7 @@ export interface FileRouteTypes {
     | "/settings/immunotherapy"
     | "/settings/noticias"
     | "/settings/occupational"
+    | "/settings/occupational-testing"
     | "/settings/price-list"
     | "/settings/processing-activities"
     | "/settings/quotes-catalog"
@@ -1182,6 +1194,7 @@ export interface FileRouteTypes {
     | "/_authed/settings/immunotherapy"
     | "/_authed/settings/noticias"
     | "/_authed/settings/occupational"
+    | "/_authed/settings/occupational-testing"
     | "/_authed/settings/price-list"
     | "/_authed/settings/processing-activities"
     | "/_authed/settings/quotes-catalog"
@@ -1518,6 +1531,13 @@ declare module "@tanstack/react-router" {
       path: "/price-list"
       fullPath: "/settings/price-list"
       preLoaderRoute: typeof AuthedSettingsPriceListRouteImport
+      parentRoute: typeof AuthedSettingsRoute
+    }
+    "/_authed/settings/occupational-testing": {
+      id: "/_authed/settings/occupational-testing"
+      path: "/occupational-testing"
+      fullPath: "/settings/occupational-testing"
+      preLoaderRoute: typeof AuthedSettingsOccupationalTestingRouteImport
       parentRoute: typeof AuthedSettingsRoute
     }
     "/_authed/settings/occupational": {
@@ -2104,6 +2124,7 @@ interface AuthedSettingsRouteChildren {
   AuthedSettingsImmunotherapyRoute: typeof AuthedSettingsImmunotherapyRoute
   AuthedSettingsNoticiasRoute: typeof AuthedSettingsNoticiasRoute
   AuthedSettingsOccupationalRoute: typeof AuthedSettingsOccupationalRoute
+  AuthedSettingsOccupationalTestingRoute: typeof AuthedSettingsOccupationalTestingRoute
   AuthedSettingsPriceListRoute: typeof AuthedSettingsPriceListRoute
   AuthedSettingsProcessingActivitiesRoute: typeof AuthedSettingsProcessingActivitiesRoute
   AuthedSettingsQuotesCatalogRoute: typeof AuthedSettingsQuotesCatalogRoute
@@ -2126,6 +2147,8 @@ const AuthedSettingsRouteChildren: AuthedSettingsRouteChildren = {
   AuthedSettingsImmunotherapyRoute: AuthedSettingsImmunotherapyRoute,
   AuthedSettingsNoticiasRoute: AuthedSettingsNoticiasRoute,
   AuthedSettingsOccupationalRoute: AuthedSettingsOccupationalRoute,
+  AuthedSettingsOccupationalTestingRoute:
+    AuthedSettingsOccupationalTestingRoute,
   AuthedSettingsPriceListRoute: AuthedSettingsPriceListRoute,
   AuthedSettingsProcessingActivitiesRoute:
     AuthedSettingsProcessingActivitiesRoute,

@@ -405,6 +405,12 @@
       "import": "./dist/occupational.js",
       "default": "./dist/occupational.js"
     },
+    "./occupational-testing": {
+      "development": "./src/occupational-testing.ts",
+      "types": "./dist/occupational-testing.d.ts",
+      "import": "./dist/occupational-testing.js",
+      "default": "./dist/occupational-testing.js"
+    },
     "./adherence": {
       "development": "./src/adherence.ts",
       "types": "./dist/adherence.d.ts",
