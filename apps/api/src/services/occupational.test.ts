@@ -17,7 +17,7 @@ const { mockDb } = vi.hoisted(() => {
 vi.mock("@finanzas/db", () => ({ db: mockDb }));
 
 import { DomainError } from "../lib/errors.ts";
-import { createTestBatch, serializeBatch, setProgramStatus } from "./occupational.ts";
+import { attestRiohs, createTestBatch, serializeBatch, setProgramStatus } from "./occupational.ts";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -50,6 +50,25 @@ describe("setProgramStatus — gate RIOHS bloqueante", () => {
   });
 });
 
+describe("attestRiohs — rechaza atestación en blanco (Codex P1)", () => {
+  it("riohsClauseRef solo espacios → BAD_REQUEST, NO marca atestado", async () => {
+    await expect(attestRiohs(1, "   ", 7)).rejects.toBeInstanceOf(DomainError);
+    expect(mockDb.occupationalProgram.findUnique).not.toHaveBeenCalled();
+    expect(mockDb.occupationalProgram.update).not.toHaveBeenCalled();
+  });
+
+  it("referencia válida → guarda trimmed + riohsAttested true", async () => {
+    mockDb.occupationalProgram.findUnique.mockResolvedValueOnce({ id: 1 });
+    mockDb.occupationalProgram.update.mockResolvedValueOnce({});
+    mockDb.occupationalProgram.findUniqueOrThrow.mockResolvedValueOnce({ id: 1 });
+    await attestRiohs(1, "  Art. 154 RIOHS  ", 7);
+    expect(mockDb.occupationalProgram.update).toHaveBeenCalledWith({
+      where: { id: 1 },
+      data: expect.objectContaining({ riohsAttested: true, riohsClauseRef: "Art. 154 RIOHS" }),
+    });
+  });
+});
+
 describe("serializeBatch — supresión por cohorte mínima (k-anonimato)", () => {
   const base = {
     id: 9,
@@ -59,9 +78,10 @@ describe("serializeBatch — supresión por cohorte mínima (k-anonimato)", () =
     createdAt: new Date("2026-03-01T00:00:00.000Z"),
   };
 
-  it("cohorte < 5 → suppressed, conteos null", () => {
+  it("cohorte < 5 → suppressed, conteos Y notas null (Codex P2)", () => {
     const out = serializeBatch({
       ...base,
+      notes: "1 presuntivo — Juan P.",
       totalTested: 4,
       passedCount: 4,
       presumptivePositiveCount: 0,
@@ -70,6 +90,7 @@ describe("serializeBatch — supresión por cohorte mínima (k-anonimato)", () =
     expect(out.totalTested).toBeNull();
     expect(out.passedCount).toBeNull();
     expect(out.presumptivePositiveCount).toBeNull();
+    expect(out.notes).toBeNull();
   });
 
   it("cohorte ≥ 5 → conteos visibles", () => {

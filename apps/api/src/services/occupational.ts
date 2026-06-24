@@ -125,7 +125,9 @@ export function serializeProgram(p: ProgramRow) {
   };
 }
 
-// Supresión por cohorte mínima: bajo el umbral, no se devuelven conteos.
+// Supresión por cohorte mínima: bajo el umbral, no se devuelven conteos NI las
+// notas libres (una nota podría contener PHI — nombre, "1 presuntivo" — y
+// burlar el k-anonimato que este endpoint intenta imponer).
 export function serializeBatch(b: BatchRow) {
   const suppressed = b.totalTested < MIN_COHORT;
   return {
@@ -136,7 +138,7 @@ export function serializeBatch(b: BatchRow) {
     totalTested: suppressed ? null : b.totalTested,
     passedCount: suppressed ? null : b.passedCount,
     presumptivePositiveCount: suppressed ? null : b.presumptivePositiveCount,
-    notes: b.notes,
+    notes: suppressed ? null : b.notes,
     createdAt: b.createdAt,
   };
 }
@@ -190,13 +192,23 @@ export async function updateProgram(input: UpdateOccupationalProgramInput) {
 
 /** Atestación RIOHS del cliente — precondición para activar el programa. */
 export async function attestRiohs(id: number, riohsClauseRef: string, attestedBy: number | null) {
+  // El contrato valida `min(1)` ANTES del trim → un caller directo podría enviar
+  // solo espacios y dejar la cláusula vacía con riohsAttested=true, burlando el
+  // gate legal. Rechazar la atestación en blanco (defense-in-depth).
+  const ref = riohsClauseRef.trim();
+  if (!ref) {
+    throw new DomainError(
+      "BAD_REQUEST",
+      "La referencia de la cláusula RIOHS no puede estar vacía."
+    );
+  }
   const existing = await db.occupationalProgram.findUnique({ where: { id } });
   if (!existing) throw new DomainError("NOT_FOUND", "Programa no encontrado");
   await db.occupationalProgram.update({
     where: { id },
     data: {
       riohsAttested: true,
-      riohsClauseRef: riohsClauseRef.trim(),
+      riohsClauseRef: ref,
       riohsAttestedAt: new Date(),
       riohsAttestedBy: attestedBy,
     },
