@@ -44,13 +44,31 @@ jobs:
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v6
         with: { node-version: "${{ env.NODE_VERSION }}", cache: pnpm }
+      # Turbo remote cache ($0, GitHub Actions Cache backend) → intranet build
+      # HITs the cache instead of cold-compiling. SHA-pinned 3rd-party action.
+      - name: Turbo remote cache
+        uses: rharkor/caching-for-turbo@75f8ebf4a43d2c60b23bc2a27082cfea94ffdad9 # v2.5.0
       - run: pnpm install --frozen-lockfile
 
       - name: Build intranet (preview server target)
         run: pnpm turbo run build --filter=@finanzas/intranet
 
-      - name: Install browsers
-        run: pnpm -F @finanzas/intranet exec playwright install --with-deps chromium webkit
+      # Cache the Chromium + WebKit download (version-keyed); apt system deps
+      # live in the runner image so install-deps always runs.
+      - name: Resolve Playwright version
+        id: pw
+        run: echo "version=$(pnpm -F @finanzas/intranet exec playwright --version | awk '{print $NF}')" >> "$GITHUB_OUTPUT"
+      - name: Cache Playwright browsers
+        id: pw-cache
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ steps.pw.outputs.version }}-chromium-webkit
+      - name: Install Playwright system deps
+        run: pnpm -F @finanzas/intranet exec playwright install-deps chromium webkit
+      - name: Install browsers (cache miss only)
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+        run: pnpm -F @finanzas/intranet exec playwright install chromium webkit
 
       - name: Update snapshots
         env:

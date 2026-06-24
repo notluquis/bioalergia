@@ -62,19 +62,23 @@ jobs:
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v6
         with: { node-version: 26, cache: pnpm }
+      # Turbo remote cache ($0, GitHub Actions Cache backend). The dist builds
+      # below now HIT the cache produced by ci.yml / a prior run instead of
+      # cold-compiling every time. SHA-pinned 3rd-party action.
+      - name: Turbo remote cache
+        uses: rharkor/caching-for-turbo@75f8ebf4a43d2c60b23bc2a27082cfea94ffdad9 # v2.5.0
       - run: pnpm install --frozen-lockfile
 
-      # orpc-contracts dist (api imports @finanzas/orpc-contracts at runtime;
-      # without this the api webServer + seed-e2e-user crash with
-      # ERR_MODULE_NOT_FOUND on dist/index.js).
-      - run: pnpm -F @finanzas/orpc-contracts build
-
-      # db .mjs (api/intranet import it) + fresh schema via db push (NOT
-      # migrate deploy — the rebaseline migration assumes existing tables;
-      # db push is correct for a throwaway DB) + synthetic faker data.
-      - run: pnpm -F @finanzas/db build
-      # api importa @finanzas/social-render desde dist .mjs al bootear nativo.
-      - run: pnpm -F @finanzas/social-render build
+      # Dist the api/intranet need before boot, built via turbo (not `pnpm -F`)
+      # so they HIT the remote cache:
+      #   - orpc-contracts: api imports it at runtime (ERR_MODULE_NOT_FOUND on
+      #     dist/index.js without it).
+      #   - db: .mjs the api/intranet import.
+      #   - social-render: api importa su dist .mjs al bootear nativo.
+      # Fresh schema via db push (NOT migrate deploy — the rebaseline migration
+      # assumes existing tables; db push is correct for a throwaway DB) +
+      # synthetic faker data.
+      - run: pnpm turbo run build --filter=@finanzas/orpc-contracts --filter=@finanzas/db --filter=@finanzas/social-render
       - run: pnpm -F @finanzas/db db:push
       - run: pnpm -F @finanzas/db seed:synthetic
 
@@ -109,14 +113,29 @@ jobs:
             -f apps/api/scripts/setup-postgres-readonly-role.sql
           echo "DATABASE_URL_READONLY=postgres://e2e_readonly:${E2E_RO_PASS}@localhost:5432/bioalergia_e2e" >> "$GITHUB_ENV"
 
-      # Production SPA bundle (preview serves dist/).
-      - run: pnpm -F @finanzas/intranet build
+      # Production SPA bundle (preview serves dist/). Via turbo → cache HIT.
+      - run: pnpm turbo run build --filter=@finanzas/intranet
 
       # Playwright boots api(:4000)+preview(:4173) via its webServer array
       # (HERMETIC=true because DATABASE_URL is set and E2E_BASE_URL is not).
       # The api webServer reads DATABASE_URL_READONLY → DATABASE_URL fallback
       # in playwright.config.ts, so the booted api connects as e2e_readonly.
-      - run: pnpm -F @finanzas/intranet exec playwright install --with-deps chromium webkit
+      # Cache the Chromium + WebKit download (version-keyed); apt system deps
+      # live in the runner image so install-deps always runs.
+      - name: Resolve Playwright version
+        id: pw
+        run: echo "version=$(pnpm -F @finanzas/intranet exec playwright --version | awk '{print $NF}')" >> "$GITHUB_OUTPUT"
+      - name: Cache Playwright browsers
+        id: pw-cache
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ steps.pw.outputs.version }}-chromium-webkit
+      - name: Install Playwright system deps
+        run: pnpm -F @finanzas/intranet exec playwright install-deps chromium webkit
+      - name: Install browsers (cache miss only)
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+        run: pnpm -F @finanzas/intranet exec playwright install chromium webkit
 
       # Default PR/dispatch run: full hermetic suite. RUN_SNAPSHOTS unset →
       # route-snapshots.spec is IGNORED (non-blocking until Linux baselines
