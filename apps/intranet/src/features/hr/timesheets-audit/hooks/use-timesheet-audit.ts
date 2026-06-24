@@ -1,10 +1,11 @@
 /**
  * Hook for managing timesheet audit state and data fetching
  */
+import { formatChile } from "@/lib/dates";
 import { useQuery } from "@tanstack/react-query";
-import dayjs from "dayjs";
 import { useMemo } from "react";
 import { fetchMultiEmployeeTimesheets } from "../api";
+import { timesheetAuditKeys } from "../queries";
 import type { TimesheetEntryWithEmployee } from "../types";
 
 export interface AuditDateRange {
@@ -40,12 +41,12 @@ export function useTimesheetAudit({ employeeIds, ranges }: UseTimesheetAuditOpti
       }
       const data = await fetchMultiEmployeeTimesheets(
         employeeIds,
-        dayjs(firstDay).format("YYYY-MM-DD"),
-        dayjs(lastDay).format("YYYY-MM-DD")
+        formatChile(firstDay, "YYYY-MM-DD"),
+        formatChile(lastDay, "YYYY-MM-DD")
       );
       return filterAuditEntries(data, sortedRanges);
     },
-    queryKey: ["timesheet-audit", employeeIds, firstDay, lastDay, sortedRanges],
+    queryKey: timesheetAuditKeys.audit(employeeIds, firstDay, lastDay, sortedRanges),
   });
 
   return { entries: entries, error, isLoading };
@@ -56,7 +57,7 @@ function filterAuditEntries(data: TimesheetEntryWithEmployee[], ranges: AuditDat
 }
 
 function isWithinRange(date: string, range: AuditDateRange) {
-  const startKey = dayjs(range.start).format("YYYY-MM-DD");
-  const endKey = dayjs(range.end).format("YYYY-MM-DD");
+  const startKey = formatChile(range.start, "YYYY-MM-DD");
+  const endKey = formatChile(range.end, "YYYY-MM-DD");
   return date >= startKey && date <= endKey;
 }

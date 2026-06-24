@@ -1,20 +1,13 @@
 import { skipToken, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearch } from "@tanstack/react-router";
-import dayjs from "dayjs";
 import { type Dispatch, type SetStateAction, useState } from "react";
-import { useSettings } from "@/context/SettingsContext";
+import { useSettings } from "@/features/settings/hooks/use-settings";
 import { useToast } from "@/context/ToastContext";
-import { today } from "@/lib/dates";
+import { civilNoon, today } from "@/lib/dates";
 import { fetchCalendarSyncLogs, syncCalendarEvents } from "../api";
 import { calendarQueries, calendarSyncQueries } from "../queries";
-import {
-  type CalendarFilters,
-  type CalendarSearchParams,
-  type CalendarSyncLog,
-  type CalendarSyncStep,
-  calendarSearchSchema,
-} from "../types";
-import { computeDefaultFilters, normalizeFilters } from "../utils/filters";
+import { type CalendarSyncLog, type CalendarSyncStep, calendarSearchSchema } from "../types";
+import { computeDefaultFilters, deriveEffectiveFilters, normalizeFilters } from "../utils/filters";
 
 type SyncProgressEntry = CalendarSyncStep & { status: SyncProgressStatus };
 
@@ -40,8 +33,8 @@ const hasFreshRunningSync = (logs: CalendarSyncLog[] | undefined) => {
     if (!log.startedAt) {
       return false;
     }
-    const started = dayjs(log.startedAt);
-    return started.isValid() && Date.now() - started.valueOf() < STALE_SYNC_WINDOW_MS;
+    const started = new Date(log.startedAt).getTime();
+    return !Number.isNaN(started) && Date.now() - started < STALE_SYNC_WINDOW_MS;
   });
 };
 
@@ -55,43 +48,6 @@ const resolveRefetchInterval = (logs: CalendarSyncLog[] | undefined): number | u
 };
 
 const markAllAsError = (entries: SyncProgressEntry[]) => entries.map((e) => markEntryAsError(e));
-
-function deriveEffectiveFilters(
-  search: CalendarSearchParams,
-  filters: CalendarFilters
-): CalendarFilters {
-  const dateParam = search.date ? dayjs(search.date, "YYYY-MM-DD") : null;
-  const maxDaysRaw = search.maxDays ?? filters.maxDays;
-  const maxDays =
-    Number.isFinite(maxDaysRaw) && maxDaysRaw > 0 ? Math.min(Math.floor(maxDaysRaw), 120) : 31;
-
-  const dateWindow = dateParam?.isValid()
-    ? (() => {
-        const half = Math.floor((maxDays - 1) / 2);
-        const from = dateParam.subtract(half, "day").format("YYYY-MM-DD");
-        const to = dateParam.add(maxDays - half - 1, "day").format("YYYY-MM-DD");
-        return { from, to };
-      })()
-    : null;
-
-  const routeFrom = search.from ?? (dateWindow ? dateWindow.from : filters.from);
-  const routeTo = search.to ?? (dateWindow ? dateWindow.to : filters.to);
-
-  return {
-    beneficiaryRut: search.beneficiaryRut ?? filters.beneficiaryRut,
-    calendarIds: search.calendarId ?? filters.calendarIds,
-    categories: search.category?.length ? search.category : filters.categories,
-    clinicalSeriesId: search.clinicalSeriesId ?? filters.clinicalSeriesId,
-    from: routeFrom,
-    maxDays,
-    patientName: search.patientName ?? filters.patientName,
-    patientRut: search.patientRut ?? filters.patientRut,
-    search: search.search ?? filters.search,
-    seriesKind: search.seriesKind ?? filters.seriesKind,
-    seriesStatus: search.seriesStatus ?? filters.seriesStatus,
-    to: routeTo,
-  };
-}
 
 async function processSyncPollTick(params: {
   logId: number;
@@ -203,23 +159,25 @@ function useCalendarSync(queryClient: ReturnType<typeof useQueryClient>) {
     let pollCount = 0;
     const maxPolls = 60; // 5 minutes max (5s interval)
 
-    const pollInterval = setInterval(async () => {
-      pollCount++;
-      const keepPolling = await processSyncPollTick({
-        logId,
-        maxPolls,
-        pollCount,
-        queryClient,
-        setLastSyncInfo,
-        setSyncDurationMs,
-        setSyncError,
-        setSyncProgress,
-        setSyncing,
-        showError,
-      });
-      if (!keepPolling) {
-        clearInterval(pollInterval);
-      }
+    const pollInterval = setInterval(() => {
+      void (async () => {
+        pollCount++;
+        const keepPolling = await processSyncPollTick({
+          logId,
+          maxPolls,
+          pollCount,
+          queryClient,
+          setLastSyncInfo,
+          setSyncDurationMs,
+          setSyncError,
+          setSyncProgress,
+          setSyncing,
+          showError,
+        });
+        if (!keepPolling) {
+          clearInterval(pollInterval);
+        }
+      })();
     }, 5000); // Poll every 5 seconds
   };
 
@@ -335,7 +293,9 @@ export function useCalendarEvents(options?: { enabled?: boolean }) {
 
   // Display date defaults to today (unless explicitly set via URL param)
   // This is separate from the data range (from/to) which buffers -2 weeks for performance
-  const currentSelectedDate = dayjs(search.date ?? today(), "YYYY-MM-DD").toDate();
+  const selectedISO =
+    search.date && /^\d{4}-\d{2}-\d{2}$/.test(search.date) ? search.date : today();
+  const currentSelectedDate = civilNoon(selectedISO);
   const availableCalendars = summary?.available.calendars ?? [];
   const availableCategories = summary?.available.categories ?? [];
 

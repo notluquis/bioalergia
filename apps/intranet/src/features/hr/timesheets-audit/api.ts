@@ -3,21 +3,9 @@
  */
 
 import { z } from "zod";
-import { timesheetListEntrySchema } from "@finanzas/orpc-contracts/timesheets";
-import { zDateString } from "@/lib/api-validate";
+import { TimesheetEntryWithEmployeeSchema, normalizeTimesheetEntry } from "../timesheets/schemas";
 import { timesheetsORPCClient, toTimesheetsApiError } from "../timesheets/orpc";
 import type { TimesheetEntryWithEmployee } from "./types";
-
-type TimesheetDetailTransport = z.infer<typeof timesheetListEntrySchema>;
-
-function normalizeTimesheetEntry(entry: TimesheetDetailTransport) {
-  const workDate = entry.work_date;
-  return {
-    ...entry,
-    work_date:
-      workDate instanceof Date ? workDate.toISOString().slice(0, 10) : (workDate as string),
-  };
-}
 
 /**
  * Fetch timesheet entries for multiple employees in a date range
@@ -41,20 +29,7 @@ export async function fetchMultiEmployeeTimesheets(
     });
     response = z
       .object({
-        entries: z.array(
-          z.looseObject({
-            comment: z.string().nullable(),
-            employee_id: z.number(),
-            employee_name: z.string(),
-            employee_role: z.string().nullable(),
-            end_time: z.string(),
-            id: z.number(),
-            overtime_minutes: z.number(),
-            start_time: z.string(),
-            work_date: zDateString,
-            worked_minutes: z.number(),
-          })
-        ),
+        entries: z.array(TimesheetEntryWithEmployeeSchema),
       })
       .parse({
         entries: data.entries.map((entry) => normalizeTimesheetEntry(entry)),

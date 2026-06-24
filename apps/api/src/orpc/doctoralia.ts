@@ -5,7 +5,8 @@ import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
 import { z } from "zod";
-import { getSessionUser, hasPermission } from "../auth.ts";
+import { getSessionUser, hasPermission } from "../lib/auth.ts";
+import type { DoctoraliaCalendarResponse } from "../lib/doctoralia/doctoralia-calendar-types.ts";
 import {
   getDoctoraliaImapListenerStatus,
   runDoctoraliaImapIngestOnce,
@@ -395,7 +396,7 @@ const doctoraliaORPCRouterBase = {
           process.env.DOCTORALIA_CALENDAR_APPOINTMENTS_REFRESH_MS || "120000"
         );
         const { runDoctoraliaCalendarAutoSync } =
-          await import("../lib/doctoralia/doctoralia-calendar-scheduler.ts");
+          await import("../services/doctoralia-calendar-scheduler.ts");
         const { getSetting } = await import("../services/settings.ts");
         const lastSuccessAtRaw = await getSetting("doctoralia:calendar:lastSuccessAt");
         const lastSuccessAt = lastSuccessAtRaw ? new Date(lastSuccessAtRaw).getTime() : 0;
@@ -435,11 +436,13 @@ const doctoraliaORPCRouterBase = {
         },
         orderBy: [{ startAt: "asc" }],
         select: {
+          attendance: true,
           colorSchemaId: true,
           comments: true,
           duration: true,
           endAt: true,
           eventServices: true,
+          followUpDate: true,
           eventType: true,
           externalId: true,
           hasPatient: true,
@@ -488,7 +491,7 @@ const doctoraliaORPCRouterBase = {
       const entries = input.entries as Array<{
         ts?: string;
         src?: string;
-        data: import("../lib/doctoralia/doctoralia-calendar-types.ts").DoctoraliaCalendarResponse;
+        data: DoctoraliaCalendarResponse;
       }>;
 
       const result = await doctoraliaCalendarSyncService.importFromJsonEntries(entries);
@@ -642,11 +645,13 @@ const doctoraliaORPCRouterBase = {
           },
           orderBy: [{ startAt: "asc" }],
           select: {
+            attendance: true,
             colorSchemaId: true,
             comments: true,
             duration: true,
             endAt: true,
             eventServices: true,
+            followUpDate: true,
             eventType: true,
             externalId: true,
             hasPatient: true,

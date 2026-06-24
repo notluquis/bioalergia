@@ -1,3 +1,4 @@
+import { formatChile } from "@/lib/dates";
 import {
   Alert,
   Button,
@@ -9,16 +10,15 @@ import {
   Description,
   FieldError,
   Form,
-  Input,
   Label,
-  Modal,
+  NumberField,
   TextArea,
   TextField,
 } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import { useStore } from "@tanstack/react-store";
-import dayjs from "dayjs";
 import { useState } from "react";
+import { AppModal } from "@/components/ui/AppModal";
 import { EditScheduleModal } from "@/features/services/components/EditScheduleModal";
 import { ServiceDetail } from "@/features/services/components/ServiceDetail";
 import { ServiceForm } from "@/features/services/components/ServiceForm";
@@ -29,6 +29,17 @@ import { useServicesOverview } from "@/features/services/hooks/use-services-over
 import { servicesActions, servicesStore } from "@/features/services/store";
 import { currencyFormatter, numberFormatter } from "@/lib/format";
 import { TITLE_MD } from "@/lib/styles";
+
+// Services operate in CLP (no per-service currency field) → amounts have no
+// decimals. Mirror lib/utils.ts::formatCurrency for CLP.
+const CLP_FORMAT_OPTIONS: Intl.NumberFormatOptions = {
+  style: "currency",
+  currency: "CLP",
+  currencyDisplay: "symbol",
+  maximumFractionDigits: 0,
+  minimumFractionDigits: 0,
+};
+
 export function ServicesOverviewContent() {
   const [syncError, setSyncError] = useState<null | string>(null);
   const [syncMessage, setSyncMessage] = useState<null | string>(null);
@@ -136,19 +147,21 @@ export function ServicesOverviewContent() {
           {canManage && (
             <Button
               isDisabled={syncAllTransactionsPending}
-              onPress={async () => {
-                setSyncError(null);
-                setSyncMessage(null);
-                try {
-                  const result = await handleSyncAllTransactions();
-                  setSyncMessage(
-                    `Sync servicios: ${result.matchedSchedules} vinculadas de ${result.processedSchedules} cuotas.`
-                  );
-                } catch (error_) {
-                  const message =
-                    error_ instanceof Error ? error_.message : "No se pudo sincronizar servicios";
-                  setSyncError(message);
-                }
+              onPress={() => {
+                void (async () => {
+                  setSyncError(null);
+                  setSyncMessage(null);
+                  try {
+                    const result = await handleSyncAllTransactions();
+                    setSyncMessage(
+                      `Sync servicios: ${result.matchedSchedules} vinculadas de ${result.processedSchedules} cuotas.`
+                    );
+                  } catch (error_) {
+                    const message =
+                      error_ instanceof Error ? error_.message : "No se pudo sincronizar servicios";
+                    setSyncError(message);
+                  }
+                })();
               }}
               size="sm"
               variant="secondary"
@@ -222,24 +235,26 @@ export function ServicesOverviewContent() {
             <div className="flex justify-end">
               <Button
                 isDisabled={syncServiceTransactionsPending}
-                onPress={async () => {
-                  setSyncError(null);
-                  setSyncMessage(null);
-                  try {
-                    const result = await handleSyncSelectedServiceTransactions();
-                    if (!result) {
-                      return;
+                onPress={() => {
+                  void (async () => {
+                    setSyncError(null);
+                    setSyncMessage(null);
+                    try {
+                      const result = await handleSyncSelectedServiceTransactions();
+                      if (!result) {
+                        return;
+                      }
+                      setSyncMessage(
+                        `Sync ${selectedService.name}: ${result.matchedSchedules} vinculadas de ${result.processedSchedules} cuotas.`
+                      );
+                    } catch (error_) {
+                      const message =
+                        error_ instanceof Error
+                          ? error_.message
+                          : "No se pudo sincronizar el servicio";
+                      setSyncError(message);
                     }
-                    setSyncMessage(
-                      `Sync ${selectedService.name}: ${result.matchedSchedules} vinculadas de ${result.processedSchedules} cuotas.`
-                    );
-                  } catch (error_) {
-                    const message =
-                      error_ instanceof Error
-                        ? error_.message
-                        : "No se pudo sincronizar el servicio";
-                    setSyncError(message);
-                  }
+                  })();
                 }}
                 size="sm"
                 variant="secondary"
@@ -255,173 +270,168 @@ export function ServicesOverviewContent() {
             onRegenerate={handleRegenerate}
             onRegisterPayment={openPaymentModal}
             onSkipSchedule={(schedule) => handleSkipSchedule(selectedService.publicId, schedule)}
-            onUnlinkPayment={handleUnlink}
+            onUnlinkPayment={(...args) => {
+              void handleUnlink(...args);
+            }}
             schedules={schedules}
             service={selectedService}
           />
         </div>
       )}
 
-      <Modal.Backdrop isOpen={createOpen} onOpenChange={(open) => !open && closeCreateModal()}>
-        <Modal.Container placement="center">
-          <Modal.Dialog className="sm:max-w-2xl">
-            <Modal.CloseTrigger />
-            <Modal.Header>
-              <Modal.Heading>Nuevo servicio</Modal.Heading>
-            </Modal.Header>
-            <Modal.Body>
-              <ServiceForm
-                initialValues={selectedTemplate?.payload}
-                onCancel={closeCreateModal}
-                onSubmit={async (payload) => {
-                  await handleCreateService(payload);
-                }}
-                submitLabel="Crear servicio"
-              />
+      <AppModal isOpen={createOpen} onClose={closeCreateModal} size="lg" title="Nuevo servicio">
+        <ServiceForm
+          initialValues={selectedTemplate?.payload}
+          onCancel={closeCreateModal}
+          onSubmit={async (payload) => {
+            await handleCreateService(payload);
+          }}
+          submitLabel="Crear servicio"
+        />
 
-              {createError && (
-                <Description className="mt-4 rounded-lg bg-rose-100 px-4 py-2 text-rose-700 text-sm">
-                  {createError}
-                </Description>
-              )}
-            </Modal.Body>
-          </Modal.Dialog>
-        </Modal.Container>
-      </Modal.Backdrop>
+        {createError && (
+          <Description className="mt-4 rounded-lg bg-rose-100 px-4 py-2 text-rose-700 text-sm">
+            {createError}
+          </Description>
+        )}
+      </AppModal>
 
-      <Modal.Backdrop
+      <AppModal
         isOpen={Boolean(paymentSchedule)}
-        onOpenChange={(open) => !open && closePaymentModal()}
+        onClose={closePaymentModal}
+        size="md"
+        title={
+          paymentSchedule
+            ? `Registrar pago ${formatChile(paymentSchedule.periodStart, "MMM YYYY")}`
+            : "Registrar pago"
+        }
+        footer={
+          paymentSchedule ? (
+            <>
+              <Button
+                isDisabled={processingPayment}
+                onPress={closePaymentModal}
+                variant="secondary"
+              >
+                Cancelar
+              </Button>
+              <Button form="register-payment-form" isDisabled={processingPayment} type="submit">
+                {processingPayment ? "Registrando..." : "Registrar pago"}
+              </Button>
+            </>
+          ) : undefined
+        }
       >
-        <Modal.Container placement="center">
-          <Modal.Dialog className="sm:max-w-125">
-            <Modal.CloseTrigger />
-            <Modal.Header>
-              <Modal.Heading>
-                {paymentSchedule
-                  ? `Registrar pago ${dayjs(paymentSchedule.periodStart).format("MMM YYYY")}`
-                  : "Registrar pago"}
-              </Modal.Heading>
-            </Modal.Header>
-            <Modal.Body>
-              {paymentSchedule && (
-                <Form
-                  className="space-y-4"
-                  onSubmit={handlePaymentSubmit}
-                  validationBehavior="aria"
-                >
-                  <TextField isRequired name="transactionId">
-                    <Label>ID transacción</Label>
-                    <Input
-                      onChange={(event) => {
-                        handlePaymentFieldChange("transactionId", event.target.value);
-                      }}
-                      type="number"
-                      value={paymentForm.transactionId}
-                    />
-                    <FieldError />
-                  </TextField>
+        {paymentSchedule && (
+          <Form
+            className="space-y-4"
+            id="register-payment-form"
+            onSubmit={(e) => {
+              void handlePaymentSubmit(e);
+            }}
+            validationBehavior="aria"
+          >
+            <NumberField
+              isRequired
+              minValue={1}
+              name="transactionId"
+              onChange={(value) => {
+                handlePaymentFieldChange("transactionId", Number.isNaN(value) ? "" : String(value));
+              }}
+              value={paymentForm.transactionId ? Number(paymentForm.transactionId) : Number.NaN}
+            >
+              <Label>ID transacción</Label>
+              <NumberField.Group className="grid-cols-1">
+                <NumberField.Input />
+              </NumberField.Group>
+              <FieldError />
+            </NumberField>
 
-                  <TextField isRequired name="paidAmount">
-                    <Label>Monto pagado</Label>
-                    <Input
-                      min={0}
-                      onChange={(event) => {
-                        handlePaymentFieldChange("paidAmount", event.target.value);
-                      }}
-                      step="0.01"
-                      type="number"
-                      value={paymentForm.paidAmount}
-                    />
-                    <FieldError />
-                  </TextField>
+            <NumberField
+              formatOptions={CLP_FORMAT_OPTIONS}
+              isRequired
+              minValue={0}
+              name="paidAmount"
+              onChange={(value) => {
+                handlePaymentFieldChange("paidAmount", Number.isNaN(value) ? "" : String(value));
+              }}
+              value={paymentForm.paidAmount ? Number(paymentForm.paidAmount) : Number.NaN}
+            >
+              <Label>Monto pagado</Label>
+              <NumberField.Group className="grid-cols-1">
+                <NumberField.Input />
+              </NumberField.Group>
+              <FieldError />
+            </NumberField>
 
-                  <DatePicker
-                    isRequired
-                    name="paidDate"
-                    onChange={(value) => {
-                      handlePaymentFieldChange("paidDate", value?.toString() ?? "");
-                    }}
-                    value={parseDate(dayjs(paymentForm.paidDate).format("YYYY-MM-DD"))}
-                  >
-                    <Label>Fecha de pago</Label>
-                    <DateField.Group>
-                      <DateField.InputContainer>
-                        <DateField.Input>
-                          {(segment) => <DateField.Segment segment={segment} />}
-                        </DateField.Input>
-                      </DateField.InputContainer>
-                      <DateField.Suffix>
-                        <DatePicker.Trigger>
-                          <DatePicker.TriggerIndicator />
-                        </DatePicker.Trigger>
-                      </DateField.Suffix>
-                    </DateField.Group>
-                    <FieldError />
-                    <DatePicker.Popover>
-                      <Calendar aria-label="Fecha de pago">
-                        <Calendar.Header>
-                          <Calendar.YearPickerTrigger>
-                            <Calendar.YearPickerTriggerHeading />
-                            <Calendar.YearPickerTriggerIndicator />
-                          </Calendar.YearPickerTrigger>
-                          <Calendar.NavButton slot="previous" />
-                          <Calendar.NavButton slot="next" />
-                        </Calendar.Header>
-                        <Calendar.Grid>
-                          <Calendar.GridHeader>
-                            {(day) => <Calendar.HeaderCell>{day}</Calendar.HeaderCell>}
-                          </Calendar.GridHeader>
-                          <Calendar.GridBody>
-                            {(date) => <Calendar.Cell date={date} />}
-                          </Calendar.GridBody>
-                        </Calendar.Grid>
-                        <Calendar.YearPickerGrid>
-                          <Calendar.YearPickerGridBody>
-                            {({ year }) => <Calendar.YearPickerCell year={year} />}
-                          </Calendar.YearPickerGridBody>
-                        </Calendar.YearPickerGrid>
-                      </Calendar>
-                    </DatePicker.Popover>
-                  </DatePicker>
+            <DatePicker
+              isRequired
+              name="paidDate"
+              onChange={(value) => {
+                handlePaymentFieldChange("paidDate", value?.toString() ?? "");
+              }}
+              value={parseDate(formatChile(paymentForm.paidDate, "YYYY-MM-DD"))}
+            >
+              <Label>Fecha de pago</Label>
+              <DateField.Group>
+                <DateField.InputContainer>
+                  <DateField.Input>
+                    {(segment) => <DateField.Segment segment={segment} />}
+                  </DateField.Input>
+                </DateField.InputContainer>
+                <DateField.Suffix>
+                  <DatePicker.Trigger>
+                    <DatePicker.TriggerIndicator />
+                  </DatePicker.Trigger>
+                </DateField.Suffix>
+              </DateField.Group>
+              <FieldError />
+              <DatePicker.Popover>
+                <Calendar aria-label="Fecha de pago">
+                  <Calendar.Header>
+                    <Calendar.YearPickerTrigger>
+                      <Calendar.YearPickerTriggerHeading />
+                      <Calendar.YearPickerTriggerIndicator />
+                    </Calendar.YearPickerTrigger>
+                    <Calendar.NavButton slot="previous" />
+                    <Calendar.NavButton slot="next" />
+                  </Calendar.Header>
+                  <Calendar.Grid>
+                    <Calendar.GridHeader>
+                      {(day) => <Calendar.HeaderCell>{day}</Calendar.HeaderCell>}
+                    </Calendar.GridHeader>
+                    <Calendar.GridBody>{(date) => <Calendar.Cell date={date} />}</Calendar.GridBody>
+                  </Calendar.Grid>
+                  <Calendar.YearPickerGrid>
+                    <Calendar.YearPickerGridBody>
+                      {({ year }) => <Calendar.YearPickerCell year={year} />}
+                    </Calendar.YearPickerGridBody>
+                  </Calendar.YearPickerGrid>
+                </Calendar>
+              </DatePicker.Popover>
+            </DatePicker>
 
-                  <TextField name="note">
-                    <Label>Nota</Label>
-                    <TextArea
-                      name="note"
-                      onChange={(event) => {
-                        handlePaymentFieldChange("note", event.target.value);
-                      }}
-                      rows={2}
-                      value={paymentForm.note}
-                      variant="secondary"
-                    />
-                  </TextField>
+            <TextField name="note">
+              <Label>Nota</Label>
+              <TextArea
+                name="note"
+                onChange={(event) => {
+                  handlePaymentFieldChange("note", event.target.value);
+                }}
+                rows={2}
+                value={paymentForm.note}
+                variant="secondary"
+              />
+            </TextField>
 
-                  {paymentError && (
-                    <Description className="rounded-lg bg-rose-100 px-4 py-2 text-rose-700 text-sm">
-                      {paymentError}
-                    </Description>
-                  )}
-                  <div className="flex justify-end gap-3">
-                    <Button
-                      isDisabled={processingPayment}
-                      slot="close"
-                      type="button"
-                      variant="secondary"
-                    >
-                      Cancelar
-                    </Button>
-                    <Button isDisabled={processingPayment} type="submit">
-                      {processingPayment ? "Registrando..." : "Registrar pago"}
-                    </Button>
-                  </div>
-                </Form>
-              )}
-            </Modal.Body>
-          </Modal.Dialog>
-        </Modal.Container>
-      </Modal.Backdrop>
+            {paymentError && (
+              <Description className="rounded-lg bg-rose-100 px-4 py-2 text-rose-700 text-sm">
+                {paymentError}
+              </Description>
+            )}
+          </Form>
+        )}
+      </AppModal>
 
       <EditScheduleModal
         isOpen={editScheduleOpen}

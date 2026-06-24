@@ -9,7 +9,7 @@ interface CompleteStepProps {
 export function CompleteStep({ onFinish, isLoading }: CompleteStepProps) {
   return (
     <div className="space-y-6 py-8 text-center">
-      <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-success/10 text-success">
+      <div className="mx-auto flex items-center justify-center rounded-full bg-success/10 text-success size-24">
         <Check size={48} strokeWidth={3} />
       </div>
       <div>

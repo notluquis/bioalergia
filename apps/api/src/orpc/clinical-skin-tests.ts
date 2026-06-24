@@ -2,16 +2,6 @@ import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import {
   clinicalDocumentsBySeriesOutputSchema,
-  oneDriveAuthUrlInputSchema,
-  oneDriveCallbackInputSchema,
-  oneDriveDisconnectInputSchema,
-  oneDriveDisconnectOutputSchema,
-  oneDriveFolderChildrenInputSchema,
-  oneDriveFolderChildrenOutputSchema,
-  oneDriveFolderInputSchema,
-  oneDriveFolderPreviewInputSchema,
-  oneDriveFolderPreviewOutputSchema,
-  oneDriveStatusOutputSchema,
   skinTestAnalyticsInputSchema,
   skinTestAnalyticsOutputSchema,
   skinTestArchiveSnapshotsInputSchema,
@@ -38,29 +28,22 @@ import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
 import { z } from "zod";
-import { getSessionUser, hasPermission } from "../auth.ts";
+import { getSessionUser, hasPermission } from "../lib/auth.ts";
 import {
   startClinicalSkinTestArchiveSnapshotsJob,
   startClinicalSkinTestImportJob,
   startClinicalSkinTestProcessDiscoveredJob,
+  startClinicalSkinTestReconcileStaleJob,
   startClinicalSkinTestReprocessPendingJob,
   startClinicalXlsxLibraryReclassifyJob,
-} from "../lib/clinical-skin-tests/clinical-skin-test-scheduler.ts";
+} from "../services/clinical-skin-test-scheduler.ts";
 import { cancelJob, getActiveJobsByType, getJobStatus } from "../lib/jobQueue.ts";
-import {
-  connectOneDriveWithCode,
-  disconnectOneDrive,
-  getOneDriveAuthUrl,
-  getOneDriveFolderPreview,
-  getOneDriveStatus,
-  listOneDriveFolderChildren,
-  renewOneDriveSubscriptionNow,
-  setOneDriveFolderPath,
-} from "../lib/microsoft/onedrive.ts";
 import { logError } from "../lib/logger.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
 import {
   approveSkinTestImport,
+  countStaleClinicalDocumentImports,
+  countStaleSkinTestImports,
   getSkinTestAnalytics,
   getSkinTestImportJobType,
   getSkinTestImport,
@@ -129,83 +112,6 @@ const routerBase = {
         return await approveSkinTestImport(input.id, context.user.id, input.notes);
       }
     ),
-
-  configureOneDriveFolder: updateClinicalSkinTests
-    .route({ method: "POST", path: "/onedrive/folder" })
-    .input(oneDriveFolderInputSchema)
-    .output(oneDriveStatusOutputSchema)
-    .handler(async ({ input }: { input: z.input<typeof oneDriveFolderInputSchema> }) => {
-      await setOneDriveFolderPath(input.accountId, {
-        driveId: input.driveId,
-        folderPath: input.folderPath,
-        itemId: input.itemId,
-        name: input.name,
-      });
-      return await getOneDriveStatus();
-    }),
-
-  listOneDriveFolderChildren: readClinicalSkinTests
-    .route({ method: "GET", path: "/onedrive/folders" })
-    .input(oneDriveFolderChildrenInputSchema)
-    .output(oneDriveFolderChildrenOutputSchema)
-    .handler(async ({ input }: { input: z.input<typeof oneDriveFolderChildrenInputSchema> }) => {
-      return await listOneDriveFolderChildren(input.accountId, {
-        driveId: input.driveId,
-        itemId: input.itemId,
-      });
-    }),
-
-  folderPreview: readClinicalSkinTests
-    .route({ method: "GET", path: "/onedrive/folder-preview" })
-    .input(oneDriveFolderPreviewInputSchema)
-    .output(oneDriveFolderPreviewOutputSchema)
-    .handler(async ({ input }: { input: z.input<typeof oneDriveFolderPreviewInputSchema> }) => {
-      return await getOneDriveFolderPreview(input.accountId, {
-        driveId: input.driveId,
-        itemId: input.itemId,
-      });
-    }),
-
-  renewOneDriveSubscription: updateClinicalSkinTests
-    .route({ method: "POST", path: "/onedrive/subscription/renew" })
-    .input(oneDriveDisconnectInputSchema)
-    .output(oneDriveStatusOutputSchema)
-    .handler(async ({ input }: { input: z.input<typeof oneDriveDisconnectInputSchema> }) => {
-      await renewOneDriveSubscriptionNow(input.accountId);
-      return await getOneDriveStatus();
-    }),
-
-  connectOneDrive: updateClinicalSkinTests
-    .route({ method: "POST", path: "/onedrive/callback" })
-    .input(oneDriveCallbackInputSchema)
-    .output(oneDriveStatusOutputSchema)
-    .handler(async ({ input }: { input: z.input<typeof oneDriveCallbackInputSchema> }) => {
-      await connectOneDriveWithCode(input.code, input.redirectUri ?? defaultRedirectUri());
-      return await getOneDriveStatus();
-    }),
-
-  disconnectOneDrive: updateClinicalSkinTests
-    .route({ method: "POST", path: "/onedrive/disconnect" })
-    .input(oneDriveDisconnectInputSchema)
-    .output(oneDriveDisconnectOutputSchema)
-    .handler(async ({ input }: { input: z.input<typeof oneDriveDisconnectInputSchema> }) => {
-      await disconnectOneDrive(input.accountId);
-      return { connected: false };
-    }),
-
-  getOneDriveAuthUrl: updateClinicalSkinTests
-    .route({ method: "GET", path: "/onedrive/auth-url" })
-    .input(oneDriveAuthUrlInputSchema)
-    .output(z.object({ url: z.string() }))
-    .handler(({ input }: { input: z.input<typeof oneDriveAuthUrlInputSchema> }) => {
-      return { url: getOneDriveAuthUrl(input.redirectUri ?? defaultRedirectUri()) };
-    }),
-
-  getOneDriveStatus: readClinicalSkinTests
-    .route({ method: "GET", path: "/onedrive/status" })
-    .input(z.object({}))
-    .output(oneDriveStatusOutputSchema)
-    .handler(async () => await getOneDriveStatus()),
 
   importDetail: readClinicalSkinTests
     .route({ method: "GET", path: "/imports/{id}" })
@@ -338,6 +244,36 @@ const routerBase = {
       };
     }),
 
+  // Count of imports whose stored OneDrive metadata drifted from the library
+  // (orphans of the rename/de-qualification bug) — drives the targeted button.
+  staleImportsCount: readClinicalSkinTests
+    .route({ method: "GET", path: "/imports/stale-count" })
+    .input(z.object({}))
+    .output(z.object({ count: z.number() }))
+    .handler(async () => {
+      // The single "Reconciliar" button heals both pipelines, so the badge counts both.
+      const [skinTests, documents] = await Promise.all([
+        countStaleSkinTestImports(),
+        countStaleClinicalDocumentImports(),
+      ]);
+      return { count: skinTests + documents };
+    }),
+
+  // Targeted heal: reconcile ONLY the desynced imports (refresh metadata, requeue
+  // still-importable ones, demote de-qualified ones). Idempotent. The existing
+  // reprocess-pending button then re-parses the requeued rows.
+  reconcileStaleImports: updateClinicalSkinTests
+    .route({ method: "POST", path: "/imports/reconcile-stale" })
+    .input(z.object({}))
+    .output(skinTestSyncOutputSchema)
+    .handler(async () => {
+      return {
+        jobId: await startClinicalSkinTestReconcileStaleJob({
+          trigger: "manual:reconcile-stale",
+        }),
+      };
+    }),
+
   archiveSnapshots: updateClinicalSkinTests
     .route({ method: "POST", path: "/imports/archive-snapshots" })
     .input(skinTestArchiveSnapshotsInputSchema)
@@ -374,13 +310,6 @@ const routerBase = {
       };
     }),
 };
-
-function defaultRedirectUri() {
-  return (
-    process.env.MICROSOFT_OAUTH_REDIRECT_URI ||
-    `${process.env.PUBLIC_URL || "http://localhost:3000"}/api/orpc/clinical-skin-tests/oauth/callback`
-  );
-}
 
 export const clinicalSkinTestsORPCRouter = base
   .prefix("/api/orpc/clinical-skin-tests")

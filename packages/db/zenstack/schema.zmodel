@@ -30,18 +30,39 @@ plugin ts {
 model Person {
   id         Int        @id @default(autoincrement())
   rut        String?    @unique @db.VarChar(20)
+  // Holding pen for the 338 historical RUTs that failed módulo 11
+  // when migration 20260512040000_rut_check_constraint enforced the
+  // CHECK constraint. The CHECK forbids invalid values in `rut`, so
+  // those rows had `rut` NULLed and the original string stashed here
+  // for operator review. Never written by application code — only by
+  // the migration. Read-only surface for the patient UI.
+  rutLegacyInvalid String? @map("rut_legacy_invalid") @db.VarChar(40)
   names      String
   fatherName String?    @map("father_name")
   motherName String?    @map("mother_name")
+  // Sexo registral (M | F | X) — requisito de receta médica (Código Sanitario
+  // Art. 101). Nullable: los pacientes históricos no lo tienen cargado.
+  sex        String?    @db.VarChar(1)
   email      String?    @unique
   phone      String?
   personType PersonType @default(NATURAL) @map("person_type")
+  // Email marketing consent (Ley 21.719). Broadcasts go ONLY to persons with
+  // emailMarketingOptIn = true AND emailUnsubscribedAt = null. Transactional
+  // mail (resets, reminders) ignores these flags — it's not marketing.
+  emailMarketingOptIn   Boolean   @default(false) @map("email_marketing_opt_in")
+  emailMarketingOptInAt DateTime? @map("email_marketing_opt_in_at")
+  emailUnsubscribedAt   DateTime? @map("email_unsubscribed_at")
+  // Per-person random token embedded in the List-Unsubscribe URL so the
+  // public one-click endpoint identifies the row without exposing id/email.
+  emailUnsubscribeToken String?   @unique @map("email_unsubscribe_token")
   createdAt  DateTime   @default(now()) @map("created_at")
   updatedAt  DateTime   @default(now()) @updatedAt @map("updated_at")
   employee   Employee?
   user       User?
   patient    Patient?
   addresses  Address[]
+  companyContacts CompanyContact[]
+  consentRecords  ConsentRecord[]
 
   // Access policies
   @@deny('all', auth() == null)
@@ -58,6 +79,9 @@ model Person {
 model Address {
   id           Int      @id @default(autoincrement())
   personId     Int      @map("person_id")
+  /// Optional direct owner (shop customer). When null, the address belongs to the
+  /// Person record (operator / patient surface). Site /mi-cuenta filters by userId.
+  userId       Int?     @map("user_id")
 
   // User input
   label        String   @default("Principal")
@@ -98,9 +122,11 @@ model Address {
   updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
 
   person       Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
+  user         User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([personId])
   @@index([personId, isPrimary])
+  @@index([userId])
 
   // Access policies — same as Person (only authenticated active users mutate)
   @@deny('all', auth() == null)
@@ -108,6 +134,28 @@ model Address {
   @@allow('create,update,delete', auth().status == 'ACTIVE')
 
   @@map("addresses")
+}
+
+/// Single-use, time-bound email link token used by the public shop /mi-cuenta
+/// passwordless flow. The plaintext token travels only in the email URL;
+/// only the SHA-256 hash is persisted. Once consumed, marked `consumedAt`.
+model MagicLinkToken {
+  id          Int       @id @default(autoincrement())
+  userId      Int       @map("user_id")
+  tokenHash   String    @unique @map("token_hash")
+  expiresAt   DateTime  @map("expires_at")
+  consumedAt  DateTime? @map("consumed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+  @@index([userId, consumedAt])
+
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+
+  @@map("magic_link_tokens")
 }
 
 model User {
@@ -128,6 +176,10 @@ model User {
   lastActivityAt          DateTime?                @map("last_activity_at")
   lastLoginAt             DateTime?                @map("last_login_at")
   lastLoginIp             String?                  @map("last_login_ip")
+  // Self-service password reset: SHA-256 hash of the one-time token sent by
+  // email + its expiry (1h). Never store the plaintext token. Cleared on use.
+  passwordResetTokenHash  String?                  @map("password_reset_token_hash")
+  passwordResetExpiresAt  DateTime?                @map("password_reset_expires_at")
 
 
   // Relationships
@@ -136,12 +188,18 @@ model User {
   createdAt               DateTime                 @default(now()) @map("created_at")
   updatedAt               DateTime                 @default(now()) @updatedAt @map("updated_at")
   mfaEnforced             Boolean                  @default(true) @map("mfa_enforced")
+  // Privacy gate for Web Push payloads carrying PHI. Default GENERIC
+  // = no sender/preview on the lock screen (Ley 21.719 + HIPAA 2026
+  // golden standard). Operators can opt-in to richer payloads from
+  // the notifications settings if their threat model allows it.
+  pushPreviewMode         WaPushPreviewMode        @default(GENERIC) @map("push_preview_mode")
 
   dailyProductionBalances DailyProductionBalance[]
   pushSubscriptions       PushSubscription[]
   supplyRequests          SupplyRequest[]
   roles                   UserRoleAssignment[]
   medicalCertificates     MedicalCertificate[]
+  medicalPrescriptions    MedicalPrescription[]
   issuedDebugTokens       DebugToken[]               @relation("DebugTokenIssuedBy")
   targetDebugTokens       DebugToken[]               @relation("DebugTokenTarget")
   patientAttachments      PatientAttachment[]
@@ -151,6 +209,12 @@ model User {
   attendanceMarkCorrections AttendanceMark[]
   abandonmentContacts     AbandonmentContact[]
   doctoraliaCookieStoreUpdates DoctoraliaCookieStore[]
+  createdExamReports      ExamReport[]               @relation("ExamReportCreator")
+  shopCarts               Cart[]
+  shopOrders              Order[]
+  shopAddresses           Address[]
+  magicLinkTokens         MagicLinkToken[]
+  createdQuotes           Quote[]                  @relation("QuoteCreatedBy")
   person                  Person                   @relation(fields: [personId], references: [id], onDelete: Cascade)
 
   // This model represents the authenticated user
@@ -381,6 +445,8 @@ model Counterpart {
   releaseTransactions    ReleaseTransaction[]
   settlementTransactions SettlementTransaction[]
   services               Service[]
+  expenseServices        ExpenseService[]
+  loans                  Loan[]
 
   // Access policies
   @@deny('all', auth() == null)
@@ -505,7 +571,20 @@ model SettlementTransaction {
   // Other wallets/banks
   poiWalletName        String?           @map("poi_wallet_name") @db.VarChar(200)
   poiBankName          String?           @map("poi_bank_name") @db.VarChar(200)
-  
+
+  // Card issuer / acquiring detail
+  merchantCategoryCode String?           @map("merchant_category_code")
+  applicationId        String?           @map("application_id")
+  segmentDetail        String?           @map("segment_detail")
+  authorizationCode    String?           @map("authorization_code")
+  cardEntryMode        String?           @map("card_entry_mode")
+  authenticatedPayer   String?           @map("authenticated_payer")
+
+  // Short dates (date-only display form from MP report)
+  transactionDateShort String?           @map("transaction_date_short")
+  settlementDateShort  String?           @map("settlement_date_short")
+  moneyReleaseDateShort String?          @map("money_release_date_short")
+
   // Metadata
   createdAt            DateTime          @default(now()) @map("created_at")
   updatedAt            DateTime          @default(now()) @updatedAt @map("updated_at")
@@ -604,6 +683,18 @@ model ReleaseTransaction {
   orderMp                 String?           @map("order_mp")
   purchaseId              String?           @map("purchase_id")
   isReleased              Boolean?          @map("is_released")
+
+  // Card issuer / acquiring detail
+  countryIssuer           String?           @map("country_issuer")
+  merchantCategoryCode    String?           @map("merchant_category_code")
+  cardEntryMode           String?           @map("card_entry_mode")
+  authorizationCode       String?           @map("authorization_code")
+  applicationId           String?           @map("application_id")
+  segmentDetail           String?           @map("segment_detail")
+
+  // Short dates (date-only display form from MP report)
+  dateShort               String?           @map("date_short")
+  transactionApprovalDateShort String?      @map("transaction_approval_date_short")
 
   createdAt               DateTime          @default(now()) @map("created_at")
   updatedAt               DateTime          @default(now()) @updatedAt @map("updated_at")
@@ -768,6 +859,8 @@ model Loan {
   title           String
   borrowerName    String         @map("borrower_name")
   borrowerType    LoanBorrowerType @map("borrower_type")
+  // Counterpart (lender / prestamista) — un mismo Counterpart puede tener varios Loans
+  counterpartId   Int?           @map("counterpart_id")
   principalAmount Decimal        @map("principal_amount") @db.Decimal(15, 2)
   interestRate    Decimal        @map("interest_rate") @db.Decimal(9, 6)
   interestType    LoanInterestType @default(SIMPLE) @map("interest_type")
@@ -776,16 +869,47 @@ model Loan {
   notes           String?
   startDate       DateTime       @map("start_date") @db.Date
   status          LoanStatus     @default(ACTIVE)
+  // scope para distinguir BIOALERGIA vs PERSONAL en consolidados
+  scope           ExpenseScope   @default(BIOALERGIA)
   createdAt       DateTime       @default(now()) @map("created_at")
   updatedAt       DateTime       @default(now()) @updatedAt @map("updated_at")
+  sources         LoanSource[]
   schedules       LoanSchedule[]
+  counterpart     Counterpart?   @relation(fields: [counterpartId], references: [id], onDelete: SetNull)
 
   // Access policies
   @@deny('all', auth() == null)
   @@allow('read', true)
   @@allow('create,update,delete', auth().status == 'ACTIVE')
 
+  @@index([counterpartId])
+  @@index([scope])
   @@map("loans")
+}
+
+model LoanSource {
+  id                Int                  @id @default(autoincrement())
+  loanId            Int                  @map("loan_id")
+  label             String
+  sourceType        LoanSourceType       @default(OTHER) @map("source_type")
+  principalAmount   Decimal              @map("principal_amount") @db.Decimal(15, 2)
+  fixedInterestRate Decimal              @default(0) @map("fixed_interest_rate") @db.Decimal(9, 6)
+  interestAmount    Decimal              @default(0) @map("interest_amount") @db.Decimal(15, 2)
+  feeAmount         Decimal              @default(0) @map("fee_amount") @db.Decimal(15, 2)
+  totalAmount       Decimal              @map("total_amount") @db.Decimal(15, 2)
+  disbursementDate  DateTime?            @map("disbursement_date") @db.Date
+  note              String?
+  createdAt         DateTime             @default(now()) @map("created_at")
+  updatedAt         DateTime             @default(now()) @updatedAt @map("updated_at")
+  loan              Loan                 @relation(fields: [loanId], references: [id], onDelete: Cascade)
+
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([loanId])
+  @@map("loan_sources")
 }
 
 model LoanSchedule {
@@ -803,6 +927,7 @@ model LoanSchedule {
   status            LoanScheduleStatus @default(PENDING)
   loan              Loan               @relation(fields: [loanId], references: [id], onDelete: Cascade)
   transaction       FinancialTransaction? @relation(fields: [transactionId], references: [id], onDelete: SetNull)
+  payments          LoanSchedulePayment[]
   createdAt         DateTime           @default(now()) @map("created_at")
   updatedAt         DateTime           @default(now()) @updatedAt @map("updated_at")
 
@@ -814,6 +939,29 @@ model LoanSchedule {
   @@index([loanId])
   @@index([transactionId])
   @@map("loan_schedules")
+}
+
+model LoanSchedulePayment {
+  id            Int                     @id @default(autoincrement())
+  scheduleId    Int                     @map("schedule_id")
+  amount        Decimal                 @db.Decimal(15, 2)
+  paidDate      DateTime                @map("paid_date") @db.Date
+  kind          LoanSchedulePaymentKind @default(PAYMENT)
+  transactionId Int?                    @map("transaction_id")
+  note          String?
+  createdAt     DateTime                @default(now()) @map("created_at")
+  updatedAt     DateTime                @default(now()) @updatedAt @map("updated_at")
+  schedule      LoanSchedule            @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  transaction   FinancialTransaction?   @relation(fields: [transactionId], references: [id], onDelete: SetNull)
+
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([scheduleId])
+  @@index([transactionId])
+  @@map("loan_schedule_payments")
 }
 
 
@@ -838,6 +986,19 @@ model Setting {
 // table is queried for forensics + compliance reporting; never updated
 // after insert. PII (email, IP) is captured intentionally — this is the
 // authoritative incident-response record.
+// Web Push preview-content gate. Drives the visible payload an
+// operator sees on a lock screen / notification tray:
+//   GENERIC      = "Bioalergia · Mensajes nuevos" (no PHI)
+//   SENDER_NAME  = sender name visible, no body
+//   FULL         = sender + body preview (legacy behaviour)
+// Default GENERIC matches the indigitall/HIPAA 2026 recommendation
+// that PHI never appears in the visible push payload.
+enum WaPushPreviewMode {
+  GENERIC
+  SENDER_NAME
+  FULL
+}
+
 enum AuditEventKind {
   LOGIN_SUCCESS
   LOGIN_FAILURE
@@ -860,6 +1021,14 @@ enum AuditEventKind {
   WA_CONTACT_BLOCK
   WA_CONTACT_UNBLOCK
   SETTINGS_UPDATE
+  DATA_UPDATE
+  APPOINTMENT_CHANGE
+  IMPORT_UPSERT
+  FINANCIAL_CHANGE
+  // Clinical-record access (Decreto 41/2012 art. 9 + Ley 20.584): record who
+  // OPENED a patient ficha (READ) and who VIEWED a clinical document (PDF).
+  CLINICAL_RECORD_READ
+  CLINICAL_DOCUMENT_VIEW
   OTHER
 }
 
@@ -879,6 +1048,47 @@ model SecurityAlertState {
   @@allow('read', auth().status == 'ACTIVE')
   @@allow('create,update', auth().status == 'ACTIVE')
   @@map("security_alert_state")
+}
+
+// Config-driven PII retention policy. One row per physical table whose
+// rows expire after `windowDays` measured from `dateColumn`. The nightly
+// `retention_sweep` task (lib/retention-sweep.ts) reads ENABLED rows and
+// either DELETEs or ANONYMIZEs expired rows, bounded by a SAFETY_LIMIT.
+//
+// Legal basis: Ley 21.719 (principio de proporcionalidad / limitación del
+// plazo de conservación, vigente 1-dic-2026) — la PII vencida debe
+// eliminarse o anonimizarse de forma sistemática. La FICHA CLÍNICA se
+// conserva 15 años (Decreto 41/2012) y NUNCA se toca: las tablas clínicas
+// no llevan fila aquí Y el servicio mantiene un denylist hard-coded.
+//
+// `action`:
+//   "delete"    → DELETE FROM <table> WHERE <dateColumn> < now() - windowDays
+//   "anonymize" → UPDATE <table> SET <col>=<rule> ... (per anonymizeMap)
+//
+// `anonymizeMap`: { "<column>": <rule> } where rule is one of:
+//   { "set": "null" }            → SET col = NULL
+//   { "set": "fixed", "value":X} → SET col = X (literal)
+//   { "set": "hash" }            → SET col = md5(col) (irreversible token)
+// Only consulted when action == "anonymize".
+model DataRetentionPolicy {
+  // Physical table name (snake_case), e.g. "audit_logs", "wa_messages".
+  table        String   @id
+  enabled      Boolean  @default(false)
+  // "delete" | "anonymize"
+  action       String
+  windowDays   Int      @map("window_days")
+  // Column carrying the row age. Default created_at; some tables use
+  // occurred_at / sent_at — set per policy.
+  dateColumn   String   @default("created_at") @map("date_column")
+  // Per-column anonymization rules; only used when action == "anonymize".
+  anonymizeMap Json     @default("{}") @map("anonymize_map")
+  notes        String?
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('all', auth().status == 'ACTIVE')
+  @@map("data_retention_policies")
 }
 
 model AuditLog {
@@ -914,6 +1124,8 @@ model AuditLog {
   @@index([occurredAt])
   @@index([userId, occurredAt])
   @@index([kind, occurredAt])
+  // "who accessed ficha <patientId>" — the legal access query (by subject).
+  @@index([resource, resourceId, occurredAt])
   @@deny('all', auth() == null)
   @@allow('read', auth().status == 'ACTIVE')
   // create allowed for any authed user — emitter is server-side, this
@@ -1093,6 +1305,286 @@ model Event {
   @@map("events")
 }
 
+// Carnet de inmunoterapia: registro clínico de CADA dosis administrada (la capa
+// de seguridad que el Event sincronizado de calendario no tiene). Captura qué se
+// inyectó (vial/lote/sitio), la observación obligatoria de 30 min post-SCIT, y la
+// reacción sistémica en la escala WAO 2024 (grados 0–5). 90% de las reacciones
+// sistémicas ocurren en los 30 min post-inyección (03_REGLAS_CLINICAS §3, §9).
+model ImmunotherapyAdministration {
+  id                    String    @id @default(cuid())
+  patientId             Int       @map("patient_id")
+  clinicalSeriesId      Int?      @map("clinical_series_id")
+  eventId               Int?      @map("event_id")
+
+  administeredAt        DateTime  @map("administered_at")
+  // Qué se administró
+  doseLabel             String?   @map("dose_label")
+  doseMl                Float?    @map("dose_ml")
+  vialDescription       String?   @map("vial_description")
+  vialLot               String?   @map("vial_lot")
+  vialExpiry            DateTime? @map("vial_expiry") @db.Date
+  // brazo_izquierdo | brazo_derecho
+  injectionSite         String?   @map("injection_site")
+
+  // Seguridad post-inyección
+  observationMinutes    Int       @default(30) @map("observation_minutes")
+  observationCompleted  Boolean   @default(false) @map("observation_completed")
+  hadLocalReaction      Boolean   @default(false) @map("had_local_reaction")
+  localReactionNote     String?   @map("local_reaction_note")
+  // Escala WAO 2024: 0=ninguna, 1=leve 1 sistema, 2=>1 sistema, 3=resp/CV,
+  // 4=colapso/shock, 5=muerte. null = no evaluada.
+  systemicReactionGrade Int?      @map("systemic_reaction_grade")
+  reactionNote          String?   @map("reaction_note")
+  premedication         String?
+  notes                 String?
+
+  // Farmacovigilancia: trazabilidad de notificación de RAM al ISP (Norma 140).
+  reportedToIsp         Boolean   @default(false) @map("reported_to_isp")
+  ispReportedAt         DateTime? @map("isp_reported_at")
+  ispNotes              String?   @map("isp_notes")
+
+  administeredBy        Int       @map("administered_by")
+  createdAt             DateTime  @default(now()) @map("created_at")
+
+  patient               Patient         @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  clinicalSeries        ClinicalSeries? @relation(fields: [clinicalSeriesId], references: [id], onDelete: SetNull)
+
+  @@deny('all', auth() == null)
+  @@allow('create,read,update', auth().status == 'ACTIVE')
+
+  @@index([patientId, administeredAt])
+  @@index([clinicalSeriesId])
+  @@map("immunotherapy_administrations")
+}
+
+// ═══ Cumplimiento (Ley 21.719 datos personales / Ley 20.584 / Decreto 35) ═══
+
+// #3 — Derechos del titular (ARCO+): acceso/rectificación/supresión/portabilidad/
+// oposición/bloqueo. SLA 30 días corridos (dueAt = receivedAt + 30d).
+model DataRightsRequest {
+  id             String    @id @default(cuid())
+  // ACCESS | RECTIFICATION | DELETION | PORTABILITY | OPPOSITION | BLOCKING
+  type           String
+  // RECEIVED | IN_PROGRESS | RESOLVED | REJECTED
+  status         String    @default("RECEIVED")
+  requesterName  String    @map("requester_name")
+  requesterRut   String?   @map("requester_rut")
+  requesterEmail String?   @map("requester_email")
+  patientId      Int?      @map("patient_id")
+  receivedAt     DateTime  @default(now()) @map("received_at")
+  dueAt          DateTime  @map("due_at")
+  // Prórroga única (+30 días corridos) que permite la Ley 21.719. Sello de
+  // cuándo se prorrogó; no-null => ya se usó la prórroga (no repetible).
+  extendedAt     DateTime? @map("extended_at")
+  resolvedAt     DateTime? @map("resolved_at")
+  resolution     String?
+  handledBy      Int?      @map("handled_by")
+  notes          String?
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+  patient        Patient?  @relation(fields: [patientId], references: [id], onDelete: SetNull)
+
+  @@deny('all', auth() == null)
+  @@allow('create,read,update', auth().status == 'ACTIVE')
+  @@index([status, dueAt])
+  @@map("data_rights_requests")
+}
+
+// #4 — Incidentes de brecha: detección → notificación Agencia + titulares (72h).
+model BreachIncident {
+  id                 String    @id @default(cuid())
+  detectedAt         DateTime  @map("detected_at")
+  description        String
+  // LOW | MEDIUM | HIGH | CRITICAL
+  severity           String    @default("MEDIUM")
+  affectedData       String?   @map("affected_data")
+  affectedCount      Int?      @map("affected_count")
+  // DETECTED | NOTIFYING | NOTIFIED | CLOSED
+  status             String    @default("DETECTED")
+  agencyNotifiedAt   DateTime? @map("agency_notified_at")
+  subjectsNotifiedAt DateTime? @map("subjects_notified_at")
+  handledBy          Int?      @map("handled_by")
+  notes              String?
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  @@deny('all', auth() == null)
+  @@allow('create,read,update', auth().status == 'ACTIVE')
+  @@index([status, detectedAt])
+  @@map("breach_incidents")
+}
+
+// #10 — Lista de precios de prestaciones/insumos (visible; cobro por dosis-unitaria).
+model PriceListItem {
+  id        String   @id @default(cuid())
+  code      String?  @unique
+  name      String
+  category  String
+  // unidad | dosis | sesion | mL
+  unit      String   @default("unidad")
+  priceClp  Int      @map("price_clp")
+  isActive  Boolean  @default(true) @map("is_active")
+  sortOrder Int      @default(0) @map("sort_order")
+  notes     String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@deny('all', auth() == null)
+  // Precios visibles a cualquiera (lista pública); edición solo staff activo.
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+  @@index([category, sortOrder])
+  @@map("price_list_items")
+}
+
+// #11 — Reclamos/sugerencias (Decreto 35: acuse + respuesta 15 días hábiles).
+model Complaint {
+  id              String    @id @default(cuid())
+  // PRESENCIAL | WEB | TELEFONO | EMAIL | LIBRO
+  channel         String    @default("PRESENCIAL")
+  complainantName String    @map("complainant_name")
+  complainantRut  String?   @map("complainant_rut")
+  contact         String?
+  patientId       Int?      @map("patient_id")
+  category        String?
+  description     String
+  // RECEIVED | IN_PROGRESS | RESOLVED | ESCALATED
+  status          String    @default("RECEIVED")
+  receivedAt      DateTime  @default(now()) @map("received_at")
+  dueAt           DateTime  @map("due_at")
+  resolvedAt      DateTime? @map("resolved_at")
+  resolution      String?
+  handledBy       Int?      @map("handled_by")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  patient         Patient?  @relation(fields: [patientId], references: [id], onDelete: SetNull)
+
+  @@deny('all', auth() == null)
+  @@allow('create,read,update', auth().status == 'ACTIVE')
+  @@index([status, dueAt])
+  @@map("complaints")
+}
+
+// #11 — Libros foliados electrónicos (procedimientos / reclamos / inspecciones).
+model FoliatedBookEntry {
+  id        String   @id @default(cuid())
+  // PROCEDURES | COMPLAINTS | INSPECTIONS
+  book      String
+  folio     Int
+  entryDate DateTime @map("entry_date")
+  summary   String
+  refType   String?  @map("ref_type")
+  refId     String?  @map("ref_id")
+  createdBy Int      @map("created_by")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@deny('all', auth() == null)
+  @@allow('create,read', auth().status == 'ACTIVE')
+  @@unique([book, folio])
+  @@index([book, entryDate])
+  @@map("foliated_book_entries")
+}
+
+// Registro de Actividades de Tratamiento (RAT) — Ley 21.719 obliga al
+// responsable a mantener un inventario de las actividades de tratamiento de
+// datos personales: finalidad, base de licitud, categorías de datos/titulares,
+// destinatarios, plazo de conservación y medidas de seguridad.
+model ProcessingActivity {
+  id                    String   @id @default(cuid())
+  name                  String
+  purpose               String
+  // CONSENT | CONTRACT | LEGAL_OBLIGATION | VITAL_INTEREST | LEGITIMATE_INTEREST | HEALTH_CARE
+  legalBasis            String   @map("legal_basis")
+  dataCategories        String   @map("data_categories")
+  dataSubjects          String   @map("data_subjects")
+  recipients            String?
+  retentionPeriod       String?  @map("retention_period")
+  securityMeasures      String?  @map("security_measures")
+  internationalTransfer Boolean  @default(false) @map("international_transfer")
+  isActive              Boolean  @default(true) @map("is_active")
+  notes                 String?
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  @@deny('all', auth() == null)
+  @@allow('create,read,update,delete', auth().status == 'ACTIVE')
+  @@index([isActive, name])
+  @@map("processing_activities")
+}
+
+// Registro de consentimiento (Ley 21.719). Historia auditable del consentimiento
+// del titular para tratamientos que lo requieren (marketing/outreach, usos
+// secundarios, investigación). NO es el consentimiento informado clínico de un
+// procedimiento. El consentimiento debe ser libre/específico/informado/inequívoco
+// (expreso para datos sensibles) y revocable; esta tabla acredita propósito,
+// fecha, canal y versión del texto. El boolean `emailMarketingOptIn` en Person es
+// el caché operativo; esta tabla es la historia probatoria.
+model ConsentRecord {
+  id            String    @id @default(cuid())
+  personId      Int       @map("person_id")
+  // MARKETING_EMAIL | MARKETING_WHATSAPP | MARKETING_SMS | DATA_PROCESSING_SECONDARY | RESEARCH | DATA_SHARING
+  purpose       String
+  // GRANTED | WITHDRAWN
+  status        String    @default("GRANTED")
+  grantedAt     DateTime  @default(now()) @map("granted_at")
+  withdrawnAt   DateTime? @map("withdrawn_at")
+  // WEB | PRESENCIAL | EMAIL | WHATSAPP | PHONE | IMPORT
+  channel       String    @default("PRESENCIAL")
+  policyVersion String    @map("policy_version")
+  evidenceText  String?   @map("evidence_text")
+  source        String?
+  recordedBy    Int?      @map("recorded_by")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  person        Person    @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  @@deny('all', auth() == null)
+  @@allow('create,read,update', auth().status == 'ACTIVE')
+  @@index([personId, purpose])
+  @@index([status])
+  @@map("consent_records")
+}
+
+// Consentimiento informado CLÍNICO (Ley 20.584) — por procedimiento concreto.
+// DISTINTO del consentimiento de datos (ConsentRecord). La ley exige registrar
+// el procedimiento, riesgos, alternativas y la DECISIÓN del titular; el texto
+// genérico NO basta, por eso se guarda el snapshot del contenido + la versión de
+// plantilla. Firma simple basta (FEA no requerida en doc clínico privado, Ley
+// 19.799). El titular puede rechazar y revocar.
+model ClinicalConsent {
+  id                    String    @id @default(cuid())
+  patientId             Int       @map("patient_id")
+  // SCIT | SKIN_TEST | PATCH_TEST | PROCEDURE | OTHER
+  procedureType         String    @map("procedure_type")
+  procedureName         String    @map("procedure_name")
+  templateVersion       String    @map("template_version")
+  contentSnapshot       String    @map("content_snapshot")
+  risksDisclosed        String?   @map("risks_disclosed")
+  alternativesDisclosed String?   @map("alternatives_disclosed")
+  // PENDING | SIGNED | REFUSED | REVOKED
+  status                String    @default("PENDING")
+  // PRESENCIAL_FISICA | ELECTRONICA_SIMPLE | VERBAL_REGISTRADA
+  signatureMethod       String    @map("signature_method")
+  signerName            String    @map("signer_name")
+  signerRut             String?   @map("signer_rut")
+  // paciente | representante_legal | apoderado | tutor
+  signerRelationship    String?   @map("signer_relationship")
+  clinicianId           Int?      @map("clinician_id")
+  signedAt              DateTime? @map("signed_at")
+  refusedReason         String?   @map("refused_reason")
+  revokedAt             DateTime? @map("revoked_at")
+  notes                 String?
+  createdBy             Int       @map("created_by")
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+  patient               Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@deny('all', auth() == null)
+  @@allow('create,read,update', auth().status == 'ACTIVE')
+  @@index([patientId, status])
+  @@index([procedureType])
+  @@map("clinical_consents")
+}
+
 model ClinicalSeries {
   id               Int                       @id @default(autoincrement())
   kind             ClinicalSeriesKind
@@ -1123,6 +1615,7 @@ model ClinicalSeries {
   documentImports ClinicalDocumentImport[]
   records    ClinicalRecord[]
   recordImports ClinicalRecordImport[]
+  immunotherapyAdministrations ImmunotherapyAdministration[]
 
   @@deny('all', auth() == null)
   @@allow('read', true)
@@ -1157,6 +1650,18 @@ model ClinicalXlsxFile {
   modifiedAt            DateTime?                    @map("modified_at") @db.Timestamptz(3)
   classification        ClinicalXlsxFileClassification @default(OTHER)
   classificationReason  String?                      @map("classification_reason")
+  // Shared first-sheet snapshot (structured cells). Archived once per file so
+  // any feature (skin-tests, fichas) re-parses from DB instead of re-downloading
+  // from OneDrive. snapshotEtag/Ctag are the OneDrive tags at archive time; a
+  // mismatch vs oneDriveETag/CTag (refreshed by the scan) means STALE → re-fetch.
+  snapshotStatus           String?                   @map("snapshot_status")
+  snapshotJson             Json?                     @map("snapshot_json")
+  snapshotEtag             String?                   @map("snapshot_etag")
+  snapshotCtag             String?                   @map("snapshot_ctag")
+  snapshotExtractorVersion String?                   @map("snapshot_extractor_version")
+  snapshotCellCount        Int?                      @map("snapshot_cell_count")
+  snapshotArchivedAt       DateTime?                 @map("snapshot_archived_at") @db.Timestamptz(3)
+  snapshotError            String?                   @map("snapshot_error")
   createdAt             DateTime                     @default(now()) @map("created_at")
   updatedAt             DateTime                     @default(now()) @updatedAt @map("updated_at")
 
@@ -1315,6 +1820,23 @@ model ClinicalRecord {
   headCircumferenceCm Decimal?            @map("head_circumference_cm") @db.Decimal(6, 2)
   // P/E, P/T, T/E and any extra anthropometric labels.
   anthropometric      Json?
+  // FHIR-mappable extras (HL7 FHIR R5 + IPS-CL Chile R4). Stored as
+  // JSONB for the list-shaped fields so v1 can persist free-text
+  // string arrays from the xlsx and v2 can upgrade to structured
+  // objects ({condition,onset,…} / {name,dose,frequency,…} /
+  // {substance,severity,…}) without a column reshape.
+  //
+  //   antecedents:    { personal: string[], family: string[] }
+  //                   → FHIR Condition + FamilyMemberHistory
+  //   medications:    string[]
+  //                   → FHIR MedicationStatement
+  //   knownAllergies: string[]
+  //                   → FHIR AllergyIntolerance
+  //   observations:   free-text narrative (Composition.section.text)
+  antecedents         Json?               @map("antecedents")
+  medications         Json?               @map("medications")
+  knownAllergies      Json?               @map("known_allergies")
+  observations        String?
   rawHeader           Json?               @map("raw_header")
   rawSections         Json?               @map("raw_sections")
   resultHash          String?             @map("result_hash")
@@ -1325,7 +1847,7 @@ model ClinicalRecord {
   sourceImport        ClinicalRecordImport @relation(fields: [sourceImportId], references: [id], onDelete: Cascade)
 
   @@deny('all', auth() == null)
-  @@allow('read', true)
+  @@allow('read', auth().status == 'ACTIVE')
   @@allow('create,update,delete', auth().status == 'ACTIVE')
 
   @@index([clinicalSeriesId])
@@ -1441,11 +1963,17 @@ model ClinicalAllergen {
   normalizedCommonName     String                  @map("normalized_common_name")
   source                   String                  @default("lista_alergenos.xlsx")
   sourceRow                Int?                    @map("source_row")
+  // Free-form tag list. Used by the exam-report PDF generator to detect
+  // cross-reactive components (PR-10, profilin, tropomyosin, LTP) and
+  // append the EAACI cross-reactivity disclaimer. Lower-cased on write.
+  tags                     String[]                @default([])
   isActive                 Boolean                 @default(true) @map("is_active")
   createdAt                DateTime                @default(now()) @map("created_at")
   updatedAt                DateTime                @default(now()) @updatedAt @map("updated_at")
 
   aliases                  ClinicalAllergenAlias[]
+  examReportReactions      ExamReportReaction[]
+  reactivos                QuoteProduct[]          @relation("QuoteProductAllergen")
 
   @@deny('all', auth() == null)
   @@allow('read', true)
@@ -1504,7 +2032,7 @@ model ClinicalSkinTest {
   results          ClinicalSkinTestResult[]
 
   @@deny('all', auth() == null)
-  @@allow('read', true)
+  @@allow('read', auth().status == 'ACTIVE')
   @@allow('create,update,delete', auth().status == 'ACTIVE')
 
   @@index([clinicalSeriesId])
@@ -1595,6 +2123,7 @@ model SyncLog {
   excluded      Int?      @default(0)
   errorMessage  String?   @map("error_message")
   changeDetails Json?     @map("change_details")
+  mercadopagoImportChanges MercadoPagoImportChange[]
 
   // Access policies
   @@deny('all', auth() == null)
@@ -1603,6 +2132,29 @@ model SyncLog {
   @@index([triggerSource])
   @@index([startedAt])
   @@map("sync_logs")
+}
+
+model MercadoPagoImportChange {
+  id         BigInt   @id @default(autoincrement())
+  syncLogId  BigInt   @map("sync_log_id")
+  reportType String   @map("report_type")
+  sourceId   String   @map("source_id") @db.VarChar(100)
+  fieldName  String   @map("field_name")
+  oldValue   Json?    @map("old_value")
+  newValue   Json?    @map("new_value")
+  changedAt  DateTime @default(now()) @map("changed_at")
+
+  syncLog    SyncLog  @relation(fields: [syncLogId], references: [id], onDelete: Cascade)
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth() != null)
+
+  @@index([syncLogId])
+  @@index([sourceId])
+  @@index([fieldName])
+  @@index([changedAt(sort: Desc)])
+  @@index([reportType, sourceId])
+  @@map("mercadopago_import_changes")
 }
 
 model InventoryCategory {
@@ -1859,7 +2411,7 @@ model DoctoraliaCalendarAppointment {
   serviceIsDeleted           Boolean            @default(false) @map("service_is_deleted")
   attendance                 Int                @default(0)
   patientExternalId          Int                @map("patient_external_id")
-  patientReferenceId         String             @map("patient_reference_id")
+  patientReferenceId         String?            @map("patient_reference_id")
   patientPhone               String?            @map("patient_phone")
   patientEmail               String?            @map("patient_email")
   patientBirthDate           DateTime?          @map("patient_birth_date")
@@ -1876,6 +2428,7 @@ model DoctoraliaCalendarAppointment {
   duration                   Int
   canNotifyPatient           Boolean            @map("can_notify_patient")
   noShowProtection           Boolean            @default(false) @map("no_show_protection")
+  followUpDate               DateTime?          @map("follow_up_date") @db.Timestamptz(3) // followUpDateWithSameDoctor: próximo control
   createdAt                  DateTime                     @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt                  DateTime                     @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
   schedule                   DoctoraliaSchedule           @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
@@ -2115,10 +2668,25 @@ enum LoanBorrowerType {
   COMPANY
 }
 
+enum LoanSourceType {
+  BANK_CREDIT
+  CREDIT_CARD
+  PERSON_LOAN
+  TRANSFER
+  OTHER
+}
+
+enum LoanSchedulePaymentKind {
+  PAYMENT
+  DISCOUNT
+  ADJUSTMENT
+}
+
 enum LoanFrequency {
   WEEKLY
   BIWEEKLY
   MONTHLY
+  IRREGULAR
 }
 
 enum LoanInterestType {
@@ -2350,16 +2918,100 @@ model MedicalCertificate {
 
   issuer        User      @relation(fields: [issuedBy], references: [id])
   patient       Patient?  @relation(fields: [patientId], references: [id])
+  verification  DocumentVerification?
 
   @@deny('all', auth() == null)
-  @@allow('read', auth().id == issuedBy)
+  @@allow('read', auth().status == 'ACTIVE')
   @@allow('create', auth().status == 'ACTIVE')
-  @@allow('read', auth() != null)
 
   @@index([patientRut])
   @@index([issuedAt])
   @@map("medical_certificates")
 }
+
+model MedicalPrescription {
+  id          String   @id @default(cuid())
+  patientId   Int      @map("patient_id")
+  patientName String   @map("patient_name")
+  patientRut  String?  @map("patient_rut")
+
+  date        DateTime @db.Date
+  // Folio público RX-AAAA-NNNNNN-XXXX: correlativo (auditoría) + sufijo
+  // aleatorio (anti-enumeración/scraping). folioSeq = correlativo interno.
+  folio       String?  @unique
+  folioSeq    Int?     @map("folio_seq")
+  // Nº registro Superintendencia de Salud del médico (de ClinicSettings).
+  doctorLicense String? @map("doctor_license")
+  // ISSUED | ANNULLED
+  status      String   @default("ISSUED")
+  diagnosis   String?
+  diagnoses   Json?
+  medications Json
+  notes       String?
+
+  doctorName      String? @map("doctor_name")
+  doctorSpecialty String? @map("doctor_specialty")
+  doctorRut       String? @map("doctor_rut")
+  doctorEmail     String? @map("doctor_email")
+  doctorAddress   String? @map("doctor_address")
+
+  issuedBy    Int      @map("issued_by")
+  issuedAt    DateTime @default(now()) @map("issued_at")
+  // Receta NO se archiva en Drive ni se guarda el PDF: se regenera
+  // determinísticamente desde esta fila (fuente de verdad única). El documento
+  // es inmutable — solo se puede anular (status=ANNULLED), nunca editar/borrar.
+  driveFileId String?  @map("drive_file_id")
+  pdfHash     String?  @map("pdf_hash")
+  metadata    Json?
+
+  issuer      User     @relation(fields: [issuedBy], references: [id])
+  patient     Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  verification DocumentVerification?
+
+  @@deny('all', auth() == null)
+  // Inmutable salvo anulación: create + read + update (solo status→ANNULLED).
+  // NO delete — una receta emitida es un documento legal, no se borra.
+  @@allow('create,read,update', auth().status == 'ACTIVE')
+
+  @@index([patientId, issuedAt])
+  @@index([issuedAt])
+  @@map("medical_prescriptions")
+}
+
+// Prescripción de inmunoterapia subcutánea calculada (Calculadora SCIT).
+// Registro inmutable de trazabilidad: guarda la selección del médico (inputs),
+// los viales calculados, alertas y reglas aplicadas, con quién/cuándo. Sin PDF:
+// la prescripción se reconstruye desde esta fila. No se edita ni borra.
+model ScitPrescription {
+  id           String   @id @default(cuid())
+  patientId    Int      @map("patient_id")
+  patientName  String   @map("patient_name")
+  patientRut   String?  @map("patient_rut")
+
+  // inmunotek | roxall | diater
+  provider     String
+  // DoctorSelection: { selectedAllergenIds, provider, relevanceMode?, dominantAllergenId? }
+  inputs       Json
+  // Vial[] calculado (ids de alérgeno + dosis con unidad real por proveedor)
+  vials        Json
+  // ClinicalAlert[] generadas por el motor (opcional)
+  alerts       Json?
+  rulesApplied String[] @map("rules_applied")
+  summary      String?
+
+  createdBy    Int      @map("created_by")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  patient      Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@deny('all', auth() == null)
+  // Inmutable: solo create + read (documento de trazabilidad, no se edita/borra).
+  @@allow('create,read', auth().status == 'ACTIVE')
+
+  @@index([patientId, createdAt])
+  @@map("scit_prescriptions")
+}
+
 model Patient {
   id                  Int                    @id @default(autoincrement())
   personId            Int                    @unique @map("person_id")
@@ -2373,6 +3025,7 @@ model Patient {
   person              Person                 @relation(fields: [personId], references: [id], onDelete: Cascade)
   consultations       Consultation[]
   medicalCertificates MedicalCertificate[]
+  medicalPrescriptions MedicalPrescription[]
   budgets             Budget[]
   payments            PatientPayment[]
   attachments         PatientAttachment[]
@@ -2380,12 +3033,107 @@ model Patient {
   shipments           Shipment[]
   clinicalSeries      ClinicalSeries[]
   clinicalRecordImports ClinicalRecordImport[]
+  examReports         ExamReport[]
+  scitPrescriptions   ScitPrescription[]
+  immunotherapyAdministrations ImmunotherapyAdministration[]
+  dataRightsRequests  DataRightsRequest[]
+  complaints          Complaint[]
+  clinicalConsents    ClinicalConsent[]
+  reminderSchedules   ReminderSchedule[]
+  allergyDiaryEntries AllergyDiaryEntry[]
 
   @@deny('all', auth() == null)
   @@allow('read', auth().status == 'ACTIVE')
   @@allow('create,update', auth().status == 'ACTIVE')
 
   @@map("patients")
+}
+
+// ============================================================
+// Recordatorios de adherencia (shared-reminder) — P2
+// ============================================================
+// Motor genérico de recordatorios por paciente (graphile-worker). Un recordatorio
+// = una fila que se envía en `runAt`. El envío es CONSENT-GATED: requiere un
+// ConsentRecord (purpose ADHERENCE_REMINDER, status GRANTED) — distinto del
+// consentimiento de marketing. Texto NEUTRO (sin diagnóstico) + opt-out. El
+// eDiary CSMS (P2 stage-2) está gateado por EIPD (Ley 21.719) — no se modela aún.
+enum ReminderChannel {
+  EMAIL
+  WHATSAPP
+}
+
+enum ReminderStatus {
+  PENDING
+  SENT
+  CANCELLED
+  FAILED
+}
+
+model ReminderSchedule {
+  id           Int             @id @default(autoincrement())
+  patientId    Int             @map("patient_id")
+  channel      ReminderChannel @default(EMAIL)
+  purpose      String          @default("ADHERENCE_REMINDER")
+  subjectType  String          @map("subject_type") // SCIT_VISIT | SLIT_VISIT | OTHER
+  title        String
+  body         String
+  runAt        DateTime        @map("run_at")
+  status       ReminderStatus  @default(PENDING)
+  sentAt       DateTime?       @map("sent_at")
+  errorMessage String?         @map("error_message")
+  createdBy    Int?            @map("created_by")
+  createdAt    DateTime        @default(now()) @map("created_at")
+  updatedAt    DateTime        @default(now()) @updatedAt @map("updated_at")
+
+  patient      Patient         @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([status, runAt])
+  @@index([patientId])
+  @@map("reminder_schedules")
+}
+
+// eDiary de síntomas (P2, CSMS golden EAACI/Pfaar). Una entrada por paciente y
+// día. Los 6 síntomas se puntúan 0–3; los escalones de medicación de rescate
+// son booleanos. dSS/dMS/csms se COMPUTAN server-side (services/allergy-diary.ts)
+// y se persisten solo para velocidad de consulta — nunca se confían del cliente.
+// Dato sensible de salud: la recolección directa del paciente está gateada por
+// EIPD (docs/EIPD_EDIARY.md) + consent purpose SYMPTOM_DIARY.
+model AllergyDiaryEntry {
+  id                Int      @id @default(autoincrement())
+  patientId         Int      @map("patient_id")
+  entryDate         DateTime @map("entry_date") @db.Date
+  // 6 síntomas (4 nasales + 2 oculares), cada uno 0–3
+  sneezing          Int      @default(0)
+  rhinorrhea        Int      @default(0)
+  nasalItching      Int      @default(0) @map("nasal_itching")
+  nasalCongestion   Int      @default(0) @map("nasal_congestion")
+  eyeItchingRedness Int      @default(0) @map("eye_itching_redness")
+  eyeWatering       Int      @default(0) @map("eye_watering")
+  // Escalones de medicación de rescate (dMS = mayor escalón usado)
+  medAntihistamine     Boolean @default(false) @map("med_antihistamine")    // step 1
+  medIntranasalSteroid Boolean @default(false) @map("med_intranasal_steroid") // step 2
+  medOralSteroid       Boolean @default(false) @map("med_oral_steroid")      // step 3
+  // Computados server-side
+  dSS               Float    @map("d_ss")  // Σ6 síntomas / 6 → 0–3
+  dMS               Int      @map("d_ms")  // mayor escalón → 0–3
+  csms              Float                  // dSS + dMS → 0–6
+  isComplete        Boolean  @default(true) @map("is_complete")
+  notes             String?
+  enteredBy         Int?     @map("entered_by") // staff que registró (null = paciente)
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @default(now()) @updatedAt @map("updated_at")
+
+  patient           Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+
+  @@unique([patientId, entryDate])
+  @@index([patientId, entryDate])
+  @@map("allergy_diary_entries")
 }
 
 model Shipment {
@@ -2414,6 +3162,12 @@ model Shipment {
   barcode              String?
   labelBase64          String?  @map("label_base64") @db.Text
   labelType            Int?     @map("label_type")
+  // Chilexpress add-on services attached to the package at OT time
+  // (e.g. 417 = "Cobertura Extendida"). Persisted so revenue reports
+  // can attribute the extra cost back to the shipment, and so a
+  // future reprint/reissue can mirror the original config.
+  additionalServiceCodes Int[]    @default([]) @map("additional_service_codes")
+  additionalServicesCost Decimal  @default(0) @map("additional_services_cost") @db.Decimal(12, 2)
   // Tracking
   trackingStatus       String?  @map("tracking_status")
   trackingUpdatedAt    DateTime? @map("tracking_updated_at")
@@ -2504,6 +3258,64 @@ model Budget {
   @@map("budgets")
 }
 
+// Catálogo editable de productos de inmunoterapia subcutánea para PRESUPUESTO
+// (cobro al paciente). Las etapas de dosis y precios varían por producto
+// (Clustoid/Roxall, Alxoid, …) y son 100% editables desde DB — sin precios
+// hardcodeados. El presupuesto es ANUAL: fase inicio (dosis escalonadas) +
+// N dosis de mantención. El costo del vial (interno) NO se modela aquí.
+model ImmunotherapyProduct {
+  id                    Int      @id @default(autoincrement())
+  name                  String   // "Clustoid", "Alxoid"
+  lab                   String?  // "Roxall"
+  vaccineProduct        SubcutaneousVaccineProduct? @map("vaccine_product") // link opcional al enum clínico
+  // Composición/potencia (metadata, NO afecta el precio al paciente — el
+  // esquema de dosis manda). Se imprime en el PDF.
+  concentrationUtMl     Int?     @map("concentration_ut_ml") // ej. 10000, 30000 (UT/mL)
+  perAllergen           Boolean  @default(false) @map("per_allergen") // potencia es UT/mL POR alérgeno
+  maxAllergens          Int?     @map("max_allergens") // límite de alérgenos (Forte = 1); null = sin límite
+  maintenanceTargetMl   Decimal  @default(0.5) @map("maintenance_target_ml") @db.Decimal(5, 2) // volumen base de la etapa de mantención
+  maintenanceStepMl     Decimal  @default(0.25) @map("maintenance_step_ml") @db.Decimal(5, 2) // tramo de ajuste proporcional
+  maintenanceDefaultQty Int      @default(11) @map("maintenance_default_qty") // dosis de mantención/año por defecto
+  defaultDiscountPct    Decimal? @map("default_discount_pct") @db.Decimal(5, 2) // ej. 10.00 = 10%
+  isActive              Boolean  @default(true) @map("is_active")
+  sortOrder             Int      @default(0) @map("sort_order")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @default(now()) @updatedAt @map("updated_at")
+
+  stages                ImmunotherapyDoseStage[]
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@map("immunotherapy_products")
+}
+
+// Etapa de dosis dentro de un producto: fase inicio (escalonada, qty fija) o
+// mantención (qty = maintenanceDefaultQty del producto, precio ajustable por
+// volumen). unitPrice de la etapa de mantención es el precio BASE al volumen
+// maintenanceTargetMl; para otro volumen se ajusta proporcional lineal.
+model ImmunotherapyDoseStage {
+  id            Int      @id @default(autoincrement())
+  productId     Int      @map("product_id")
+  label         String   // "Primera dosis", "Dosis mantención"
+  unitPrice     Decimal  @map("unit_price") @db.Decimal(15, 2)
+  defaultQty    Int      @default(1) @map("default_qty")
+  isMaintenance Boolean  @default(false) @map("is_maintenance") // la etapa ajustable por volumen
+  sortOrder     Int      @default(0) @map("sort_order")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at")
+
+  product       ImmunotherapyProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([productId])
+  @@map("immunotherapy_dose_stages")
+}
+
 model PatientPayment {
   id            Int      @id @default(autoincrement())
   patientId     Int      @map("patient_id")
@@ -2564,6 +3376,412 @@ enum AttachmentType {
 }
 
 // ============================================================
+// Cotizaciones (Quotes) — documento comercial B2B
+// ============================================================
+// Cliente empresa (razón social, RUT, giro, …). Distinto de Patient/Person:
+// el destinatario de una cotización/factura es una empresa. El emisor
+// (Bioalergia) sale de ClinicSettings (singleton, sin hardcode).
+
+model Company {
+  id            Int              @id @default(autoincrement())
+  razonSocial   String           @map("razon_social")
+  rut           String?          @unique @db.VarChar(20)
+  giro          String?
+  direccion     String?
+  comuna        String?
+  ciudad        String?
+  email         String?
+  phone         String?
+  condicionPago String?          @map("condicion_pago") // "CREDITO 7 DIAS", "CONTADO"
+  notes         String?
+  isActive      Boolean          @default(true) @map("is_active")
+  createdAt     DateTime         @default(now()) @map("created_at")
+  updatedAt     DateTime         @default(now()) @updatedAt @map("updated_at")
+
+  contacts      CompanyContact[]
+  quotes        Quote[]
+  occupationalPrograms OccupationalProgram[]
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([razonSocial])
+  @@map("companies")
+}
+
+// Contacto/solicitante dentro de una empresa. Puede enlazar a un Person
+// existente (personId) o guardar datos inline.
+model CompanyContact {
+  id        Int      @id @default(autoincrement())
+  companyId Int      @map("company_id")
+  personId  Int?     @map("person_id")
+  name      String
+  email     String?
+  phone     String?
+  role      String?  // "Solicitante", "Compras", …
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  person    Person?  @relation(fields: [personId], references: [id], onDelete: SetNull)
+  quotes    Quote[]
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([companyId])
+  @@index([personId])
+  @@map("company_contacts")
+}
+
+// Catálogo editable de productos cotizables (sin precios hardcodeados).
+// Espeja columnas de la cotización: Marca/Categoría/Detalle/Formato/Precio.
+model QuoteProduct {
+  id        Int      @id @default(autoincrement())
+  code      String?  // "E802", "T526"
+  brand     String?  // Marca: DIATER, Roxall, Allos
+  category  String?  // Categoría: Gramínea, Ácaros, Árbol
+  name      String   // Detalle / Alérgeno
+  format    String?  // "2 mL", "2.5 mL"
+  unitPrice Decimal  @map("unit_price") @db.Decimal(15, 2)
+  isActive  Boolean  @default(true) @map("is_active")
+  sortOrder Int      @default(0) @map("sort_order")
+  // Campos de vitrina B2B (página pública /venta-empresas). El precio NUNCA se
+  // expone públicamente: la lectura pública sale por `db` raw + serializer que
+  // omite `unitPrice`. `publishedOnSite` controla qué aparece en la vitrina.
+  slug            String?  @unique
+  description     String?
+  imageUrl        String?  @map("image_url")
+  publishedOnSite Boolean  @default(false) @map("published_on_site")
+  seoDescription  String?  @map("seo_description")
+  allergenId      String?  @map("allergen_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  items     QuoteItem[]
+  allergen  ClinicalAllergen? @relation("QuoteProductAllergen", fields: [allergenId], references: [id], onDelete: SetNull)
+  documents ProductDocument[] @relation("QuoteProductDocuments")
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([code])
+  @@index([publishedOnSite])
+  @@index([allergenId])
+  @@map("quote_products")
+}
+
+// ============================================================
+// Fichas técnicas de productos (shared-productdoc)
+// ============================================================
+// Documentos por producto (IFU/SDS/CoA/spec/ISO) en R2. IFU y SDS son PÚBLICOS
+// (obligación de acceso regulatorio); CoA y contratos quedan gated tras login.
+// La lectura pública (visibility PUBLIC) sale por `db` raw en el handler; el
+// `@@deny` solo gobierna `authDb`.
+enum ProductDocumentType {
+  IFU
+  SDS
+  COA
+  SPEC_SHEET
+  ISO_CERT
+  PACKAGE_INSERT
+}
+
+enum ProductDocumentVisibility {
+  PUBLIC
+  AUTHED
+}
+
+model ProductDocument {
+  id            Int                       @id @default(autoincrement())
+  productId     Int                       @map("product_id")
+  type          ProductDocumentType
+  title         String
+  fileR2Key     String                    @map("file_r2_key")
+  visibility    ProductDocumentVisibility @default(PUBLIC)
+  lotNumber     String?                   @map("lot_number")
+  version       String?
+  language      String                    @default("es")
+  effectiveDate DateTime?                 @map("effective_date") @db.Date
+  sortOrder     Int                       @default(0) @map("sort_order")
+  createdAt     DateTime                  @default(now()) @map("created_at")
+  updatedAt     DateTime                  @default(now()) @updatedAt @map("updated_at")
+
+  product       QuoteProduct @relation("QuoteProductDocuments", fields: [productId], references: [id], onDelete: Cascade)
+
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([productId, type])
+  @@map("product_documents")
+}
+
+model Quote {
+  id            Int             @id @default(autoincrement())
+  folio         Int             @unique // Nº de orden (secuencial, calculado en servicio)
+  companyId     Int             @map("company_id")
+  contactId     Int?            @map("contact_id")
+  createdById   Int?            @map("created_by_id") // vendedor = usuario que crea
+  issueDate     DateTime        @default(now()) @map("issue_date")
+  dueDate       DateTime?       @map("due_date")
+  condicionPago String?         @map("condicion_pago")
+  status        QuoteStatus     @default(DRAFT)
+  subtotal      Decimal         @db.Decimal(15, 2)
+  discount      Decimal         @default(0) @db.Decimal(15, 2)
+  taxRate       Decimal         @default(19) @map("tax_rate") @db.Decimal(5, 2)
+  taxAmount     Decimal         @map("tax_amount") @db.Decimal(15, 2)
+  total         Decimal         @db.Decimal(15, 2)
+  comments      String?
+  notes         String?
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @default(now()) @updatedAt @map("updated_at")
+
+  company       Company         @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  contact       CompanyContact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  createdBy     User?           @relation("QuoteCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  items         QuoteItem[]
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([companyId])
+  @@index([folio])
+  @@map("quotes")
+}
+
+// Línea de cotización con SNAPSHOTS del catálogo: una vez emitida, editar el
+// catálogo NO altera la cotización histórica.
+model QuoteItem {
+  id          Int           @id @default(autoincrement())
+  quoteId     Int           @map("quote_id")
+  productId   Int?          @map("product_id")
+  code        String?
+  brand       String?
+  category    String?
+  description String
+  format      String?
+  quantity    Decimal       @default(1) @db.Decimal(12, 2)
+  unitPrice   Decimal       @map("unit_price") @db.Decimal(15, 2)
+  discount    Decimal       @default(0) @db.Decimal(15, 2) // recargo/descuento por línea
+  exempt      Boolean       @default(false) // exento de IVA
+  subtotal    Decimal       @db.Decimal(15, 2)
+  sortOrder   Int           @default(0) @map("sort_order")
+
+  quote       Quote         @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  product     QuoteProduct? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([quoteId])
+  @@map("quote_items")
+}
+
+enum QuoteStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
+enum ReactivoLeadStatus {
+  NUEVO
+  CONTACTADO
+  COTIZADO
+  CERRADO
+}
+
+// Lead B2B captado desde la vitrina pública /venta-empresas ("Quiero reactivos").
+// La creación es PÚBLICA (sin auth): el handler usa `db` raw, por lo que el
+// `@@deny` no la bloquea (solo gobierna `authDb`). Lectura/gestión = staff.
+model ReactivoLead {
+  id                 Int                @id @default(autoincrement())
+  empresa            String
+  contactName        String             @map("contact_name")
+  email              String
+  phone              String?
+  rut                String?
+  message            String?
+  productsOfInterest String[]           @default([]) @map("products_of_interest")
+  status             ReactivoLeadStatus @default(NUEVO)
+  source             String             @default("venta-empresas")
+  createdAt          DateTime           @default(now()) @map("created_at")
+  updatedAt          DateTime           @default(now()) @updatedAt @map("updated_at")
+
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([status])
+  @@index([createdAt])
+  @@map("reactivo_leads")
+}
+
+// ============================================================
+// Pollen forecast (widget /polen)
+// ============================================================
+// Cache del pronóstico de polen para Concepción. `GRASS` viene en vivo de la
+// Google Pollen API (en Chile solo hay gramíneas); `TREE`/`WEED` provienen de un
+// calendario polínico curado (no existe sensor en Biobío). Un cron diario
+// (graphile-worker, TZ=America/Santiago) sobrescribe las filas — caché temporal
+// conforme a los Maps Service Terms (no se acumula histórico). Lectura pública
+// vía handler con `db` raw; el `@@deny` solo gobierna `authDb`.
+enum PollenType {
+  GRASS
+  TREE
+  WEED
+}
+
+enum PollenSource {
+  GOOGLE
+  CALENDAR
+}
+
+model PollenForecast {
+  id                    Int          @id @default(autoincrement())
+  locationKey           String       @map("location_key")
+  forecastDate          DateTime     @map("forecast_date") @db.Date
+  pollenType            PollenType   @map("pollen_type")
+  upiValue              Int?         @map("upi_value")
+  category              String?
+  colorHex              String?      @map("color_hex")
+  inSeason              Boolean      @default(false) @map("in_season")
+  source                PollenSource @default(GOOGLE)
+  healthRecommendations Json?        @map("health_recommendations")
+  indexDescription      String?      @map("index_description")
+  fetchedAt             DateTime     @default(now()) @map("fetched_at")
+
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+
+  @@unique([locationKey, forecastDate, pollenType])
+  @@index([locationKey, forecastDate])
+  @@map("pollen_forecasts")
+}
+
+// ============================================================
+// Salud ocupacional (P7 stage-A) — captación de leads B2B
+// ============================================================
+// Lead de empresas interesadas en testeo ocupacional de drogas/alcohol +
+// reactivos. La creación es PÚBLICA (sin auth, honeypot + ratelimit), igual que
+// ReactivoLead — el handler usa `db` raw. Lectura/gestión = staff.
+// NOTA: el motor de testeo/cadena-de-custodia/confirmatorio (stage-B) está
+// bloqueado por revisión legal (RIOHS, GC-MS, Ley 21.719) — ver docs/.
+enum OccupationalSector {
+  MINERIA
+  TRANSPORTE
+  CONSTRUCCION
+  GENERAL
+  OTRO
+}
+
+model OccupationalLead {
+  id          Int                @id @default(autoincrement())
+  empresa     String
+  contactName String             @map("contact_name")
+  email       String
+  phone       String?
+  rut         String?
+  sector      OccupationalSector @default(GENERAL)
+  headcount   Int?
+  message     String?
+  status      ReactivoLeadStatus @default(NUEVO)
+  source      String             @default("salud-ocupacional")
+  createdAt   DateTime           @default(now()) @map("created_at")
+  updatedAt   DateTime           @default(now()) @updatedAt @map("updated_at")
+
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([status])
+  @@index([createdAt])
+  @@map("occupational_leads")
+}
+
+// ── Salud ocupacional P7 stage-B (incremento SEGURO) ─────────────────
+// Solo lo que NO cruza el gate legal bloqueante (ver docs/CLINIC_B2B_SUITE_PLAN.md
+// §gates P7 + research golden-2026):
+//  - Gate de atestación RIOHS: un programa NO puede activarse sin que el cliente
+//    declare la cláusula RIOHS (CdT Art. 5/153/154/154 bis/184; DT Ord. 3032/47).
+//  - Resultado AGREGADO/despersonalizado (apto/no apto poblacional) con supresión
+//    por cohorte mínima — NUNCA resultado individual.
+// DIFERIDO tras sign-off legal (NO modelado aquí): resultado individual,
+// cadena de custodia, tamizaje presuntivo→confirmatorio GC-MS, divulgación
+// individual al empleador (Art. 154 bis + consentimiento expreso separado),
+// EIPD ocupacional. Esos requieren un modelo distinto bajo gate LEGAL_SIGNOFF.
+enum OccupationalProgramStatus {
+  DRAFT
+  ACTIVE
+  SUSPENDED
+}
+
+enum OccupationalTestingScope {
+  DRUGS
+  ALCOHOL
+  BOTH
+}
+
+model OccupationalProgram {
+  id              Int                       @id @default(autoincrement())
+  companyId       Int                       @map("company_id")
+  sector          OccupationalSector        @default(GENERAL)
+  testingScope    OccupationalTestingScope  @default(BOTH) @map("testing_scope")
+  status          OccupationalProgramStatus @default(DRAFT)
+  // Gate RIOHS (bloqueante para ACTIVE — se valida en el service).
+  riohsAttested   Boolean                   @default(false) @map("riohs_attested")
+  riohsClauseRef  String?                   @map("riohs_clause_ref") // referencia/cita de la cláusula
+  riohsAttestedAt DateTime?                 @map("riohs_attested_at")
+  riohsAttestedBy Int?                      @map("riohs_attested_by")
+  // Declaración del modelo de consentimiento del trabajador (Art. 154 bis):
+  // por defecto la divulgación al empleador es agregada/despersonalizada.
+  workerConsentBasis String?                @map("worker_consent_basis")
+  notes           String?
+  createdAt       DateTime                  @default(now()) @map("created_at")
+  updatedAt       DateTime                  @default(now()) @updatedAt @map("updated_at")
+
+  company         Company                   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  testBatches     OccupationalTestBatch[]
+
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([companyId])
+  @@index([status])
+  @@map("occupational_programs")
+}
+
+// Resultado AGREGADO de un lote de testeo. Sin PHI individual. La supresión por
+// cohorte mínima (k-anonimato) se aplica en el serializer del service: si
+// totalTested < umbral, se marca `suppressed` y no se exponen los conteos.
+model OccupationalTestBatch {
+  id                       Int      @id @default(autoincrement())
+  programId                Int      @map("program_id")
+  batchDate                DateTime @map("batch_date") @db.Date
+  totalTested              Int      @default(0) @map("total_tested")
+  passedCount              Int      @default(0) @map("passed_count")
+  // Presuntivos a confirmar (NUNCA un positivo final — confirmación GC-MS es
+  // un modelo diferido). Se reporta como "pendiente de confirmación".
+  presumptivePositiveCount Int      @default(0) @map("presumptive_positive_count")
+  notes                    String?
+  createdBy                Int?     @map("created_by")
+  createdAt                DateTime @default(now()) @map("created_at")
+  updatedAt                DateTime @default(now()) @updatedAt @map("updated_at")
+
+  program                  OccupationalProgram @relation(fields: [programId], references: [id], onDelete: Cascade)
+
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([programId, batchDate])
+  @@map("occupational_test_batches")
+}
+
+// ============================================================
 // DTE (Documentos Tributarios Electrónicos) - Accounting
 // ============================================================
 // DTE PURCHASE & SALES DETAILS
@@ -2603,14 +3821,23 @@ model DTEPurchaseDetail {
   otherTaxCode          String?   @map("other_tax_code") @db.VarChar(10)
   otherTaxAmount        Decimal   @default(0) @map("other_tax_amount") @db.Decimal(15, 2)
   otherTaxRate          Decimal?  @map("other_tax_rate") @db.Decimal(5, 2)
+  // Full fidelity when SII returns multiple other-taxes as a JSON array.
+  // Scalar cols above mirror the first entry for backward compat.
+  otherTaxes            Json?     @map("other_taxes") // [{code,rate,amount}, ...]
   
   // Additional notes
   referenceDocNote      String?   @map("reference_doc_note") // NCE o NDE Sobre Fact. de Compra
   notes                 String?
 
+  // Link to generated Expense (after DTE matcher runs)
+  expenseId             Int?      @map("expense_id")
+  matchedAt             DateTime? @map("matched_at")
+  matchSource           String?   @map("match_source") // 'AUTO', 'MANUAL', 'RULE'
+
   createdAt             DateTime  @default(now()) @map("created_at")
   updatedAt             DateTime  @default(now()) @updatedAt @map("updated_at")
   lineItems             DTELineItem[]
+  expense               Expense?  @relation(fields: [expenseId], references: [id], onDelete: SetNull)
 
   @@deny('all', auth() == null)
   @@allow('read', auth().status == 'ACTIVE')
@@ -2619,6 +3846,7 @@ model DTEPurchaseDetail {
   @@unique([providerRUT, folio])
   @@index([providerRUT])
   @@index([documentDate])
+  @@index([expenseId])
   @@map("dte_purchase_details")
 }
 
@@ -2875,6 +4103,7 @@ model TransactionCategory {
   autoRules            FinancialAutoCategoryRule[]
   compensationProfiles CompensationProfile[]
   services             Service[]
+  expenseServices      ExpenseService[]
 
   // Access policies
   @@allow('all', auth().status == 'ACTIVE')
@@ -2924,6 +4153,7 @@ model FinancialTransaction {
   category         TransactionCategory?             @relation(fields: [categoryId], references: [id])
   counterpart      Counterpart?                     @relation(fields: [counterpartId], references: [id])
   allocations      FinancialTransactionAllocation[]
+  loanSchedulePayments LoanSchedulePayment[]
   loanSchedules    LoanSchedule[]
   serviceSchedules ServiceSchedule[]
   comment          String?
@@ -3444,6 +4674,7 @@ model WaBusinessAccount {
   templates           WaTemplate[]
   broadcasts          WaBroadcast[]
   accountEvents       WaAccountEvent[]
+  savedStickers       WaSavedSticker[]
 
   @@deny('all', auth() == null)
   @@allow('read,create,update,delete', auth().status == 'ACTIVE')
@@ -3458,6 +4689,13 @@ model WaPhoneNumber {
   label               String?
   qualityRating       String?   @map("quality_rating")
   active              Boolean   @default(true)
+  // Onboarding flow used to provision this phone:
+  //   "coexistence"      — Meta 2025 Coexistence (WA Business app keeps using SIM,
+  //                         Cloud API mirrors via Messaging Echoes; 5 mps cap)
+  //   "embedded_signup"  — full Embedded Signup, phone exclusive to Cloud API
+  //   "migration"        — addMigratingPhoneNumber + request_code + register flow
+  //   null               — legacy / manual upsert
+  onboardingFlow      String?   @map("onboarding_flow")
   createdAt           DateTime  @default(now()) @map("created_at")
   updatedAt           DateTime  @default(now()) @updatedAt @map("updated_at")
 
@@ -3518,6 +4756,11 @@ model WaConversation {
   lastMessagePreview  String?               @map("last_message_preview")
   notas               String?
   etiquetas           String[]              @default([])
+  // Per-conversation push-notification mute. Webhook handler skips
+  // broadcastPushNotification when set in the past (or null=unmuted).
+  // Storing a timestamp instead of a boolean lets the UI offer
+  // "mute until tomorrow 9am" later without a schema change.
+  mutedUntil          DateTime?             @map("muted_until")
   createdAt           DateTime              @default(now()) @map("created_at")
   updatedAt           DateTime              @default(now()) @updatedAt @map("updated_at")
 
@@ -3776,6 +5019,38 @@ model WaSnippet {
   @@map("wa_snippets")
 }
 
+// Stickers guardados estilo WhatsApp. Cada WABA tiene su propia bandeja
+// (accountId): "Recientes" (auto-poblado al enviar) ordenado por lastUsedAt,
+// y "Guardados" (favorite=true, marcado desde un sticker recibido). El .webp
+// durable vive en R2 (r2Key) porque los media ids de Meta expiran ~30d; al
+// reenviar se re-sube desde R2 para obtener un id fresco. sha256 deduplica
+// por cuenta (un mismo sticker no se guarda dos veces).
+model WaSavedSticker {
+  id              Int      @id @default(autoincrement())
+  accountId       Int      @map("account_id")
+  r2Key           String   @map("r2_key")
+  mimeType        String   @default("image/webp") @map("mime_type")
+  sha256          String
+  favorite        Boolean  @default(false)
+  width           Int?
+  height          Int?
+  hitCount        Int      @default(0) @map("hit_count")
+  lastUsedAt      DateTime? @map("last_used_at")
+  addedByUserId   Int?     @map("added_by_user_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at")
+
+  account         WaBusinessAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@unique([accountId, sha256])
+  @@index([accountId])
+  @@index([favorite])
+  @@index([lastUsedAt])
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+  @@map("wa_saved_stickers")
+}
+
 enum WaScheduledStatus {
   PENDING
   SENT
@@ -3930,6 +5205,149 @@ model WaScheduledMessage {
   @@map("wa_scheduled_messages")
 }
 
+// ─── Social media publishing ───────────────────────────────────────────────────
+
+enum SocialNetwork {
+  INSTAGRAM
+  FACEBOOK
+  TIKTOK
+}
+
+enum SocialPlacement {
+  IG_FEED
+  IG_REEL
+  IG_STORY
+  FB_FEED
+  FB_REEL
+  FB_STORY
+  TIKTOK_VIDEO
+}
+
+enum SocialMediaType {
+  IMAGE
+  VIDEO
+  CAROUSEL
+}
+
+enum SocialAspectRatio {
+  RATIO_4_5
+  RATIO_1_1
+  RATIO_9_16
+}
+
+enum SocialPostStatus {
+  DRAFT
+  PENDING_APPROVAL
+  SCHEDULED
+  PUBLISHING
+  PUBLISHED
+  FAILED
+}
+
+enum SocialTargetStatus {
+  PENDING
+  CREATING
+  CONTAINER_READY
+  PUBLISHING
+  PUBLISHED
+  FAILED
+  SKIPPED
+}
+
+enum SocialAccountProvider {
+  META
+  TIKTOK
+}
+
+model SocialAccount {
+  id              Int                   @id @default(autoincrement())
+  provider        SocialAccountProvider @default(META)
+  displayName     String?               @map("display_name")
+  metaBusinessId  String?               @map("meta_business_id")
+  fbPageId        String?               @map("fb_page_id")
+  igUserId        String?               @map("ig_user_id")
+  pageAccessToken String?               @map("page_access_token")
+  userAccessToken String?               @map("user_access_token")
+  refreshToken    String?               @map("refresh_token")
+  refreshExpiresAt DateTime?            @map("refresh_expires_at")
+  externalUserId  String?               @map("external_user_id")
+  tokenExpiresAt  DateTime?             @map("token_expires_at")
+  appId           String?               @map("app_id")
+  appSecret       String?               @map("app_secret")
+  graphApiVersion String                @default("v23.0") @map("graph_api_version")
+  active          Boolean               @default(true)
+  callWindowStart DateTime?             @map("call_window_start")
+  callCount       Int                   @default(0) @map("call_count")
+  createdAt       DateTime              @default(now()) @map("created_at")
+  updatedAt       DateTime              @default(now()) @updatedAt @map("updated_at")
+
+  targets         SocialPostTarget[]
+
+  @@index([provider])
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+  @@map("social_accounts")
+}
+
+model SocialPost {
+  id               Int                @id @default(autoincrement())
+  title            String?
+  status           SocialPostStatus   @default(DRAFT)
+  mediaType        SocialMediaType    @map("media_type")
+  aspectRatio      SocialAspectRatio  @map("aspect_ratio")
+  caption          String?
+  hashtags         String[]           @default([])
+  media            Json               @default("[]")
+  generationMeta   Json               @default("{}") @map("generation_meta")
+  scheduledAt      DateTime?          @map("scheduled_at")
+  approvedByUserId Int?               @map("approved_by_user_id")
+  approvedAt       DateTime?          @map("approved_at")
+  rejectedReason   String?            @map("rejected_reason")
+  createdByUserId  Int                @map("created_by_user_id")
+  publishedAt      DateTime?          @map("published_at")
+  errorMessage     String?            @map("error_message")
+  createdAt        DateTime           @default(now()) @map("created_at")
+  updatedAt        DateTime           @default(now()) @updatedAt @map("updated_at")
+
+  targets          SocialPostTarget[]
+
+  @@index([status])
+  @@index([scheduledAt])
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+  @@map("social_posts")
+}
+
+model SocialPostTarget {
+  id                 Int                @id @default(autoincrement())
+  postId             Int                @map("post_id")
+  accountId          Int                @map("account_id")
+  network            SocialNetwork
+  placement          SocialPlacement
+  status             SocialTargetStatus @default(PENDING)
+  containerId        String?            @map("container_id")
+  externalId         String?            @map("external_id")
+  permalink          String?
+  captionOverride    String?            @map("caption_override")
+  attempts           Int                @default(0)
+  errorCode          String?            @map("error_code")
+  errorMessage       String?            @map("error_message")
+  containerCreatedAt DateTime?          @map("container_created_at")
+  publishedAt        DateTime?          @map("published_at")
+  createdAt          DateTime           @default(now()) @map("created_at")
+  updatedAt          DateTime           @default(now()) @updatedAt @map("updated_at")
+
+  post               SocialPost         @relation(fields: [postId], references: [id], onDelete: Cascade)
+  account            SocialAccount      @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, network, placement])
+  @@index([postId, status])
+  @@index([status])
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+  @@map("social_post_targets")
+}
+
 // ─── Expenses ────────────────────────────────────────────────────────────────
 
 enum ExpenseScope {
@@ -3956,30 +5374,37 @@ enum ExpenseRecurrence {
 }
 
 model ExpenseService {
-  id             Int               @id @default(autoincrement())
-  publicId       String            @unique @default(cuid()) @map("public_id")
-  name           String
-  detail         String?
-  scope          ExpenseScope
-  category       String?
-  billingDay     Int?              @map("billing_day")
-  dueDateRule    String?           @map("due_date_rule")
-  defaultAmount  Decimal?          @map("default_amount") @db.Decimal(14, 2)
-  isFixed        Boolean           @default(false) @map("is_fixed")
-  recurrence     ExpenseRecurrence @default(MONTHLY)
-  startDate      DateTime?         @map("start_date") @db.Date
-  endDate        DateTime?         @map("end_date") @db.Date
-  isActive       Boolean           @default(true) @map("is_active")
-  notes          String?
-  tags           String[]
-  createdAt      DateTime          @default(now()) @map("created_at")
-  updatedAt      DateTime          @default(now()) @updatedAt @map("updated_at")
+  id                    Int                  @id @default(autoincrement())
+  publicId              String               @unique @default(cuid()) @map("public_id")
+  name                  String
+  detail                String?
+  scope                 ExpenseScope
+  category              String?
+  billingDay            Int?                 @map("billing_day")
+  emissionDay           Int?                 @map("emission_day")
+  dueDateRule           String?              @map("due_date_rule")
+  defaultAmount         Decimal?             @map("default_amount") @db.Decimal(14, 2)
+  isFixed               Boolean              @default(false) @map("is_fixed")
+  recurrence            ExpenseRecurrence    @default(MONTHLY)
+  startDate             DateTime?            @map("start_date") @db.Date
+  endDate               DateTime?            @map("end_date") @db.Date
+  isActive              Boolean              @default(true) @map("is_active")
+  notes                 String?
+  tags                  String[]
+  transactionCategoryId Int?                 @map("transaction_category_id")
+  counterpartId         Int?                 @map("counterpart_id")
+  createdAt             DateTime             @default(now()) @map("created_at")
+  updatedAt             DateTime             @default(now()) @updatedAt @map("updated_at")
 
-  expenses       Expense[]
+  expenses              Expense[]
+  transactionCategory   TransactionCategory? @relation(fields: [transactionCategoryId], references: [id], onDelete: SetNull)
+  counterpart           Counterpart?         @relation(fields: [counterpartId], references: [id], onDelete: SetNull)
 
   @@deny('all', auth() == null)
   @@allow('read', true)
   @@allow('create,update,delete', auth().status == 'ACTIVE')
+  @@index([transactionCategoryId])
+  @@index([counterpartId])
   @@map("expense_services")
 }
 
@@ -4004,6 +5429,10 @@ model Expense {
 
   service        ExpenseService? @relation(fields: [serviceId], references: [id], onDelete: SetNull)
   transactions   ExpenseTransaction[]
+  // Reverse relation back to DTEPurchaseDetail.expense (added in the
+  // utility-bills/expense session). Required by zenstack/Prisma; the
+  // DB side already carries the FK via dte_purchase_details.expense_id.
+  dtePurchaseDetails DTEPurchaseDetail[]
 
   @@deny('all', auth() == null)
   @@allow('read', true)
@@ -4019,7 +5448,28 @@ model Expense {
 enum UtilityProvider {
   ESSBIO
   CGE
+  TELSUR
+  MOVISTAR
+  DOCTORALIA
+  MEDIPASS
+  MASVIDA
+  PREVIRED
+  SII
+  TGR
+  GASTOS_COMUNES
   OTHER
+
+  @@schema("personal")
+}
+
+enum ProviderAuthMethod {
+  NONE_PUBLIC
+  RUT_PASSWORD
+  CLAVE_UNICA
+  CLAVE_TRIBUTARIA
+  OAUTH
+  API_KEY
+  EMAIL_FORWARDING
 
   @@schema("personal")
 }
@@ -4029,6 +5479,7 @@ model UtilityAccount {
   provider         UtilityProvider
   scope            ExpenseScope    @default(PERSONAL)
   serviceNumber    String          @unique @map("service_number") // Essbio: numero_servicio, CGE: CTA_CTO
+  externalAccountId String?        @map("external_account_id") // Essbio: id_servicio (677471), requerido para /getDatos/facturacion
   label            String?         // e.g. "Casa San Pedro", "Clínica"
 
   // Cached from last API fetch
@@ -4041,18 +5492,90 @@ model UtilityAccount {
   // Optional link to ExpenseService for auto-generating monthly expenses
   expenseServiceId Int?            @map("expense_service_id")
 
+  // Optional link to ProviderCredential for scrapers requiring auth
+  credentialId     Int?            @map("credential_id")
+
   isActive         Boolean         @default(true) @map("is_active")
   notes            String?
   createdAt        DateTime        @default(now()) @map("created_at")
   updatedAt        DateTime        @default(now()) @updatedAt @map("updated_at")
+
+  snapshots        UtilityBillSnapshot[]
+  credential       ProviderCredential? @relation(fields: [credentialId], references: [id], onDelete: SetNull)
 
   @@deny('all', auth() == null)
   @@allow('read', true)
   @@allow('create,update,delete', auth().status == 'ACTIVE')
 
   @@index([scope])
+  @@index([credentialId])
   @@schema("personal")
   @@map("utility_accounts")
+}
+
+// Historial completo de cada fetch de boleta — para diferencias, tendencias, alertas.
+model UtilityBillSnapshot {
+  id               BigInt          @id @default(autoincrement())
+  utilityAccountId Int             @map("utility_account_id")
+  fetchedAt        DateTime        @default(now()) @map("fetched_at")
+  source           String          @default("MANUAL") // 'CRON', 'MANUAL', 'EMAIL_PARSE', 'SCRAPE'
+
+  // Standardized fields across providers
+  currentAmount    Decimal?        @map("current_amount") @db.Decimal(15, 2)
+  previousAmount   Decimal?        @map("previous_amount") @db.Decimal(15, 2)
+  thirdAmount      Decimal?        @map("third_amount") @db.Decimal(15, 2)   // CGE devuelve 3 últimas
+  currentDebt      Decimal?        @map("current_debt") @db.Decimal(15, 2)   // Essbio: deuda actual
+  emissionDate     String?         @map("emission_date")                      // YYYY-MM-DD si lo da
+  dueDate          String?         @map("due_date")                           // Essbio /corteNoPago EFecha (fecha corte por no pago)
+  period           String?         @map("period")                             // Essbio FECFAC MM/YYYY — mes facturado
+  folio            String?         @map("folio")                              // Essbio FOLIO (SII-xxx), dedupe key del historial
+  consumption      Int?            @map("consumption")                        // Essbio CONSUMO m3
+  reading          Int?            @map("reading")                            // Essbio LECTURA medidor
+  lastPaymentJson  Json?           @map("last_payment_json")                  // {amount, date}
+  observation      String?
+  rawResponse      Json            @map("raw_response")                       // todo el response crudo
+  errorMessage     String?         @map("error_message")                      // si falló parcial
+
+  account          UtilityAccount  @relation(fields: [utilityAccountId], references: [id], onDelete: Cascade)
+
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([utilityAccountId, fetchedAt])
+  @@schema("personal")
+  @@map("utility_bill_snapshots")
+}
+
+// Credenciales encriptadas para scrapers que requieren login.
+// secret se guarda cifrado con KMS / pgcrypto / app-level encryption.
+model ProviderCredential {
+  id               Int                 @id @default(autoincrement())
+  provider         UtilityProvider
+  scope            ExpenseScope        @default(PERSONAL)
+  authMethod       ProviderAuthMethod  @default(RUT_PASSWORD) @map("auth_method")
+  label            String?
+  identifier       String              // RUT, usuario, email, client_id
+  secretEncrypted  String              @map("secret_encrypted")
+  metadata         Json?               // cookies cache, last token, refresh_token, otp_seed
+  isActive         Boolean             @default(true) @map("is_active")
+  lastLoginAt      DateTime?           @map("last_login_at")
+  lastErrorAt      DateTime?           @map("last_error_at")
+  lastError        String?             @map("last_error")
+  notes            String?
+  createdAt        DateTime            @default(now()) @map("created_at")
+  updatedAt        DateTime            @default(now()) @updatedAt @map("updated_at")
+
+  accounts         UtilityAccount[]
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@unique([provider, identifier])
+  @@index([provider])
+  @@schema("personal")
+  @@map("provider_credentials")
 }
 
 model ExpenseTransaction {
@@ -4069,4 +5592,808 @@ model ExpenseTransaction {
   @@allow('create,update,delete', auth().status == 'ACTIVE')
   @@unique([expenseId, transactionId])
   @@map("expense_transactions")
+}
+
+// =====================================================================
+// Skin-test exam reports — generic structured reports printable as PDF.
+// One polymorphic ExamReport handles all 5 exam types via typed
+// sections that hold reactions to specific allergens. Footer info
+// (clinic name, address, phones, doctor signature) lives in
+// ClinicSettings — never hardcoded — and conclusion phrases
+// ("Piel reactiva valida el examen") live in ConclusionTemplate so
+// staff can manage them from the UI.
+// =====================================================================
+
+enum ExamType {
+  PATCH                  // Test de Parche (lecturas 48h y 96h)
+  MULTITEST_PANELS       // Multitest Panel 1, 2, 3 y Acaros
+  FOOD_PANEL             // Panel Alimentario I
+  AEROALLERGENS_I        // Aeroalergenos I (Acaros, Epitelios, Polenes)
+  AEROALLERGENS_II       // Aeroalergenos II
+}
+
+enum SkinReaction {
+  NEGATIVA          // sin reacción (papule < threshold)
+  DEBIL             // positiva débil
+  MODERADA          // positiva moderada
+  FUERTE            // positiva fuerte
+}
+
+model ExamReport {
+  id                    Int                    @id @default(autoincrement())
+  patientId             Int                    @map("patient_id")
+  examType              ExamType               @map("exam_type")
+  // Conclusion is denormalized so renaming/deleting a template never
+  // mutates historical reports; the FK is bookkeeping only.
+  conclusionText        String                 @map("conclusion_text")
+  conclusionTemplateId  Int?                   @map("conclusion_template_id")
+  // Methodology footer — defaults pulled from ClinicSettings at create
+  // time but stored per-report so future settings changes don't
+  // rewrite history.
+  reagents              String?
+  technique             String?
+  notes                 String?                // e.g. "*solo se considera reacción positiva con pápula mayor a 3 mm"
+  doctorName            String                 @map("doctor_name")
+  doctorSpecialty       String                 @map("doctor_specialty")
+  doctorRut             String?                @map("doctor_rut")
+  // Validity-gate controls (mm pápula). Nullable to keep all historical
+  // rows valid; new wizard writes them so reopening a report can
+  // round-trip without re-deriving from the XLSX skin-test snapshot.
+  // Feature is "live-but-quiet": old reports render `—` for these
+  // fields, new ones persist whatever the operator submitted (XLSX
+  // prefill or manual entry).
+  histamineMm           Decimal?               @map("histamine_mm") @db.Decimal(5, 2)
+  salineMm              Decimal?               @map("saline_mm")    @db.Decimal(5, 2)
+  generatedAt           DateTime?              @map("generated_at")
+  createdAt             DateTime               @default(now()) @map("created_at")
+  updatedAt             DateTime               @default(now()) @updatedAt @map("updated_at")
+  createdById           Int?                   @map("created_by_id")
+
+  patient               Patient                @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  conclusionTemplate    ConclusionTemplate?    @relation(fields: [conclusionTemplateId], references: [id], onDelete: SetNull)
+  createdBy             User?                  @relation("ExamReportCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  sections              ExamReportSection[]
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([patientId])
+  @@index([examType])
+  @@index([createdAt])
+  @@map("exam_reports")
+}
+
+model ExamReportSection {
+  id              Int                       @id @default(autoincrement())
+  examReportId    Int                       @map("exam_report_id")
+  // Logical key used by the renderer ("lectura_48h", "panel_1",
+  // "polenes_arboles", "acaros", etc.) — keeps the PDF layout stable
+  // even if the visible label is edited.
+  sectionKey      String                    @map("section_key")
+  label           String                    // visible "PANEL 1"
+  position        Int                       @default(0)
+
+  examReport      ExamReport                @relation(fields: [examReportId], references: [id], onDelete: Cascade)
+  reactions       ExamReportReaction[]
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([examReportId])
+  @@map("exam_report_sections")
+}
+
+model ExamReportReaction {
+  id           Int                @id @default(autoincrement())
+  sectionId    Int                @map("section_id")
+  allergenId   String             @map("allergen_id")
+  reaction     SkinReaction
+  // Pápula in mm — preserves the raw reading; reaction enum is the
+  // clinical interpretation (clinic threshold lives in ClinicSettings).
+  papuleMm     Decimal?           @map("papule_mm") @db.Decimal(5, 2)
+  notes        String?
+  position     Int                @default(0)
+
+  section      ExamReportSection  @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  allergen     ClinicalAllergen   @relation(fields: [allergenId], references: [id], onDelete: Restrict)
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([sectionId])
+  @@index([allergenId])
+  @@map("exam_report_reactions")
+}
+
+model ConclusionTemplate {
+  id          Int          @id @default(autoincrement())
+  text        String       // "Piel reactiva valida el examen"
+  examType    ExamType?    @map("exam_type")  // null = available for any exam type
+  isDefault   Boolean      @default(false) @map("is_default")
+  isActive    Boolean      @default(true) @map("is_active")
+  position    Int          @default(0)
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @default(now()) @updatedAt @map("updated_at")
+
+  reports     ExamReport[]
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([examType])
+  @@map("conclusion_templates")
+}
+
+model ClinicSettings {
+  // Singleton — id pinned to 1 by application code; never insert another row.
+  id                Int      @id @default(1)
+  name              String   @default("Bioalergia")
+  address           String   @default("San Martín 870, Edificio Caram, Torre B, Of. 208 A – 208 B, Concepción")
+  phoneWhatsapp     String   @default("+569 30963316") @map("phone_whatsapp")
+  phoneLandline     String   @default("(41) 33355293") @map("phone_landline")
+  email             String   @default("contacto@bioalergia.cl")
+  website           String   @default("www.bioalergia.cl")
+  websiteSecondary  String   @default("www.jmmmartinez-alergia-inmunologia.com/") @map("website_secondary")
+  defaultReagents   String   @default("Inmunotek - Diater España") @map("default_reagents")
+  defaultTechnique  String   @default("Método Doan T Zeiss Modificado") @map("default_technique")
+  doctorName        String   @default("DR JOSE MANUEL MARTINEZ M.") @map("doctor_name")
+  doctorSpecialty   String   @default("ALERGOLOGO-INMUNOLOGO") @map("doctor_specialty")
+  doctorRut         String?  @map("doctor_rut")
+  // Prestador institucional (razón social + RUT) para encabezado de
+  // presupuestos/consentimientos. Nullable → editable desde admin, sin hardcode.
+  legalName         String?  @map("legal_name")
+  legalRut          String?  @map("legal_rut")
+  // Condiciones económicas / disclosures del presupuesto de inmunoterapia
+  // (vigencia anual, renovación, ajuste proporcional 0,25 mL, no reembolsable,
+  // suspensión, no garantía). Editable; se imprime al pie del PDF de presupuesto.
+  immunoBudgetTerms String?  @map("immuno_budget_terms") @db.Text
+  // Texto introductorio del presupuesto de ITA (qué es ITA, efectos, objetivos,
+  // seguimiento). Editable; soporta placeholders {{paciente}} {{apoderado}}
+  // {{diagnostico}} interpolados por presupuesto. Se imprime arriba del PDF.
+  immunoBudgetIntro String?  @map("immuno_budget_intro") @db.Text
+  signatureUrl      String?  @map("signature_url") @db.Text
+  // Logos administrables (R2/CDN, PNG/JPEG) que se embeben en los PDFs.
+  // Vacío → fallback al asset local apps/api/assets/logos/bioalergia.png.
+  logoUrl           String?  @map("logo_url") @db.Text
+  secondaryLogoUrl  String?  @map("secondary_logo_url") @db.Text
+  papuleThresholdMm Decimal  @default(3.0) @map("papule_threshold_mm") @db.Decimal(5, 2)
+  // Prestador Superintendencia de Salud N — printed under doctor's signature
+  // block on every exam-report PDF. Free-text (Superintendencia issues alpha-
+  // numeric codes); nullable so a fresh deploy renders "—" instead of "0".
+  superintendenciaNumber String? @map("superintendencia_number")
+  updatedAt         DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('update', auth().status == 'ACTIVE')
+
+  @@map("clinic_settings")
+}
+
+// ============================================================================
+// Ecommerce — catálogo público, carrito, checkout MercadoPago, sync MercadoLibre
+// PG = source-of-truth catálogo. Haulmer se invoca post-venta sólo para DTE.
+// ============================================================================
+
+enum ProductStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+enum ContentStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum ReservationStatus {
+  ACTIVE
+  CONSUMED
+  RELEASED
+  EXPIRED
+}
+
+enum DocumentType {
+  BOLETA
+  FACTURA
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  FULFILLED
+  CANCELLED
+  REFUNDED
+}
+
+enum OrderChannel {
+  WEB
+  MERCADO_LIBRE
+}
+
+enum PaymentProvider {
+  MERCADO_PAGO
+  MERCADO_LIBRE
+}
+
+enum PaymentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  REFUNDED
+  CHARGED_BACK
+}
+
+enum MlListingStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  CLOSED
+  ERROR
+}
+
+enum SalesChannel {
+  WEB
+  MERCADO_LIBRE
+  UBER_EATS
+  PEDIDOS_YA
+  RAPPI
+}
+
+/// News / blog articles for /noticias on the public marketing site. `body`
+/// holds a BodyBlock[] (discriminated union p/h2/ul) validated by the oRPC
+/// contract. Public read is limited to PUBLISHED rows; staff have full CRUD.
+model Article {
+  id             Int           @id @default(autoincrement())
+  slug           String        @unique
+  title          String
+  category       String
+  excerpt        String
+  readingMinutes Int           @default(4) @map("reading_minutes")
+  body           Json
+  status         ContentStatus @default(DRAFT)
+  seoTitle       String?       @map("seo_title")
+  seoDescription String?       @map("seo_description")
+  publishedAt    DateTime?     @map("published_at")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @default(now()) @updatedAt @map("updated_at")
+
+  @@index([status])
+  @@index([slug])
+  @@index([publishedAt])
+
+  @@deny('all', auth() == null && status != 'PUBLISHED')
+  @@allow('read', status == 'PUBLISHED')
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+
+  @@map("articles")
+}
+
+model ProductCategory {
+  id            Int               @id @default(autoincrement())
+  slug          String            @unique
+  name          String
+  description   String?
+  parentId      Int?              @map("parent_id")
+  displayOrder  Int               @default(0) @map("display_order")
+  mlCategoryId  String?           @map("ml_category_id")
+  imageUrl      String?           @map("image_url")
+  createdAt     DateTime          @default(now()) @map("created_at")
+  updatedAt     DateTime          @default(now()) @updatedAt @map("updated_at")
+
+  parent        ProductCategory?  @relation("ProductCategoryHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children      ProductCategory[] @relation("ProductCategoryHierarchy")
+  products      Product[]
+
+  @@index([parentId])
+  @@index([slug])
+
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@map("product_categories")
+}
+
+model Product {
+  id                  Int                 @id @default(autoincrement())
+  slug                String              @unique
+  sku                 String              @unique
+  name                String
+  shortDescription    String?             @map("short_description")
+  description         String?
+  categoryId          Int?                @map("category_id")
+  brand               String?
+  priceClp            Int                 @map("price_clp")
+  compareAtPriceClp   Int?                @map("compare_at_price_clp")
+  costClp             Int?                @map("cost_clp")
+  weightGrams         Int?                @map("weight_grams")
+  barcode             String?
+  requiresPrescription Boolean            @default(false) @map("requires_prescription")
+  status              ProductStatus       @default(DRAFT)
+  seoTitle            String?             @map("seo_title")
+  seoDescription      String?             @map("seo_description")
+  availableQty        Int                 @default(0) @map("available_qty")
+  safetyStock         Int                 @default(2) @map("safety_stock")
+  version             Int                 @default(0)
+  createdAt           DateTime            @default(now()) @map("created_at")
+  updatedAt           DateTime            @default(now()) @updatedAt @map("updated_at")
+
+  category            ProductCategory?    @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  images              ProductImage[]
+  cartItems           CartItem[]
+  orderItems          OrderItem[]
+  reservations        StockReservation[]
+  mlListing           MlListing?
+  channelPrices       ProductChannelPrice[]
+  reviews             ProductReview[]
+
+  @@index([categoryId])
+  @@index([status])
+  @@index([slug])
+  @@index([sku])
+
+  @@deny('all', auth() == null && status != 'ACTIVE')
+  @@allow('read', status == 'ACTIVE')
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+
+  @@map("products")
+}
+
+model ProductReview {
+  id            Int       @id @default(autoincrement())
+  productId     Int       @map("product_id")
+  authorName    String    @map("author_name")
+  authorEmail   String?   @map("author_email")
+  rating        Int       // 1-5
+  title         String?
+  body          String
+  verified      Boolean   @default(false)
+  status        String    @default("PENDING") // PENDING | APPROVED | REJECTED
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  product       Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId, status])
+  @@index([status])
+
+  @@allow('read', status == 'APPROVED')
+  @@allow('create', true)
+  @@allow('read,update,delete', auth().status == 'ACTIVE')
+
+  @@map("product_reviews")
+}
+
+model ProductImage {
+  id          Int       @id @default(autoincrement())
+  productId   Int       @map("product_id")
+  r2Key       String    @map("r2_key")
+  cdnUrl      String    @map("cdn_url")
+  // srcset listo-para-usar: "<url> 400w, <url> 800w, <url> 1600w" (variantes
+  // WebP pre-generadas client-side). El navegador elige el tamaño según
+  // viewport/densidad. Vacío → fallback a cdnUrl sola.
+  srcset      String?   @db.Text
+  // Variante AVIF (mejor compresión que WebP). El front la prefiere vía
+  // <picture><source type="image/avif">; cae a srcset (WebP) → cdnUrl.
+  avifSrcset  String?   @map("avif_srcset") @db.Text
+  // Variante JPEG XL (mejor compresión aún; Safari 17+ la decodea por defecto,
+  // Chrome la re-habilita 2026). Generada server-side con sharp. Primera fuente
+  // del <picture> (early-adopter): JXL → AVIF → WebP → original.
+  jxlSrcset   String?   @map("jxl_srcset") @db.Text
+  alt         String?
+  position    Int       @default(0)
+  width       Int?
+  height      Int?
+  isPrimary   Boolean   @default(false) @map("is_primary")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId, position])
+
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@map("product_images")
+}
+
+model StockReservation {
+  id          Int                @id @default(autoincrement())
+  productId   Int                @map("product_id")
+  qty         Int
+  cartId      Int?               @map("cart_id")
+  orderId     Int?               @map("order_id")
+  expiresAt   DateTime           @map("expires_at")
+  status      ReservationStatus  @default(ACTIVE)
+  createdAt   DateTime           @default(now()) @map("created_at")
+
+  product     Product            @relation(fields: [productId], references: [id], onDelete: Cascade)
+  cart        Cart?              @relation(fields: [cartId], references: [id], onDelete: SetNull)
+  order       Order?             @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@index([expiresAt, status])
+  @@index([productId, status])
+  @@index([cartId])
+  @@index([orderId])
+
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+
+  @@map("stock_reservations")
+}
+
+model Cart {
+  id          Int                @id @default(autoincrement())
+  // SHA-256 hex hash de un token bearer de 32 bytes random (256 bits).
+  // El token plano vive sólo en cookie httpOnly+Secure+SameSite=Lax `cart_token`.
+  tokenHash   String             @unique @map("token_hash")
+  userId      Int?               @map("user_id")
+  currency    String             @default("CLP")
+  expiresAt   DateTime?          @map("expires_at")
+  createdAt   DateTime           @default(now()) @map("created_at")
+  updatedAt   DateTime           @default(now()) @updatedAt @map("updated_at")
+
+  user        User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
+  items       CartItem[]
+  reservations StockReservation[]
+
+  @@index([userId])
+  @@index([expiresAt])
+
+  @@deny('all', auth() == null)
+  @@allow('read,update,delete', auth().id == userId)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+
+  @@map("carts")
+}
+
+model CartItem {
+  id            Int       @id @default(autoincrement())
+  cartId        Int       @map("cart_id")
+  productId     Int       @map("product_id")
+  qty           Int
+  unitPriceClp  Int       @map("unit_price_clp")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  cart          Cart      @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product       Product   @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@unique([cartId, productId])
+  @@index([productId])
+
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+
+  @@map("cart_items")
+}
+
+model Order {
+  id                Int                 @id @default(autoincrement())
+  number            String              @unique
+  cartId            Int?                @map("cart_id")
+  userId            Int?                @map("user_id")
+  customerEmail     String              @map("customer_email")
+  customerRut       String?             @map("customer_rut")
+  customerName      String              @map("customer_name")
+  customerPhone     String?             @map("customer_phone")
+  billingType       DocumentType        @default(BOLETA) @map("billing_type")
+  shippingAddress   Json?               @map("shipping_address")
+  subtotalClp       Int                 @map("subtotal_clp")
+  shippingClp       Int                 @default(0) @map("shipping_clp")
+  discountClp       Int                 @default(0) @map("discount_clp")
+  totalClp          Int                 @map("total_clp")
+  status            OrderStatus         @default(PENDING)
+  channel           OrderChannel        @default(WEB)
+  mlOrderId         String?             @unique @map("ml_order_id")
+  dteFolio          String?             @map("dte_folio")
+  dteType           String?             @map("dte_type")
+  notes             String?
+  createdAt         DateTime            @default(now()) @map("created_at")
+  updatedAt         DateTime            @default(now()) @updatedAt @map("updated_at")
+
+  user              User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
+  items             OrderItem[]
+  payments          Payment[]
+  reservations      StockReservation[]
+
+  @@index([status, createdAt])
+  @@index([channel])
+  @@index([customerEmail])
+  @@index([userId])
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().id == userId)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id              Int       @id @default(autoincrement())
+  orderId         Int       @map("order_id")
+  productId       Int       @map("product_id")
+  productSnapshot Json      @map("product_snapshot")
+  qty             Int
+  unitPriceClp    Int       @map("unit_price_clp")
+  lineTotalClp    Int       @map("line_total_clp")
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  order           Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product         Product   @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@index([orderId])
+  @@index([productId])
+
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+
+  @@map("order_items")
+}
+
+model Payment {
+  id                  Int               @id @default(autoincrement())
+  orderId             Int               @map("order_id")
+  provider            PaymentProvider
+  providerPaymentId   String?           @unique @map("provider_payment_id")
+  idempotencyKey      String            @unique @map("idempotency_key")
+  amountClp           Int               @map("amount_clp")
+  status              PaymentStatus     @default(PENDING)
+  rawPayload          Json?             @map("raw_payload")
+  approvedAt          DateTime?         @map("approved_at")
+  createdAt           DateTime          @default(now()) @map("created_at")
+  updatedAt           DateTime          @default(now()) @updatedAt @map("updated_at")
+
+  order               Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId, status])
+
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+
+  @@map("payments")
+}
+
+model MlOauthToken {
+  id                Int       @id @default(autoincrement())
+  mlUserId          String    @unique @map("ml_user_id")
+  accessTokenEnc    String    @map("access_token_enc")
+  refreshTokenEnc   String    @map("refresh_token_enc")
+  expiresAt         DateTime  @map("expires_at")
+  scope             String?
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+
+  @@map("ml_oauth_tokens")
+}
+
+model MlListing {
+  id              Int               @id @default(autoincrement())
+  productId       Int               @unique @map("product_id")
+  mlItemId        String            @unique @map("ml_item_id")
+  status          MlListingStatus   @default(DRAFT)
+  permalink       String?
+  listingTypeId   String?           @map("listing_type_id")
+  categoryId      String?           @map("category_id")
+  lastSyncAt      DateTime?         @map("last_sync_at")
+  lastError       String?           @map("last_error")
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @default(now()) @updatedAt @map("updated_at")
+
+  product         Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+
+  @@map("ml_listings")
+}
+
+// Precio por canal de venta. Si no hay row → fallback Product.priceClp (web).
+model ProductChannelPrice {
+  id          Int           @id @default(autoincrement())
+  productId   Int           @map("product_id")
+  channel     SalesChannel
+  priceClp    Int           @map("price_clp")
+  url         String?
+  notes       String?
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @default(now()) @updatedAt @map("updated_at")
+
+  product     Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, channel])
+  @@index([channel])
+
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@map("product_channel_prices")
+}
+
+model WebhookEvent {
+  id              Int       @id @default(autoincrement())
+  provider        String
+  topic           String
+  externalId      String    @map("external_id")
+  signatureValid  Boolean   @default(false) @map("signature_valid")
+  processedAt     DateTime? @map("processed_at")
+  payload         Json
+  error           String?
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  @@unique([provider, topic, externalId])
+  @@index([processedAt])
+
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+
+  @@map("webhook_events")
+}
+
+// ─── Job Radar ────────────────────────────────────────────────────────────────
+// Búsqueda de empleo personal (NO data de clínica): un cron in-process scrapea
+// portales de empleo (Teamtailor multi-empresa) y notifica vía Telegram solo las
+// ofertas NUEVAS que matchean el perfil. Aislado en schema `personal`.
+
+enum JobPostingStatus {
+  OPEN
+  CLOSED
+
+  @@schema("personal")
+}
+
+// Fuentes/empresas a scrapear, gestionadas como filas (no CSV en settings).
+// kind = ATS; identifier = slug / "tenant:wd:site" (workday) / companyId (SR).
+enum JobSourceKind {
+  TEAMTAILOR
+  GREENHOUSE
+  LEVER
+  ASHBY
+  SMARTRECRUITERS
+  WORKDAY
+  AIRAVIRTUAL
+  SUCCESSFACTORS
+  TRABAJANDO
+  MUEVETE
+  SFCLASSIC
+  GENOMAWORK
+  HIRINGROOM
+  BUK
+  HIREFRONT
+  CORNERSTONE
+  PANDAPE
+  COMPUTRABAJO
+  EIGHTFOLD
+  MINISITE
+
+  @@schema("personal")
+}
+
+model JobSource {
+  id         String        @id @default(cuid())
+  kind       JobSourceKind
+  identifier String // slug | "tenant:wd:site" | companyId
+  label      String?
+  enabled    Boolean       @default(true)
+  createdAt  DateTime      @default(now()) @map("created_at")
+
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@unique([kind, identifier])
+  @@index([enabled])
+  @@schema("personal")
+  @@map("job_sources")
+}
+
+// Estado de seguimiento de postulación (lo gestiona el usuario en el dashboard).
+// Distinto de JobPostingStatus (ciclo de vida de la oferta misma).
+enum JobApplicationStatus {
+  NEW         // recién detectada, no vista
+  SEEN        // vista
+  INTERESTED  // me interesa / guardada
+  APPLIED     // postulado
+  INTERVIEW   // en entrevista
+  OFFER       // oferta recibida
+  REJECTED    // rechazado
+  DISCARDED   // descartada por mí
+
+  @@schema("personal")
+}
+
+model JobPosting {
+  id             String           @id @default(cuid())
+  source         String           // ATS: "teamtailor"
+  company        String           // subdominio/empresa, ej. "tenpo"
+  externalId     String           @map("external_id") // id del job en el ATS
+  title          String
+  url            String
+  department     String?
+  location       String?
+  remote         String?          // ej. "Completamente remoto", "Híbrido"
+  salary         String?          // texto legible (ej "$1.036.481", "USD 2000-3000")
+  descriptionHtml String?         @map("description_html")
+  publishedAt    DateTime?        @map("published_at")
+  lastmod        DateTime?        // <lastmod> del sitemap
+  status         JobPostingStatus @default(OPEN)
+  notified       Boolean          @default(false) // alerta Telegram ya enviada
+  matched        Boolean          @default(false) // pasó el filtro de perfil
+  // Seguimiento de postulación (gestión manual en el dashboard)
+  applicationStatus JobApplicationStatus @default(NEW) @map("application_status")
+  appliedAt      DateTime?        @map("applied_at")
+  statusUpdatedAt DateTime?       @map("status_updated_at")
+  notes          String?
+  firstSeenAt    DateTime         @default(now()) @map("first_seen_at")
+  lastSeenAt     DateTime         @default(now()) @map("last_seen_at")
+  raw            Json?            // payload normalizado completo
+
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@unique([source, company, externalId])
+  @@index([status])
+  @@index([notified])
+  @@index([applicationStatus])
+  @@index([firstSeenAt])
+  @@schema("personal")
+  @@map("job_postings")
+}
+
+model Medication {
+  id               String   @id @default(cuid())
+  name             String   // commercial / display name
+  genericName      String?  @map("generic_name")
+  activeIngredient String?  @map("active_ingredient")
+  laboratory       String?
+  form             String?  // forma farmacéutica (comprimido, jarabe, aerosol, ...)
+  presentation     String?  // e.g. "10 mg", "120 mcg/dosis"
+  source           String   @default("curated") // curated | isp | manual
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([name])
+  @@index([genericName])
+  @@map("medications")
+}
+
+model DocumentVerification {
+  id             String    @id @default(cuid())
+  // Código humano corto BA-XXXX-XXXX (Crockford base32, anti-enumeración).
+  code           String    @unique
+  // "prescription" | "certificate"
+  documentType   String    @map("document_type")
+  certificateId  String?   @unique @map("certificate_id")
+  prescriptionId String?   @unique @map("prescription_id")
+  // SHA-256 del PDF firmado, para el badge "documento íntegro".
+  pdfHash        String?   @map("pdf_hash")
+  issuedAt       DateTime  @default(now()) @map("issued_at")
+  revokedAt      DateTime? @map("revoked_at")
+
+  certificate    MedicalCertificate?  @relation(fields: [certificateId], references: [id], onDelete: SetNull)
+  prescription   MedicalPrescription? @relation(fields: [prescriptionId], references: [id], onDelete: SetNull)
+
+  @@deny('all', auth() == null)
+  @@allow('read,create', auth().status == 'ACTIVE')
+
+  @@index([code])
+  @@map("document_verifications")
 }

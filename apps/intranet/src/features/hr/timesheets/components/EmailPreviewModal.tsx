@@ -1,27 +1,12 @@
-import {
-  Alert,
-  Button,
-  Card,
-  Chip,
-  Description,
-  Input,
-  Label,
-  Modal,
-  Skeleton,
-  Tabs,
-  TextField,
-} from "@heroui/react";
-import dayjs from "dayjs";
+import { Alert, Button, Card, Chip, Description, Modal, Skeleton, Tabs } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
+import { formatChile, monthLabelToISO } from "@/lib/dates";
 import type { Employee } from "@/features/hr/employees/types";
 import { fetchTimesheetEmailPreview } from "@/features/hr/timesheets/api";
+import { timesheetAuditKeys } from "@/features/hr/timesheets-audit/queries";
 
 import type { TimesheetSummaryRow } from "../types";
-
-import "dayjs/locale/es";
-
-const MONTH_LABEL_REGEX = /^(\d{4})-(\d{2})$/;
 
 interface EmailPreviewModalProps {
   employee: Employee | null;
@@ -34,32 +19,7 @@ interface EmailPreviewModalProps {
   summary: null | TimesheetSummaryRow;
 }
 
-const LOCAL_AGENT_TOKEN_KEY = "bioalergia_local_mail_agent_token";
-const LOCAL_AGENT_URL_KEY = "bioalergia_local_mail_agent_url";
-const DEFAULT_LOCAL_AGENT_URL = getDefaultLocalAgentUrl();
-const TRAILING_SLASHES_REGEX = /\/+$/;
-
-type AgentStatus = {
-  kind: "danger" | "success" | "warning";
-  message: string;
-};
-
 export type PrepareStatus = "done" | "generating-pdf" | "preparing-payload" | "sending" | null;
-
-type LocalAgentState = {
-  agentStatus: AgentStatus | null;
-  agentToken: string;
-  agentUrl: string;
-  checkingAgent: boolean;
-  checkingSmtp: boolean;
-  isHttpAgent: boolean;
-  setAgentTokenValue: (value: string) => void;
-  setAgentUrlValue: (value: string) => void;
-  stopAgent: () => Promise<void>;
-  stoppingAgent: boolean;
-  verifyAgent: () => Promise<void>;
-  verifySmtp: () => Promise<void>;
-};
 
 export function EmailPreviewModal({
   employee,
@@ -72,8 +32,6 @@ export function EmailPreviewModal({
   summary,
 }: EmailPreviewModalProps) {
   const isPreparing = prepareStatus !== null && prepareStatus !== "done";
-  const localAgent = useLocalAgentPanelState(isOpen);
-  const isHttpsPage = typeof window !== "undefined" && window.location.protocol === "https:";
 
   const employeeEmail = employee?.person?.email;
   const monthLabelEs = getMonthLabelInSpanish(monthLabel);
@@ -107,7 +65,7 @@ export function EmailPreviewModal({
   const previewQuery = useQuery({
     enabled: isOpen && Boolean(employeeEmail),
     queryFn: () => fetchTimesheetEmailPreview(previewRequest),
-    queryKey: ["timesheet-email-preview", previewRequest],
+    queryKey: timesheetAuditKeys.emailPreview(previewRequest),
     staleTime: 60_000,
   });
 
@@ -124,7 +82,7 @@ export function EmailPreviewModal({
               <Modal.Heading className="block font-semibold text-2xl">Enviar correo</Modal.Heading>
               <Description className="mt-1 max-w-3xl text-default-600 text-sm">
                 Esta vista usa el HTML real generado por la API. Lo que ves aquí es la misma base
-                que enviará el agente local, no un mock alterno.
+                que se enviará vía Resend, no un mock alterno.
               </Description>
             </Modal.Header>
 
@@ -135,7 +93,7 @@ export function EmailPreviewModal({
                     <Card.Header className="flex flex-col items-start gap-1">
                       <Card.Title>Destinatario</Card.Title>
                       <Card.Description>
-                        Datos del mensaje que se enviará desde tu Mac.
+                        Datos del mensaje que se enviará vía Resend.
                       </Card.Description>
                     </Card.Header>
                     <Card.Content className="space-y-3 text-sm">
@@ -153,18 +111,6 @@ export function EmailPreviewModal({
                       />
                       <MetadataItem label="Periodo" value={monthLabelEs} />
                       <MetadataItem label="Adjunto" value="resumen_honorarios.pdf" />
-                    </Card.Content>
-                  </Card>
-
-                  <Card>
-                    <Card.Header className="flex flex-col items-start gap-1">
-                      <Card.Title>Agente local</Card.Title>
-                      <Card.Description>
-                        SMTP e IMAP deben estar disponibles antes del envío.
-                      </Card.Description>
-                    </Card.Header>
-                    <Card.Content>
-                      <LocalAgentPanel isHttpsPage={isHttpsPage} state={localAgent} />
                     </Card.Content>
                   </Card>
 
@@ -355,230 +301,9 @@ function PreviewSkeleton() {
   );
 }
 
-function LocalAgentPanel({ isHttpsPage, state }: { isHttpsPage: boolean; state: LocalAgentState }) {
-  return (
-    <>
-      <span className="mb-3 block font-semibold text-sm">Agente local</span>
-      <div className="mb-3">
-        <TextField
-          id="local-agent-url"
-          type="text"
-          value={state.agentUrl}
-          onChange={state.setAgentUrlValue}
-        >
-          <Label>URL del agente</Label>
-          <Input placeholder="https://127.0.0.1:3333" />
-        </TextField>
-      </div>
-      <div className="mb-3">
-        <TextField
-          id="local-agent-token"
-          type="password"
-          value={state.agentToken}
-          onChange={state.setAgentTokenValue}
-        >
-          <Label>Token</Label>
-          <Input placeholder="Token del agente local" />
-        </TextField>
-      </div>
-      <div className="flex items-center gap-3">
-        <Button isDisabled={state.checkingAgent} onPress={state.verifyAgent} variant="secondary">
-          {state.checkingAgent ? "Verificando..." : "Verificar agente"}
-        </Button>
-        <Button
-          isDisabled={state.checkingSmtp || !state.agentToken}
-          onPress={state.verifySmtp}
-          variant="secondary"
-        >
-          {state.checkingSmtp ? "Validando SMTP..." : "Verificar SMTP"}
-        </Button>
-        <Button
-          isDisabled={state.stoppingAgent || !state.agentToken}
-          onPress={state.stopAgent}
-          variant="secondary"
-        >
-          {state.stoppingAgent ? "Apagando..." : "Apagar agente"}
-        </Button>
-      </div>
-      {state.agentStatus && (
-        <div className="mt-2">
-          <Chip color={state.agentStatus.kind} size="sm" variant="soft">
-            {state.agentStatus.message}
-          </Chip>
-        </div>
-      )}
-      {isHttpsPage && state.isHttpAgent && (
-        <Description className="mt-2 text-amber-600 text-xs">
-          El navegador bloquea HTTP desde una página HTTPS. Usa HTTPS en el agente local.
-        </Description>
-      )}
-    </>
-  );
-}
-
-function useLocalAgentPanelState(isOpen: boolean): LocalAgentState {
-  const [agentToken, setAgentToken] = useState("");
-  const [agentUrl, setAgentUrl] = useState(DEFAULT_LOCAL_AGENT_URL);
-  const [agentStatus, setAgentStatus] = useState<AgentStatus | null>(null);
-  const [checkingAgent, setCheckingAgent] = useState(false);
-  const [checkingSmtp, setCheckingSmtp] = useState(false);
-  const [stoppingAgent, setStoppingAgent] = useState(false);
-
-  useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
-    const storedToken = localStorage.getItem(LOCAL_AGENT_TOKEN_KEY) ?? "";
-    const storedUrl = localStorage.getItem(LOCAL_AGENT_URL_KEY) ?? DEFAULT_LOCAL_AGENT_URL;
-    setAgentToken(storedToken);
-    setAgentUrl(storedUrl);
-    setAgentStatus(null);
-  }, [isOpen]);
-
-  const setAgentTokenValue = useCallback((value: string) => {
-    setAgentToken(value);
-    localStorage.setItem(LOCAL_AGENT_TOKEN_KEY, value);
-  }, []);
-
-  const setAgentUrlValue = useCallback((value: string) => {
-    setAgentUrl(value);
-    localStorage.setItem(LOCAL_AGENT_URL_KEY, value);
-  }, []);
-
-  const verifyAgent = useCallback(async () => {
-    setCheckingAgent(true);
-    setAgentStatus(null);
-    try {
-      const response = await fetch(`${normalizeAgentUrl(agentUrl)}/health`);
-      if (!response.ok) {
-        const message = await readLocalAgentErrorMessage(response, "Agente respondió con error");
-        setAgentStatus({ kind: "danger", message });
-      } else {
-        setAgentStatus({ kind: "success", message: "Agente activo" });
-      }
-    } catch {
-      setAgentStatus({
-        kind: "danger",
-        message: "Agente no responde. Revisa URL, HTTPS/certificado y que esté corriendo.",
-      });
-    } finally {
-      setCheckingAgent(false);
-    }
-  }, [agentUrl]);
-
-  const verifySmtp = useCallback(async () => {
-    setCheckingSmtp(true);
-    setAgentStatus(null);
-    try {
-      const response = await fetch(`${normalizeAgentUrl(agentUrl)}/health/smtp`, {
-        headers: {
-          "X-Local-Agent-Token": agentToken,
-        },
-      });
-      if (!response.ok) {
-        if (response.status === 401) {
-          setAgentStatus({
-            kind: "warning",
-            message: "Token inválido o faltante",
-          });
-          return;
-        }
-        const message = await readLocalAgentErrorMessage(response, "SMTP no disponible");
-        setAgentStatus({
-          kind: "danger",
-          message: `SMTP no disponible: ${message}`,
-        });
-      } else {
-        setAgentStatus({ kind: "success", message: "SMTP listo" });
-      }
-    } catch {
-      setAgentStatus({ kind: "danger", message: "No se pudo verificar SMTP" });
-    } finally {
-      setCheckingSmtp(false);
-    }
-  }, [agentToken, agentUrl]);
-
-  const stopAgent = useCallback(async () => {
-    setStoppingAgent(true);
-    setAgentStatus(null);
-    try {
-      const response = await fetch(`${normalizeAgentUrl(agentUrl)}/shutdown`, {
-        method: "POST",
-        headers: {
-          "X-Local-Agent-Token": agentToken,
-        },
-      });
-      if (!response.ok) {
-        const message = await readLocalAgentErrorMessage(response, "No se pudo apagar el agente");
-        setAgentStatus({ kind: "danger", message });
-      } else {
-        setAgentStatus({ kind: "warning", message: "Agente apagándose..." });
-      }
-    } catch {
-      setAgentStatus({
-        kind: "danger",
-        message: "No se pudo contactar al agente para apagarlo.",
-      });
-    } finally {
-      setStoppingAgent(false);
-    }
-  }, [agentToken, agentUrl]);
-
-  return {
-    agentStatus,
-    agentToken,
-    agentUrl,
-    checkingAgent,
-    checkingSmtp,
-    isHttpAgent: agentUrl.startsWith("http://"),
-    setAgentTokenValue,
-    setAgentUrlValue,
-    stopAgent,
-    stoppingAgent,
-    verifyAgent,
-    verifySmtp,
-  };
-}
-
-async function readLocalAgentErrorMessage(response: Response, fallbackMessage: string) {
-  const contentType = response.headers.get("content-type") ?? "";
-  if (!contentType.includes("application/json")) {
-    return fallbackMessage;
-  }
-
-  try {
-    const data = (await response.json()) as { code?: string; message?: string };
-    if (!data?.message) {
-      return fallbackMessage;
-    }
-    return data.code ? `${data.message} (${data.code})` : data.message;
-  } catch {
-    return fallbackMessage;
-  }
-}
-
-function getDefaultLocalAgentUrl() {
-  if (import.meta.env.VITE_LOCAL_MAIL_AGENT_URL) {
-    return import.meta.env.VITE_LOCAL_MAIL_AGENT_URL;
-  }
-  if (typeof window !== "undefined" && window.location.protocol === "http:") {
-    return "http://127.0.0.1:3333";
-  }
-  return "https://127.0.0.1:3333";
-}
-
-function normalizeAgentUrl(value: string) {
-  return value.trim().replace(TRAILING_SLASHES_REGEX, "");
-}
-
 function getMonthLabelInSpanish(monthLabel: string) {
-  dayjs.locale("es");
-  const monthMatch = MONTH_LABEL_REGEX.exec(monthLabel);
-  const normalizedMonthLabel = monthMatch
-    ? dayjs(`${monthMatch[1]}-${monthMatch[2]}-01`).locale("es").format("MMMM YYYY")
-    : dayjs(monthLabel, "MMMM YYYY", "en").isValid()
-      ? dayjs(monthLabel, "MMMM YYYY", "en").locale("es").format("MMMM YYYY")
-      : monthLabel;
+  const iso = monthLabelToISO(monthLabel);
+  const normalizedMonthLabel = iso ? formatChile(iso, "MMMM YYYY") : monthLabel;
   return normalizedMonthLabel.charAt(0).toUpperCase() + normalizedMonthLabel.slice(1);
 }
 
@@ -590,12 +315,12 @@ function getPrepareStatusMessage(status: PrepareStatus) {
     return "Preparando contenido del email...";
   }
   if (status === "sending") {
-    return "Enviando correo desde el agente local...";
+    return "Enviando correo vía Resend...";
   }
   if (status === "done") {
     return "Correo enviado correctamente.";
   }
-  return "Se enviará el correo desde tu Mac usando el agente local.";
+  return "Se enviará el correo vía Resend con el PDF adjunto.";
 }
 
 function renderPrepareButtonContent(status: PrepareStatus) {

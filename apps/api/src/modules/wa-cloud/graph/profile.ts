@@ -1,4 +1,4 @@
-import { getAccountForPhoneNumber, graphGet, graphPost } from "./_http.ts";
+import { getAccountForPhoneNumber, graphGet, graphPost, requireSystemUserToken } from "./_http.ts";
 
 export type BusinessProfileFields = {
   about?: string;
@@ -32,7 +32,7 @@ export type BusinessProfileFields = {
 export async function getBusinessProfile(phoneNumberId: number) {
   const phone = await getAccountForPhoneNumber(phoneNumberId);
   const v = phone.account.graphApiVersion;
-  const token = phone.account.systemUserToken!;
+  const token = requireSystemUserToken(phone);
   type Resp = {
     data: Array<{
       about?: string;
@@ -57,7 +57,7 @@ export async function getBusinessProfile(phoneNumberId: number) {
 export async function updateBusinessProfile(phoneNumberId: number, fields: BusinessProfileFields) {
   const phone = await getAccountForPhoneNumber(phoneNumberId);
   const v = phone.account.graphApiVersion;
-  const token = phone.account.systemUserToken!;
+  const token = requireSystemUserToken(phone);
   return graphPost(
     `/${phone.phoneNumberId}/whatsapp_business_profile`,
     { messaging_product: "whatsapp", ...fields },

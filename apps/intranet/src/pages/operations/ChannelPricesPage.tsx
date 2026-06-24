@@ -1,0 +1,170 @@
+import { Button, Card, Label, NumberField, Skeleton } from "@heroui/react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+
+import { catalogORPCClient } from "@/features/catalog/orpc";
+import { channelPriceKeys } from "@/features/operations/queries";
+
+const CHANNELS = ["WEB", "MERCADO_LIBRE", "UBER_EATS", "PEDIDOS_YA", "RAPPI"] as const;
+type Channel = (typeof CHANNELS)[number];
+
+const CLP = new Intl.NumberFormat("es-CL", {
+  style: "currency",
+  currency: "CLP",
+  maximumFractionDigits: 0,
+});
+
+export function ChannelPricesPage() {
+  const queryClient = useQueryClient();
+  const [productId, setProductId] = useState<number | null>(null);
+
+  const productsQ = useQuery({
+    queryKey: channelPriceKeys.catalogProducts,
+    queryFn: () => catalogORPCClient.list({ limit: 100, include_inactive: true }),
+    staleTime: 1000 * 60 * 5,
+  });
+
+  return (
+    <div className="space-y-6">
+      <p className="text-foreground/60 text-sm">
+        Configura precios distintos por canal de venta. Si un canal no tiene precio, se usa el
+        precio base del producto.
+      </p>
+
+      <Card>
+        <Card.Header>
+          <Card.Title>Producto</Card.Title>
+        </Card.Header>
+        <Card.Content className="space-y-2">
+          {productsQ.isLoading ? (
+            <Skeleton className="h-10 w-full" />
+          ) : (
+            <select
+              className="w-full rounded-lg border border-foreground/10 bg-default px-3 py-2"
+              onChange={(e) => setProductId(Number(e.target.value) || null)}
+              value={productId ?? ""}
+            >
+              <option value="">— Selecciona —</option>
+              {productsQ.data?.data.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.sku} · {p.name} (base: {CLP.format(p.price_clp)})
+                </option>
+              ))}
+            </select>
+          )}
+        </Card.Content>
+      </Card>
+
+      {productId !== null && <ChannelPriceEditor productId={productId} queryClient={queryClient} />}
+    </div>
+  );
+}
+
+function ChannelPriceEditor({
+  productId,
+  queryClient,
+}: {
+  productId: number;
+  queryClient: ReturnType<typeof useQueryClient>;
+}) {
+  const pricesQ = useQuery({
+    queryKey: channelPriceKeys.forProduct(productId),
+    queryFn: () => catalogORPCClient.listChannelPrices({ id: productId }),
+  });
+
+  if (pricesQ.isLoading) {
+    return <Skeleton className="h-64 w-full" />;
+  }
+  const existing = new Map(pricesQ.data?.data.map((cp) => [cp.channel, cp]) ?? []);
+
+  return (
+    <Card>
+      <Card.Header>
+        <Card.Title>Precios por canal</Card.Title>
+      </Card.Header>
+      <Card.Content className="space-y-3">
+        {CHANNELS.map((channel) => (
+          <ChannelRow
+            channel={channel}
+            currentPrice={existing.get(channel)?.price_clp ?? null}
+            key={channel}
+            onSaved={() => {
+              void queryClient.invalidateQueries({
+                queryKey: channelPriceKeys.forProduct(productId),
+              });
+            }}
+            productId={productId}
+          />
+        ))}
+      </Card.Content>
+    </Card>
+  );
+}
+
+function ChannelRow({
+  channel,
+  currentPrice,
+  productId,
+  onSaved,
+}: {
+  channel: Channel;
+  currentPrice: number | null;
+  productId: number;
+  onSaved: () => void;
+}) {
+  const [price, setPrice] = useState<number>(currentPrice ?? Number.NaN);
+
+  const upsert = useMutation({
+    mutationFn: () =>
+      catalogORPCClient.upsertChannelPrice({
+        product_id: productId,
+        channel,
+        price_clp: price,
+      }),
+    onSuccess: onSaved,
+  });
+  const del = useMutation({
+    mutationFn: () => catalogORPCClient.deleteChannelPrice({ product_id: productId, channel }),
+    onSuccess: () => {
+      setPrice(Number.NaN);
+      onSaved();
+    },
+  });
+
+  return (
+    <div className="flex items-end gap-3">
+      <div className="w-40 font-semibold text-sm">{channel.replace(/_/g, " ")}</div>
+      <NumberField
+        className="flex-1"
+        formatOptions={{
+          currency: "CLP",
+          currencyDisplay: "symbol",
+          maximumFractionDigits: 0,
+          minimumFractionDigits: 0,
+          style: "currency",
+        }}
+        minValue={0}
+        onChange={(v) => setPrice(v ?? Number.NaN)}
+        value={price}
+      >
+        <Label className="sr-only">Precio {channel}</Label>
+        <NumberField.Group className="grid-cols-1">
+          <NumberField.Input placeholder="CLP" />
+        </NumberField.Group>
+      </NumberField>
+      <Button
+        isDisabled={Number.isNaN(price) || upsert.isPending}
+        onPress={() => upsert.mutate()}
+        size="sm"
+        variant="primary"
+      >
+        {upsert.isPending ? "…" : "Guardar"}
+      </Button>
+      {currentPrice !== null && (
+        <Button isDisabled={del.isPending} onPress={() => del.mutate()} size="sm" variant="danger">
+          {del.isPending ? "…" : "Quitar"}
+        </Button>
+      )}
+    </div>
+  );
+}

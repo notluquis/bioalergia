@@ -10,7 +10,7 @@ import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
 import type { z } from "zod";
-import { getSessionUser, hasPermission } from "../auth.ts";
+import { getSessionUser, hasPermission } from "../lib/auth.ts";
 import { logError } from "../lib/logger.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
 import { getBalancesReport, upsertDailyBalance } from "../services/balances.ts";

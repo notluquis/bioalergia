@@ -1,9 +1,4 @@
-import dayjs from "dayjs";
-import utc from "dayjs/plugin/utc.js";
 import { describe, expect, it } from "vitest";
-
-// Extend dayjs with UTC plugin (matching csv-upload.ts & google-calendar-queries.ts)
-dayjs.extend(utc);
 
 // Regex patterns at module level
 const HYPHEN_DATE_REGEX_TEST = /^(\d{1,2})-(\d{1,2})-(\d{4})$/;
@@ -40,18 +35,15 @@ function parseDateWithDayjs(value: unknown): string | null {
     return null;
   }
 
-  // Create date in UTC (Date constructor treats input as local, so we adjust)
-  // Using dayjs.utc for validation only
-  const date = dayjs.utc(
-    `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`,
-    "YYYY-MM-DD"
-  );
-  if (!date.isValid()) {
+  // Validate the calendar date (rejects e.g. Feb-30) — native Temporal.
+  try {
+    Temporal.PlainDate.from({ year, month, day }, { overflow: "reject" });
+  } catch {
     return null;
   }
 
   // Return ISO format: YYYY-MM-DD
-  return date.format("YYYY-MM-DD");
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
 /**

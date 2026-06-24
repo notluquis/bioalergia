@@ -1,10 +1,12 @@
-import { Chip, Spinner } from "@heroui/react";
+import { formatChile } from "@/lib/dates";
+import { Chip } from "@heroui/react";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { useQuery } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
-import dayjs from "dayjs";
 import { Activity } from "lucide-react";
 import { DataTable } from "@/components/data-table/DataTable";
-import { fetchPatientClinicalSeries } from "../api";
+import type { fetchPatientClinicalSeries } from "../api";
+import { patientQueries } from "../queries";
 
 type Series = Awaited<ReturnType<typeof fetchPatientClinicalSeries>>["items"][number];
 
@@ -73,23 +75,20 @@ const columns: ColumnDef<Series>[] = [
     cell: ({ row }) => <span className="text-sm">{row.original.skinTestsCount}</span>,
   },
   {
-    header: "Creada",
-    accessorKey: "createdAt",
-    cell: ({ row }) => dayjs(row.original.createdAt).format("DD/MM/YYYY"),
+    header: "Fecha",
+    accessorKey: "clinicalDate",
+    cell: ({ row }) =>
+      row.original.clinicalDate ? formatChile(row.original.clinicalDate, "DD/MM/YYYY") : "—",
   },
 ];
 
 export function ClinicalSeriesList({ patientId }: { patientId: number }) {
-  const { data, isLoading } = useQuery({
-    queryKey: ["patient-clinical-series", patientId],
-    queryFn: () => fetchPatientClinicalSeries(patientId),
-    staleTime: 1000 * 60,
-  });
+  const { data, isLoading } = useQuery(patientQueries.clinicalSeries(patientId));
 
   if (isLoading) {
     return (
       <div className="flex justify-center py-8">
-        <Spinner aria-label="Cargando series clínicas" />
+        <LoadingSpinner label="Cargando series clínicas" />
       </div>
     );
   }
@@ -100,14 +99,16 @@ export function ClinicalSeriesList({ patientId }: { patientId: number }) {
         <Activity size={16} />
         {data?.items.length ?? 0} serie(s) clínica(s) vinculadas
       </div>
-      <DataTable
-        columns={columns}
-        data={data?.items ?? []}
-        enablePagination={false}
-        enableToolbar={false}
-        noDataMessage="No hay series clínicas vinculadas a este paciente."
-        scrollMaxHeight="min(56dvh, 640px)"
-      />
+      <div data-phi-block>
+        <DataTable
+          columns={columns}
+          data={data?.items ?? []}
+          enablePagination={false}
+          enableToolbar={false}
+          noDataMessage="No hay series clínicas vinculadas a este paciente."
+          scrollMaxHeight="min(56dvh, 640px)"
+        />
+      </div>
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useStore } from "@tanstack/react-store";
 
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/features/auth/hooks/use-auth";
 import { extractErrorMessage } from "../api";
 import { serviceQueries } from "../queries";
 import { servicesActions, servicesStore } from "../store";
@@ -15,7 +15,7 @@ export function useServicesList() {
   const filters = useStore(servicesStore, (state) => state.filters);
 
   // Fetch
-  const { data, error } = useSuspenseQuery(serviceQueries.list(canView));
+  const { data, error } = useSuspenseQuery(serviceQueries.list());
   const services = data?.services ?? [];
 
   // Filter Logic

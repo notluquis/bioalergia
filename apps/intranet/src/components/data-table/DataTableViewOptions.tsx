@@ -1,8 +1,11 @@
 import type { Selection } from "@heroui/react";
-import { Button, Dropdown, Label, SearchField } from "@heroui/react";
+import { Dropdown, Label, SearchField } from "@heroui/react";
 import type { Table } from "@tanstack/react-table";
 import { Check, Settings2 } from "lucide-react";
 import { useMemo, useState } from "react";
+
+import { getColumnLabel, isUtilityColumnId } from "./data-table-utils";
+import { matchesColumnSearch } from "./faceted-filter-utils";
 
 interface DataTableViewOptionsProps<TData> {
   readonly table: Table<TData>;
@@ -13,16 +16,11 @@ export function DataTableViewOptions<TData>({ table }: DataTableViewOptionsProps
 
   const columns = table
     .getAllLeafColumns()
-    .filter((column) => column.getCanHide() && !["actions", "select"].includes(column.id));
+    .filter((column) => column.getCanHide() && !isUtilityColumnId(column.id));
 
-  const filteredColumns = columns.filter((c) => {
-    // Try to find a human readable label usually stored in columnDef.header if it's a string
-    const header = typeof c.columnDef.header === "string" ? c.columnDef.header : c.id;
-    return (
-      header.toLowerCase().includes(search.toLowerCase()) ||
-      c.id.toLowerCase().includes(search.toLowerCase())
-    );
-  });
+  const filteredColumns = columns.filter((c) =>
+    matchesColumnSearch(getColumnLabel(c.columnDef.header, c.id), c.id, search)
+  );
 
   const selectedKeys = useMemo(() => {
     const keys = columns.filter((column) => column.getIsVisible()).map((column) => column.id);
@@ -38,11 +36,9 @@ export function DataTableViewOptions<TData>({ table }: DataTableViewOptionsProps
 
   return (
     <Dropdown>
-      <Dropdown.Trigger>
-        <Button className="ml-auto h-8" size="sm" variant="outline">
-          <Settings2 className="mr-2 h-4 w-4" />
-          Columnas
-        </Button>
+      <Dropdown.Trigger className="button button--sm button--outline ml-auto inline-flex h-8 items-center gap-2 whitespace-nowrap px-3 leading-none">
+        <Settings2 className="size-4 shrink-0" aria-hidden />
+        <span>Columnas</span>
       </Dropdown.Trigger>
       <Dropdown.Popover className="min-w-55" placement="bottom end">
         <div className="border-default-200/60 border-b p-2">
@@ -66,13 +62,12 @@ export function DataTableViewOptions<TData>({ table }: DataTableViewOptionsProps
           onSelectionChange={handleSelectionChange}
         >
           {filteredColumns.map((column) => {
-            const label =
-              typeof column.columnDef.header === "string" ? column.columnDef.header : column.id;
+            const label = getColumnLabel(column.columnDef.header, column.id);
             return (
               <Dropdown.Item id={column.id} key={column.id} textValue={label}>
                 <Dropdown.ItemIndicator>
                   {({ isSelected }) =>
-                    isSelected ? <Check className="h-4 w-4 text-primary" /> : null
+                    isSelected ? <Check className="text-primary size-4" /> : null
                   }
                 </Dropdown.ItemIndicator>
                 <Label>{label}</Label>

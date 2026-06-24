@@ -1,5 +1,6 @@
+import { formatChile } from "@/lib/dates";
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
-import dayjs from "dayjs";
+import { requirePermission } from "@/lib/authz/route-guards";
 import { z } from "zod";
 
 const routeApi = getRouteApi("/_authed/calendar/dte-links");
@@ -18,7 +19,7 @@ const dteLinksSearchSchema = z
   .transform((search) => ({
     page: search.page ?? 0,
     pageSize: search.pageSize ?? 25,
-    period: search.period ?? dayjs().format("YYYY-MM"),
+    period: search.period ?? formatChile(new Date(), "YYYY-MM"),
     query: search.query,
     status: search.status ?? "all",
   }));
@@ -30,12 +31,7 @@ export const Route = createFileRoute("/_authed/calendar/dte-links")({
     permission: { action: "read", subject: "DTEPurchaseDetail" },
     title: "Vínculos DTE (legacy)",
   },
-  beforeLoad: ({ context }) => {
-    if (!context.can("read", "DTEPurchaseDetail")) {
-      // eslint-disable-next-line @typescript-eslint/only-throw-error
-      throw routeApi.redirect({ to: "/" });
-    }
-  },
+  beforeLoad: requirePermission("read", "DTEPurchaseDetail"),
   loader: ({ location }) => {
     const parsed = dteLinksSearchSchema.parse(location.search);
     // eslint-disable-next-line @typescript-eslint/only-throw-error

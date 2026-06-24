@@ -22,7 +22,7 @@ export function TopParticipantsSection({ data, error, loading }: TopParticipants
   return (
     <Card className="p-6">
       <h2 className="mb-4 flex items-center gap-2 font-bold text-lg">
-        <Users2 className="h-5 w-5 text-secondary" />
+        <Users2 className="text-secondary size-5" />
         Top Contrapartes (Egresos)
       </h2>
 
@@ -38,7 +38,7 @@ export function TopParticipantsSection({ data, error, loading }: TopParticipants
                 key={`top-participant-skeleton-${skeletonKey}`}
               >
                 <div className="flex items-center gap-3">
-                  <Skeleton className="h-8 w-8 rounded-full" />
+                  <Skeleton className="rounded-full size-8" />
                   <div className="space-y-2">
                     <Skeleton className="h-4 w-32 rounded-md" />
                     <Skeleton className="h-3 w-24 rounded-md" />
@@ -80,7 +80,7 @@ export function TopParticipantsSection({ data, error, loading }: TopParticipants
                 key={participant.personId}
               >
                 <div className="flex items-center gap-3">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 font-bold text-primary text-sm">
+                  <div className="flex shrink-0 items-center justify-center rounded-full bg-primary/10 font-bold text-primary text-sm size-8">
                     {index + 1}
                   </div>
                   <div>

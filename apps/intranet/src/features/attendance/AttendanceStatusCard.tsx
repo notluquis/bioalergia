@@ -1,20 +1,13 @@
+import { formatChile } from "@/lib/dates";
 import { Alert, Card, Chip, Surface, Tooltip } from "@heroui/react";
 import type {
   attendanceMarkSchema,
   attendanceStatusResponseSchema,
   weekDaySummarySchema,
 } from "@finanzas/orpc-contracts/attendance";
-import dayjs from "dayjs";
-import timezone from "dayjs/plugin/timezone";
-import utc from "dayjs/plugin/utc";
 import { useEffect, useState } from "react";
 import type { z } from "zod";
 import { getAttendanceNetworkOrigin } from "./network-origin";
-
-dayjs.extend(utc);
-dayjs.extend(timezone);
-
-const TIMEZONE = "America/Santiago";
 
 type AttendanceMark = z.infer<typeof attendanceMarkSchema>;
 type AttendanceStatus = z.infer<typeof attendanceStatusResponseSchema>["currentStatus"];
@@ -118,7 +111,7 @@ export function AttendanceStatusCard({
                 </Card.Title>
                 <Card.Description className="max-w-2xl text-sm leading-6">
                   {lastMark
-                    ? `Última marca a las ${dayjs(lastMark.markedAt).tz(TIMEZONE).format("HH:mm")} como ${
+                    ? `Última marca a las ${formatChile(lastMark.markedAt, "HH:mm")} como ${
                         lastMark.type === "CLOCK_IN" ? "entrada" : "salida"
                       }.`
                     : "Cuando registres tu primera marca del dia, aparecera aqui junto con el resumen de tiempo."}
@@ -136,7 +129,7 @@ export function AttendanceStatusCard({
           </div>
 
           <div className="grid gap-3 md:grid-cols-3">
-            <Surface className="rounded-2xl px-4 py-4" variant="default">
+            <Surface className="rounded-2xl p-4" variant="default">
               <p className="text-xs font-medium uppercase tracking-wide text-foreground-400">
                 Estado actual
               </p>
@@ -145,7 +138,7 @@ export function AttendanceStatusCard({
               </p>
             </Surface>
 
-            <Surface className="rounded-2xl px-4 py-4" variant="default">
+            <Surface className="rounded-2xl p-4" variant="default">
               <p className="text-xs font-medium uppercase tracking-wide text-foreground-400">
                 Tiempo acumulado
               </p>
@@ -160,7 +153,7 @@ export function AttendanceStatusCard({
               </div>
             </Surface>
 
-            <Surface className="rounded-2xl px-4 py-4" variant="default">
+            <Surface className="rounded-2xl p-4" variant="default">
               <p className="text-xs font-medium uppercase tracking-wide text-foreground-400">
                 Dias trabajados
               </p>
@@ -183,14 +176,14 @@ export function AttendanceStatusCard({
               const label = WEEK_DAY_LABELS[i] ?? "";
               const tooltipContent =
                 day.workedMinutes !== null
-                  ? `${dayjs(day.date).format("DD/MM")} · ${formatMinutes(day.workedMinutes)}`
-                  : `${dayjs(day.date).format("DD/MM")} · ${day.status === "absent" ? "Sin registro" : day.status === "incomplete" ? "Incompleto" : "Sin marca"}`;
+                  ? `${formatChile(day.date, "DD/MM")} · ${formatMinutes(day.workedMinutes)}`
+                  : `${formatChile(day.date, "DD/MM")} · ${day.status === "absent" ? "Sin registro" : day.status === "incomplete" ? "Incompleto" : "Sin marca"}`;
 
               return (
                 <Tooltip key={day.date}>
                   <Tooltip.Trigger aria-label={tooltipContent}>
                     <Surface
-                      className="flex min-h-24 flex-col justify-between rounded-2xl px-3 py-3"
+                      className="flex min-h-24 flex-col justify-between rounded-2xl p-3"
                       variant="secondary"
                     >
                       <div className="flex items-center justify-between gap-2">
@@ -209,7 +202,7 @@ export function AttendanceStatusCard({
                       </div>
                       <div className="space-y-1">
                         <p className="text-xs text-foreground-400">
-                          {dayjs(day.date).format("DD/MM")}
+                          {formatChile(day.date, "DD/MM")}
                         </p>
                         <p className="text-sm font-medium text-foreground">
                           {day.workedMinutes !== null

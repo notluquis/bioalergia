@@ -1,6 +1,5 @@
 import { Button, Card, Modal, Surface } from "@heroui/react";
 import { getRouteApi } from "@tanstack/react-router";
-import dayjs from "dayjs";
 import React, { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { CalendarFiltersPopover } from "@/features/calendar/components/CalendarFiltersPopover";
@@ -10,11 +9,9 @@ import { MetricCard } from "@/features/calendar/components/MetricCard";
 import { useCalendarEvents } from "@/features/calendar/hooks/use-calendar-events";
 import type { CalendarSummary } from "@/features/calendar/types";
 import { useDisclosure } from "@/hooks/use-disclosure";
+import { addMonths, chileDay, formatChile, iterateMonths, today } from "@/lib/dates";
 import { currencyFormatter, numberFormatter } from "@/lib/format";
 const routeApi = getRouteApi("/_authed/clinical/heatmap");
-import "dayjs/locale/es";
-
-dayjs.locale("es");
 
 interface HeatmapDayData {
   amountExpected: number;
@@ -60,13 +57,13 @@ function processHeatmapData(
   to: string
 ): {
   heatmapMaxValue: number;
-  heatmapMonths: dayjs.Dayjs[];
+  heatmapMonths: string[];
   statsByDate: Map<string, HeatmapDayData>;
 } {
   const stats = new Map<string, HeatmapDayData>();
   for (const entry of summary?.aggregates?.byDate ?? []) {
     // Use UTC to avoid off-by-one day shifts from timezone conversion of date-only values.
-    const key = dayjs.utc(entry.date).format("YYYY-MM-DD");
+    const key = new Date(entry.date).toISOString().slice(0, 10);
     stats.set(key, {
       amountExpected: entry.amountExpected ?? 0,
       amountPaid: entry.amountPaid ?? 0,
@@ -75,27 +72,15 @@ function processHeatmapData(
     });
   }
 
-  const start = dayjs(from).isValid()
-    ? dayjs(from).startOf("month")
-    : dayjs().startOf("month").subtract(1, "month");
-
-  let end = dayjs(to).isValid()
-    ? dayjs(to).startOf("month")
-    : dayjs().startOf("month").add(1, "month");
-
-  if (end.isBefore(start)) {
-    end = start.add(2, "month");
+  const curYM = today().slice(0, 7);
+  const fromValid = from && !Number.isNaN(new Date(from).getTime());
+  const toValid = to && !Number.isNaN(new Date(to).getTime());
+  const startYM = (fromValid ? from : addMonths(`${curYM}-01`, -1)).slice(0, 7);
+  let endYM = (toValid ? to : addMonths(`${curYM}-01`, 1)).slice(0, 7);
+  if (endYM < startYM) {
+    endYM = addMonths(`${startYM}-01`, 2).slice(0, 7);
   }
-
-  const heatmapMonths: dayjs.Dayjs[] = [];
-  let current = start;
-  while (current.isBefore(end) || current.isSame(end, "month")) {
-    heatmapMonths.push(current);
-    current = current.add(1, "month");
-    if (heatmapMonths.length > 36) {
-      break; // Safety
-    }
-  }
+  const heatmapMonths = iterateMonths(startYM, endYM).slice(0, 36);
 
   const totals = summary?.aggregates?.byDate.map((d) => d.total) ?? [];
   const heatmapMaxValue = totals.length > 0 ? Math.max(...totals) : 10;
@@ -147,18 +132,19 @@ function CalendarHeatmapPage() {
     return summary.totals.events;
   }, [summary, draftFilters.categories]);
 
-  const rangeStartLabel = heatmapMonths[0]?.format("MMM YYYY") ?? "—";
-  const rangeEndLabel = heatmapMonths.at(-1)?.format("MMM YYYY") ?? "—";
+  const rangeStartLabel = heatmapMonths[0]
+    ? formatChile(`${heatmapMonths[0]}-01`, "MMM YYYY")
+    : "—";
+  const lastMonth = heatmapMonths.at(-1);
+  const rangeEndLabel = lastMonth ? formatChile(`${lastMonth}-01`, "MMM YYYY") : "—";
   const selectedDay = useMemo(() => {
     if (!selectedDate) {
       return null;
     }
-    const matched = daily?.days.find(
-      (day) => dayjs(day.date).format("YYYY-MM-DD") === selectedDate
-    );
+    const matched = daily?.days.find((day) => chileDay(day.date) === selectedDate);
     return matched ?? null;
   }, [daily?.days, selectedDate]);
-  const selectedDayLabel = selectedDate ? dayjs(selectedDate).format("dddd DD MMMM YYYY") : "";
+  const selectedDayLabel = selectedDate ? formatChile(selectedDate, "dddd DD MMMM YYYY") : "";
   const monthlyKpis = useMemo<MonthlyKpiData[]>(() => {
     const monthMap = new Map<
       string,
@@ -174,7 +160,7 @@ function CalendarHeatmapPage() {
     }
 
     return heatmapMonths.map((month) => {
-      const key = month.format("YYYY-MM");
+      const key = month;
       const base = monthMap.get(key) ?? { amountExpected: 0, amountPaid: 0, events: 0 };
       const collectionRate =
         base.amountExpected > 0 ? (base.amountPaid / base.amountExpected) * 100 : 0;
@@ -189,13 +175,13 @@ function CalendarHeatmapPage() {
         events: base.events,
         gap,
         key,
-        label: month.format("MMM YYYY"),
+        label: formatChile(`${month}-01`, "MMM YYYY"),
       };
     });
   }, [summary?.aggregates.byMonth, heatmapMonths]);
 
   const [manualSelectedMonthKey, setManualSelectedMonthKey] = useState<null | string>(null);
-  const currentMonthKey = dayjs().format("YYYY-MM");
+  const currentMonthKey = today().slice(0, 7);
 
   const activeMonthKey = useMemo(
     () => resolveActiveMonthKey(monthlyKpis, manualSelectedMonthKey, currentMonthKey),
@@ -348,7 +334,7 @@ function CalendarHeatmapPage() {
           <div className="grid items-start gap-4 lg:grid-cols-3">
             {heatmapMonths.map((month) => (
               <HeatmapMonth
-                key={month.format("YYYY-MM")}
+                key={month}
                 maxValue={heatmapMaxValue}
                 month={month}
                 onDayClick={(isoDate) => {

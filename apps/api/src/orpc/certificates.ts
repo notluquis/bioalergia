@@ -1,44 +1,49 @@
-import crypto from "node:crypto";
-import fs from "node:fs";
-import os from "node:os";
-import path from "node:path";
-import { db } from "@finanzas/db";
 import {
+  annulPrescriptionResponseSchema,
   certificateVerifyInputSchema,
   certificateVerifyResponseSchema,
+  certificateIdInputSchema,
+  emailPrescriptionInputSchema,
+  emailPrescriptionResponseSchema,
   generateMedicalCertificateInputSchema,
+  generateMedicalPrescriptionInputSchema,
+  listMedicalCertificatesInputSchema,
+  listMedicalPrescriptionsInputSchema,
+  medicalCertificateListResponseSchema,
+  medicalPrescriptionGenerateResponseSchema,
+  medicalPrescriptionListResponseSchema,
+  prescriptionIdInputSchema,
 } from "@finanzas/orpc-contracts/certificates";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { ORPCError, onError, os as orpcOs } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
-import dayjs from "dayjs";
-import timezone from "dayjs/plugin/timezone.js";
 import type { Context as HonoContext } from "hono";
 import { z } from "zod";
-import { getSessionUser, hasPermission } from "../auth.ts";
-import { medicalCertificateSchema } from "../modules/certificates/certificate.schema.ts";
-import {
-  generateMedicalCertificatePdf,
-  generateQRCode,
-  signPdf,
-} from "../modules/certificates/certificate.service.ts";
+import { getSessionUser, hasPermission } from "../lib/auth.ts";
 import { logError } from "../lib/logger.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
-import { uploadCertificateToDrive } from "../services/certificates-drive.ts";
+import {
+  deleteMedicalCertificate,
+  generateMedicalCertificate,
+  listMedicalCertificates,
+  verifyMedicalCertificate,
+} from "../services/certificates.ts";
+import {
+  annulPrescription,
+  createMedicalPrescription,
+  emailPrescription,
+  listMedicalPrescriptions,
+} from "../services/prescriptions.ts";
 import { SuperJSONRPCHandler } from "./superjson.ts";
 
 configureSuperjson();
-dayjs.extend(timezone);
 
 type CertificatesORPCContext = {
   hono: HonoContext;
 };
 
-const TIMEZONE = "America/Santiago";
 const base = orpcOs.$context<CertificatesORPCContext>();
-
-const parseDateOnly = (value: string) => dayjs.tz(value, "YYYY-MM-DD", TIMEZONE).toDate();
 
 const authed = base.use(async ({ context, next }) => {
   const user = await getSessionUser(context.hono);
@@ -62,6 +67,22 @@ const createMedicalCertificates = authed.use(async ({ context, next }) => {
   return next();
 });
 
+const readMedicalCertificates = authed.use(async ({ context, next }) => {
+  const canRead = await hasPermission(context.user, "read", "MedicalCertificate");
+  if (!canRead) {
+    throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
+  }
+  return next();
+});
+
+const deleteMedicalCertificates = authed.use(async ({ context, next }) => {
+  const canDelete = await hasPermission(context.user, "delete", "MedicalCertificate");
+  if (!canDelete) {
+    throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
+  }
+  return next();
+});
+
 const certificatesORPCRouterBase = {
   generateMedical: createMedicalCertificates
     .route({
@@ -72,54 +93,75 @@ const certificatesORPCRouterBase = {
     })
     .input(generateMedicalCertificateInputSchema)
     .output(z.file())
-    .handler(async ({ context, input }) => {
-      const parsed = medicalCertificateSchema.parse(input);
-      const certificateId = crypto.randomUUID();
-      const qrCode = await generateQRCode(certificateId);
-      const pdfBytes = await generateMedicalCertificatePdf(parsed, qrCode);
-      const signedPdfBytes = await signPdf(pdfBytes);
-      const pdfHash = crypto.createHash("sha256").update(signedPdfBytes).digest("hex");
-      const tempPath = path.join(os.tmpdir(), `${certificateId}.pdf`);
-      const fileName = `certificado_medico_${parsed.rut.replace(/\./g, "")}.pdf`;
+    .handler(async ({ context, input }) => generateMedicalCertificate(input, context.user.id)),
 
-      fs.writeFileSync(tempPath, signedPdfBytes);
+  generatePrescription: createMedicalCertificates
+    .route({
+      method: "POST",
+      path: "/prescription",
+      summary: "Generate a medical prescription PDF",
+      tags: ["Certificates"],
+    })
+    .input(generateMedicalPrescriptionInputSchema)
+    .output(medicalPrescriptionGenerateResponseSchema)
+    .handler(async ({ context, input }) => createMedicalPrescription(input, context.user.id)),
 
-      try {
-        const { fileId } = await uploadCertificateToDrive(
-          tempPath,
-          `certificado_${parsed.rut.replace(/\./g, "")}_${Date.now()}.pdf`,
-          parsed,
-          pdfHash
-        );
+  annulPrescription: createMedicalCertificates
+    .route({
+      method: "POST",
+      path: "/prescription/{id}/annul",
+      summary: "Annul a medical prescription (soft, keeps audit record)",
+      tags: ["Certificates"],
+    })
+    .input(prescriptionIdInputSchema)
+    .output(annulPrescriptionResponseSchema)
+    .handler(async ({ input }) => annulPrescription(input.id)),
 
-        await db.medicalCertificate.create({
-          data: {
-            address: parsed.address,
-            birthDate: parseDateOnly(parsed.birthDate),
-            diagnosis: parsed.diagnosis,
-            driveFileId: fileId,
-            id: certificateId,
-            issuedBy: context.user.id,
-            metadata: parsed,
-            patientName: parsed.patientName,
-            patientRut: parsed.rut,
-            pdfHash,
-            purpose: parsed.purpose,
-            purposeDetail: parsed.purposeDetail,
-            restDays: parsed.restDays,
-            restEndDate: parsed.restEndDate ? parseDateOnly(parsed.restEndDate) : null,
-            restStartDate: parsed.restStartDate ? parseDateOnly(parsed.restStartDate) : null,
-            symptoms: parsed.symptoms,
-          },
-        });
-      } finally {
-        if (fs.existsSync(tempPath)) {
-          fs.unlinkSync(tempPath);
-        }
-      }
+  emailPrescription: createMedicalCertificates
+    .route({
+      method: "POST",
+      path: "/prescription/{id}/email",
+      summary: "Email a medical prescription PDF to the patient",
+      tags: ["Certificates"],
+    })
+    .input(emailPrescriptionInputSchema)
+    .output(emailPrescriptionResponseSchema)
+    .handler(async ({ input }) =>
+      emailPrescription({ id: input.id, to: input.to, message: input.message })
+    ),
 
-      return new File([Buffer.from(signedPdfBytes)], fileName, { type: "application/pdf" });
-    }),
+  listPrescriptions: readMedicalCertificates
+    .route({
+      method: "GET",
+      path: "/prescriptions",
+      summary: "List medical prescriptions",
+      tags: ["Certificates"],
+    })
+    .input(listMedicalPrescriptionsInputSchema)
+    .output(medicalPrescriptionListResponseSchema)
+    .handler(async ({ input }) => listMedicalPrescriptions(input)),
+
+  listMedical: readMedicalCertificates
+    .route({
+      method: "GET",
+      path: "/medical",
+      summary: "List medical certificates",
+      tags: ["Certificates"],
+    })
+    .input(listMedicalCertificatesInputSchema)
+    .output(medicalCertificateListResponseSchema)
+    .handler(async ({ input }) => listMedicalCertificates(input)),
+
+  deleteMedical: deleteMedicalCertificates
+    .route({
+      method: "DELETE",
+      path: "/medical/{id}",
+      summary: "Delete a medical certificate",
+      tags: ["Certificates"],
+    })
+    .input(certificateIdInputSchema)
+    .output(z.object({ ok: z.boolean() }))
+    .handler(async ({ input }) => deleteMedicalCertificate(input.id)),
 
   verify: base
     .route({
@@ -130,48 +172,7 @@ const certificatesORPCRouterBase = {
     })
     .input(certificateVerifyInputSchema)
     .output(certificateVerifyResponseSchema)
-    .handler(async ({ input }) => {
-      const certificate = await db.medicalCertificate.findUnique({
-        where: { id: input.id },
-        include: {
-          issuer: {
-            include: {
-              person: true,
-            },
-          },
-        },
-      });
-
-      if (!certificate) {
-        return {
-          error: "Certificado no encontrado",
-          valid: false as const,
-        };
-      }
-
-      if (!certificate.issuer?.person) {
-        throw new ORPCError("INTERNAL_SERVER_ERROR", {
-          message: "Certificado sin emisor válido",
-        });
-      }
-
-      return {
-        diagnosis: certificate.diagnosis,
-        doctor: {
-          name: certificate.issuer.person.names,
-          specialty: "Especialista en Alergología e Inmunología Clínica",
-        },
-        issuedAt: certificate.issuedAt,
-        patient: {
-          name: certificate.patientName,
-        },
-        purpose: certificate.purpose,
-        restDays: certificate.restDays,
-        restEndDate: certificate.restEndDate,
-        restStartDate: certificate.restStartDate,
-        valid: true as const,
-      };
-    }),
+    .handler(async ({ input }) => verifyMedicalCertificate(input.id)),
 };
 
 export const certificatesORPCRouter = base

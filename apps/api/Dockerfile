@@ -11,7 +11,7 @@ ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 ENV HUSKY=0
 COPY . .
-RUN npm install -g pnpm@10.32.1
+RUN npm install -g pnpm@11.1.1
 # Use pnpm dlx to avoid npm interpreting pnpm-only .npmrc keys during Docker builds.
 RUN TURBO_TELEMETRY_DISABLED=1 pnpm dlx turbo@2.9.1 prune @finanzas/api --docker
 
@@ -31,7 +31,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install the workspace-pinned pnpm directly (corepack removed in Node.js 25+)
-RUN npm install -g pnpm@10.32.1
+RUN npm install -g pnpm@11.1.1
 
 # Copy dependencies from pruner
 COPY --from=pruner /app/out/json/ .
@@ -51,11 +51,14 @@ COPY --from=pruner /app/out/full/ .
 ENV CI=true
 ENV TURBO_TELEMETRY_DISABLED=1
 
-# Build API workspace dependencies
+# Build API workspace dependencies. db builds with tsdown → Node-valid dist/*.mjs
+# (resolves ZenStack's extensionless imports); api's build is a no-op — it runs
+# its .ts source directly via Node 26 type-stripping (see runner CMD).
 RUN --mount=type=cache,id=s/fbf6a604-cc46-46af-8d95-9e7503753301-/app/.turbo/cache,target=/app/.turbo/cache \
     pnpm turbo run build --filter=@finanzas/api...
 
-# Create a self-contained production app with only runtime files and prod deps.
+# Materialize a self-contained app (api .ts source + assets + prod node_modules,
+# with db's compiled .mjs injected) via pnpm deploy.
 RUN --mount=type=cache,id=s/fbf6a604-cc46-46af-8d95-9e7503753301-/pnpm/store,target=/pnpm/store \
     pnpm --filter=@finanzas/api --prod deploy /app/deploy
 
@@ -66,6 +69,16 @@ FROM node:26-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
+# On-disk V8 compile cache (Node 26 stable): caches type-stripping + compilation
+# so restarts boot ~25% faster. /tmp is writable by USER node; repopulated per
+# container, persists across restarts of the same container.
+ENV NODE_COMPILE_CACHE=/tmp/node-compile-cache
+
+# Ghostscript: post-procesa los PDFs a PDF/A-3 (OutputIntent sRGB) — ver
+# modules/pdf/pdf-a.ts. Si faltara, toPdfA3 degrada al PDF original.
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends ghostscript \
+  && rm -rf /var/lib/apt/lists/*
 
 COPY --from=build /app/deploy/ .
 
@@ -73,4 +86,14 @@ USER node
 
 EXPOSE 3000
 
-CMD ["node", "src/index.ts"]
+# V8 flags inline (Railway env NODE_OPTIONS unreliable for memory flags):
+# - --max-old-space-size=1024: hard cap heap (was uncapped → V8 grew to 2.5GB).
+#   Lower to 512 after Fase 2 (lazy-load xlsx/pdf-lib) + Fase 3 (remove
+#   in-process schedulers) land and /api/diag/heap confirms steady < 400MB.
+# - --max-semi-space-size=32: pin semi-space; Node 22+ dynamic default can
+#   shrink to 1MB causing GC thrash (nodejs/node#62723)
+# --import ./src/instrument.ts: loads Sentry's OpenTelemetry distro (and our
+# pg instrumentation) BEFORE app code is linked, so http/fetch/pg are patched
+# in time for ESM auto-instrumentation. Node 26 type-stripping applies to the
+# imported .ts loader module the same as to the entrypoint.
+CMD ["node", "--import", "./src/instrument.ts", "--max-old-space-size=1024", "--max-semi-space-size=32", "src/index.ts"]

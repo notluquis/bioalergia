@@ -28,7 +28,7 @@ export function PatientRecordsTimeline({ patientId }: { patientId: number | null
   }
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-3" data-phi-block>
       {records.map((r) => (
         <RecordCard
           key={r.id}
@@ -39,6 +39,10 @@ export function PatientRecordsTimeline({ patientId }: { patientId: number | null
           physicalExam={r.physicalExam}
           diagnosis={r.diagnosis}
           indications={r.indications}
+          antecedents={r.antecedents}
+          medications={r.medications}
+          knownAllergies={r.knownAllergies}
+          observations={r.observations}
           weightKg={r.weightKg}
           heightCm={r.heightCm}
           headCircumferenceCm={r.headCircumferenceCm}

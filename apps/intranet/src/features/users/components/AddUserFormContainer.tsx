@@ -1,20 +1,12 @@
-import {
-  Button,
-  Checkbox,
-  Description,
-  FieldError,
-  Label,
-  ListBox,
-  Select,
-  Spinner,
-} from "@heroui/react";
+import { Button, Checkbox, Description, FieldError, Label, ListBox, Select } from "@heroui/react";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { type ReactFormExtendedApi, useForm } from "@tanstack/react-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Shield, UserPlus, Users } from "lucide-react";
 import { TanStackInputField } from "@/components/forms/TanStackFieldControls";
 import { useToast } from "@/context/ToastContext";
 import { fetchPeople, type PersonWithExtras } from "@/features/people/api";
-import { fetchRoles } from "@/features/roles/api";
+import { roleKeys } from "@/features/roles/queries";
 import { inviteUser, type InviteUserPayload } from "@/features/users/api";
 import { usePersonLinking } from "@/features/users/hooks/usePersonLinking";
 import { ApiError } from "@/lib/api-client";
@@ -48,10 +40,7 @@ export function AddUserFormContainer({
   const queryClient = useQueryClient();
   const { error: toastError, success } = useToast();
 
-  const { data: rolesData, isLoading: isRolesLoading } = useQuery({
-    queryFn: fetchRoles,
-    queryKey: ["roles"],
-  });
+  const { data: rolesData, isLoading: isRolesLoading } = useQuery(roleKeys.lists());
   const roles = rolesData ?? [];
 
   // Fetch people without users
@@ -149,7 +138,7 @@ export function AddUserFormContainer({
   if (isPeopleLoading) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
-        <Spinner aria-label="Cargando" color="accent" size="lg" />
+        <LoadingSpinner label="Cargando" color="accent" size="lg" />
       </div>
     );
   }
@@ -291,7 +280,7 @@ function PersonLinkSection({
   return (
     <div className="rounded-xl border border-info/20 bg-info/5 p-4">
       <div className="flex items-start gap-3">
-        <Users className="mt-0.5 h-5 w-5 text-info" />
+        <Users className="mt-0.5 text-info size-5" />
         <div className="flex-1 space-y-3">
           <div>
             <span className="block font-medium text-info">Vincular a persona existente</span>
@@ -484,7 +473,7 @@ function SecuritySection({ form }: Pick<AddUserFormCardProps, "form">) {
   return (
     <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
       <div className="flex items-start gap-3">
-        <Shield className="mt-0.5 h-5 w-5 text-primary" />
+        <Shield className="mt-0.5 text-primary size-5" />
         <div className="space-y-1">
           <span className="block font-medium text-primary">Seguridad reforzada</span>
           <Description className="text-default-600 text-xs">

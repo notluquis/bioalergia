@@ -71,6 +71,30 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * Normaliza cualquier error de un cliente oRPC a `ApiError`.
+ * Fuente única — reemplaza las copias idénticas `to<Feature>ApiError`
+ * que vivían en cada `features/<x>/orpc.ts`.
+ *
+ * Detecta `ORPCError` por duck-typing (Error con `status: number`) a propósito:
+ * importar `@orpc/client` aquí mete ese módulo en el grafo de TODO consumidor de
+ * `api-client` y cruza el umbral de profundidad de tsgo al instanciar los
+ * contratos oRPC pesados (resultados degradan a `{}`/`any`).
+ */
+export function toApiError(error: unknown): ApiError {
+  if (error instanceof ApiError) {
+    return error;
+  }
+  if (error instanceof Error) {
+    const orpc = error as { status?: unknown; data?: unknown };
+    if (typeof orpc.status === "number") {
+      return new ApiError(error.message, orpc.status, orpc.data);
+    }
+    return new ApiError(error.message, 500);
+  }
+  return new ApiError("Error inesperado", 500, error);
+}
+
 // Helper for building query strings with custom array handling (preserved for safety)
 function buildUrlWithQuery(url: string, query?: Record<string, unknown>) {
   if (!query) {

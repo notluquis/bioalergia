@@ -1,13 +1,19 @@
 import { useStore } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
-import dayjs from "dayjs";
 import { useMemo } from "react";
 
-import type { BalanceSummary, DailyBalanceFormData, DayCell, DayStatus, WeekData } from "../types";
+import { addDays, chileDay, civilNoon, formatChile, startOfWeek } from "@/lib/dates";
+import type {
+  BalanceSummary,
+  DailyBalanceFormData,
+  DayCell,
+  DayEntrySummary,
+  DayStatus,
+  WeekData,
+} from "../types";
 
-import { calculateSummary, getDayAbbrev } from "../utils";
+import { areFormDataEqual, calculateSummary, getDayAbbrev } from "../utils";
 
-// Default empty form values
 const defaultFormData: DailyBalanceFormData = {
   consultas: 0,
   controles: 0,
@@ -24,86 +30,89 @@ const defaultFormData: DailyBalanceFormData = {
 };
 
 export interface DailyBalanceState {
-  // Current Entry ID (if exists in DB)
+  // ID de la entrada en DB para el día seleccionado (null = día sin guardar)
   currentEntryId: null | number;
-
-  // Form data for current day
+  // true cuando la entrada del día está FINALIZED en el API
+  entryFinalized: boolean;
+  // Form del día seleccionado
   formData: DailyBalanceFormData;
-
-  // State flags
-  isLoading: boolean;
-
   isSaving: boolean;
-
   lastSaved: Date | null;
-
-  // Original data (to detect changes)
+  // Snapshot del último estado persistido (para detectar dirty)
   originalData: DailyBalanceFormData;
-  // Current selected date
   selectedDate: Date;
-  // Week data for navigation
+  // Datos derivados para el WeekStrip
   weekData: null | WeekData;
 }
 
-// 1. Base Store
 export const dailyBalanceStore = new Store<DailyBalanceState>({
   currentEntryId: null,
+  entryFinalized: false,
   formData: { ...defaultFormData },
-  isLoading: false,
   isSaving: false,
   lastSaved: null,
   originalData: { ...defaultFormData },
-  selectedDate: dayjs().toDate(),
+  selectedDate: new Date(),
   weekData: null,
 });
 
-import "dayjs/locale/es";
+function dayStatusFromEntry(entry: DayEntrySummary | undefined): DayStatus {
+  if (!entry || entry.total <= 0) {
+    return "empty";
+  }
+  if (entry.finalized) {
+    return "finalized";
+  }
+  return entry.cuadra ? "draft" : "unbalanced";
+}
 
-// Set locale globally to ensure weeks start on Monday
-dayjs.locale("es");
-
-export function generateWeekData(centerDate: Date, entries: Record<string, number>): WeekData {
-  const center = dayjs(centerDate);
-  const startOfWeek = center.startOf("week"); // Sunday
-  const endOfWeek = center.endOf("week");
+export function generateWeekData(
+  centerDate: Date,
+  entries: Record<string, DayEntrySummary>
+): WeekData {
+  const centerISO = chileDay(centerDate);
+  const weekStart = startOfWeek(centerISO); // lunes ISO
 
   const days: DayCell[] = [];
 
   for (let i = 0; i < 7; i++) {
-    const d = startOfWeek.add(i, "day");
-    const dateStr = d.format("YYYY-MM-DD");
-    const total = entries[dateStr] ?? 0;
+    const dateStr = addDays(weekStart, i);
+    const entry = entries[dateStr];
+    const dateObj = civilNoon(dateStr);
 
     days.push({
-      date: d.toDate(),
-      dayName: getDayAbbrev(d.toDate()),
-      dayNumber: d.date(),
-      isSelected: d.isSame(center, "day"),
-      isToday: d.isSame(dayjs(), "day"),
-      status: total > 0 ? "balanced" : "empty",
-      total,
+      date: dateObj,
+      dayName: getDayAbbrev(dateObj),
+      dayNumber: Number(dateStr.slice(8, 10)),
+      status: dayStatusFromEntry(entry),
+      total: entry?.total ?? 0,
     });
   }
 
+  const weekEnd = addDays(weekStart, 6);
+
   return {
     days,
-    weekLabel: `${startOfWeek.format("D")} – ${endOfWeek.format("D MMM YYYY")}`,
+    weekLabel: `${formatChile(weekStart, "D")} – ${formatChile(weekEnd, "D MMM YYYY")}`,
   };
 }
 
-// 2. Helper Logic
-function computeStatus(data: DailyBalanceFormData, summary: BalanceSummary): DayStatus {
+/** Estado del día seleccionado para chips de TopBar/CierrePanel. */
+function computeStatus(
+  data: DailyBalanceFormData,
+  summary: BalanceSummary,
+  finalized: boolean
+): DayStatus {
+  if (finalized) {
+    return "finalized";
+  }
   const hasData = data.tarjeta > 0 || data.transferencia > 0 || data.efectivo > 0;
   if (!hasData) {
     return "empty";
   }
-  if (summary.cuadra) {
-    return "balanced";
-  }
-  return "unbalanced";
+  return summary.cuadra ? "draft" : "unbalanced";
 }
 
-// 3. Standalone Actions
 export const setSelectedDate = (date: Date) => {
   dailyBalanceStore.setState((s) => ({ ...s, selectedDate: date }));
 };
@@ -118,14 +127,14 @@ export const updateField = <K extends keyof DailyBalanceFormData>(
   }));
 };
 
-export const setFormData = (data: DailyBalanceFormData) => {
-  dailyBalanceStore.setState((s) => ({ ...s, formData: data }));
-};
-
-export const setOriginalData = (data: DailyBalanceFormData, id?: number) => {
+export const setOriginalData = (
+  data: DailyBalanceFormData,
+  entry?: { finalized: boolean; id: number }
+) => {
   dailyBalanceStore.setState((s) => ({
     ...s,
-    currentEntryId: id ?? null,
+    currentEntryId: entry?.id ?? null,
+    entryFinalized: entry?.finalized ?? false,
     formData: data,
     originalData: data,
   }));
@@ -135,18 +144,15 @@ export const setWeekData = (data: WeekData) => {
   dailyBalanceStore.setState((s) => ({ ...s, weekData: data }));
 };
 
-export const setIsLoading = (loading: boolean) => {
-  dailyBalanceStore.setState((s) => ({ ...s, isLoading: loading }));
-};
-
 export const setIsSaving = (saving: boolean) => {
   dailyBalanceStore.setState((s) => ({ ...s, isSaving: saving }));
 };
 
-export const markSaved = (newId?: number) => {
+export const markSaved = (entry: { finalized: boolean; id: number }) => {
   dailyBalanceStore.setState((s) => ({
     ...s,
-    currentEntryId: newId ?? s.currentEntryId,
+    currentEntryId: entry.id,
+    entryFinalized: entry.finalized,
     lastSaved: new Date(),
     originalData: { ...s.formData },
   }));
@@ -156,22 +162,23 @@ export const resetForm = () => {
   dailyBalanceStore.setState((s) => ({
     ...s,
     currentEntryId: null,
+    entryFinalized: false,
     formData: { ...defaultFormData },
-    isDirty: false,
     originalData: { ...defaultFormData },
-    summary: { ...calculateSummary(defaultFormData) }, // Initial summary logic if needed in store? No, store is clean.
   }));
 };
 
-// 4. Adapter Hook (Backward Compatibility)
 export function useDailyBalanceStore() {
   const state = useStore(dailyBalanceStore, (state) => state);
 
   const summary = useMemo(() => calculateSummary(state.formData), [state.formData]);
 
-  const status = useMemo(() => computeStatus(state.formData, summary), [state.formData, summary]);
+  const status = useMemo(
+    () => computeStatus(state.formData, summary, state.entryFinalized),
+    [state.formData, summary, state.entryFinalized]
+  );
   const isDirty = useMemo(
-    () => JSON.stringify(state.formData) !== JSON.stringify(state.originalData),
+    () => !areFormDataEqual(state.formData, state.originalData),
     [state.formData, state.originalData]
   );
 
@@ -180,11 +187,8 @@ export function useDailyBalanceStore() {
     isDirty,
     markSaved,
     resetForm,
-    setFormData,
-    setIsLoading,
     setIsSaving,
     setOriginalData,
-    // Actions
     setSelectedDate,
     setWeekData,
     status,

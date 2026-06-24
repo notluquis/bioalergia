@@ -9,7 +9,7 @@ import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
 import { performance } from "node:perf_hooks";
-import { getSessionUser, hasPermission } from "../auth.ts";
+import { getSessionUser, hasPermission } from "../lib/auth.ts";
 import { logError } from "../lib/logger.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
 import { getRailwayDeploymentsSnapshot } from "../services/system-railway.ts";

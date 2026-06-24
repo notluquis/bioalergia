@@ -288,6 +288,72 @@ describe("clinical skin test parser", () => {
     expect(parsed.results).toHaveLength(10);
   });
 
+  it("keeps lone right-side panel values in the E column", async () => {
+    const buf = makeBuffer("Test", {
+      D4: s("MULTITEST CUTÁNEO"),
+      D5: s("PANEL 1, 2,3 Y ACAROS"),
+      B7: s("NOMBRE : Isaac Chacon chavez"),
+      H7: s("EDAD"),
+      I7: s(":"),
+      J7: s("9 años"),
+      B8: s("RUT"),
+      C8: s(": 25.416.248-5"),
+      H8: s("FECHA"),
+      I8: s(":"),
+      J8: s("20-03-2026"),
+      H13: s("PANEL 3"),
+      I12: s("mm"),
+      G14: s("G1"),
+      H14: s("GRAMA COMUN"),
+      I14: n(3),
+      J14: n(9),
+      G15: s("G2"),
+      H15: s("CENTENO"),
+      J15: n(10),
+      G16: s("G3"),
+      H16: s("BALLICO"),
+      I16: n(6),
+      J16: n(10),
+      G17: s("G4"),
+      H17: s("TRIGO"),
+      J17: n(9),
+      G18: s("G5"),
+      H18: s("POA PRATENSIS"),
+      I18: n(6),
+      J18: n(21),
+      G19: s("G6"),
+      H19: s("PHLEUM PRATENSE"),
+      J19: n(11),
+    });
+
+    const parsed = await parseSkinTestWorkbookBuffer(buf);
+
+    expect(parsed.results).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          allergenName: "CENTENO",
+          code: "G2",
+          erythemaMm: 10,
+          papuleMm: null,
+          rawErythema: "10",
+          rawPapule: null,
+        }),
+        expect.objectContaining({
+          allergenName: "TRIGO",
+          code: "G4",
+          erythemaMm: 9,
+          papuleMm: null,
+        }),
+        expect.objectContaining({
+          allergenName: "PHLEUM PRATENSE",
+          code: "G6",
+          erythemaMm: 11,
+          papuleMm: null,
+        }),
+      ])
+    );
+  });
+
   it("extracts interpretation notes and non-conclusive hyperreactivity flags", async () => {
     const buf = makeBuffer("Test", {
       B2: s("PRICKTEST CUTANEO"),
@@ -817,5 +883,80 @@ describe("clinical skin test parser", () => {
     expect(parsed.issues).not.toEqual(
       expect.arrayContaining([expect.objectContaining({ code: "missing_date" })])
     );
+  });
+
+  it("does not leak a control's value into the adjacent panel's code (two-column bottom row)", async () => {
+    // Regression: a control in the LEFT panel shares a row with a mezcla code in
+    // the RIGHT panel. The control's erythema (15) must NOT be read as a code and
+    // paired with the right panel's name. The right panel's MH/ACARUS SIRO row
+    // must be captured under its own section, not the left panel's MALEZAS.
+    const buf = makeBuffer("Test", {
+      D4: s("MULTITEST CUTÁNEO"),
+      D5: s("PANEL 1, 2 Y 3"),
+      B7: s("NOMBRE : TEST PACIENTE"),
+      H7: s("EDAD"),
+      I7: s(":"),
+      J7: s("5 AÑOS"),
+      B8: s("RUT"),
+      C8: s(": 26.813.410-7"),
+      H8: s("FECHA"),
+      I8: s(":"),
+      J8: s("19-07-2022"),
+      // left panel: MALEZAS section + P/E headers
+      B10: s("MALEZAS"),
+      D10: s("P"),
+      E10: s("E"),
+      B11: s("M1"),
+      C11: s("AMBROSIA"),
+      E11: n(4),
+      // right panel: Acaros/INSECTARIO section + mm headers
+      G9: s("Acaros/INSECTARIO"),
+      I9: s("mm"),
+      J9: s("mm"),
+      G10: s("MA"),
+      H10: s("MEZCLA ACAROS"),
+      J10: n(5),
+      // the dangerous shared row: left control + right mezcla code MH
+      B12: s("CONTROL POSITIVO (HISTAMINA)"),
+      D12: n(4),
+      E12: n(15),
+      G12: s("MH"),
+      H12: s("ACARUS SIRO"),
+      J12: n(5),
+      B13: s("CONTROL NEGATIVO (GLICEROL SALINO)"),
+      E13: n(6),
+    });
+
+    const parsed = await parseSkinTestWorkbookBuffer(buf);
+
+    // The bottom-row mezcla code is recovered with its real name + own section.
+    expect(parsed.results).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          allergenName: "ACARUS SIRO",
+          code: "MH",
+          erythemaMm: 5,
+          section: "Acaros/INSECTARIO",
+        }),
+        expect.objectContaining({
+          allergenName: "MEZCLA ACAROS",
+          code: "MA",
+          section: "Acaros/INSECTARIO",
+        }),
+        expect.objectContaining({
+          allergenName: "CONTROL POSITIVO (HISTAMINA)",
+          controlType: "POSITIVE",
+          erythemaMm: 15,
+          papuleMm: 4,
+        }),
+      ])
+    );
+    // No fabricated row where the control's erythema (15) became a code and the
+    // right panel's MH landed in the allergen-name field.
+    expect(parsed.results.some((r) => r.code === "15")).toBe(false);
+    expect(parsed.results.some((r) => r.allergenName === "MH")).toBe(false);
+    // The control keeps its own erythema (15), not stolen by the leak.
+    const control = parsed.results.find((r) => r.controlType === "POSITIVE");
+    expect(control?.erythemaMm).toBe(15);
   });
 });

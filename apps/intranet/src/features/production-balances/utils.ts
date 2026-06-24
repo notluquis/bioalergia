@@ -5,8 +5,27 @@
 
 // Re-export existing formatters
 import { coerceAmount, fmtCLP, formatRelativeDate, numberFormatter } from "@/lib/format";
+import type { DailyBalanceFormData } from "./types";
 
 export { coerceAmount, fmtCLP, formatRelativeDate, numberFormatter };
+
+/** Comparación campo a campo (más barata y estable que JSON.stringify). */
+export function areFormDataEqual(a: DailyBalanceFormData, b: DailyBalanceFormData): boolean {
+  return (
+    a.consultas === b.consultas &&
+    a.controles === b.controles &&
+    a.efectivo === b.efectivo &&
+    a.gastos === b.gastos &&
+    a.licencias === b.licencias &&
+    a.nota === b.nota &&
+    a.otros === b.otros &&
+    a.roxair === b.roxair &&
+    a.tarjeta === b.tarjeta &&
+    a.tests === b.tests &&
+    a.transferencia === b.transferencia &&
+    a.vacunas === b.vacunas
+  );
+}
 
 /**
  * Calculate summary from form data

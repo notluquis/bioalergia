@@ -238,7 +238,7 @@ function buildSummaryRow(label: string, value: string) {
   </tr>`;
 }
 
-function formatClp(amount: number) {
+export function formatClp(amount: number) {
   return amount.toLocaleString("es-CL", {
     currency: "CLP",
     maximumFractionDigits: 0,
@@ -247,7 +247,7 @@ function formatClp(amount: number) {
   });
 }
 
-function formatDisplayDate(value: string) {
+export function formatDisplayDate(value: string) {
   if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
     const [year, month, day] = value.split("-");
     return `${day}-${month}-${year}`;
@@ -255,7 +255,7 @@ function formatDisplayDate(value: string) {
   return value;
 }
 
-function formatRetentionPercent(rate: number) {
+export function formatRetentionPercent(rate: number) {
   return (
     new Intl.NumberFormat("es-CL", {
       maximumFractionDigits: 2,
@@ -264,13 +264,13 @@ function formatRetentionPercent(rate: number) {
   );
 }
 
-function formatWorkedTime(totalMinutes: number) {
+export function formatWorkedTime(totalMinutes: number) {
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
   return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
 }
 
-function escapeHtml(value: string) {
+export function escapeHtml(value: string) {
   return value
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")

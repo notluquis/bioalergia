@@ -1,7 +1,12 @@
+import { formatChile } from "@/lib/dates";
+import { fmtCLP } from "@/lib/format";
 import { Skeleton } from "@heroui/react";
-import dayjs from "dayjs";
 
 const RANGE_DAYS = 30;
+const HALF_AREA_PX = 78;
+const MIN_BAR_PX = 2;
+const MAX_LABELS = 8;
+
 export function DashboardChart({
   data,
   loading,
@@ -11,78 +16,127 @@ export function DashboardChart({
 }) {
   if (loading) {
     return (
-      <div className="surface-recessed space-y-4 p-6">
+      <div className="surface-recessed space-y-4 rounded-[28px] p-6">
         <Skeleton className="h-5 w-72 rounded-md" />
-        <div className="grid grid-cols-4 gap-4">
-          {["1", "2", "3", "4", "5", "6", "7", "8"].map((skeletonKey) => (
-            <Skeleton className="h-32 rounded-lg" key={`dashboard-chart-skeleton-${skeletonKey}`} />
-          ))}
-        </div>
+        <Skeleton className="h-44 w-full rounded-2xl" />
       </div>
     );
   }
 
   if (data.length === 0) {
     return (
-      <div className="surface-recessed p-6 text-foreground text-sm">
+      <div className="surface-recessed rounded-[28px] p-6 text-foreground text-sm">
         No se registran movimientos recientes.
       </div>
     );
   }
 
-  const maxValue = Math.max(...data.map((row) => Math.max(row.in, row.out)));
+  // Stats may emit `out` as a negative magnitude depending on the grouping —
+  // normalize to absolute values so bar heights always render upward.
+  const magnitude = (row: { in: number; out: number }) => ({
+    in: Math.abs(row.in),
+    out: Math.abs(row.out),
+  });
+
+  const maxValue = Math.max(
+    1,
+    ...data.map((row) => Math.max(magnitude(row).in, magnitude(row).out))
+  );
+  const totalIn = data.reduce((acc, row) => acc + magnitude(row).in, 0);
+  const totalOut = data.reduce((acc, row) => acc + magnitude(row).out, 0);
+  const net = totalIn - totalOut;
+
+  // Sparse x labels — a 30-day series can't show every tick legibly.
+  const labelStride = Math.max(1, Math.ceil(data.length / MAX_LABELS));
 
   return (
     <article className="surface-recessed space-y-5 rounded-[28px] p-5 sm:p-6">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="typ-subtitle text-foreground">Actividad de los últimos {RANGE_DAYS} días</h2>
-        <div className="flex items-center gap-3 text-xs">
-          <span className="inline-flex items-center gap-2 text-default-500">
-            <span className="h-2.5 w-2.5 rounded-full bg-success/80" />
-            Ingresos
-          </span>
-          <span className="inline-flex items-center gap-2 text-default-500">
-            <span className="h-2.5 w-2.5 rounded-full bg-danger/80" />
-            Egresos
-          </span>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="space-y-1">
+          <h2 className="typ-subtitle text-foreground">
+            Actividad de los últimos {RANGE_DAYS} días
+          </h2>
+          <p className="text-default-500 text-xs">Ingresos y egresos diarios sincronizados.</p>
+        </div>
+        <div className="flex items-center gap-4 text-xs">
+          <SummaryStat label="Ingresos" tone="success" value={totalIn} />
+          <SummaryStat label="Egresos" tone="danger" value={totalOut} />
+          <SummaryStat label="Neto" tone={net >= 0 ? "success" : "danger"} value={net} />
         </div>
       </div>
-      <div className="-mx-1 overflow-x-auto pb-1">
-        <div
-          className="grid min-w-full items-end gap-3 px-1"
-          style={{ gridTemplateColumns: `repeat(${Math.max(data.length, 1)}, minmax(120px, 1fr))` }}
-        >
+
+      <div className="relative rounded-[24px] border border-default-200/70 bg-background/60 p-4">
+        <div className="flex items-stretch gap-px" style={{ height: `${HALF_AREA_PX * 2}px` }}>
           {data.map((row) => {
-            const inHeight = maxValue ? Math.max((row.in / maxValue) * 140, 4) : 4;
-            const outHeight = maxValue ? Math.max((row.out / maxValue) * 140, 4) : 4;
+            const { in: inMag, out: outMag } = magnitude(row);
+            const inHeight =
+              inMag > 0 ? Math.max((inMag / maxValue) * HALF_AREA_PX, MIN_BAR_PX) : 0;
+            const outHeight =
+              outMag > 0 ? Math.max((outMag / maxValue) * HALF_AREA_PX, MIN_BAR_PX) : 0;
+            const label = formatChile(row.month, "DD MMM");
+
             return (
-              <div className="flex min-w-0 flex-col gap-3" key={row.month}>
-                <div className="flex h-44 w-full items-end gap-3 rounded-[24px] border border-default-200/70 bg-background/70 p-4">
+              <div
+                aria-label={`${label}: ingresos ${fmtCLP(inMag)}, egresos ${fmtCLP(outMag)}`}
+                className="group flex flex-1 flex-col justify-center"
+                key={row.month}
+                title={`${label}\nIngresos ${fmtCLP(inMag)}\nEgresos ${fmtCLP(outMag)}`}
+              >
+                {/* income — grows up from the center baseline */}
+                <div className="flex flex-1 items-end">
                   <div
-                    className="flex-1 rounded-[20px_20px_14px_14px] bg-linear-to-t from-success/90 to-success/60 shadow-sm"
+                    className="w-full rounded-t-[4px] bg-success/70 transition group-hover:bg-success"
                     style={{ height: `${inHeight}px` }}
                   />
-
+                </div>
+                <div className="h-px w-full bg-default-300/70" />
+                {/* expense — grows down from the center baseline */}
+                <div className="flex flex-1 items-start">
                   <div
-                    className="flex-1 rounded-[20px_20px_14px_14px] bg-linear-to-t from-danger/90 to-danger/60 shadow-sm"
+                    className="w-full rounded-b-[4px] bg-danger/70 transition group-hover:bg-danger"
                     style={{ height: `${outHeight}px` }}
                   />
-                </div>
-                <div className="space-y-1 text-center">
-                  <span className="block font-medium text-foreground text-xs">
-                    {dayjs(row.month).format("MMM YY")}
-                  </span>
-                  <span className="block text-xs text-default-500">
-                    {new Intl.NumberFormat("es-CL", { notation: "compact" }).format(
-                      Math.max(row.in, row.out)
-                    )}
-                  </span>
                 </div>
               </div>
             );
           })}
         </div>
+
+        {/* design-lint-ignore: small-text -- etiquetas de eje (ticks de mes), tamaño denso intencional */}
+        <div className="mt-2 flex gap-px text-[10px] text-default-500">
+          {data.map((row, index) => (
+            <span className="flex-1 text-center" key={`label-${row.month}`}>
+              {index % labelStride === 0 ? formatChile(row.month, "DD/MM") : ""}
+            </span>
+          ))}
+        </div>
       </div>
     </article>
+  );
+}
+
+function SummaryStat({
+  label,
+  tone,
+  value,
+}: {
+  label: string;
+  tone: "danger" | "success";
+  value: number;
+}) {
+  return (
+    <span className="inline-flex flex-col items-end gap-0.5">
+      <span className="inline-flex items-center gap-1.5 text-default-500">
+        <span
+          className={`rounded-full size-2.5 ${tone === "success" ? "bg-success/80" : "bg-danger/80"}`}
+        />
+        {label}
+      </span>
+      <span
+        className={`font-semibold text-sm ${tone === "success" ? "text-success" : "text-danger"}`}
+      >
+        {fmtCLP(value)}
+      </span>
+    </span>
   );
 }

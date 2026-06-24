@@ -11,7 +11,7 @@ import {
   Input,
   Label,
   ListBox,
-  Modal,
+  NumberField,
   parseColor,
   SearchField,
   Select,
@@ -24,11 +24,12 @@ import {
 } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { RowSelectionState } from "@tanstack/react-table";
-import dayjs from "dayjs";
 import { X } from "lucide-react";
 import { lazy, startTransition, Suspense, useEffect, useMemo, useState } from "react";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { z } from "zod";
+import { addMonths, chileDay, formatChile, today } from "@/lib/dates";
+import { AppModal } from "@/components/ui/AppModal";
 import { useConfirmDialog } from "@/context/ConfirmDialogContext";
 import { fetchCounterparts } from "@/features/counterparts/api";
 import { useLazyTabs } from "@/hooks/use-lazy-tabs";
@@ -41,6 +42,7 @@ import type {
   TransactionCategoryOption,
 } from "../components/CashFlowColumns";
 import { financeORPCClient, toFinanceApiError } from "../orpc";
+import { cashflowKeys } from "../queries";
 import { isNonAccountableCategory } from "../utils/non-accountable-category";
 import {
   buildCategoryFrequencyMap,
@@ -253,7 +255,7 @@ const UpdateTransactionResponseSchema = z.object({
 
 function useFinancialTransactions(params: TransactionQueryParams) {
   return useQuery<FinancialTransactionsResponse>({
-    queryKey: ["FinancialTransaction", params],
+    queryKey: cashflowKeys.financialTransactions.list(params),
     queryFn: async () => {
       try {
         return FinancialTransactionsResponseSchema.parse(
@@ -275,7 +277,7 @@ function useFinancialTransactions(params: TransactionQueryParams) {
 
 function useHistoricalTransactionCategoryFrequencies() {
   return useQuery<Map<number, number>>({
-    queryKey: ["FinancialTransaction", "category-frequencies"],
+    queryKey: cashflowKeys.financialTransactions.categoryFrequencies,
     queryFn: async () => {
       const pageSize = 1000;
       let page = 1;
@@ -321,7 +323,7 @@ function useHistoricalTransactionCategoryFrequencies() {
 
 function useTransactionCategories() {
   return useQuery<TransactionCategoryOption[]>({
-    queryKey: ["TransactionCategory"],
+    queryKey: cashflowKeys.transactionCategories.all,
     queryFn: async () => {
       const payload = TransactionCategoriesResponseSchema.parse(
         await financeORPCClient.categoriesList()
@@ -333,7 +335,7 @@ function useTransactionCategories() {
 
 function useCounterparts() {
   return useQuery<CounterpartOption[]>({
-    queryKey: ["Counterpart"],
+    queryKey: cashflowKeys.counterparts.all,
     queryFn: async () => {
       const payload = CounterpartsResponseSchema.parse({
         counterparts: await fetchCounterparts(),
@@ -348,7 +350,7 @@ type CompensationProfileOption = z.infer<typeof CompensationProfileSchema>;
 
 function useCompensationProfiles() {
   return useQuery<CompensationProfileOption[]>({
-    queryKey: ["CompensationProfile"],
+    queryKey: cashflowKeys.compensationProfiles.all,
     queryFn: async () => {
       const payload = CompensationProfilesResponseSchema.parse(
         await financeORPCClient.compensationProfilesList()
@@ -363,7 +365,7 @@ function useCompensationLedger(profileId: null | number, period: string) {
   const toPeriod = period;
   return useQuery<z.infer<typeof CompensationLedgerEntrySchema>[]>({
     enabled: profileId != null,
-    queryKey: ["CompensationLedger", profileId, fromPeriod, toPeriod],
+    queryKey: cashflowKeys.compensationLedger.entry(profileId, fromPeriod, toPeriod),
     queryFn: async () => {
       const payload = CompensationLedgerResponseSchema.parse(
         await financeORPCClient.compensationProfilesLedger({
@@ -379,7 +381,7 @@ function useCompensationLedger(profileId: null | number, period: string) {
 
 function useFinancialAutoCategoryRules() {
   return useQuery<FinancialAutoCategoryRule[]>({
-    queryKey: ["FinancialAutoCategoryRule"],
+    queryKey: cashflowKeys.autoCategoryRules.all,
     queryFn: async () => {
       const payload = AutoCategoryRulesResponseSchema.parse(
         await financeORPCClient.autoCategoryRulesList()
@@ -391,7 +393,7 @@ function useFinancialAutoCategoryRules() {
 
 function useAvailableFinancialMonths() {
   return useQuery<string[]>({
-    queryKey: ["FinancialTransaction", "available-months"],
+    queryKey: cashflowKeys.financialTransactions.availableMonths,
     queryFn: async () => {
       const payload = AvailableMonthsResponseSchema.parse(
         await financeORPCClient.transactionsAvailableMonths()
@@ -667,7 +669,7 @@ function CategoryColorPicker({
 export function CashFlowPage() {
   const confirm = useConfirmDialog();
   const [page, setPage] = useState(1);
-  const [selectedMonth, setSelectedMonth] = useState(dayjs().format("YYYY-MM"));
+  const [selectedMonth, setSelectedMonth] = useState(today().slice(0, 7));
   const [activeTab, setActiveTab] = useState<CashFlowTab>("cash-flow");
   const { isTabMounted, markTabAsMounted } = useLazyTabs<CashFlowTab>("cash-flow");
   const [selectedCategoryFilters, setSelectedCategoryFilters] = useState<string[]>([]);
@@ -727,8 +729,8 @@ export function CashFlowPage() {
   const [isReallocateOpen, setIsReallocateOpen] = useState(false);
   const [reallocateTx, setReallocateTx] = useState<null | CashFlowTransaction>(null);
   const [reallocateProfileId, setReallocateProfileId] = useState<null | number>(null);
-  const [reallocateFromPeriod, setReallocateFromPeriod] = useState(dayjs().format("YYYY-MM"));
-  const [reallocateTargetPeriod, setReallocateTargetPeriod] = useState(dayjs().format("YYYY-MM"));
+  const [reallocateFromPeriod, setReallocateFromPeriod] = useState(today().slice(0, 7));
+  const [reallocateTargetPeriod, setReallocateTargetPeriod] = useState(today().slice(0, 7));
   const [reallocateAmount, setReallocateAmount] = useState<null | number>(null);
   const [showNonAccountableMovements, setShowNonAccountableMovements] = useState(false);
   const [showOnlyUncategorizedMovements, setShowOnlyUncategorizedMovements] = useState(false);
@@ -740,7 +742,7 @@ export function CashFlowPage() {
     ).sort((a, b) => b.localeCompare(a));
 
     if (uniqueMonths.length === 0) {
-      const value = dayjs().startOf("month").format("YYYY-MM");
+      const value = today().slice(0, 7);
       return [{ label: formatMonthLabel(value), value }];
     }
 
@@ -886,7 +888,7 @@ export function CashFlowPage() {
     });
   }, [activeCompensationProfiles, reallocateTx]);
   const targetPeriodOptions = useMemo(() => {
-    const nextPeriod = dayjs(`${reallocateFromPeriod}-01`).add(1, "month").format("YYYY-MM");
+    const nextPeriod = addMonths(`${reallocateFromPeriod}-01`, 1).slice(0, 7);
     const filtered = monthOptions.filter((option) => option.value >= nextPeriod);
     if (filtered.some((option) => option.value === nextPeriod)) {
       return filtered;
@@ -1089,7 +1091,7 @@ export function CashFlowPage() {
 
   const getFinancialTransactionsSnapshot = () =>
     queryClient.getQueriesData<FinancialTransactionsResponse>({
-      queryKey: ["FinancialTransaction"],
+      queryKey: cashflowKeys.financialTransactions.all,
     });
   const applyCategoryToTransactionCache = (transactionIds: number[], categoryId: null | number) => {
     const targetIds = new Set(transactionIds);
@@ -1099,7 +1101,7 @@ export function CashFlowPage() {
         : (categories.find((category) => category.id === categoryId) ?? null);
 
     queryClient.setQueriesData<FinancialTransactionsResponse>(
-      { queryKey: ["FinancialTransaction"] },
+      { queryKey: cashflowKeys.financialTransactions.all },
       (current) => {
         if (!isFinancialTransactionsPayload(current)) {
           return current;
@@ -1161,7 +1163,7 @@ export function CashFlowPage() {
       }
     },
     onMutate: async ({ categoryId, transactionId }) => {
-      await queryClient.cancelQueries({ queryKey: ["FinancialTransaction"] });
+      await queryClient.cancelQueries({ queryKey: cashflowKeys.financialTransactions.all });
       const previousFinancialTransactions = getFinancialTransactionsSnapshot();
       applyCategoryToTransactionCache([transactionId], categoryId);
       markTransactionCategoryUpdates([transactionId]);
@@ -1169,7 +1171,7 @@ export function CashFlowPage() {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({
-        queryKey: ["FinancialTransaction"],
+        queryKey: cashflowKeys.financialTransactions.all,
         refetchType: "active",
       });
     },
@@ -1236,7 +1238,7 @@ export function CashFlowPage() {
     onSettled: async (_data, _error, variables) => {
       unmarkTransactionCategoryUpdates(variables.transactionIds);
       await queryClient.invalidateQueries({
-        queryKey: ["FinancialTransaction"],
+        queryKey: cashflowKeys.financialTransactions.all,
         refetchType: "active",
       });
     },
@@ -1253,7 +1255,7 @@ export function CashFlowPage() {
       }
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["TransactionCategory"] });
+      void queryClient.invalidateQueries({ queryKey: cashflowKeys.transactionCategories.all });
       setNewCategoryName("");
       setNewCategoryColor("#64748b");
       setNewCategoryIsNonAccountable(false);
@@ -1290,21 +1292,21 @@ export function CashFlowPage() {
     },
     onMutate: async (payload) => {
       await Promise.all([
-        queryClient.cancelQueries({ queryKey: ["TransactionCategory"] }),
-        queryClient.cancelQueries({ queryKey: ["FinancialTransaction"] }),
+        queryClient.cancelQueries({ queryKey: cashflowKeys.transactionCategories.all }),
+        queryClient.cancelQueries({ queryKey: cashflowKeys.financialTransactions.all }),
       ]);
       const previousTransactionCategories = queryClient.getQueriesData<TransactionCategoryOption[]>(
         {
-          queryKey: ["TransactionCategory"],
+          queryKey: cashflowKeys.transactionCategories.all,
         }
       );
       const previousFinancialTransactions =
         queryClient.getQueriesData<FinancialTransactionsResponse>({
-          queryKey: ["FinancialTransaction"],
+          queryKey: cashflowKeys.financialTransactions.all,
         });
 
       queryClient.setQueriesData<TransactionCategoryOption[]>(
-        { queryKey: ["TransactionCategory"] },
+        { queryKey: cashflowKeys.transactionCategories.all },
         (current) => {
           if (!Array.isArray(current)) {
             return current;
@@ -1322,7 +1324,7 @@ export function CashFlowPage() {
       );
 
       queryClient.setQueriesData<FinancialTransactionsResponse>(
-        { queryKey: ["FinancialTransaction"] },
+        { queryKey: cashflowKeys.financialTransactions.all },
         (current) => {
           if (!isFinancialTransactionsPayload(current)) {
             return current;
@@ -1355,11 +1357,11 @@ export function CashFlowPage() {
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({
-          queryKey: ["TransactionCategory"],
+          queryKey: cashflowKeys.transactionCategories.all,
           refetchType: "active",
         }),
         queryClient.invalidateQueries({
-          queryKey: ["FinancialTransaction"],
+          queryKey: cashflowKeys.financialTransactions.all,
           refetchType: "active",
         }),
       ]);
@@ -1390,8 +1392,8 @@ export function CashFlowPage() {
       }
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["TransactionCategory"] });
-      void queryClient.invalidateQueries({ queryKey: ["FinancialTransaction"] });
+      void queryClient.invalidateQueries({ queryKey: cashflowKeys.transactionCategories.all });
+      void queryClient.invalidateQueries({ queryKey: cashflowKeys.financialTransactions.all });
       toast.success("Categoría eliminada");
     },
     onError: (error) => {
@@ -1417,7 +1419,7 @@ export function CashFlowPage() {
       }
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["CompensationProfile"] });
+      await queryClient.invalidateQueries({ queryKey: cashflowKeys.compensationProfiles.all });
       setNewCompensationName("");
       setNewCompensationCategoryId(null);
       setNewCompensationCounterpartId(null);
@@ -1452,7 +1454,7 @@ export function CashFlowPage() {
       }
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["CompensationLedger"] });
+      await queryClient.invalidateQueries({ queryKey: cashflowKeys.compensationLedger.all });
       toast.success("Presupuesto de período actualizado");
     },
     onError: (error) => {
@@ -1485,8 +1487,8 @@ export function CashFlowPage() {
     },
     onSuccess: async () => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["FinancialTransaction"] }),
-        queryClient.invalidateQueries({ queryKey: ["CompensationLedger"] }),
+        queryClient.invalidateQueries({ queryKey: cashflowKeys.financialTransactions.all }),
+        queryClient.invalidateQueries({ queryKey: cashflowKeys.compensationLedger.all }),
       ]);
       toast.success("Movimiento reasignado al período destino");
       setIsReallocateOpen(false);
@@ -1525,8 +1527,8 @@ export function CashFlowPage() {
     },
     onSuccess: async () => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["FinancialAutoCategoryRule"] }),
-        queryClient.invalidateQueries({ queryKey: ["FinancialTransaction"] }),
+        queryClient.invalidateQueries({ queryKey: cashflowKeys.autoCategoryRules.all }),
+        queryClient.invalidateQueries({ queryKey: cashflowKeys.financialTransactions.all }),
       ]);
       setNewRuleName("");
       setNewRuleCounterpartId(null);
@@ -1580,8 +1582,8 @@ export function CashFlowPage() {
     },
     onSuccess: async () => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["FinancialAutoCategoryRule"] }),
-        queryClient.invalidateQueries({ queryKey: ["FinancialTransaction"] }),
+        queryClient.invalidateQueries({ queryKey: cashflowKeys.autoCategoryRules.all }),
+        queryClient.invalidateQueries({ queryKey: cashflowKeys.financialTransactions.all }),
       ]);
       setEditingRuleId(null);
       toast.success("Regla automática actualizada");
@@ -1604,8 +1606,8 @@ export function CashFlowPage() {
     },
     onSuccess: async () => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["FinancialAutoCategoryRule"] }),
-        queryClient.invalidateQueries({ queryKey: ["FinancialTransaction"] }),
+        queryClient.invalidateQueries({ queryKey: cashflowKeys.autoCategoryRules.all }),
+        queryClient.invalidateQueries({ queryKey: cashflowKeys.financialTransactions.all }),
       ]);
       toast.success("Regla automática eliminada");
     },
@@ -1626,7 +1628,7 @@ export function CashFlowPage() {
       }
     },
     onSuccess: async (response) => {
-      await queryClient.invalidateQueries({ queryKey: ["FinancialTransaction"] });
+      await queryClient.invalidateQueries({ queryKey: cashflowKeys.financialTransactions.all });
       toast.success(`Sincronización completada: ${response.data.updated} categorizados`);
     },
     onError: (error) => {
@@ -1779,8 +1781,8 @@ export function CashFlowPage() {
       return;
     }
 
-    const fromPeriod = dayjs(tx.date).format("YYYY-MM");
-    const targetPeriod = dayjs(`${fromPeriod}-01`).add(1, "month").format("YYYY-MM");
+    const fromPeriod = chileDay(tx.date).slice(0, 7);
+    const targetPeriod = addMonths(`${fromPeriod}-01`, 1).slice(0, 7);
     const defaultProfile = matchingProfiles[0];
     setReallocateTx(tx);
     setReallocateProfileId(defaultProfile?.id ?? null);
@@ -2119,7 +2121,7 @@ export function CashFlowPage() {
                                 <div className="flex items-start justify-between gap-2">
                                   <div className="flex min-w-0 items-center gap-2">
                                     <span
-                                      className="h-2.5 w-2.5 shrink-0 rounded-full"
+                                      className="shrink-0 rounded-full size-2.5"
                                       style={{
                                         backgroundColor: item.categoryColor ?? "#64748B",
                                       }}
@@ -2185,7 +2187,7 @@ export function CashFlowPage() {
                                 <div className="flex items-start justify-between gap-2">
                                   <div className="flex min-w-0 items-center gap-2">
                                     <span
-                                      className="h-2.5 w-2.5 shrink-0 rounded-full"
+                                      className="shrink-0 rounded-full size-2.5"
                                       style={{
                                         backgroundColor: item.categoryColor ?? "#64748B",
                                       }}
@@ -2272,7 +2274,7 @@ export function CashFlowPage() {
                                 >
                                   <div className="flex min-w-0 items-center gap-2">
                                     <span
-                                      className="h-2.5 w-2.5 shrink-0 rounded-full"
+                                      className="shrink-0 rounded-full size-2.5"
                                       style={{ backgroundColor: entry.color }}
                                     />
                                     <span className="truncate text-default-700">{entry.name}</span>
@@ -2333,7 +2335,7 @@ export function CashFlowPage() {
                                 >
                                   <div className="flex min-w-0 items-center gap-2">
                                     <span
-                                      className="h-2.5 w-2.5 shrink-0 rounded-full"
+                                      className="shrink-0 rounded-full size-2.5"
                                       style={{ backgroundColor: entry.color }}
                                     />
                                     <span className="truncate text-default-700">{entry.name}</span>
@@ -2440,7 +2442,7 @@ export function CashFlowPage() {
                               >
                                 <div className="flex items-center gap-2">
                                   <span
-                                    className="h-2.5 w-2.5 shrink-0 rounded-full"
+                                    className="shrink-0 rounded-full size-2.5"
                                     style={{ backgroundColor: option.color }}
                                   />
                                   <span>{option.label}</span>
@@ -2623,7 +2625,7 @@ export function CashFlowPage() {
                         }}
                       >
                         {selectedCategoryMap.get(categoryKey) ?? categoryKey}
-                        <X className="h-3.5 w-3.5" />
+                        <X className="size-3.5" />
                       </Button>
                     ))}
 
@@ -2635,7 +2637,7 @@ export function CashFlowPage() {
                         onPress={() => updateColumnFilter("type", "ALL")}
                       >
                         {columnFilters.type === "INCOME" ? "Ingreso" : "Egreso"}
-                        <X className="h-3.5 w-3.5" />
+                        <X className="size-3.5" />
                       </Button>
                     )}
 
@@ -2647,7 +2649,7 @@ export function CashFlowPage() {
                         onPress={() => updateColumnFilter("fromCounterpart", "")}
                       >
                         Desde: {columnFilters.fromCounterpart}
-                        <X className="h-3.5 w-3.5" />
+                        <X className="size-3.5" />
                       </Button>
                     )}
 
@@ -2659,7 +2661,7 @@ export function CashFlowPage() {
                         onPress={() => updateColumnFilter("toCounterpart", "")}
                       >
                         Hacia: {columnFilters.toCounterpart}
-                        <X className="h-3.5 w-3.5" />
+                        <X className="size-3.5" />
                       </Button>
                     )}
 
@@ -2671,7 +2673,7 @@ export function CashFlowPage() {
                         onPress={() => updateColumnFilter("amount", "")}
                       >
                         Monto: {columnFilters.amount}
-                        <X className="h-3.5 w-3.5" />
+                        <X className="size-3.5" />
                       </Button>
                     )}
 
@@ -2683,7 +2685,7 @@ export function CashFlowPage() {
                         onPress={() => updateColumnFilter("comment", "")}
                       >
                         Comentario: {columnFilters.comment}
-                        <X className="h-3.5 w-3.5" />
+                        <X className="size-3.5" />
                       </Button>
                     )}
 
@@ -2698,7 +2700,7 @@ export function CashFlowPage() {
                         }}
                       >
                         No contabilizables
-                        <X className="h-3.5 w-3.5" />
+                        <X className="size-3.5" />
                       </Button>
                     )}
 
@@ -2713,7 +2715,7 @@ export function CashFlowPage() {
                         }}
                       >
                         Solo sin categoría
-                        <X className="h-3.5 w-3.5" />
+                        <X className="size-3.5" />
                       </Button>
                     )}
                   </div>
@@ -2771,7 +2773,7 @@ export function CashFlowPage() {
                               >
                                 <div className="flex items-center gap-2">
                                   <span
-                                    className="h-2.5 w-2.5 shrink-0 rounded-full"
+                                    className="shrink-0 rounded-full size-2.5"
                                     style={{ backgroundColor: category.color ?? "#ccc" }}
                                   />
                                   <span>{category.name}</span>
@@ -2968,7 +2970,7 @@ export function CashFlowPage() {
                                 <>
                                   <div className="flex items-center gap-2">
                                     <span
-                                      className="h-2.5 w-2.5 rounded-full"
+                                      className="rounded-full size-2.5"
                                       style={{ backgroundColor: category.color ?? "#ccc" }}
                                     />
                                     <span>{category.name}</span>
@@ -2990,7 +2992,9 @@ export function CashFlowPage() {
                                       size="sm"
                                       variant="outline"
                                       className="text-danger"
-                                      onPress={() => handleDeleteCategory(category)}
+                                      onPress={() => {
+                                        void handleDeleteCategory(category);
+                                      }}
                                       isPending={deleteCategoryMutation.isPending}
                                     >
                                       Eliminar
@@ -3704,7 +3708,9 @@ export function CashFlowPage() {
                                     variant="outline"
                                     className="text-danger"
                                     isPending={deleteAutoCategoryRuleMutation.isPending}
-                                    onPress={() => handleDeleteRule(rule)}
+                                    onPress={() => {
+                                      void handleDeleteRule(rule);
+                                    }}
                                   >
                                     Eliminar
                                   </Button>
@@ -3734,129 +3740,114 @@ export function CashFlowPage() {
         </Suspense>
       ) : null}
 
-      <Modal>
-        <Modal.Backdrop
-          isOpen={isReallocateOpen}
-          onOpenChange={(open) => !open && setIsReallocateOpen(false)}
-        >
-          <Modal.Container size="md">
-            <Modal.Dialog>
-              <Modal.CloseTrigger />
-              <Modal.Header>
-                <Modal.Heading>Reasignar Movimiento a Otro Período</Modal.Heading>
-              </Modal.Header>
-              <Modal.Body>
-                <form
-                  className="space-y-3"
-                  id="reallocate-form"
-                  onSubmit={handleSubmitReallocation}
-                >
-                  <Description className="text-sm text-default-600">
-                    Selecciona perfil y período destino para arrastrar parte del monto.
-                  </Description>
-                  <TextField>
-                    <Label>Movimiento</Label>
-                    <Input
-                      readOnly
-                      value={
-                        reallocateTx
-                          ? `${dayjs(reallocateTx.date).format("DD-MM-YYYY")} · ${reallocateTx.description}`
-                          : ""
-                      }
-                    />
-                  </TextField>
+      <AppModal
+        isOpen={isReallocateOpen}
+        onClose={() => setIsReallocateOpen(false)}
+        title="Reasignar Movimiento a Otro Período"
+        size="md"
+        footer={
+          <>
+            <Button variant="secondary" onPress={() => setIsReallocateOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              form="reallocate-form"
+              isPending={reallocateTransactionMutation.isPending}
+              type="submit"
+            >
+              Reasignar
+            </Button>
+          </>
+        }
+      >
+        <form className="space-y-3" id="reallocate-form" onSubmit={handleSubmitReallocation}>
+          <Description className="text-sm text-default-600">
+            Selecciona perfil y período destino para arrastrar parte del monto.
+          </Description>
+          <TextField>
+            <Label>Movimiento</Label>
+            <Input
+              readOnly
+              value={
+                reallocateTx
+                  ? `${formatChile(reallocateTx.date, "DD-MM-YYYY")} · ${reallocateTx.description}`
+                  : ""
+              }
+            />
+          </TextField>
 
-                  <Select
-                    value={reallocateProfileId == null ? null : String(reallocateProfileId)}
-                    onChange={(key) => {
-                      const value = key == null ? null : Number(key);
-                      setReallocateProfileId(value);
-                    }}
+          <Select
+            value={reallocateProfileId == null ? null : String(reallocateProfileId)}
+            onChange={(key) => {
+              const value = key == null ? null : Number(key);
+              setReallocateProfileId(value);
+            }}
+          >
+            <Label>Perfil de compensación</Label>
+            <Select.Trigger>
+              <Select.Value />
+              <Select.Indicator />
+            </Select.Trigger>
+            <Select.Popover>
+              <ListBox>
+                {reallocationProfileOptions.map((profile) => (
+                  <ListBox.Item
+                    id={String(profile.id)}
+                    key={profile.id}
+                    textValue={`${profile.name} · ${profile.category.name}`}
                   >
-                    <Label>Perfil de compensación</Label>
-                    <Select.Trigger>
-                      <Select.Value />
-                      <Select.Indicator />
-                    </Select.Trigger>
-                    <Select.Popover>
-                      <ListBox>
-                        {reallocationProfileOptions.map((profile) => (
-                          <ListBox.Item
-                            id={String(profile.id)}
-                            key={profile.id}
-                            textValue={`${profile.name} · ${profile.category.name}`}
-                          >
-                            {profile.name} · {profile.category.name}
-                          </ListBox.Item>
-                        ))}
-                      </ListBox>
-                    </Select.Popover>
-                  </Select>
+                    {profile.name} · {profile.category.name}
+                  </ListBox.Item>
+                ))}
+              </ListBox>
+            </Select.Popover>
+          </Select>
 
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <TextField>
-                      <Label>Período origen</Label>
-                      <Input readOnly value={formatMonthLabel(reallocateFromPeriod)} />
-                    </TextField>
-                    <Select
-                      value={reallocateTargetPeriod}
-                      onChange={(key) => setReallocateTargetPeriod(String(key ?? ""))}
-                    >
-                      <Label>Período destino</Label>
-                      <Select.Trigger>
-                        <Select.Value />
-                        <Select.Indicator />
-                      </Select.Trigger>
-                      <Select.Popover>
-                        <ListBox>
-                          {targetPeriodOptions.map((option) => (
-                            <ListBox.Item id={option.value} key={option.value}>
-                              {option.label}
-                            </ListBox.Item>
-                          ))}
-                        </ListBox>
-                      </Select.Popover>
-                    </Select>
-                  </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <TextField>
+              <Label>Período origen</Label>
+              <Input readOnly value={formatMonthLabel(reallocateFromPeriod)} />
+            </TextField>
+            <Select
+              value={reallocateTargetPeriod}
+              onChange={(key) => setReallocateTargetPeriod(String(key ?? ""))}
+            >
+              <Label>Período destino</Label>
+              <Select.Trigger>
+                <Select.Value />
+                <Select.Indicator />
+              </Select.Trigger>
+              <Select.Popover>
+                <ListBox>
+                  {targetPeriodOptions.map((option) => (
+                    <ListBox.Item id={option.value} key={option.value}>
+                      {option.label}
+                    </ListBox.Item>
+                  ))}
+                </ListBox>
+              </Select.Popover>
+            </Select>
+          </div>
 
-                  <TextField
-                    value={reallocateAmount == null ? "" : String(reallocateAmount)}
-                    onChange={(v) => {
-                      if (v === "") {
-                        setReallocateAmount(null);
-                        return;
-                      }
-                      const parsed = Number(v);
-                      setReallocateAmount(Number.isFinite(parsed) ? parsed : null);
-                    }}
-                  >
-                    <Label>Monto a arrastrar</Label>
-                    <Input
-                      inputMode="decimal"
-                      min={0}
-                      placeholder="Ej: 120000"
-                      step="0.01"
-                      type="number"
-                    />
-                  </TextField>
-                </form>
-              </Modal.Body>
-              <Modal.Footer>
-                <Button variant="secondary" onPress={() => setIsReallocateOpen(false)}>
-                  Cancelar
-                </Button>
-                <Button
-                  form="reallocate-form"
-                  isPending={reallocateTransactionMutation.isPending}
-                  type="submit"
-                >
-                  Reasignar
-                </Button>
-              </Modal.Footer>
-            </Modal.Dialog>
-          </Modal.Container>
-        </Modal.Backdrop>
-      </Modal>
+          <NumberField
+            formatOptions={{
+              currency: "CLP",
+              currencyDisplay: "symbol",
+              maximumFractionDigits: 0,
+              minimumFractionDigits: 0,
+              style: "currency",
+            }}
+            minValue={0}
+            onChange={(value) => setReallocateAmount(value ?? null)}
+            value={reallocateAmount ?? undefined}
+          >
+            <Label>Monto a arrastrar</Label>
+            <NumberField.Group className="grid-cols-1">
+              <NumberField.Input />
+            </NumberField.Group>
+          </NumberField>
+        </form>
+      </AppModal>
     </div>
   );
 }

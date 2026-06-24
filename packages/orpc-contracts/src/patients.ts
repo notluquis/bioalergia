@@ -27,6 +27,12 @@ export const createPatientInputSchema = z.object({
   notes: z.string().optional(),
   phone: z.string().optional(),
   rut: z.string().min(1),
+  // Sexo registral M | F | X (requisito receta médica, Art. 101).
+  sex: z.enum(["M", "F", "X"]).optional(),
+});
+
+export const updatePatientInputSchema = createPatientInputSchema.partial().extend({
+  patientId: z.number().int().positive(),
 });
 
 export const createConsultationInputSchema = z.object({
@@ -123,6 +129,7 @@ export const personSchema = z.object({
   personType: z.string(),
   phone: z.string().nullable().optional(),
   rut: z.string().nullable(),
+  sex: z.string().nullable().optional(),
   updatedAt: z.coerce.date(),
 });
 
@@ -172,6 +179,32 @@ export const medicalCertificateSchema = z.object({
   symptoms: z.string().nullable().optional(),
 });
 
+export const medicalPrescriptionSchema = z.object({
+  date: z.coerce.date(),
+  diagnosis: z.string().nullable().optional(),
+  diagnoses: z.unknown().nullable().optional(),
+  doctorAddress: z.string().nullable().optional(),
+  doctorEmail: z.string().nullable().optional(),
+  doctorLicense: z.string().nullable().optional(),
+  doctorName: z.string().nullable().optional(),
+  doctorRut: z.string().nullable().optional(),
+  doctorSpecialty: z.string().nullable().optional(),
+  driveFileId: z.string().nullable().optional(),
+  folio: z.string().nullable().optional(),
+  folioSeq: z.number().int().nullable().optional(),
+  id: z.string(),
+  issuedAt: z.coerce.date(),
+  issuedBy: z.number().int(),
+  medications: z.unknown(),
+  metadata: z.unknown().nullable().optional(),
+  notes: z.string().nullable().optional(),
+  patientId: z.number().int(),
+  patientName: z.string(),
+  patientRut: z.string().nullable().optional(),
+  pdfHash: z.string().nullable().optional(),
+  status: z.string(),
+});
+
 export const patientListItemSchema = z.object({
   birthDate: z.coerce.date().nullable().optional(),
   bloodType: z.string().nullable().optional(),
@@ -192,6 +225,7 @@ export const patientDetailSchema = z.object({
   createdAt: z.coerce.date(),
   id: z.number().int(),
   medicalCertificates: z.array(medicalCertificateSchema),
+  medicalPrescriptions: z.array(medicalPrescriptionSchema),
   notes: z.string().nullable().optional(),
   payments: z.array(patientPaymentSchema),
   person: personSchema,
@@ -275,6 +309,10 @@ export const patientsContract = {
     .route({ method: "POST", path: "/" })
     .input(createPatientInputSchema)
     .output(patientResponseSchema),
+  update: oc
+    .route({ method: "PUT", path: "/{patientId}" })
+    .input(updatePatientInputSchema)
+    .output(patientResponseSchema),
   createAttachment: oc
     .route({ method: "POST", path: "/attachments" })
     .input(uploadPatientAttachmentInputSchema)
@@ -330,6 +368,7 @@ export const patientsContract = {
             patientRut: z.string().nullable(),
             skinTestsCount: z.number(),
             eventsCount: z.number(),
+            clinicalDate: z.string().nullable(),
             createdAt: z.string(),
           })
         ),

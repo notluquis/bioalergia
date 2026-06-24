@@ -1,3 +1,5 @@
+// oxlint-disable typescript/no-non-null-assertion -- TODO(strict-null): refactor each `!` to invariant() or explicit guard. Tracked in repo-wide non-null cleanup.
+import { formatChile } from "@/lib/dates";
 import {
   Button,
   Chip,
@@ -10,15 +12,18 @@ import {
 } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
-import dayjs from "dayjs";
-import { Activity, PackageCheck, PlusCircle, RefreshCw, UserPlus } from "lucide-react";
+import { Activity, Ban, PackageCheck, PlusCircle, RefreshCw, UserPlus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import { useToast } from "@/context/ToastContext";
 import { fetchPatients } from "@/features/patients/api";
 import { CreatePatientModal } from "@/features/patients/components/CreatePatientModal";
-import { fetchAllShipments, reprintLabel } from "../api";
+import { patientKeys } from "@/features/patients/queries";
+import { confirmAction } from "@/components/ui/ConfirmDialog";
+import { cancelShipment, fetchAllShipments, refreshAllTracking, reprintLabel } from "../api";
+import { shipmentKeys } from "../queries";
 import { CreateShipmentWizard } from "../components/CreateShipmentWizard";
+import { ManifestPanel } from "../components/ManifestPanel";
 import { ShipmentTrackingModal } from "../components/ShipmentTrackingModal";
 
 type Shipment = Awaited<ReturnType<typeof fetchAllShipments>>["shipments"][number];
@@ -26,9 +31,10 @@ type Patient = Awaited<ReturnType<typeof fetchPatients>>[number];
 
 const CLP = new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP" });
 
-const STATUS_COLOR: Record<string, "success" | "warning" | "default"> = {
+const STATUS_COLOR: Record<string, "success" | "warning" | "danger" | "default"> = {
   CREATED: "success",
   PENDING: "warning",
+  CANCELLED: "danger",
 };
 
 const baseColumns: ColumnDef<Shipment>[] = [
@@ -91,7 +97,7 @@ const baseColumns: ColumnDef<Shipment>[] = [
   {
     header: "Fecha",
     accessorKey: "createdAt",
-    cell: ({ row }) => dayjs(row.original.createdAt).format("DD/MM/YYYY HH:mm"),
+    cell: ({ row }) => formatChile(row.original.createdAt, "DD/MM/YYYY HH:mm"),
   },
 ];
 
@@ -121,7 +127,7 @@ function PatientSelectModal({
   const [search, setSearch] = useState("");
 
   const { data: patients = [], isLoading } = useQuery({
-    queryKey: ["patients", search],
+    queryKey: patientKeys.nameSearch(search),
     queryFn: () => fetchPatients(search || undefined),
     staleTime: 1000 * 30,
   });
@@ -149,7 +155,7 @@ function PatientSelectModal({
               >
                 <SearchField.Group>
                   <SearchField.SearchIcon />
-                  <SearchField.Input autoFocus placeholder="Buscar por nombre o RUT..." />
+                  <SearchField.Input placeholder="Buscar por nombre o RUT..." />
                   <SearchField.ClearButton />
                 </SearchField.Group>
               </SearchField>
@@ -211,9 +217,27 @@ export function ShipmentsPage() {
   const [tracking, setTracking] = useState<{ id: number; otNumber: string } | null>(null);
 
   const { data, isLoading, refetch } = useQuery({
-    queryKey: ["shipments-all"],
+    queryKey: shipmentKeys.allShipments,
     queryFn: fetchAllShipments,
     staleTime: 1000 * 60,
+  });
+
+  const refreshAllMutation = useMutation({
+    mutationFn: refreshAllTracking,
+    onError: (e) => toastError(e instanceof Error ? e.message : "Error al refrescar estados"),
+    onSuccess: (res) => {
+      success(`Estados actualizados: ${res.updated}/${res.total}`);
+      void queryClient.invalidateQueries({ queryKey: shipmentKeys.allShipments });
+    },
+  });
+
+  const cancelMutation = useMutation({
+    mutationFn: (shipmentId: number) => cancelShipment(shipmentId),
+    onError: (e) => toastError(e instanceof Error ? e.message : "Error al cancelar"),
+    onSuccess: () => {
+      success("Envío cancelado");
+      void queryClient.invalidateQueries({ queryKey: shipmentKeys.allShipments });
+    },
   });
 
   const reprintMutation = useMutation({
@@ -224,7 +248,7 @@ export function ShipmentsPage() {
         const ot = data?.shipments.find((s) => s.id === shipmentId)?.otNumber ?? String(shipmentId);
         downloadLabel(ot, res.result.label);
         success("Etiqueta reimpresa");
-        void queryClient.invalidateQueries({ queryKey: ["shipments-all"] });
+        void queryClient.invalidateQueries({ queryKey: shipmentKeys.allShipments });
       }
     },
   });
@@ -267,11 +291,34 @@ export function ShipmentsPage() {
             >
               <Activity size={16} />
             </Button>
+            {row.original.status !== "CANCELLED" && (
+              <Button
+                aria-label="Cancelar envío"
+                isIconOnly
+                isDisabled={cancelMutation.isPending}
+                onPress={() => {
+                  void (async () => {
+                    const ok = await confirmAction({
+                      title: "Cancelar envío",
+                      description:
+                        "Marca el envío como cancelado (no se imprime ni entra al manifiesto). Chilexpress no anula OTs por API: si ya entregaste el bulto al courier, esto NO lo detiene.",
+                      confirmLabel: "Cancelar envío",
+                      variant: "danger",
+                    });
+                    if (ok) cancelMutation.mutate(row.original.id);
+                  })();
+                }}
+                size="sm"
+                variant="danger"
+              >
+                <Ban size={16} />
+              </Button>
+            )}
           </div>
         ),
       },
     ],
-    [reprintMutation]
+    [reprintMutation, cancelMutation]
   );
 
   function handlePatientSelect(patient: Patient) {
@@ -287,15 +334,30 @@ export function ShipmentsPage() {
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-default-500 text-sm">
           {data?.shipments.length ?? 0} despacho(s) en total
         </p>
-        <Button size="sm" className="gap-2" onPress={() => setSelectPatientOpen(true)}>
-          <PlusCircle size={16} />
-          Nuevo Despacho
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-2"
+            isDisabled={refreshAllMutation.isPending}
+            isPending={refreshAllMutation.isPending}
+            onPress={() => refreshAllMutation.mutate()}
+          >
+            <RefreshCw size={16} />
+            Refrescar estados
+          </Button>
+          <Button size="sm" className="gap-2" onPress={() => setSelectPatientOpen(true)}>
+            <PlusCircle size={16} />
+            Nuevo Despacho
+          </Button>
+        </div>
       </div>
+
+      <ManifestPanel />
 
       <DataTable
         columns={columns}

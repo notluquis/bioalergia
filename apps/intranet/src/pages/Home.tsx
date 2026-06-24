@@ -2,7 +2,7 @@ import { Skeleton } from "@heroui/react";
 import { Link } from "@tanstack/react-router";
 import { ArrowRightLeft, ArrowUpRight, CalendarDays, Users, Wallet } from "lucide-react";
 import { Suspense, useEffect } from "react";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/features/auth/hooks/use-auth";
 import { DashboardParticipantsSection } from "@/features/dashboard/components/DashboardParticipantsSection";
 import { DashboardPersonalLiabilities } from "@/features/dashboard/components/DashboardPersonalLiabilities";
 import { DashboardTransactionsSection } from "@/features/dashboard/components/DashboardTransactionsSection";
@@ -52,13 +52,15 @@ export function Home() {
               <DashboardPersonalLiabilities />
               <QuickLinksSection can={can} />
             </div>
-            <aside className="space-y-5">
+            {/* <section> instead of <aside> — nested landmarks are flagged
+                by axe; this rail lives inside <main>. */}
+            <section aria-label="Participantes" className="space-y-5">
               {canReadPersons && (
                 <Suspense fallback={<Skeleton className="h-64 rounded-3xl" />}>
                   <DashboardParticipantsSection params={leaderboardParams} />
                 </Suspense>
               )}
-            </aside>
+            </section>
           </div>
         </>
       )}
@@ -106,7 +108,7 @@ const QUICK_LINKS = [
     color: "text-emerald-500",
     description: "Actualiza saldos diarios y conciliaciones.",
     icon: Wallet,
-    subject: "DailyBalance",
+    subject: "ProductionBalance",
     title: "Registrar saldo",
     to: "/finanzas/production-balances" as const,
   },
@@ -118,7 +120,7 @@ const QUICK_LINKS = [
     icon: ArrowRightLeft,
     subject: "Transaction",
     title: "Ver movimientos",
-    to: "/finanzas/statistics" as const,
+    to: "/finanzas/dashboard" as const,
   },
   {
     action: "read",
@@ -153,7 +155,7 @@ function QuickLinksSection({ can }: { can: (action: string, subject: string) => 
     <section className="rounded-[28px] border border-default-200/70 bg-linear-to-br from-default-100/60 via-default-50/30 to-background p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
       <div className="flex items-center justify-between gap-3">
         <div className="space-y-1">
-          <h3 className="font-semibold text-foreground text-sm">Accesos rápidos</h3>
+          <h2 className="font-semibold text-foreground text-sm">Accesos rápidos</h2>
           <p className="text-default-500 text-xs">Atajos para las acciones que más se repiten.</p>
         </div>
         <span className="rounded-full border border-default-200/80 bg-background px-3 py-1 text-xs text-default-500">
@@ -168,15 +170,15 @@ function QuickLinksSection({ can }: { can: (action: string, subject: string) => 
             to={link.to}
           >
             <div
-              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${link.bg} ${link.color}`}
+              className={`flex shrink-0 items-center justify-center rounded-2xl size-11 ${link.bg} ${link.color}`}
             >
-              <link.icon className="h-5 w-5" />
+              <link.icon className="size-5" />
             </div>
             <div className="min-w-0 flex-1">
               <p className="truncate font-medium text-foreground text-sm">{link.title}</p>
               <p className="line-clamp-2 text-default-500 text-xs">{link.description}</p>
             </div>
-            <ArrowUpRight className="h-4 w-4 shrink-0 text-default-400 transition group-hover:text-primary" />
+            <ArrowUpRight className="shrink-0 text-default-400 transition group-hover:text-primary size-4" />
           </Link>
         ))}
       </div>

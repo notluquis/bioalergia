@@ -1,21 +1,35 @@
 import fs from "node:fs";
 import path from "node:path";
-import dayjs from "dayjs";
-import { PDFDocument, type PDFFont, rgb, StandardFonts } from "pdf-lib";
-import "dayjs/locale/es.js";
+import { PDFDocument, type PDFFont, degrees, rgb } from "pdf-lib";
 import QRCode from "qrcode";
 
-import type { MedicalCertificateInput } from "./certificate.schema.ts";
+import { formatChileLongDate, formatChileShortDate } from "../../lib/time.ts";
+import { drawImageTopLeft, embedLogo, loadPdfFonts, setPdfMetadata } from "../pdf/pdf-base.ts";
+import { applyPdfaUa, PdfTagger } from "../pdf/pdf-tag.ts";
+import type { MedicalCertificateInput, MedicalPrescriptionInput } from "./certificate.schema.ts";
 import { defaultDoctorInfo } from "./certificate.schema.ts";
 
-dayjs.locale("es");
+// Tokens de marca Bioalergia (packages/theme/bioalergia.css → RGB para pdf-lib).
+const BRAND_BLUE = rgb(0.102, 0.302, 0.478); // #1a4d7a
+const BRAND_AMBER = rgb(0.831, 0.643, 0.208); // #d4a435
+const BRAND_INK = rgb(0.09, 0.13, 0.17); // #17222b
+const BRAND_GRAY = rgb(0.42, 0.45, 0.5);
+const BRAND_BORDER = rgb(0.8, 0.84, 0.89);
+const BRAND_TINT = rgb(0.95, 0.97, 0.99); // fondo azul muy suave
+
+/** URLs administrables de logos (ClinicSettings). Vacío → fallback local. */
+export type CertificateLogoUrls = { primary?: string | null; secondary?: string | null };
 
 // Paths to assets
 const ASSETS_DIR = path.resolve(import.meta.dirname, "../../../assets");
-const LOGOS_DIR = path.join(ASSETS_DIR, "logos");
 const SIGNATURES_DIR = path.join(ASSETS_DIR, "signatures");
 
-const createDoctorInfo = (input: MedicalCertificateInput) => ({
+const createDoctorInfo = (
+  input: Pick<
+    MedicalCertificateInput | MedicalPrescriptionInput,
+    "doctorAddress" | "doctorEmail" | "doctorName" | "doctorRut" | "doctorSpecialty"
+  >
+) => ({
   name: input.doctorName || defaultDoctorInfo.name,
   specialty: input.doctorSpecialty || defaultDoctorInfo.specialty,
   title: defaultDoctorInfo.title,
@@ -24,62 +38,48 @@ const createDoctorInfo = (input: MedicalCertificateInput) => ({
   address: input.doctorAddress || defaultDoctorInfo.address,
 });
 
-const drawLogoIfExists = async (
-  pdfDoc: PDFDocument,
-  page: Awaited<ReturnType<PDFDocument["addPage"]>>,
-  logoPath: string,
-  options: { alignRight?: boolean; scale: number; x: number; y: number },
-  label: string
-) => {
-  try {
-    if (!fs.existsSync(logoPath)) {
-      return;
-    }
-    const logoBytes = fs.readFileSync(logoPath);
-    const logoImage = await pdfDoc.embedPng(logoBytes);
-    const logoDims = logoImage.scale(options.scale);
-    page.drawImage(logoImage, {
-      x: options.alignRight ? options.x - logoDims.width : options.x,
-      y: options.y - logoDims.height,
-      width: logoDims.width,
-      height: logoDims.height,
-    });
-  } catch (error) {
-    console.warn(`Could not load ${label} logo:`, error);
-  }
-};
-
 const drawHeaderLogos = async (
   pdfDoc: PDFDocument,
   page: Awaited<ReturnType<PDFDocument["addPage"]>>,
   margin: number,
   width: number,
-  y: number
-) => {
-  await drawLogoIfExists(
-    pdfDoc,
-    page,
-    path.join(LOGOS_DIR, "bioalergia.png"),
-    {
-      scale: 0.5,
-      x: margin,
-      y,
-    },
-    "bioalergia"
-  );
+  y: number,
+  logoUrls?: CertificateLogoUrls,
+  primaryWidth = 165,
+  secondaryWidth = 110
+): Promise<number> => {
+  // Logo Bioalergia (izquierda) + AAAEIC (derecha): se alinean centrados
+  // verticalmente en una MISMA banda (como el recetario físico), sin importar
+  // que tengan distinta proporción. Devuelve el alto de la banda para que el
+  // llamador avance el cursor sin solaparse con el contenido.
+  const primary = await embedLogo(pdfDoc, logoUrls?.primary, "bioalergia.png");
+  const secondary = await embedLogo(pdfDoc, logoUrls?.secondary, "aaaeic.png");
 
-  await drawLogoIfExists(
-    pdfDoc,
-    page,
-    path.join(LOGOS_DIR, "aaaeic.png"),
-    {
-      alignRight: true,
-      scale: 0.3,
+  const primaryHeight = primary ? (primary.height * primaryWidth) / primary.width : 0;
+  const secondaryHeight = secondary ? (secondary.height * secondaryWidth) / secondary.width : 0;
+  const band = Math.max(primaryHeight, secondaryHeight);
+  // Alinear por la BASE (no por el centro): el texto de ambos logos tiene su
+  // línea base cerca del borde inferior; los íconos (molécula / caballito de mar)
+  // sobresalen ARRIBA con distinto alto. Alineando los bordes inferiores, las
+  // letras "Bioalergia" y "AAAeIC" quedan a la misma altura.
+  const bottomY = y - band;
+
+  if (primary) {
+    drawImageTopLeft(page, primary, {
+      x: margin,
+      topY: bottomY + primaryHeight,
+      targetWidth: primaryWidth,
+    });
+  }
+  if (secondary) {
+    drawImageTopLeft(page, secondary, {
       x: width - margin,
-      y,
-    },
-    "aaaeic"
-  );
+      topY: bottomY + secondaryHeight,
+      targetWidth: secondaryWidth,
+      alignRight: true,
+    });
+  }
+  return band;
 };
 
 const drawPatientInfo = (
@@ -134,7 +134,7 @@ const drawWatermark = (
   height: number,
   date: string
 ) => {
-  const watermarkText = `Válido ${dayjs(date).format("DD/MM/YYYY")}`;
+  const watermarkText = `Válido ${formatChileShortDate(date)}`;
   page.drawText(watermarkText, {
     x: width / 2 - 100,
     y: height / 2,
@@ -159,24 +159,24 @@ const drawDoctorFooter = (
     y,
     size: 10,
     font: boldFont,
-    color: rgb(0.1, 0.4, 0.6),
+    color: BRAND_BLUE,
   });
   y -= 14;
-  page.drawText(doctor.specialty, { x: margin, y, size: 9, font, color: rgb(0.1, 0.4, 0.6) });
+  page.drawText(doctor.specialty, { x: margin, y, size: 9, font, color: BRAND_BLUE });
   y -= 12;
-  page.drawText(doctor.title, { x: margin, y, size: 9, font, color: rgb(0.1, 0.4, 0.6) });
+  page.drawText(doctor.title, { x: margin, y, size: 9, font, color: BRAND_BLUE });
   y -= 12;
   page.drawText(`RUT: ${doctor.rut}`, {
     x: margin,
     y,
     size: 9,
     font,
-    color: rgb(0.1, 0.4, 0.6),
+    color: BRAND_BLUE,
   });
   y -= 12;
-  page.drawText(doctor.email, { x: margin, y, size: 9, font, color: rgb(0.1, 0.4, 0.6) });
+  page.drawText(doctor.email, { x: margin, y, size: 9, font, color: BRAND_BLUE });
   y -= 12;
-  page.drawText(doctor.address, { x: margin, y, size: 9, font, color: rgb(0.1, 0.4, 0.6) });
+  page.drawText(doctor.address, { x: margin, y, size: 9, font, color: BRAND_BLUE });
 };
 
 const drawFooterNote = (
@@ -184,12 +184,15 @@ const drawFooterNote = (
   font: PDFFont,
   width: number
 ) => {
-  page.drawText("Válida solo con firma y timbre", {
-    x: width / 2 - font.widthOfTextAtSize("Válida solo con firma y timbre", 9) / 2,
+  // Una sola nota legal centrada al pie. La autenticidad ya la indica el QR
+  // ("Verificar autenticidad") → no se repite acá.
+  const validez = "Válida solo con firma y timbre";
+  page.drawText(validez, {
+    x: width / 2 - font.widthOfTextAtSize(validez, 8.5) / 2,
     y: 50,
-    size: 9,
+    size: 8.5,
     font,
-    color: rgb(0.1, 0.4, 0.6),
+    color: BRAND_BLUE,
   });
 };
 
@@ -216,8 +219,16 @@ const drawQrCode = async (
 /**
  * Generate QR code for certificate verification
  */
-export async function generateQRCode(certificateId: string): Promise<Buffer> {
-  const verifyUrl = `${process.env.APP_URL || "http://localhost:5173"}/verify/${certificateId}`;
+/** URL pública de verificación de un documento (mismo destino que el QR). */
+export function prescriptionVerifyUrl(code: string): string {
+  // La verificación pública vive en el sitio público (bioalergia.cl/verificar),
+  // no en la intranet. Override con VERIFY_BASE_URL si cambia.
+  const base = (process.env.VERIFY_BASE_URL || "https://bioalergia.cl").replace(/\/+$/, "");
+  return `${base}/verificar/${code}`;
+}
+
+export async function generateQRCode(code: string): Promise<Buffer> {
+  const verifyUrl = prescriptionVerifyUrl(code);
   return await QRCode.toBuffer(verifyUrl, {
     errorCorrectionLevel: "M",
     type: "png",
@@ -231,21 +242,27 @@ export async function generateQRCode(certificateId: string): Promise<Buffer> {
  */
 export async function generateMedicalCertificatePdf(
   input: MedicalCertificateInput,
-  qrCodeBuffer?: Buffer
+  qrCodeBuffer?: Buffer,
+  logoUrls?: CertificateLogoUrls
 ): Promise<Uint8Array> {
   const pdfDoc = await PDFDocument.create();
   const page = pdfDoc.addPage([595.28, 841.89]); // A4
   const { width, height } = page.getSize();
 
-  // Embed fonts
-  const helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
-  const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  // Fuente embebida (IBM Plex Sans, subset) — portabilidad/PDF-A.
+  const { font: helvetica, bold: helveticaBold } = await loadPdfFonts(pdfDoc);
+  setPdfMetadata(pdfDoc, {
+    title: "Certificado médico",
+    subject: "Certificado médico",
+    author: createDoctorInfo(input).name,
+    keywords: ["certificado", "médico", input.patientName],
+  });
 
   const margin = 50;
   let y = height - margin;
 
   // --- HEADER: Logos ---
-  await drawHeaderLogos(pdfDoc, page, margin, width, y);
+  await drawHeaderLogos(pdfDoc, page, margin, width, y, logoUrls);
 
   y -= 80;
 
@@ -256,7 +273,7 @@ export async function generateMedicalCertificatePdf(
     y,
     size: 14,
     font: helveticaBold,
-    color: rgb(0.1, 0.4, 0.6),
+    color: BRAND_BLUE,
   });
 
   y -= 30;
@@ -293,6 +310,573 @@ export async function generateMedicalCertificatePdf(
   // --- FOOTER TEXT ---
   drawFooterNote(page, helvetica, width);
 
+  return await pdfDoc.save();
+}
+
+// Modo de render:
+//  - "full": todo (digital completa).
+//  - "template": solo el chrome estático (logos, título, "Indicaciones",
+//    footer/firma) — el RECETARIO EN BLANCO para imprimir en bulk.
+//  - "overlay": solo la data variable (folio, paciente, medicamentos) en las
+//    MISMAS coordenadas → calza encima del recetario pre-impreso.
+export type PrescriptionPdfMode = "full" | "template" | "overlay";
+
+export type MedicalPrescriptionPdfInput = MedicalPrescriptionInput & {
+  patient: {
+    name: string;
+    rut: string | null;
+  };
+  // Derivados server-side (no input del médico).
+  folio?: string;
+  doctorLicense?: string;
+  patientAge?: number;
+  // Fecha de nacimiento (YYYY-MM-DD) + sexo — requisito Código Sanitario Art. 101.
+  patientBirthDate?: string;
+  patientSex?: string;
+  mode?: PrescriptionPdfMode;
+  // ISSUED | ANNULLED — ANNULLED estampa marca de agua "ANULADA".
+  status?: string;
+  // Nombre de la clínica (ClinicSettings.name). Se muestra como identidad
+  // ("Clínica {name}") bajo el médico en el footer.
+  clinicName?: string;
+  // QR + código público de verificación (/verificar/{code}). Si vienen, se
+  // dibuja el QR + el código humano (inspirado en el recetario electrónico SNRE).
+  qrCodeBuffer?: Buffer;
+  verificationCode?: string;
+};
+
+/**
+ * Generate a general medical prescription PDF linked to an existing patient.
+ */
+export async function generateMedicalPrescriptionPdf(
+  input: MedicalPrescriptionPdfInput,
+  logoUrls?: CertificateLogoUrls
+): Promise<Uint8Array> {
+  // Media carta (half-letter) vertical: 5.5"×8.5" = 396×612 pt. Tamaño estándar
+  // de recetario en Chile. Se imprime centrado en hoja Letter/A4.
+  const PAGE: [number, number] = [396, 612];
+  // Banda inferior reservada para el footer (firma + médico + notas). El
+  // contenido nunca baja de acá; si no cabe, salta de página.
+  const FOOTER_TOP = 205;
+  const showStatic = (input.mode ?? "full") !== "overlay";
+  const showData = (input.mode ?? "full") !== "template";
+  const pdfDoc = await PDFDocument.create();
+  let page = pdfDoc.addPage(PAGE);
+  const { width, height } = page.getSize();
+  const { font, bold, italic } = await loadPdfFonts(pdfDoc);
+  const doctor = createDoctorInfo(input);
+
+  // PDF/UA: taggea el contenido (marked content + StructTree) para accesibilidad.
+  // `currentPageIndex` sigue la página activa (newPageIfNeeded la reasigna).
+  const tagger = new PdfTagger(pdfDoc);
+  let currentPageIndex = 0;
+
+  setPdfMetadata(pdfDoc, {
+    title: "Receta médica",
+    subject: "Receta médica",
+    author: doctor.name,
+    keywords: ["receta", "médica", input.patient.name],
+  });
+
+  const margin = 36;
+  const contentWidth = width - 2 * margin;
+  let y = height - margin;
+
+  // Header compacto para páginas de continuación: folio + paciente, para que
+  // ninguna hoja suelta quede sin identificación.
+  // Running-header de continuación = chrome de paginación → /Artifact (PDF/UA:
+  // los headers/footers repetidos son artifacts, no contenido real). Sin esto,
+  // estos 3 draws quedaban sin taggear → veraPDF UA1 7.1/3 "neither marked as
+  // Artifact nor tagged as real content".
+  const drawContinuationHeader = (pg: typeof page): number => {
+    let hy = height - margin;
+    if (showStatic) {
+      const cont = "Receta médica (continuación)";
+      tagger.artifact(pg, () => {
+        pg.drawText(cont, { x: margin, y: hy, size: 11, font: bold, color: BRAND_BLUE });
+      });
+    }
+    if (showData && input.folio) {
+      const f = `Folio: ${input.folio}`;
+      tagger.artifact(pg, () => {
+        pg.drawText(f, {
+          x: width - margin - font.widthOfTextAtSize(f, 8),
+          y: hy,
+          size: 8,
+          font,
+          color: rgb(0.35, 0.35, 0.35),
+        });
+      });
+    }
+    hy -= 14;
+    if (showData) {
+      tagger.artifact(pg, () => {
+        pg.drawText(`Paciente: ${input.patient.name} · ${input.patient.rut ?? "Sin RUT"}`, {
+          x: margin,
+          y: hy,
+          size: 9,
+          font,
+          color: rgb(0.3, 0.3, 0.3),
+        });
+      });
+    }
+    return hy - 20;
+  };
+  const newPageIfNeeded = (minY: number) => {
+    if (y >= minY) return;
+    page = pdfDoc.addPage(PAGE);
+    currentPageIndex = pdfDoc.getPages().length - 1;
+    y = drawContinuationHeader(page);
+  };
+
+  const drawWrapped = (
+    text: string,
+    x: number,
+    startY: number,
+    maxWidth: number,
+    size: number,
+    textFont: PDFFont = font
+  ) => {
+    let nextY = startY;
+    for (const line of wrapText(text, textFont, size, maxWidth)) {
+      page.drawText(line, { x, y: nextY, size, font: textFont });
+      nextY -= size + 4;
+    }
+    return nextY;
+  };
+
+  // Mide el alto que ocuparía un texto envuelto (sin dibujar).
+  const measureWrapped = (text: string, size: number, maxWidth: number, textFont = font) =>
+    wrapText(text, textFont, size, maxWidth).length * (size + 4);
+
+  // Trunca un texto a un ancho con elipsis (mantiene el alto fijo del recuadro).
+  const truncateToWidth = (text: string, textFont: typeof font, size: number, maxW: number) => {
+    if (textFont.widthOfTextAtSize(text, size) <= maxW) return text;
+    let t = text;
+    while (t.length > 1 && textFont.widthOfTextAtSize(`${t}…`, size) > maxW) t = t.slice(0, -1);
+    return `${t}…`;
+  };
+
+  // ALTURAS FIJAS del encabezado: el chrome estático (template) y los datos
+  // (overlay) deben caer en el MISMO Y para que el overlay se imprima exacto
+  // sobre el recetario pre-impreso. Nada acá puede depender del contenido.
+  const LOGO_BAND_H = 46;
+  const PATIENT_BOX_PAD = 10;
+  const PATIENT_BOX_H = 15 + 15 + 15 + 2 * PATIENT_BOX_PAD; // 3 filas espaciadas
+  // Diagnóstico (opcional, largo variable): área full-width de hasta 2 líneas
+  // DEBAJO del recuadro. Reserva FIJA (también en template) para que el overlay
+  // caiga alineado. Antes iba dentro del recuadro y se truncaba a 1 línea.
+  const DX_MAX_LINES = 2;
+  const DX_AREA_H = DX_MAX_LINES * 12 + 6;
+
+  // ── Logos (estático), banda de alto FIJO en ambos modos. ──────────────────
+  if (showStatic) {
+    const endLogos = tagger.beginTag(
+      page,
+      currentPageIndex,
+      "Figure",
+      "Logos de Bioalergia y AAAeIC"
+    );
+    await drawHeaderLogos(pdfDoc, page, margin, width, y, logoUrls, 140, 116);
+    endLogos();
+  }
+  y -= LOGO_BAND_H + 12;
+
+  // ── Título (estático, sin regla). ─────────────────────────────────────────
+  if (showStatic) {
+    const title = "Receta médica";
+    tagger.tag(page, currentPageIndex, "H1", () => {
+      page.drawText(title, {
+        x: width / 2 - bold.widthOfTextAtSize(title, 13) / 2,
+        y,
+        size: 13,
+        font: bold,
+        color: BRAND_BLUE,
+      });
+    });
+  }
+  y -= 22;
+
+  // ── Bloque paciente: el RECUADRO + label "PACIENTE" son ESTÁTICOS (van
+  // pre-impresos en el recetario). Los VALORES (nombre, RUT, edad, fecha,
+  // diagnóstico, tipo) son DATA (overlay). Alto FIJO para que alineen. ───────
+  const boxTop = y + 4;
+  const px = margin + PATIENT_BOX_PAD;
+  // Etiqueta gris + valor (negrita opcional) inline; devuelve x final.
+  const drawField = (label: string, value: string, x: number, yy: number, valueBold = false) => {
+    page.drawText(label, { x, y: yy, size: 8.5, font, color: BRAND_GRAY });
+    const lw = font.widthOfTextAtSize(`${label} `, 8.5);
+    const vFont = valueBold ? bold : font;
+    const vSize = valueBold ? 9.5 : 9;
+    page.drawText(value, { x: x + lw, y: yy, size: vSize, font: vFont, color: BRAND_INK });
+    return x + lw + vFont.widthOfTextAtSize(value, vSize);
+  };
+  if (showStatic) {
+    tagger.artifact(page, () => {
+      page.drawRectangle({
+        x: margin,
+        y: boxTop - PATIENT_BOX_H,
+        width: contentWidth,
+        height: PATIENT_BOX_H,
+        borderColor: BRAND_BORDER,
+        borderWidth: 0.8,
+        color: BRAND_TINT,
+      });
+    });
+  }
+  if (showData) {
+    const endPatient = tagger.beginTag(page, currentPageIndex, "P");
+    let py = boxTop - PATIENT_BOX_PAD - 8;
+
+    const nameMaxW = 210 - font.widthOfTextAtSize("Paciente: ", 8.5);
+    drawField("Paciente:", truncateToWidth(input.patient.name, bold, 9.5, nameMaxW), px, py, true);
+    const sex = input.patientSex?.trim();
+    if (sex) drawField("Sexo:", sex, px + 220, py);
+    py -= 15;
+
+    const ageText = input.patientAge != null ? `${input.patientAge} años` : "-";
+    drawField("RUT:", input.patient.rut ?? "Sin RUT", px, py, true);
+    drawField("Edad:", ageText, px + 110, py);
+    py -= 15;
+
+    drawField("Fecha de emisión:", formatDate(input.date), px, py);
+    endPatient();
+  }
+  y = boxTop - PATIENT_BOX_H - 10;
+
+  // ── Diagnóstico (data): título + bullets VERTICALES (un dx por línea, hacia
+  // abajo). Un diagnóstico puede traer varios códigos separados por ";". ──────
+  if (showData && input.diagnosis?.trim()) {
+    const endDx = tagger.beginTag(page, currentPageIndex, "P");
+    page.drawText("Diagnóstico", { x: margin, y, size: 9, font: bold, color: BRAND_BLUE });
+    let dyy = y - 13;
+    const items = input.diagnosis
+      .split(/\s*;\s*/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const bulletIndent = 12;
+    for (const item of items) {
+      const lines = wrapText(item, font, 9, contentWidth - bulletIndent);
+      lines.forEach((line, li) => {
+        if (li === 0) {
+          page.drawText("•", { x: margin, y: dyy, size: 9, font, color: BRAND_AMBER });
+        }
+        page.drawText(line, {
+          x: margin + bulletIndent,
+          y: dyy,
+          size: 9,
+          font,
+          color: BRAND_INK,
+        });
+        dyy -= 12;
+      });
+    }
+    endDx();
+    y = dyy - 4;
+  } else {
+    // Reserva fija en template/overlay (sin data) para alinear el overlay.
+    y -= DX_AREA_H;
+  }
+
+  // ── "Rp." en itálica — etiqueta clásica de receta (chrome estático). ───────
+  if (showStatic) {
+    tagger.tag(page, currentPageIndex, "P", () => {
+      page.drawText("Rp.", { x: margin, y, size: 11, font: italic ?? bold, color: BRAND_BLUE });
+    });
+  }
+  y -= 18;
+
+  // ── Tarjetas de medicamento (data): recuadro + barra de título + posología
+  // etiquetada. Inspirado en la tarjeta del recetario electrónico SNRE. ──────
+  if (showData) {
+    for (const [index, medication] of input.medications.entries()) {
+      const innerW = contentWidth - 2 * PATIENT_BOX_PAD;
+      const posParts = [];
+      if (medication.dosage) posParts.push(medication.dosage);
+      if (medication.frequency) posParts.push(medication.frequency);
+      if (medication.duration) posParts.push(medication.duration);
+      const posology = posParts.join("   ·   ");
+
+      const posH = posology ? measureWrapped(posology, 9, innerW) : 0;
+      const instr = medication.instructions?.trim();
+      const instrH = instr ? measureWrapped(`Indicaciones: ${instr}`, 8.5, innerW) : 0;
+
+      const titleLines = wrapText(`${index + 1}. ${medication.name}`, bold, 10, innerW - 2);
+      const headerH = Math.max(20, titleLines.length * 12 + 8);
+      const cardH = headerH + PATIENT_BOX_PAD + posH + instrH + PATIENT_BOX_PAD;
+
+      newPageIfNeeded(cardH + FOOTER_TOP);
+      const cardTop = y + 2;
+
+      tagger.artifact(page, () => {
+        page.drawRectangle({
+          x: margin,
+          y: cardTop - cardH,
+          width: contentWidth,
+          height: cardH,
+          borderColor: BRAND_BORDER,
+          borderWidth: 0.8,
+        });
+        page.drawRectangle({
+          x: margin,
+          y: cardTop - headerH,
+          width: contentWidth,
+          height: headerH,
+          color: BRAND_TINT,
+        });
+        page.drawRectangle({
+          x: margin,
+          y: cardTop - headerH,
+          width: 3,
+          height: headerH,
+          color: BRAND_AMBER,
+        });
+      });
+
+      const endMed = tagger.beginTag(page, currentPageIndex, "P");
+      let ty = cardTop - 13;
+      for (const line of titleLines) {
+        page.drawText(line, {
+          x: margin + PATIENT_BOX_PAD + 2,
+          y: ty,
+          size: 10,
+          font: bold,
+          color: BRAND_BLUE,
+        });
+        ty -= 12;
+      }
+      let cy = cardTop - headerH - PATIENT_BOX_PAD - 9 + 4;
+      if (posology) cy = drawWrapped(posology, margin + PATIENT_BOX_PAD, cy, innerW, 9);
+      if (instr) {
+        cy = drawWrapped(`Indicaciones: ${instr}`, margin + PATIENT_BOX_PAD, cy, innerW, 8.5, font);
+      }
+      endMed();
+      y = cardTop - cardH - 12;
+    }
+
+    if (input.notes?.trim()) {
+      newPageIfNeeded(FOOTER_TOP + 30);
+      const endNotes = tagger.beginTag(page, currentPageIndex, "P");
+      y -= 2;
+      page.drawText("Observaciones", {
+        x: margin,
+        y,
+        size: 10,
+        font: bold,
+        color: BRAND_BLUE,
+      });
+      y -= 14;
+      y = drawWrapped(input.notes.trim(), margin, y, contentWidth, 9);
+      endNotes();
+    }
+
+    // El QR + folio + código van a la esquina inferior izquierda (footer), no
+    // en el flujo — ver el forEach de páginas más abajo.
+  }
+
+  // QR embebido una vez (el forEach es síncrono, no puede await).
+  const qrImage = showData && input.qrCodeBuffer ? await pdfDoc.embedPng(input.qrCodeBuffer) : null;
+
+  // Footer en CADA página: doctor + firma + registro + "Página X de Y" + nota.
+  // El chrome (doctor/firma/registro/nota) solo en full/template; en overlay va
+  // pre-impreso. "Página X de Y" en todas. Así ninguna hoja queda sin firma.
+  const allPages = pdfDoc.getPages();
+  const total = allPages.length;
+  allPages.forEach((pg, index) => {
+    const lastPage = index === total - 1;
+    // Footer 2 columnas ANCLADO AL FONDO: IZQUIERDA médico, DERECHA firma+QR,
+    // ambas alineadas por su BASE (grid). Nota legal única centrada al pie.
+    const leftColW = 180;
+    const FOOTER_BASE = 62; // base inferior común de ambas columnas
+    const specLines = wrapText(doctor.specialty, font, 8, leftColW);
+    const addrLines = wrapText(doctor.address, font, 8, leftColW);
+    // Identidad de la clínica ("Clínica Bioalergia") bajo el nombre del médico.
+    const rawClinic = input.clinicName?.trim() || "Bioalergia";
+    const clinicLine = /cl[íi]nica/i.test(rawClinic) ? rawClinic : `Clínica ${rawClinic}`;
+    // Top del bloque médico para que su última línea caiga en FOOTER_BASE
+    // (name + clínica + spec + reg + email + addr).
+    const docTopY = FOOTER_BASE + 55;
+    if (showStatic) {
+      // Zona de firma fijada, para que nunca solape con el QR o texto derecho
+      const sigLineY = Math.max(docTopY + 26, FOOTER_BASE + 85);
+      tagger.artifact(pg, () => {
+        pg.drawLine({
+          start: { x: width - margin - 130, y: sigLineY },
+          end: { x: width - margin, y: sigLineY },
+          thickness: 0.5,
+          color: rgb(0.4, 0.4, 0.4),
+        });
+      });
+      const endDoc = tagger.beginTag(pg, index, "P");
+      const firma = "Firma y timbre";
+      pg.drawText(firma, {
+        x: width - margin - 65 - font.widthOfTextAtSize(firma, 8.5) / 2,
+        y: sigLineY - 11,
+        size: 8.5,
+        font,
+        color: BRAND_BLUE,
+      });
+      // Columna IZQUIERDA: bloque médico (top-down, termina en FOOTER_BASE).
+      let dy = docTopY;
+      pg.drawText(doctor.name, { x: margin, y: dy, size: 9.5, font: bold, color: BRAND_BLUE });
+      dy -= 11;
+      pg.drawText(clinicLine, { x: margin, y: dy, size: 8.5, font, color: BRAND_AMBER });
+      dy -= 12;
+      for (const line of specLines) {
+        pg.drawText(line, { x: margin, y: dy, size: 8, font, color: BRAND_BLUE });
+        dy -= 10;
+      }
+      const regLine = [
+        `RUT: ${doctor.rut}`,
+        input.doctorLicense?.trim() ? `Reg. SIS N° ${input.doctorLicense.trim()}` : null,
+      ]
+        .filter(Boolean)
+        .join("   ·   ");
+      pg.drawText(regLine, { x: margin, y: dy, size: 8, font, color: rgb(0.35, 0.35, 0.35) });
+      dy -= 10;
+      pg.drawText(doctor.email, { x: margin, y: dy, size: 8, font, color: rgb(0.35, 0.35, 0.35) });
+      dy -= 10;
+      for (const line of addrLines) {
+        pg.drawText(line, { x: margin, y: dy, size: 8, font, color: rgb(0.35, 0.35, 0.35) });
+        dy -= 10;
+      }
+      endDoc();
+    }
+    // Columna DERECHA (data): QR + datos de verificación, anclados al MISMO piso
+    // (FOOTER_BASE) que el bloque médico. El stack de texto va a la IZQUIERDA del
+    // QR, apilado de abajo hacia arriba: nota legal → N° medicamentos → folio →
+    // código → "Verificar autenticidad". El QR es clickeable (Link → URL).
+    if (showData && lastPage) {
+      const qrSize = 46;
+      const qx = width - margin - qrSize;
+      const qrBottom = FOOTER_BASE;
+      const verifyUrl = input.verificationCode
+        ? prescriptionVerifyUrl(input.verificationCode)
+        : null;
+      if (qrImage) {
+        const alt = "Código QR - verificar autenticidad en bioalergia.cl";
+        if (verifyUrl) {
+          tagger.addLink(
+            pg,
+            index,
+            [qx, qrBottom, qx + qrSize, qrBottom + qrSize],
+            verifyUrl,
+            alt,
+            () => {
+              pg.drawImage(qrImage, { x: qx, y: qrBottom, width: qrSize, height: qrSize });
+            }
+          );
+        } else {
+          tagger.figure(pg, index, alt, () => {
+            pg.drawImage(qrImage, { x: qx, y: qrBottom, width: qrSize, height: qrSize });
+          });
+        }
+      }
+
+      // Folio as a vertical watermark on the right edge
+      if (input.folio) {
+        tagger.artifact(pg, () => {
+          pg.drawText(`Folio: ${input.folio}`, {
+            x: width - 15,
+            y: 110,
+            size: 8,
+            font,
+            color: rgb(0.7, 0.7, 0.7),
+            rotate: degrees(90),
+          });
+        });
+      }
+
+      // Verification code to the LEFT of the QR code (center aligned vertically)
+      if (input.verificationCode) {
+        const endVerify = tagger.beginTag(pg, index, "P");
+        const vText = "Verificar autenticidad";
+        const rightEdge = qx - 8;
+        pg.drawText(vText, {
+          x: rightEdge - font.widthOfTextAtSize(vText, 7.5),
+          y: qrBottom + 20,
+          size: 7.5,
+          font,
+          color: BRAND_GRAY,
+        });
+        pg.drawText(input.verificationCode, {
+          x: rightEdge - bold.widthOfTextAtSize(input.verificationCode, 10),
+          y: qrBottom + 8,
+          size: 10,
+          font: bold,
+          color: BRAND_BLUE,
+        });
+        endVerify();
+      }
+    }
+
+    // Centered footer notes (in ALL pages, below FOOTER_BASE)
+    tagger.artifact(pg, () => {
+      let cy = 25;
+
+      if (showStatic) {
+        const validez = "Válida solo con firma y timbre";
+        pg.drawText(validez, {
+          x: width / 2 - font.widthOfTextAtSize(validez, 8) / 2,
+          y: cy,
+          size: 8,
+          font,
+          color: BRAND_BLUE,
+        });
+      }
+      cy += 10;
+
+      if (showData && lastPage) {
+        const medCount = input.medications.length;
+        const medText = `${medCount} ${medCount === 1 ? "medicamento" : "medicamentos"} en total`;
+        pg.drawText(medText, {
+          x: width / 2 - font.widthOfTextAtSize(medText, 8) / 2,
+          y: cy,
+          size: 8,
+          font,
+          color: BRAND_GRAY,
+        });
+      }
+      cy += 11;
+
+      if (showData && total > 1) {
+        const pageLabel = `Página ${index + 1} de ${total}`;
+        pg.drawText(pageLabel, {
+          x: width / 2 - font.widthOfTextAtSize(pageLabel, 8) / 2,
+          y: cy,
+          size: 8,
+          font,
+          color: rgb(0.5, 0.5, 0.5),
+        });
+      }
+    });
+    // Marca de agua diagonal "ANULADA" para recetas anuladas (re-descarga).
+    if (input.status === "ANNULLED") {
+      tagger.artifact(pg, () => {
+        const label = "ANULADA";
+        const size = 64;
+        pg.drawText(label, {
+          x: width / 2 - bold.widthOfTextAtSize(label, size) / 2 + 30,
+          y: height / 2 - 90,
+          size,
+          font: bold,
+          color: rgb(0.86, 0.15, 0.15),
+          rotate: degrees(45),
+          opacity: 0.18,
+        });
+      });
+    }
+  });
+
+  // PDF/UA: construye el StructTree + ParentTree + MarkInfo antes de guardar.
+  tagger.finalize();
+  // PDF/A-3a + PDF/UA nativo (sin Ghostscript, que borra los tags): OutputIntent
+  // sRGB + XMP de conformidad. Combinado con tags + fuentes embebidas + Lang.
+  applyPdfaUa(pdfDoc, {
+    title: "Receta médica",
+    docId: globalThis.crypto.randomUUID(),
+    dateIso: new Date().toISOString(),
+  });
   return await pdfDoc.save();
 }
 
@@ -348,7 +932,16 @@ export async function signPdf(
     const signpdfModule = await import("@signpdf/signpdf");
     const { P12Signer } = await import("@signpdf/signer-p12");
 
-    const signpdf = signpdfModule.default;
+    // Dynamic-import default points to the SignPdf singleton, not the
+    // namespace. TS resolves the .default as `typeof signpdf` (namespace)
+    // under `module: NodeNext`, so cast to the instance type.
+    const signpdf = signpdfModule.default as unknown as {
+      sign(
+        pdfBuffer: Buffer | Uint8Array | string,
+        signer: unknown,
+        signingTime?: Date
+      ): Promise<Buffer>;
+    };
 
     // Create P12 signer with certificate
     const signer = new P12Signer(p12Buffer, { passphrase: actualPassword });
@@ -368,7 +961,7 @@ export async function signPdf(
 // --- Helper Functions ---
 
 function formatDate(dateStr: string): string {
-  return dayjs(dateStr).format("D [de] MMMM [de] YYYY");
+  return formatChileLongDate(dateStr);
 }
 
 function generateBodyText(input: MedicalCertificateInput): string[] {

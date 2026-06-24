@@ -2,7 +2,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { useStore } from "@tanstack/react-store";
 import { useEffect } from "react";
 
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/features/auth/hooks/use-auth";
 import { logger } from "@/lib/logger";
 import { fetchServiceDetail } from "../api";
 import { serviceKeys } from "../queries";

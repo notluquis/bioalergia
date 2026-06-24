@@ -10,6 +10,10 @@ const DoctoraliaBookingWidget = lazy(() =>
   }))
 );
 
+const PollenHeroCard = lazy(() =>
+  import("@/sections/PollenHeroCard").then((m) => ({ default: m.PollenHeroCard }))
+);
+
 const badges = ["Alergología", "Inmunología", "Adultos y niños", "Concepción, Chile"];
 
 type HeroSectionProps = {
@@ -54,7 +58,7 @@ export function HeroSection({ onBook }: HeroSectionProps) {
           <Button className="rounded-full bg-(--accent) px-6 text-white" onPress={onBook}>
             Reservar evaluación
           </Button>
-          <Link className="text-(--ink-muted) text-sm underline-offset-4" href="#servicios">
+          <Link className="text-(--ink-muted) text-sm underline-offset-4" href="/servicios">
             Ver servicios
           </Link>
           <Link
@@ -73,6 +77,11 @@ export function HeroSection({ onBook }: HeroSectionProps) {
               <Card.Content className="text-(--ink-muted) text-sm">{item}</Card.Content>
             </Card>
           ))}
+        </div>
+        <div className="mt-auto">
+          <Suspense fallback={null}>
+            <PollenHeroCard />
+          </Suspense>
         </div>
       </div>
       <div className="lg:pl-4" style={{ animation: "floatIn 0.9s ease-out" }}>

@@ -2,7 +2,7 @@ import { ProgressBar as HeroProgressBar } from "@heroui/react";
 import { useNavigate } from "@tanstack/react-router";
 import { Check } from "lucide-react";
 import { useEffect } from "react";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/features/auth/hooks/use-auth";
 import { cn } from "@/lib/utils";
 import { CompleteStep } from "./components/CompleteStep";
 import { FinancialStep } from "./components/FinancialStep";
@@ -25,7 +25,7 @@ function ProgressBar({ currentStep }: { currentStep: number }) {
   const progress = (currentStep / (STEPS.length - 1)) * 100;
 
   return (
-    <div className="border-default-100 border-b px-4 py-4 sm:px-6">
+    <div className="border-default-100 border-b sm:px-6 p-4">
       <div className="relative mx-auto max-w-4xl">
         <HeroProgressBar
           aria-label="Progreso del onboarding"
@@ -41,7 +41,7 @@ function ProgressBar({ currentStep }: { currentStep: number }) {
             <li className="flex min-w-0 flex-col items-center gap-2 text-center" key={step.id}>
               <div
                 className={cn(
-                  "flex h-8 w-8 items-center justify-center rounded-full border-2 font-semibold text-xs sm:h-9 sm:w-9",
+                  "flex items-center justify-center rounded-full border-2 font-semibold text-xs size-8 sm:size-9",
                   idx <= currentStep
                     ? "border-primary bg-primary text-primary-foreground"
                     : "border-default-200 bg-background text-default-500"

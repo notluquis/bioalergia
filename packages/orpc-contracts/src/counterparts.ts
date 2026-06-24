@@ -57,6 +57,28 @@ export const unassignedPayoutAccountSchema = z.object({
   withdrawRut: z.string().nullable(),
 });
 
+export const payoutAccountMovementSchema = z.object({
+  amount: z.number(),
+  date: z.coerce.date().nullable(),
+  description: z.string().nullable(),
+  source: z.enum(["release", "settlement"]),
+  sourceId: z.string(),
+  type: z.string().nullable(),
+});
+
+export const payoutAccountMovementsInputSchema = z.object({
+  account: z.string().min(1),
+  page: z.number().int().min(1).optional(),
+  pageSize: z.number().int().min(1).max(200).optional(),
+});
+
+export const payoutAccountMovementsResponseSchema = z.object({
+  page: z.number().int(),
+  pageSize: z.number().int(),
+  rows: z.array(payoutAccountMovementSchema),
+  total: z.number().int(),
+});
+
 export const counterpartPayloadSchema = z.object({
   bankAccountHolder: z.string().min(1),
   category: counterpartCategorySchema.optional(),
@@ -188,6 +210,10 @@ export const counterpartsContract = {
     .input(counterpartIdSchema)
     .output(counterpartDetailResponseSchema),
   list: oc.route({ method: "GET", path: "/" }).output(counterpartsResponseSchema),
+  payoutAccountMovements: oc
+    .route({ method: "GET", path: "/payout-account-movements" })
+    .input(payoutAccountMovementsInputSchema)
+    .output(payoutAccountMovementsResponseSchema),
   suggestions: oc
     .route({ method: "GET", path: "/suggestions" })
     .input(counterpartSuggestionInputSchema)

@@ -3,6 +3,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { markMessageDelivered } from "./graph/media.ts";
 import { emitWaEvent } from "./events.ts";
 import { logEvent, logWarn } from "../../lib/logger.ts";
+import { broadcastPushNotification } from "../../lib/notifications.ts";
 import { normalizeToE164 } from "./phone.ts";
 
 type MetaWebhookPayload = {
@@ -914,6 +915,67 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
                 : { messageId: insertedInbound.id, direction: "INBOUND" as const }),
               ts: ts.getTime(),
             } as never);
+
+            // Fire-and-forget Web Push so operators get a system-level
+            // notification (laptop OS / phone) even when the tab is
+            // not focused. Skip reactions / system messages — those
+            // would create noise without conversational value.
+            if (m.type !== "reaction" && m.type !== "system") {
+              // Honor per-conversation mute. mutedUntil = null means
+              // unmuted; any future timestamp suppresses the push.
+              const conv = await db.waConversation.findUnique({
+                where: { id: convId },
+                select: { mutedUntil: true },
+              });
+              const isMuted = conv?.mutedUntil && conv.mutedUntil.getTime() > Date.now();
+              if (isMuted) {
+                // Skip push but still broadcast the SSE event above so
+                // the inbox UI updates in real time.
+                continue;
+              }
+              const contact = await db.waContact.findUnique({
+                where: { id: contactId },
+                select: { name: true, pushName: true, phoneE164: true },
+              });
+              const senderName =
+                contact?.name ?? contact?.pushName ?? contact?.phoneE164 ?? "WhatsApp";
+              const bodyPreview =
+                preview && preview.length > 120 ? `${preview.slice(0, 117)}…` : preview;
+              // Org-wide unread count for the badge. Aggregating
+              // unreadCount across every conversation matches what the
+              // operator sees in the inbox header (totalUnread).
+              const unreadAgg = await db.waConversation.aggregate({
+                _sum: { unreadCount: true },
+                where: { unreadCount: { gt: 0 } },
+              });
+              const badgeCount = Number(unreadAgg._sum.unreadCount ?? 0);
+              broadcastPushNotification({
+                generic: {
+                  title: "Bioalergia",
+                  body:
+                    badgeCount > 1 ? `${badgeCount} mensajes nuevos` : "Mensaje nuevo en bandeja",
+                },
+                phi: {
+                  sender: senderName,
+                  preview: bodyPreview || "Nuevo mensaje",
+                },
+                url: `/wa-cloud?conversation=${convId}`,
+                tag: `wa-conv-${convId}`,
+                badgeCount,
+                // Clinic inbound messages are time-sensitive; keep
+                // the banner up until the operator acts on it.
+                requireInteraction: true,
+                actions: [
+                  { action: "open", title: "Abrir" },
+                  { action: "mark-read", title: "Marcar leído" },
+                ],
+                meta: { conversationId: convId },
+              }).catch((err) => {
+                logWarn("[wa-cloud.webhook] push notification failed", {
+                  error: err instanceof Error ? err.message : String(err),
+                });
+              });
+            }
           } catch (err) {
             const msg = err instanceof Error ? err.message : String(err);
             out.errors.push(`msg ${m.id}: ${msg}`);
@@ -934,9 +996,10 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
             if (status === "DELIVERED") data.deliveredAt = ts;
             if (status === "READ") data.readAt = ts;
             if (status === "FAILED" && s.errors?.length) {
-              data.errorCode = String(s.errors[0]!.code);
-              data.errorTitle = s.errors[0]!.title;
-              data.errorDetails = s.errors[0]!.error_data?.details ?? s.errors[0]!.message ?? null;
+              const firstErr = s.errors[0];
+              data.errorCode = String(firstErr.code);
+              data.errorTitle = firstErr.title;
+              data.errorDetails = firstErr.error_data?.details ?? firstErr.message ?? null;
             }
             // Status enrichment fields (Meta sends these on each status event)
             if (s.conversation?.id) data.conversationWindowId = s.conversation.id;

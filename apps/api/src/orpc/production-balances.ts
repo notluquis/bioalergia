@@ -9,11 +9,11 @@ import {
 } from "@finanzas/orpc-contracts/production-balances";
 import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
-import dayjs from "dayjs";
 import type { Context as HonoContext } from "hono";
-import { getSessionUser, hasPermission } from "../auth.ts";
+import { getSessionUser, hasPermission } from "../lib/auth.ts";
 import { logError } from "../lib/logger.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
+import { dbDateToISO, toChileDateString } from "../lib/time.ts";
 import {
   createProductionBalance,
   listProductionBalances,
@@ -29,8 +29,17 @@ type ProductionBalancesORPCContext = {
 
 const base = os.$context<ProductionBalancesORPCContext>();
 
-type ProductionBalanceWithUser = {
-  balanceDate: string;
+// `balanceDate` is a `@db.Date` column → the pg driver returns a JS Date
+// (no type parser registered for OID 1082). The oRPC output contract field
+// `date` is `z.string()` (YYYY-MM-DD wire format, symmetric with the input).
+// The previous version annotated `balanceDate: string` and forced the cast
+// `as unknown as ProductionBalanceWithUser`, which masked the type mismatch
+// — handler returned a Date, oRPC `.output()` validation threw "Output
+// validation failed" (500), but the row was already inserted, so the next
+// save attempt produced a `daily_production_balances_balance_date_key`
+// 23505 duplicate. Source of truth is the service return; format here.
+type ProductionBalanceRow = {
+  balanceDate: Date;
   changeReason: null | string;
   comentarios: null | string;
   consultasMonto: number;
@@ -51,15 +60,19 @@ type ProductionBalanceWithUser = {
   vacunasMonto: number;
 };
 
-function mapResponse(p: ProductionBalanceWithUser) {
+export function mapProductionBalanceResponse(p: ProductionBalanceRow) {
   const subtotalIngresos =
     (p.ingresoTarjetas || 0) + (p.ingresoTransferencias || 0) + (p.ingresoEfectivo || 0);
   const totalIngresos = subtotalIngresos - (p.gastosDiarios || 0);
   const total = totalIngresos + (p.otrosAbonos || 0);
+  // Filas legacy traen "PENDING"/"DRAFT" libres; el contrato expone solo
+  // DRAFT|FINALIZED, así que todo lo no-finalizado se normaliza a DRAFT.
+  const status = p.status === "FINALIZED" ? ("FINALIZED" as const) : ("DRAFT" as const);
 
   return {
     id: p.id,
-    date: p.balanceDate,
+    // balanceDate is @db.Date (UTC-midnight) -> "YYYY-MM-DD" via canonical helper.
+    date: dbDateToISO(p.balanceDate) ?? "",
     ingresoTarjetas: p.ingresoTarjetas,
     ingresoTransferencias: p.ingresoTransferencias,
     ingresoEfectivo: p.ingresoEfectivo,
@@ -75,10 +88,9 @@ function mapResponse(p: ProductionBalanceWithUser) {
     roxairMonto: p.roxairMonto,
     total,
     comentarios: p.comentarios,
-    status: p.status,
+    status,
     changeReason: p.changeReason,
     createdByEmail: p.user?.person?.email ?? null,
-    updatedByEmail: null,
     createdAt: p.createdAt,
     updatedAt: p.updatedAt,
   };
@@ -153,7 +165,7 @@ const productionBalancesORPCRouterBase = {
       );
 
       return {
-        item: mapResponse(created as unknown as ProductionBalanceWithUser),
+        item: mapProductionBalanceResponse(created),
         status: "ok" as const,
       };
     }),
@@ -168,16 +180,15 @@ const productionBalancesORPCRouterBase = {
     .input(productionBalanceQuerySchema)
     .output(productionBalancesListResponseSchema)
     .handler(async ({ input }) => {
-      const today = dayjs();
-      const toDateStr = input.to ?? today.format("YYYY-MM-DD");
-      const fromDateStr = input.from ?? today.subtract(30, "day").format("YYYY-MM-DD");
+      const toDateStr = input.to ?? toChileDateString(new Date());
+      const fromDateStr = input.from ?? toChileDateString(new Date(Date.now() - 30 * 86_400_000));
       const items = await listProductionBalances(fromDateStr, toDateStr);
 
       return {
         status: "ok" as const,
         from: fromDateStr,
         to: toDateStr,
-        items: items.map((item) => mapResponse(item as unknown as ProductionBalanceWithUser)),
+        items: items.map((item) => mapProductionBalanceResponse(item)),
       };
     }),
 
@@ -210,7 +221,7 @@ const productionBalancesORPCRouterBase = {
       });
 
       return {
-        item: mapResponse(updated as unknown as ProductionBalanceWithUser),
+        item: mapProductionBalanceResponse(updated),
         status: "ok" as const,
       };
     }),

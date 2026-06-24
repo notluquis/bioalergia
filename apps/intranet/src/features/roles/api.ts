@@ -1,35 +1,9 @@
-import { queryOptions } from "@tanstack/react-query";
 import { z } from "zod";
-import { fetchEmployees } from "@/features/hr/employees/api";
 import type { Permission, Role } from "@/types/roles";
 import { type RoleMapping, type RoleUser, rolesORPCClient, toRolesApiError } from "./orpc";
 
-export const roleKeys = {
-  all: ["roles"] as const,
-  mappings: ["role-mappings-data"] as const,
-};
-
-export const roleQueries = {
-  mappings: () =>
-    queryOptions({
-      queryFn: async () => {
-        const [employees, dbMappings, roles] = await Promise.all([
-          fetchEmployees(true),
-          getRoleMappings(),
-          fetchRoles(),
-        ]);
-        return { dbMappings, employees, roles };
-      },
-      queryKey: roleKeys.mappings,
-      // Keep data fresh but allow staleness for better UX
-      staleTime: 30 * 1000,
-    }),
-  users: (roleId: number) =>
-    queryOptions({
-      queryFn: () => fetchRoleUsers(roleId),
-      queryKey: [...roleKeys.all, roleId, "users"] as const,
-    }),
-};
+// Query keys + queryOptions live in ./queries.ts (single source of truth).
+// This module is data-access only (fetch/mutation fns).
 
 interface ReassignParams {
   roleId: number;

@@ -106,7 +106,13 @@ export function OutreachBulkCrawlPage() {
 
       <Card>
         <Card.Content className="flex items-center gap-3 p-4">
-          <Button variant="primary" isDisabled={start.isPending || isRunning} onPress={launch}>
+          <Button
+            variant="primary"
+            isDisabled={start.isPending || isRunning}
+            onPress={() => {
+              void launch();
+            }}
+          >
             {start.isPending ? "Iniciando..." : isRunning ? "En curso..." : "Lanzar crawler"}
           </Button>
           {start.isError && (

@@ -3,7 +3,10 @@ import { lazy, Suspense } from "react";
 
 import { ContactSection } from "@/sections/ContactSection";
 import { HeroSection } from "@/sections/HeroSection";
+import { JsonLd } from "@/components/JsonLd";
 import { SiteFooter } from "@/components/SiteFooter";
+import { faqItems } from "@/data/faq";
+import { clinicJsonLd, faqJsonLd } from "@/lib/seo";
 
 const MissionSection = lazy(() =>
   import("@/sections/MissionSection").then((m) => ({ default: m.MissionSection }))
@@ -29,10 +32,15 @@ const GlossarySection = lazy(() =>
 const DoctoraliaCertificate = lazy(() =>
   import("@/sections/DoctoraliaWidgets").then((m) => ({ default: m.DoctoraliaCertificate }))
 );
+const PollenSnippet = lazy(() =>
+  import("@/sections/PollenSnippet").then((m) => ({ default: m.PollenSnippet }))
+);
 
 export function HomePage({ onBook, onWhatsApp }: { onBook: () => void; onWhatsApp: () => void }) {
   return (
     <>
+      <JsonLd data={clinicJsonLd()} />
+      <JsonLd data={faqJsonLd(faqItems)} />
       <main className="grid gap-20">
         <HeroSection onBook={onBook} />
 
@@ -43,6 +51,8 @@ export function HomePage({ onBook, onWhatsApp }: { onBook: () => void; onWhatsAp
           <FounderSection />
           <ServicesSection />
           <ImmunotherapySection />
+
+          <PollenSnippet />
 
           <section className="grid gap-6 lg:grid-cols-[0.55fr_1fr] lg:items-stretch">
             <DoctoraliaCertificate />
@@ -64,14 +74,14 @@ export function HomePage({ onBook, onWhatsApp }: { onBook: () => void; onWhatsAp
 
       <Button
         aria-label="Escríbenos por WhatsApp"
-        className="fixed right-5 bottom-5 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-[#25D366] text-white shadow-[0_18px_40px_rgba(10,20,30,0.25)] ring-2 ring-white/80 transition hover:scale-[1.03] hover:shadow-[0_22px_45px_rgba(10,20,30,0.28)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#25D366]/35 sm:right-7 sm:bottom-7 sm:h-14 sm:w-14"
+        className="fixed right-5 bottom-5 z-50 flex items-center justify-center rounded-full bg-[#25D366] text-white shadow-[0_18px_40px_rgba(10,20,30,0.25)] ring-2 ring-white/80 transition hover:scale-[1.03] hover:shadow-[0_22px_45px_rgba(10,20,30,0.28)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#25D366]/35 sm:right-7 sm:bottom-7 size-12 sm:size-14"
         isIconOnly
         variant="primary"
         onPress={onWhatsApp}
       >
         <svg
           aria-hidden="true"
-          className="block h-6 w-6 sm:h-7 sm:w-7"
+          className="block size-6 sm:size-7"
           fill="currentColor"
           viewBox="0 0 24 24"
         >

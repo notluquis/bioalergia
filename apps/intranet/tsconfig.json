@@ -23,7 +23,7 @@
     "noUncheckedSideEffectImports": true,
     "noImplicitOverride": true,
 
-    "types": ["vite/client"],
+    "types": ["vite/client", "@testing-library/jest-dom/vitest"],
     "paths": {
       "@/*": ["./src/*"],
       "@shared/*": ["./shared/*"],
@@ -35,5 +35,5 @@
     }
   },
   "include": ["src", "shared"],
-  "references": [{ "path": "../../packages/db" }, { "path": "../../packages/orpc-contracts" }]
+  "references": [{ "path": "../../packages/orpc-contracts" }]
 }

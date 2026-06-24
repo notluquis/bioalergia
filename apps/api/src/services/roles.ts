@@ -1,11 +1,13 @@
 import { db, schema } from "@finanzas/db";
-import type { RoleCreateArgs, RoleUpdateArgs } from "@finanzas/db/input";
+import type { RoleUncheckedCreateInput, RoleUncheckedUpdateInput } from "@finanzas/db/input";
+import { DomainError } from "../lib/errors.ts";
 import { filterSafePermissions } from "../lib/permission-validator.ts";
 import { getSetting, updateSetting } from "./settings.ts";
 
-// Extract input types from Zenstack args
-type RoleCreateInput = NonNullable<RoleCreateArgs["data"]>;
-type RoleUpdateInput = NonNullable<RoleUpdateArgs["data"]>;
+// Patrón ZenStack v3.7 golden: usar los Unchecked*Input directos (no
+// NonNullable<Args["data"]>, que es XOR y no se puede re-narrow → TS2345).
+type RoleCreateInput = RoleUncheckedCreateInput;
+type RoleUpdateInput = RoleUncheckedUpdateInput;
 export interface RoleMapping {
   app_role: string;
   employee_role: string;
@@ -28,10 +30,10 @@ export async function listRoles() {
 
 export async function createRole(data: RoleCreateInput) {
   const existing = await db.role.findFirst({
-    where: { name: { equals: data.name, mode: "insensitive" } },
+    where: { name: { equals: data.name, mode: "insensitive" as const } },
   });
   if (existing) {
-    throw new Error("El rol ya existe (nombre duplicado o muy similar)");
+    throw new DomainError("CONFLICT", "El rol ya existe (nombre duplicado o muy similar)");
   }
   return await db.role.create({
     data,
@@ -42,12 +44,12 @@ export async function updateRole(id: number, data: RoleUpdateInput) {
   if (data.name) {
     const existing = await db.role.findFirst({
       where: {
-        name: { equals: data.name, mode: "insensitive" },
+        name: { equals: data.name, mode: "insensitive" as const },
         id: { not: id },
       },
     });
     if (existing) {
-      throw new Error("El rol ya existe (nombre duplicado o muy similar)");
+      throw new DomainError("CONFLICT", "El rol ya existe (nombre duplicado o muy similar)");
     }
   }
   return await db.role.update({
@@ -103,7 +105,7 @@ export async function listRoleUsers(roleId: number) {
 
 export async function reassignRoleUsers(roleId: number, targetRoleId: number) {
   if (roleId === targetRoleId) {
-    throw new Error("El rol de destino debe ser distinto al rol actual");
+    throw new DomainError("BAD_REQUEST", "El rol de destino debe ser distinto al rol actual");
   }
 
   const [sourceRole, targetRole] = await Promise.all([
@@ -112,11 +114,11 @@ export async function reassignRoleUsers(roleId: number, targetRoleId: number) {
   ]);
 
   if (!sourceRole) {
-    throw new Error("Rol de origen no encontrado");
+    throw new DomainError("NOT_FOUND", "Rol de origen no encontrado");
   }
 
   if (!targetRole) {
-    throw new Error("Rol de destino no encontrado");
+    throw new DomainError("NOT_FOUND", "Rol de destino no encontrado");
   }
 
   return await db.$transaction(async (tx) => {
@@ -181,7 +183,7 @@ export async function saveRoleMapping(mapping: RoleMapping) {
   const employeeRole = mapping.employee_role.trim();
 
   if (!appRole || !employeeRole) {
-    throw new Error("Mapeo inválido");
+    throw new DomainError("BAD_REQUEST", "Mapeo inválido");
   }
 
   const role = await db.role.findUnique({
@@ -190,7 +192,7 @@ export async function saveRoleMapping(mapping: RoleMapping) {
   });
 
   if (!role) {
-    throw new Error("El rol de aplicación no existe");
+    throw new DomainError("NOT_FOUND", "El rol de aplicación no existe");
   }
 
   const existing = await getRoleMappings();

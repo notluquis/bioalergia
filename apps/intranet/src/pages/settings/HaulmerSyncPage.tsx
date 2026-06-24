@@ -13,8 +13,6 @@ import {
   Spinner,
 } from "@heroui/react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import dayjs from "dayjs";
-import localeEs from "dayjs/locale/es";
 import { Check, Download, RefreshCw, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { z } from "zod";
@@ -23,13 +21,18 @@ import { useConfirmDialog } from "@/context/ConfirmDialogContext";
 import { useToast } from "@/context/ToastContext";
 import { autoLinkEventDteByPeriod } from "@/features/calendar/api";
 import { DteXmlJobProgress } from "@/features/finance/dte-analytics/components/DteXmlJobProgress";
+import { haulmerKeys } from "@/features/operations/queries";
 import {
   fetchHaulmerAvailablePeriods,
   syncHaulmerIncremental,
   syncHaulmerPeriods,
 } from "@/features/settings/haulmer-api";
+import { formatChile } from "@/lib/dates";
 
-dayjs.locale(localeEs);
+// A Haulmer period is a "YYYYMM" string → "YYYY-MM-01" ISO anchor.
+function periodToISO(period: string): string {
+  return `${period.slice(0, 4)}-${period.slice(4, 6)}-01`;
+}
 
 const SyncResultSchema = z.object({
   period: z.string(),
@@ -90,7 +93,7 @@ function periodToMonthPeriod(
 }
 
 function formatPeriodLabel(period: string): string {
-  return dayjs(period, "YYYYMM").format("MMMM YYYY");
+  return formatChile(periodToISO(period), "MMMM YYYY");
 }
 
 interface AvailablePeriodsData {
@@ -173,10 +176,10 @@ function SyncStatusIcon({ result }: { result: SyncResult | null | undefined }) {
     return null;
   }
   if (result.status === "success") {
-    return <Check className="h-4 w-4 text-green-500" />;
+    return <Check className="text-green-500 size-4" />;
   }
   if (result.status === "failed") {
-    return <X className="h-4 w-4 text-red-500" />;
+    return <X className="text-red-500 size-4" />;
   }
   return <span className="text-gray-500 text-xs">Pendiente</span>;
 }
@@ -226,7 +229,7 @@ function SyncAllCard({
               onPress={onOpenSyncModal}
               variant="primary"
             >
-              {!isSyncingAll ? <Download className="h-4 w-4" /> : null}
+              {!isSyncingAll ? <Download className="size-4" /> : null}
               {isSyncingAll ? "Sincronizando..." : "Sincronizar"}
             </Button>
             <Button
@@ -235,7 +238,7 @@ function SyncAllCard({
               onPress={onSyncIncremental}
               variant="secondary"
             >
-              {!isSyncingIncremental ? <RefreshCw className="h-4 w-4" /> : null}
+              {!isSyncingIncremental ? <RefreshCw className="size-4" /> : null}
               {isSyncingIncremental ? "Sincronizando..." : "Incremental"}
             </Button>
           </div>
@@ -316,7 +319,7 @@ function PeriodCard({
               onSync(period.period, "sales");
             }}
           >
-            <Download className="h-4 w-4" />
+            <Download className="size-4" />
             Importar
           </Button>
           <DteXmlJobProgress direction="sales" selectedPeriod={yearMonth} />
@@ -365,7 +368,7 @@ function PeriodCard({
               onSync(period.period, "purchases");
             }}
           >
-            <Download className="h-4 w-4" />
+            <Download className="size-4" />
             Importar
           </Button>
           <DteXmlJobProgress direction="purchases" selectedPeriod={yearMonth} />
@@ -448,7 +451,7 @@ export function HaulmerSyncPage() {
 
       for (const period of postSyncAutoLink.periods) {
         const result = await autoLinkEventDteByPeriod({
-          period: dayjs(period, "YYYYMM").format("YYYY-MM"),
+          period: `${period.slice(0, 4)}-${period.slice(4, 6)}`,
         });
         linked += result.linked;
         skipped += result.skipped;
@@ -476,7 +479,7 @@ export function HaulmerSyncPage() {
     isLoading: isLoadingPeriods,
     error: periodsError,
   } = useQuery({
-    queryKey: ["haulmer-available-periods"],
+    queryKey: haulmerKeys.availablePeriods,
     queryFn: async () => fetchHaulmerAvailablePeriods(),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
@@ -797,12 +800,14 @@ export function HaulmerSyncPage() {
           isSyncingIncremental={isSyncingIncremental}
           availablePeriods={availablePeriods}
           onOpenSyncModal={handleOpenSyncScopeModal}
-          onSyncIncremental={handleSyncIncremental}
+          onSyncIncremental={(...args) => {
+            void handleSyncIncremental(...args);
+          }}
         />
       )}
 
       {/* By Year - Scrollable Container */}
-      <div className="max-h-[calc(100vh-400px)] space-y-3 overflow-y-auto pr-1">
+      <div className="max-h-[calc(100dvh-400px)] space-y-3 overflow-y-auto pr-1">
         {sortedYears.map((year) => (
           <div key={year} className="space-y-3">
             <span className="block font-semibold text-default-700 text-lg">{year}</span>
@@ -813,7 +818,9 @@ export function HaulmerSyncPage() {
                   period={period}
                   lastSyncs={lastSyncs}
                   syncMutation={syncMutation}
-                  onSync={handleSync}
+                  onSync={(...args) => {
+                    void handleSync(...args);
+                  }}
                   hasSalesData={hasSalesData}
                   hasPurchasesData={hasPurchasesData}
                   getSalesCount={getSalesCount}
@@ -902,7 +909,7 @@ export function HaulmerSyncPage() {
                 <div className="space-y-2 rounded-lg border border-default-200 p-3">
                   <Checkbox
                     id="sync-sales-checkbox"
-                    className="w-full rounded-md px-2 py-2 hover:bg-default-50"
+                    className="w-full rounded-md hover:bg-default-50 p-2"
                     isSelected={syncSalesSelected}
                     onChange={setSyncSalesSelected}
                     variant="secondary"
@@ -918,7 +925,7 @@ export function HaulmerSyncPage() {
                   </Checkbox>
                   <Checkbox
                     id="sync-purchases-checkbox"
-                    className="w-full rounded-md px-2 py-2 hover:bg-default-50"
+                    className="w-full rounded-md hover:bg-default-50 p-2"
                     isSelected={syncPurchasesSelected}
                     onChange={setSyncPurchasesSelected}
                     variant="secondary"

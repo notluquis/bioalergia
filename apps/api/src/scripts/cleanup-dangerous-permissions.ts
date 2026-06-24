@@ -35,8 +35,8 @@ async function main() {
   const suspiciousRoles = await db.role.findMany({
     where: {
       OR: [
-        { name: { contains: "manage", mode: "insensitive" } },
-        { name: { equals: "GOD", mode: "insensitive" } },
+        { name: { contains: "manage", mode: "insensitive" as const } },
+        { name: { equals: "GOD", mode: "insensitive" as const } },
       ],
     },
   });

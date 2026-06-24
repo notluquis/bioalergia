@@ -1,13 +1,17 @@
-import dayjs from "dayjs";
 import { describe, expect, it } from "vitest";
 
 import {
-  ISO_DATE_FORMAT,
-  daysAgo,
+  addDays,
+  diffDays,
   endOfMonth,
   endOfMonthFor,
   endOfYear,
+  formatChile,
   formatISO,
+  getISOWeek,
+  getISOWeekYear,
+  ISO_DATE_FORMAT,
+  daysAgo,
   monthsAgoEnd,
   monthsAgoStart,
   startOfMonth,
@@ -17,6 +21,13 @@ import {
 } from "./dates";
 
 const ISO_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+const chileToday = () =>
+  new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Santiago",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
 
 describe("ISO_DATE_FORMAT", () => {
   it("equals 'YYYY-MM-DD'", () => {
@@ -24,125 +35,108 @@ describe("ISO_DATE_FORMAT", () => {
   });
 });
 
-describe("today", () => {
-  it("returns a string in ISO format", () => {
+describe("today / daysAgo", () => {
+  it("today is the Chile calendar day", () => {
     expect(today()).toMatch(ISO_REGEX);
+    expect(today()).toBe(chileToday());
   });
 
-  it("matches the current date from dayjs", () => {
-    expect(today()).toBe(dayjs().format("YYYY-MM-DD"));
-  });
-});
-
-describe("daysAgo", () => {
-  it("returns ISO string N days before today", () => {
-    const result = daysAgo(7);
-    expect(result).toMatch(ISO_REGEX);
-    expect(result).toBe(dayjs().subtract(7, "day").format("YYYY-MM-DD"));
-  });
-
-  it("returns today when 0 days", () => {
+  it("daysAgo(0) === today, daysAgo(7) is 7 days earlier", () => {
     expect(daysAgo(0)).toBe(today());
-  });
-
-  it("returns correct date for 30 days ago", () => {
-    expect(daysAgo(30)).toBe(dayjs().subtract(30, "day").format("YYYY-MM-DD"));
+    expect(diffDays(today(), daysAgo(7))).toBe(7);
   });
 });
 
 describe("startOfMonth / endOfMonth", () => {
-  it("startOfMonth returns first day of current month", () => {
-    const result = startOfMonth();
-    expect(result).toMatch(ISO_REGEX);
-    expect(result).toBe(dayjs().startOf("month").format("YYYY-MM-DD"));
-    expect(result.endsWith("-01")).toBe(true);
+  it("startOfMonth is the first day of the current month", () => {
+    expect(startOfMonth()).toBe(`${today().slice(0, 7)}-01`);
+    expect(startOfMonth().endsWith("-01")).toBe(true);
   });
 
-  it("endOfMonth returns last day of current month", () => {
-    const result = endOfMonth();
-    expect(result).toMatch(ISO_REGEX);
-    expect(result).toBe(dayjs().endOf("month").format("YYYY-MM-DD"));
-  });
-
-  it("startOfMonth day is always 01", () => {
-    expect(startOfMonth().slice(-2)).toBe("01");
+  it("endOfMonth is in the current month and after startOfMonth", () => {
+    expect(endOfMonth().slice(0, 7)).toBe(today().slice(0, 7));
+    expect(endOfMonth() >= startOfMonth()).toBe(true);
   });
 });
 
 describe("startOfMonthFor / endOfMonthFor", () => {
-  it("startOfMonthFor returns first day of given month string", () => {
+  it("first/last day of a given month string", () => {
     expect(startOfMonthFor("2024-03-15")).toBe("2024-03-01");
-  });
-
-  it("endOfMonthFor returns last day of given month string", () => {
-    expect(endOfMonthFor("2024-02-10")).toBe("2024-02-29"); // 2024 is leap year
-  });
-
-  it("endOfMonthFor returns 28 for non-leap February", () => {
+    expect(endOfMonthFor("2024-02-10")).toBe("2024-02-29"); // leap year
     expect(endOfMonthFor("2023-02-05")).toBe("2023-02-28");
+    expect(endOfMonthFor("2025-07-20")).toBe("2025-07-31");
   });
 
-  it("accepts a Dayjs object", () => {
-    const date = dayjs("2025-07-20");
-    expect(startOfMonthFor(date)).toBe("2025-07-01");
-    expect(endOfMonthFor(date)).toBe("2025-07-31");
+  it("accepts a Date", () => {
+    expect(startOfMonthFor(new Date("2025-07-20T12:00:00Z"))).toBe("2025-07-01");
   });
 });
 
 describe("startOfYear / endOfYear", () => {
-  it("startOfYear returns Jan 1 of current year", () => {
-    const result = startOfYear();
-    expect(result).toMatch(ISO_REGEX);
-    const year = dayjs().year();
-    expect(result).toBe(`${year}-01-01`);
-  });
-
-  it("endOfYear returns Dec 31 of current year", () => {
-    const result = endOfYear();
-    expect(result).toMatch(ISO_REGEX);
-    const year = dayjs().year();
-    expect(result).toBe(`${year}-12-31`);
+  it("Jan 1 / Dec 31 of the current Chile year", () => {
+    const year = today().slice(0, 4);
+    expect(startOfYear()).toBe(`${year}-01-01`);
+    expect(endOfYear()).toBe(`${year}-12-31`);
   });
 });
 
 describe("monthsAgoStart / monthsAgoEnd", () => {
-  it("monthsAgoStart returns first day of the month N months ago", () => {
-    const result = monthsAgoStart(1);
-    const expected = dayjs().subtract(1, "month").startOf("month").format("YYYY-MM-DD");
-    expect(result).toBe(expected);
-    expect(result.slice(-2)).toBe("01");
-  });
-
-  it("monthsAgoEnd returns last day of the month N months ago", () => {
-    const result = monthsAgoEnd(1);
-    const expected = dayjs().subtract(1, "month").endOf("month").format("YYYY-MM-DD");
-    expect(result).toBe(expected);
-  });
-
-  it("monthsAgoStart with 0 returns first day of current month", () => {
+  it("0 months === current month bounds", () => {
     expect(monthsAgoStart(0)).toBe(startOfMonth());
+    expect(monthsAgoEnd(0)).toBe(endOfMonth());
   });
 
-  it("monthsAgoEnd with 0 returns last day of current month", () => {
-    expect(monthsAgoEnd(0)).toBe(endOfMonth());
+  it("1 month ago is the previous month", () => {
+    expect(monthsAgoStart(1).endsWith("-01")).toBe(true);
+    expect(monthsAgoStart(1) < startOfMonth()).toBe(true);
   });
 });
 
 describe("formatISO", () => {
-  it("formats a Date object to ISO string", () => {
-    const date = new Date("2023-06-15T12:00:00");
-    expect(formatISO(date)).toBe("2023-06-15");
-  });
-
-  it("formats a date string to ISO format", () => {
+  it("formats a Date / string to YYYY-MM-DD", () => {
+    expect(formatISO(new Date("2023-06-15T12:00:00Z"))).toBe("2023-06-15");
     expect(formatISO("2025-11-03")).toBe("2025-11-03");
-  });
-
-  it("formats a Dayjs object", () => {
-    expect(formatISO(dayjs("2024-01-20"))).toBe("2024-01-20");
-  });
-
-  it("returns ISO string matching the regex", () => {
     expect(formatISO("2020-12-31")).toMatch(ISO_REGEX);
+  });
+});
+
+describe("addDays / diffDays (DST-safe)", () => {
+  it("crosses month/DST boundaries correctly", () => {
+    expect(addDays("2026-03-01", -1)).toBe("2026-02-28");
+    expect(addDays("2024-02-28", 1)).toBe("2024-02-29"); // leap
+    expect(diffDays("2026-03-15", "2026-03-01")).toBe(14);
+    // Chile DST transition (first Sunday of April / September) — still exact.
+    expect(diffDays("2026-04-10", "2026-04-01")).toBe(9);
+    expect(diffDays("2026-09-10", "2026-09-01")).toBe(9);
+  });
+});
+
+describe("formatChile (token shim)", () => {
+  const d = new Date("2026-03-09T18:45:30Z"); // Monday, 15:45 Chile
+  it.each([
+    ["DD/MM/YYYY HH:mm", "09/03/2026 15:45"],
+    ["DD MMM YYYY", "09 mar 2026"],
+    ["dddd D [de] MMMM", "lunes 9 de marzo"],
+    ["MMMM YYYY", "marzo 2026"],
+  ])("formats %s -> %s", (pattern, expected) => {
+    expect(formatChile(d, pattern)).toBe(expected);
+  });
+
+  it("ddd is the short weekday (trailing period is ICU/browser-dependent)", () => {
+    expect(formatChile(d, "ddd")).toMatch(/^lun\.?$/);
+  });
+
+  it("anchors a bare YYYY-MM-DD at the same calendar day", () => {
+    expect(formatChile("2026-03-09", "DD/MM/YYYY")).toBe("09/03/2026");
+  });
+});
+
+describe("getISOWeek / getISOWeekYear", () => {
+  it("ISO-8601 week + week-year at boundaries", () => {
+    expect(getISOWeek("2026-01-01")).toBe(1);
+    expect(getISOWeek("2024-12-30")).toBe(1);
+    expect(getISOWeekYear("2024-12-30")).toBe(2025);
+    expect(getISOWeek("2027-01-01")).toBe(53);
+    expect(getISOWeekYear("2027-01-01")).toBe(2026);
   });
 });

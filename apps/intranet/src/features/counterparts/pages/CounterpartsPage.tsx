@@ -22,17 +22,18 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getRouteApi, useNavigate } from "@tanstack/react-router";
 import type { ColumnDef, OnChangeFn, PaginationState } from "@tanstack/react-table";
-import { Check, Filter, Plus, RefreshCcw } from "lucide-react";
+import { Check, ChevronRight, Filter, Plus, RefreshCcw } from "lucide-react";
 import { startTransition, Suspense, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import { TableRegion } from "@/components/data-table/TableRegion";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/features/auth/hooks/use-auth";
 import { useToast } from "@/context/ToastContext";
 import {
   assignRutToPayouts,
   type CounterpartUpsertPayload,
   createCounterpart,
   fetchCounterparts,
+  fetchPayoutAccountMovements,
   fetchUnassignedPayoutAccounts,
   syncCounterparts,
   updateCounterpart,
@@ -43,11 +44,13 @@ import { counterpartKeys } from "@/features/counterparts/queries";
 import type {
   Counterpart,
   CounterpartCategory,
+  PayoutAccountMovement,
   UnassignedPayoutAccount,
 } from "@/features/counterparts/types";
 import { useLazyTabs } from "@/hooks/use-lazy-tabs";
 import { fmtCLP } from "@/lib/format";
 import { normalizeRut, validateRut } from "@/lib/rut";
+import { cn } from "@/lib/utils";
 import { CounterpartDetailSection } from "../components/CounterpartDetailSection";
 
 const CATEGORY_FILTERS: { label: string; value: "ALL" | CounterpartCategory }[] = [
@@ -584,7 +587,7 @@ export function CounterpartsPage() {
                 visibleCount={derived.visibleCounterparts.length}
               />
 
-              <div className="min-h-[calc(100vh-220px)]">
+              <div className="min-h-[calc(100dvh-220px)]">
                 <CounterpartDetailPane
                   canCreate={canCreate}
                   canUpdate={canUpdate}
@@ -695,7 +698,9 @@ export function CounterpartsPage() {
                     </Button>
                     <Button
                       isDisabled={!derived.assignRutIsValid}
-                      onPress={actions.handleAssignRutToPayout}
+                      onPress={() => {
+                        void actions.handleAssignRutToPayout();
+                      }}
                     >
                       Confirmar asignación
                     </Button>
@@ -707,6 +712,69 @@ export function CounterpartsPage() {
         </Modal.Backdrop>
       </Modal>
     </section>
+  );
+}
+
+function PayoutAccountMovementsPanel({ account }: { account: string }) {
+  const { data, isLoading } = useQuery({
+    queryFn: () => fetchPayoutAccountMovements({ account, pageSize: 100 }),
+    queryKey: ["counterpart", "payout-account-movements", account],
+  });
+
+  const movements = data?.rows ?? [];
+
+  const columns: ColumnDef<PayoutAccountMovement>[] = [
+    {
+      cell: ({ row }) => (
+        <Chip
+          size="sm"
+          variant="soft"
+          color={row.original.source === "release" ? "accent" : "success"}
+        >
+          {row.original.source === "release" ? "Release" : "Conciliación"}
+        </Chip>
+      ),
+      header: "Origen",
+      id: "source",
+    },
+    {
+      cell: ({ row }) => (row.original.date ? row.original.date.toLocaleDateString("es-CL") : "—"),
+      header: "Fecha",
+      id: "date",
+    },
+    {
+      cell: ({ row }) => row.original.type ?? "—",
+      header: "Tipo",
+      id: "type",
+    },
+    {
+      cell: ({ row }) => fmtCLP(row.original.amount),
+      header: "Monto",
+      id: "amount",
+    },
+    {
+      cell: ({ row }) => (
+        <span className="font-mono text-default-500 text-xs">{row.original.sourceId}</span>
+      ),
+      header: "SOURCE_ID",
+      id: "sourceId",
+    },
+  ];
+
+  return (
+    <div className="p-2">
+      <DataTable
+        columns={columns}
+        containerVariant="plain"
+        data={movements}
+        enableExport={false}
+        enableGlobalFilter={false}
+        enablePagination={false}
+        enableToolbar={false}
+        isLoading={isLoading}
+        noDataMessage="Sin movimientos para esta cuenta."
+      />
+    </div>
   );
 }
 
@@ -748,6 +816,30 @@ function UnassignedPayoutAccountsTable({
     selectedOnCurrentPage > 0 && selectedOnCurrentPage < rows.length;
 
   const columns: ColumnDef<UnassignedPayoutAccount>[] = [
+    {
+      cell: ({ row }) => (
+        <Button
+          aria-label={
+            row.getIsExpanded()
+              ? `Ocultar movimientos de ${row.original.payoutBankAccountNumber}`
+              : `Ver movimientos de ${row.original.payoutBankAccountNumber}`
+          }
+          isIconOnly
+          onPress={() => {
+            row.toggleExpanded();
+          }}
+          size="sm"
+          variant="ghost"
+        >
+          <ChevronRight
+            aria-hidden="true"
+            className={cn("size-4 transition-transform", row.getIsExpanded() && "rotate-90")}
+          />
+        </Button>
+      ),
+      header: () => null,
+      id: "expand",
+    },
     {
       cell: ({ row }) => (
         <Checkbox
@@ -881,12 +973,16 @@ function UnassignedPayoutAccountsTable({
           containerVariant="plain"
           enableExport={false}
           enableGlobalFilter={false}
+          getRowCanExpand={() => true}
           isLoading={loading}
           noDataMessage="No hay cuentas payout pendientes."
           onPaginationChange={onPaginationChange}
           pageCount={pageCount}
           pagination={pagination}
           pageSizeOptions={[10, 20, 50, 100]}
+          renderSubComponent={({ row }) => (
+            <PayoutAccountMovementsPanel account={row.original.payoutBankAccountNumber} />
+          )}
           scrollMaxHeight="var(--table-region-height)"
         />
       </TableRegion>
@@ -979,12 +1075,12 @@ function CounterpartsToolbar({
                   size="sm"
                   variant="secondary"
                 >
-                  <RefreshCcw className={`h-4 w-4 ${syncLoading ? "" : ""}`} />
+                  <RefreshCcw className={`size-4 ${syncLoading ? "" : ""}`} />
                 </Button>
               ) : null}
               {canCreate ? (
                 <Button aria-label="Nueva contraparte" isIconOnly onPress={onCreate} size="sm">
-                  <Plus className="h-4 w-4" />
+                  <Plus className="size-4" />
                 </Button>
               ) : null}
             </div>
@@ -1044,7 +1140,7 @@ function CounterpartsToolbar({
                         ) : null}
                         <ListBox.ItemIndicator>
                           {({ isSelected }) =>
-                            isSelected ? <Check className="h-4 w-4 text-primary" /> : null
+                            isSelected ? <Check className="text-primary size-4" /> : null
                           }
                         </ListBox.ItemIndicator>
                       </ListBox.Item>
@@ -1073,7 +1169,7 @@ function CounterpartsToolbar({
                   Limpiar selección
                 </Button>
                 <Button onPress={onResetFilters} size="sm" variant="outline">
-                  <Filter className="mr-1.5 h-3.5 w-3.5" />
+                  <Filter className="mr-1.5 size-3.5" />
                   Limpiar filtros
                 </Button>
               </div>

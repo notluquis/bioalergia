@@ -104,7 +104,8 @@ export function getPersonInitials(person?: null | PersonNameData): string {
     return `${firstInitial}${fatherInitial}`;
   }
 
-  // If no father name, use second char of first name
-  const secondInitial = person.names.charAt(1)?.toUpperCase() ?? "";
+  // If no father name, use second char of first name. charAt always returns a
+  // string ("" past the end), so no optional chaining / nullish fallback needed.
+  const secondInitial = person.names.charAt(1).toUpperCase();
   return secondInitial ? `${firstInitial}${secondInitial}` : firstInitial;
 }

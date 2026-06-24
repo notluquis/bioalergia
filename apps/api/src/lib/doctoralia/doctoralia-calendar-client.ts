@@ -7,6 +7,7 @@
 
 import { db } from "@finanzas/db";
 import { request } from "gaxios";
+import { decodeStoredCookies } from "./cookie-store-codec.ts";
 import type {
   DoctoraliaCalendarAlert,
   DoctoraliaCalendarRequest,
@@ -16,38 +17,11 @@ import type {
 const CALENDAR_API_BASE = "https://docplanner.doctoralia.cl/api";
 const DEFAULT_COOKIES_LABEL = process.env.DOCTORALIA_SCRAPER_COOKIES_LABEL || "default";
 
-type StoredCookie = {
-  name: string;
-  value: string;
-};
-
 let cachedBearer: null | { loadedAt: number; token: string } = null;
 const TOKEN_CACHE_TTL_MS = 30_000;
 
 function clearCachedCalendarToken() {
   cachedBearer = null;
-}
-
-function readStoredCookies(value: unknown): StoredCookie[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-
-  return value.flatMap((item) => {
-    if (!item || typeof item !== "object") {
-      return [];
-    }
-
-    const candidate = item as Record<string, unknown>;
-    const name = candidate.name;
-    const cookieValue = candidate.value;
-
-    if (typeof name !== "string" || typeof cookieValue !== "string") {
-      return [];
-    }
-
-    return [{ name, value: cookieValue }];
-  });
 }
 
 function decodeCookieValue(raw: string): string {
@@ -76,7 +50,7 @@ async function getCalendarToken(): Promise<string> {
     select: { cookiesJson: true },
   });
 
-  const cookies = readStoredCookies(store?.cookiesJson);
+  const cookies = decodeStoredCookies(store?.cookiesJson);
   const mkplAuthCookie = cookies.find((cookie) => cookie.name === "mkplAuth");
   const token = mkplAuthCookie ? extractBearerTokenFromMkplAuth(mkplAuthCookie.value) : null;
 

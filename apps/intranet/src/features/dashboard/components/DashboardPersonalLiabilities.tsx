@@ -1,9 +1,9 @@
 import { Button, Surface } from "@heroui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import dayjs from "dayjs";
 import { CreditCard, TrendingDown } from "lucide-react";
 
+import { chileDay, today } from "@/lib/dates";
 import { personalFinanceQueries } from "@/features/personal-finance/queries";
 import { formatCurrency } from "@/lib/format";
 
@@ -19,21 +19,14 @@ export function DashboardPersonalLiabilities() {
   // Assuming 'nextPaymentDate' or similar is on the credit object,
   // or we need to look at installments. For summary, total debt is key.
 
-  const today = dayjs().startOf("day");
+  const todayISO = today();
   type ActiveCredit = (typeof activeCredits)[number];
   type CreditWithNextPayment = ActiveCredit & { nextPaymentDate: string };
 
   const upcomingPayments = [...activeCredits]
     .filter((credit): credit is CreditWithNextPayment => Boolean(credit.nextPaymentDate))
-    .filter((credit) => {
-      const due = dayjs(credit.nextPaymentDate, "YYYY-MM-DD").startOf("day");
-      return due.valueOf() >= today.valueOf();
-    })
-    .toSorted(
-      (a, b) =>
-        dayjs(a.nextPaymentDate, "YYYY-MM-DD").valueOf() -
-        dayjs(b.nextPaymentDate, "YYYY-MM-DD").valueOf()
-    );
+    .filter((credit) => chileDay(credit.nextPaymentDate) >= todayISO)
+    .toSorted((a, b) => (chileDay(a.nextPaymentDate) < chileDay(b.nextPaymentDate) ? -1 : 1));
 
   const nextPayment = upcomingPayments[0];
 
@@ -46,7 +39,9 @@ export function DashboardPersonalLiabilities() {
       <div className="flex items-center justify-between">
         <h3 className="font-semibold text-foreground text-sm">Pasivos Personales</h3>
         <Button
-          onPress={() => navigate({ to: "/finanzas/loans" })}
+          onPress={() => {
+            void navigate({ to: "/finanzas/loans" });
+          }}
           size="sm"
           type="button"
           variant="secondary"
@@ -59,7 +54,7 @@ export function DashboardPersonalLiabilities() {
         <div className="rounded-2xl bg-danger/10 p-4">
           <div className="mb-1 flex items-center gap-2">
             <div className="rounded-xl bg-danger-soft-hover p-1.5 text-danger">
-              <CreditCard className="h-4 w-4" />
+              <CreditCard className="size-4" />
             </div>
             <span className="font-medium text-default-600 text-xs">Deuda Total</span>
           </div>
@@ -71,7 +66,7 @@ export function DashboardPersonalLiabilities() {
           <div className="rounded-2xl bg-background/70 p-4">
             <div className="mb-1 flex items-center gap-2">
               <div className="rounded-xl bg-default-100 p-1.5 text-default-600">
-                <TrendingDown className="h-4 w-4" />
+                <TrendingDown className="size-4" />
               </div>
               <span className="font-medium text-default-600 text-xs">Próximo Pago</span>
             </div>
@@ -79,7 +74,7 @@ export function DashboardPersonalLiabilities() {
               <span className="font-semibold text-sm">
                 {formatCurrency(nextPayment.nextPaymentAmount ?? 0)}
               </span>
-              <span className="truncate text-default-500 text-xs">{nextPayment.institution}</span>
+              <span className="truncate text-default-500 text-xs">{nextPayment.bankName}</span>
             </div>
           </div>
         ) : (

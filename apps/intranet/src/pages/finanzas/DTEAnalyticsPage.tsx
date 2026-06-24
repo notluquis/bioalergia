@@ -127,7 +127,7 @@ export function DTEAnalyticsPage() {
   );
 
   return (
-    <div className="flex h-full min-h-full w-full flex-col gap-4 p-3 md:p-5">
+    <div className="flex min-h-full flex-col gap-4 p-3 md:p-5 size-full">
       <Tabs
         aria-label="DTE Analytics Tabs"
         className="flex min-h-0 flex-1 flex-col"

@@ -85,7 +85,7 @@ export function FileListItem({
       {/* Icon */}
       <div className="shrink-0">
         <Icon
-          className={`h-5 w-5 ${showProgress ? "animate-spin" : ""} ${
+          className={`size-5 ${showProgress ? "animate-spin" : ""} ${
             status === "error" ? "text-danger" : "text-default-500"
           }`}
         />
@@ -135,7 +135,7 @@ export function FileListItem({
           className="opacity-0 group-hover:opacity-100"
           aria-label="Eliminar archivo"
         >
-          <X className="h-4 w-4" />
+          <X className="size-4" />
         </Button>
       )}
     </div>

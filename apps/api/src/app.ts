@@ -1,5 +1,7 @@
 // apps/api/src/app.ts
-import { Hono } from "hono";
+import * as Sentry from "@sentry/node";
+import { httpInstrumentationMiddleware } from "@hono/otel";
+import { type Context as HonoContext, Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { cors } from "hono/cors";
 import { csrf } from "hono/csrf";
@@ -8,12 +10,13 @@ import { secureHeaders } from "hono/secure-headers";
 import { timeout } from "hono/timeout";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { rateLimiter } from "hono-rate-limiter";
-import { getSessionUser, hasPermission } from "./auth.ts";
+import { getSessionUser, hasPermission } from "./lib/auth.ts";
 import { AppError } from "./lib/app-error.ts";
 import { clientIp } from "./lib/client-ip.ts";
 import { csrfDoubleSubmit, ensureCsrfCookie } from "./lib/csrf-double-submit.ts";
 import { htmlSanitizerMiddleware } from "./lib/html-sanitizer.ts";
 import { logError } from "./lib/logger.ts";
+import { isRpcTunnelRead } from "./lib/orpc-procedure-methods.ts";
 import { configureSuperjson } from "./lib/superjson-config.ts";
 import { authOpenAPIHandler, authORPCHandler } from "./orpc/auth.ts";
 import { backupsOpenAPIHandler, backupsORPCHandler } from "./orpc/backups.ts";
@@ -21,16 +24,31 @@ import { getCurrentJobs as getCurrentBackupJobs } from "./services/backups.ts";
 import { balancesOpenAPIHandler, balancesORPCHandler } from "./orpc/balances.ts";
 import { calendarOpenAPIHandler, calendarORPCHandler } from "./orpc/calendar.ts";
 import { certificatesOpenAPIHandler, certificatesORPCHandler } from "./orpc/certificates.ts";
+import { medicationsOpenAPIHandler, medicationsORPCHandler } from "./orpc/medications.ts";
+import { verificationOpenAPIHandler, verificationORPCHandler } from "./orpc/verification.ts";
+import { immunotherapyOpenAPIHandler, immunotherapyORPCHandler } from "./orpc/immunotherapy.ts";
+import { quotesOpenAPIHandler, quotesORPCHandler } from "./orpc/quotes.ts";
+import { reactivosOpenAPIHandler, reactivosORPCHandler } from "./orpc/reactivos.ts";
+import { pollenOpenAPIHandler, pollenORPCHandler } from "./orpc/pollen.ts";
+import { occupationalOpenAPIHandler, occupationalORPCHandler } from "./orpc/occupational.ts";
+import { adherenceORPCHandler } from "./orpc/adherence.ts";
+import { allergyDiaryORPCHandler } from "./orpc/allergy-diary.ts";
+import { productDocumentsORPCHandler } from "./orpc/product-documents.ts";
+import {
+  clinicalAllergensOpenAPIHandler,
+  clinicalAllergensORPCHandler,
+} from "./orpc/clinical-allergens.ts";
 import { clinicalSeriesOpenAPIHandler, clinicalSeriesORPCHandler } from "./orpc/clinical-series.ts";
 import {
   clinicalRecordsOpenAPIHandler,
   clinicalRecordsORPCHandler,
 } from "./orpc/clinical-records.ts";
+import { onedriveOpenAPIHandler, onedriveORPCHandler } from "./orpc/onedrive.ts";
 import {
   clinicalSkinTestsOpenAPIHandler,
   clinicalSkinTestsORPCHandler,
 } from "./orpc/clinical-skin-tests.ts";
-import { getCurrentRebuildJob } from "./services/clinical-series.ts";
+import { getCurrentRebuildJob } from "./services/clinical-series-rebuild-status.ts";
 import { counterpartsOpenAPIHandler, counterpartsORPCHandler } from "./orpc/counterparts.ts";
 import { csvUploadOpenAPIHandler, csvUploadORPCHandler } from "./orpc/csv-upload.ts";
 import { doctoraliaOpenAPIHandler, doctoraliaORPCHandler } from "./orpc/doctoralia.ts";
@@ -39,12 +57,28 @@ import { dteAnalyticsOpenAPIHandler, dteAnalyticsORPCHandler } from "./orpc/dte-
 import { dteEventLinksOpenAPIHandler, dteEventLinksORPCHandler } from "./orpc/dte-event-links.ts";
 import { employeesOpenAPIHandler, employeesORPCHandler } from "./orpc/employees.ts";
 import { expensesOpenAPIHandler, expensesORPCHandler } from "./orpc/expenses.ts";
+import { socialOpenAPIHandler, socialORPCHandler } from "./orpc/social.ts";
+import { registerSocialOauthRoutes } from "./modules/social/graph/oauth-routes.ts";
+import { registerTiktokOauthRoutes } from "./modules/social/tiktok/oauth-routes.ts";
 import { financeOpenAPIHandler, financeORPCHandler } from "./orpc/finance.ts";
+import { cartOpenAPIHandler, cartORPCHandler } from "./orpc/cart.ts";
+import { catalogOpenAPIHandler, catalogORPCHandler } from "./orpc/catalog.ts";
+import { siteContentOpenAPIHandler, siteContentORPCHandler } from "./orpc/site-content.ts";
+import { checkoutOpenAPIHandler, checkoutORPCHandler } from "./orpc/checkout.ts";
+import { siteAuthORPCHandler } from "./orpc/site-auth.ts";
+import { accountORPCHandler } from "./orpc/account.ts";
 import { haulmerOpenAPIHandler, haulmerORPCHandler } from "./orpc/haulmer.ts";
+import { haulmerDteOpenAPIHandler, haulmerDteORPCHandler } from "./orpc/haulmer-dte.ts";
+import { imagesOpenAPIHandler, imagesORPCHandler } from "./orpc/images.ts";
 import { integrationsOpenAPIHandler, integrationsORPCHandler } from "./orpc/integrations.ts";
 import { inventoryOpenAPIHandler, inventoryORPCHandler } from "./orpc/inventory.ts";
 import { loansOpenAPIHandler, loansORPCHandler } from "./orpc/loans.ts";
 import { mercadopagoOpenAPIHandler, mercadopagoORPCHandler } from "./orpc/mercadopago.ts";
+import { mlOpenAPIHandler, mlORPCHandler } from "./orpc/ml-sync.ts";
+import { registerGoogleMerchantFeed } from "./routes/google-merchant-feed.ts";
+import { registerMercadolibreOauthCallback } from "./routes/mercadolibre-oauth-callback.ts";
+import { registerMercadolibreWebhook } from "./routes/mercadolibre-webhook.ts";
+import { registerMercadopagoCheckoutWebhook } from "./routes/mercadopago-checkout-webhook.ts";
 import { notificationsOpenAPIHandler, notificationsORPCHandler } from "./orpc/notifications.ts";
 import { outreachOpenAPIHandler, outreachORPCHandler } from "./orpc/outreach.ts";
 import { addressesOpenAPIHandler, addressesORPCHandler } from "./orpc/addresses.ts";
@@ -53,11 +87,20 @@ import {
   patientCampaignsOpenAPIHandler,
   patientCampaignsORPCHandler,
 } from "./orpc/patient-campaigns.ts";
+import { emailOpenAPIHandler, emailORPCHandler } from "./orpc/email.ts";
+import { unsubscribeByToken } from "./services/email/broadcast-service.ts";
+import {
+  handleResendEvent,
+  type ResendWebhookEvent,
+  verifyResendSignature,
+} from "./services/email/webhook-service.ts";
+import { isDomainError } from "./lib/errors.ts";
 import { peopleOpenAPIHandler, peopleORPCHandler } from "./orpc/people.ts";
 import {
   personalFinanceOpenAPIHandler,
   personalFinanceORPCHandler,
 } from "./orpc/personal-finance.ts";
+import { jobRadarOpenAPIHandler, jobRadarORPCHandler } from "./orpc/job-radar.ts";
 import {
   productionBalancesOpenAPIHandler,
   productionBalancesORPCHandler,
@@ -69,6 +112,14 @@ import {
 import { rolesOpenAPIHandler, rolesORPCHandler } from "./orpc/roles.ts";
 import { servicesOpenAPIHandler, servicesORPCHandler } from "./orpc/services.ts";
 import { settingsOpenAPIHandler, settingsORPCHandler } from "./orpc/settings.ts";
+import { priceListORPCHandler } from "./orpc/price-list.ts";
+import { dataRightsORPCHandler } from "./orpc/data-rights.ts";
+import { breachIncidentsORPCHandler } from "./orpc/breach-incidents.ts";
+import { complaintsORPCHandler } from "./orpc/complaints.ts";
+import { securityAlertsORPCHandler } from "./orpc/security-alerts.ts";
+import { processingActivitiesORPCHandler } from "./orpc/processing-activities.ts";
+import { consentORPCHandler } from "./orpc/consent.ts";
+import { clinicalConsentORPCHandler } from "./orpc/clinical-consent.ts";
 import {
   settlementTransactionsOpenAPIHandler,
   settlementTransactionsORPCHandler,
@@ -84,10 +135,15 @@ import {
 } from "./orpc/transactions-insights.ts";
 import { usersOpenAPIHandler, usersORPCHandler } from "./orpc/users.ts";
 import { utilityBillsOpenAPIHandler, utilityBillsORPCHandler } from "./orpc/utility-bills.ts";
+import { providerCredentialsORPCHandler } from "./orpc/provider-credentials.ts";
 import { waCloudOpenAPIHandler, waCloudORPCHandler } from "./orpc/wa-cloud.ts";
 import { shipmentsOpenAPIHandler, shipmentsORPCHandler } from "./orpc/shipments.ts";
+import { examReportsOpenAPIHandler, examReportsORPCHandler } from "./orpc/exam-reports.ts";
 import { doctoraliaScraperRoutes } from "./routes/doctoralia-scraper.ts";
 import { googleCalendarWebhookRoutes } from "./routes/google-calendar-webhook.ts";
+import { icd11TokenRoutes } from "./routes/icd11-token.ts";
+import { medicalCertificatePdfRoutes } from "./routes/medical-certificate-pdf.ts";
+import { prescriptionPdfRoutes } from "./routes/prescription-pdf.ts";
 import { mercadopagoReportWebhookRoutes } from "./routes/mercadopago-report-webhook.ts";
 import { onedriveWebhookRoutes } from "./routes/onedrive-webhook.ts";
 import { waCloudMediaRoutes } from "./routes/wa-cloud-media.ts";
@@ -100,6 +156,14 @@ import { reply, replyRaw } from "./utils/reply.ts";
 configureSuperjson();
 
 export const app = new Hono();
+
+// OpenTelemetry per-route server spans. Mounted at the very top of the chain so
+// every request (including ones rejected by the security/auth middlewares below)
+// gets a server span. Span context flows down to the pg spans emitted by
+// PgInstrumentation (wired in instrument.ts via Sentry's OTel distro), giving a
+// request → handler → DB query trace tree. Cheap (no per-request allocation
+// beyond the span) and reports through the same Sentry exporter Sentry.init set up.
+app.use("*", httpInstrumentationMiddleware());
 
 // Standard security headers (CSP set separately below for Vite/Cloudflare)
 app.use(
@@ -131,16 +195,28 @@ app.use("*", async (c, next) => {
     c.res.headers.set("Content-Type", "application/json; charset=utf-8");
   }
 
-  // Content Security Policy - Allow Cloudflare + Vite assets. unsafe-eval
-  // only kept in dev for Vite HMR; production build does not need it.
+  // Content Security Policy. The API serves JSON for ~everything; the only
+  // HTML it emits is the Scalar OpenAPI reference (internal dev docs, renders
+  // no user data), which injects an inline init <script>. So we scope
+  // 'unsafe-inline' to HTML responses ONLY and keep a strict script-src on all
+  // JSON/API responses — that's the surface an XSS payload would actually use.
+  // unsafe-eval stays dev-only (Vite HMR; prod build doesn't need it).
   const isProd = process.env.NODE_ENV === "production";
-  const scriptSrc = isProd
-    ? "script-src 'self' 'unsafe-inline' https://cdn.cloudflare.com https://static.cloudflareinsights.com https://challenges.cloudflare.com"
-    : "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.cloudflare.com https://static.cloudflareinsights.com https://challenges.cloudflare.com";
+  const isHtml = (c.res.headers.get("Content-Type") ?? "").includes("text/html");
+  const cf =
+    "https://cdn.cloudflare.com https://static.cloudflareinsights.com https://challenges.cloudflare.com";
+  const inline = isHtml ? " 'unsafe-inline'" : "";
+  const evalSrc = isProd ? "" : " 'unsafe-eval'";
+  // Media binaries (PDF/image) are embedded in a same-origin <iframe> (the
+  // document preview modal). frame-ancestors 'none' would block that, so the
+  // media proxy responses allow same-origin framing; everything else stays
+  // 'none' (clickjacking protection on the actual API surface).
+  const isMedia = c.req.path.startsWith("/api/wa-cloud/media/");
+  const frameAncestors = isMedia ? "frame-ancestors 'self'" : "frame-ancestors 'none'";
   const csp = [
     "default-src 'self'",
-    scriptSrc,
-    "script-src-elem 'self' 'unsafe-inline' https://cdn.cloudflare.com https://static.cloudflareinsights.com https://challenges.cloudflare.com",
+    `script-src 'self'${inline}${evalSrc} ${cf}`,
+    `script-src-elem 'self'${inline} ${cf}`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: https:",
     "media-src 'self' blob:",
@@ -148,7 +224,7 @@ app.use("*", async (c, next) => {
     "connect-src 'self' https://api.cloudflare.com",
     "worker-src 'self' blob:",
     "manifest-src 'self'",
-    "frame-ancestors 'none'",
+    frameAncestors,
     "base-uri 'self'",
     "form-action 'self'",
   ].join("; ");
@@ -238,6 +314,15 @@ app.get("/api/csrf", (c) => {
 // Per-username throttle (lib/login-throttle.ts) and the per-user
 // account lockout (lib/account-lockout.ts) provide the inner layers.
 //
+// Scope: only credential-bearing *writes* (login / mfa / passkey-verify
+// / logout — contract-declared POST/PUT/DELETE). Credential-free reads
+// in the auth namespace — notably `session`, which the SPA calls on
+// every single page load — are exempt: rate-limiting them throttles
+// ordinary browsing, not brute force, and was the cause of spurious
+// 429s during multi-page sessions (incl. the e2e suite). The brute-
+// force surface (login, mfa, passkey verify) is all POST and stays
+// limited.
+//
 // Refs:
 //   - NIST SP 800-63-4 § 5.2.2 (rate limiting on auth endpoints)
 //   - OWASP Authentication Cheat Sheet § Brute Force / Credential Stuffing
@@ -246,19 +331,22 @@ const authRateLimiter = rateLimiter({
   limit: 20,
   standardHeaders: "draft-6",
   keyGenerator: (c) => clientIp(c) ?? "anonymous",
-  skip: (c) => c.req.method === "OPTIONS",
+  skip: (c) => c.req.method === "OPTIONS" || isRpcTunnelRead(c.req.path),
 });
 
 // Mount on the actual oRPC auth path. The legacy /api/auth/* route
 // space is unused but kept covered as defense in depth.
 app.use("/api/orpc/auth/rpc/*", authRateLimiter);
 app.use("/api/auth/*", authRateLimiter);
+// Public shop auth (magic link / register / login) shares the same budget —
+// it creates users and sends email, so it must never be unthrottled.
+app.use("/api/orpc/site-auth/rpc/*", authRateLimiter);
 
 // CSRF: validate Origin / Sec-Fetch-Site for all state-changing API calls.
 // Defense in depth on top of SameSite=Lax cookies + the CORS allow-list.
 // Webhooks excluded (Meta / Google / OneDrive cross-site by design and
 // already authenticated via HMAC signatures).
-const csrfAllowedOrigin = (origin: string, c: import("hono").Context): boolean => {
+const csrfAllowedOrigin = (origin: string, c: HonoContext): boolean => {
   // Always allow same-origin: when the Origin header host matches the
   // request's own host (the SPA hitting its own API), there is no CSRF
   // surface. hono/csrf normally provides this default but disables it
@@ -286,6 +374,62 @@ app.use("/api/wa-cloud/*", csrf({ origin: csrfAllowedOrigin }));
 app.use("/api/orpc/*", csrfDoubleSubmit());
 app.use("/api/wa-cloud/*", csrfDoubleSubmit());
 
+// E2E read-only guard. Layer 2 of the defense-in-depth strategy
+// described in CLAUDE.local.md — the Playwright fixture installs a
+// network-level guard (layer 1) but this server-side check protects
+// production when a misconfigured run somehow bypasses it. Users
+// holding the E2EReadOnly role may issue reads but never mutations.
+//
+// oRPC's RPC tunnel POSTs *every* operation (reads + writes) to
+// `/api/orpc/<ns>/rpc/<procedure>`, so the wire method is useless for
+// telling them apart — a blanket POST block also rejects POST-tunnelled
+// reads, which makes an E2EReadOnly session unable to load ANY
+// data-backed page (every read 403s → the page renders an error card,
+// and scan-only authed e2e specs then pass vacuously against it).
+// Instead we classify by the *contract's* declared method via
+// `isRpcTunnelRead`: declared-GET procedures are reads (allowed for
+// everyone), declared-POST/PUT/PATCH/DELETE are mutations (blocked for
+// the read-only role). Unknown procedures fail closed.
+//
+// `/api/orpc/auth/*` stays fully exempt regardless of method — it is
+// session lifecycle (login, logout, session, mfa, passkey), not a data
+// mutation, and the SPA calls `auth/session` on every boot.
+const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
+
+function readOnlyRejection(c: HonoContext) {
+  return c.json(
+    {
+      status: "error",
+      code: "READ_ONLY_ROLE",
+      message: "E2E read-only sessions cannot perform mutations.",
+    },
+    403
+  );
+}
+
+async function isE2EReadOnly(c: HonoContext): Promise<boolean> {
+  const user = await getSessionUser(c);
+  return Boolean(user?.roles.some((r) => r.role.name === "E2EReadOnly"));
+}
+
+app.use("/api/orpc/*", async (c, next) => {
+  if (SAFE_METHODS.has(c.req.method)) return next();
+  const pathname = new URL(c.req.url).pathname;
+  // Session lifecycle is not a data mutation — exempt so the SPA can
+  // resolve the current user on boot under an E2EReadOnly session.
+  if (pathname.startsWith("/api/orpc/auth/")) return next();
+  // POST-tunnelled reads (contract-declared GET) are allowed for
+  // everyone — checked before the role lookup so reads skip the DB hit.
+  if (isRpcTunnelRead(pathname)) return next();
+  if (await isE2EReadOnly(c)) return readOnlyRejection(c);
+  return next();
+});
+app.use("/api/wa-cloud/*", async (c, next) => {
+  if (SAFE_METHODS.has(c.req.method)) return next();
+  if (await isE2EReadOnly(c)) return readOnlyRejection(c);
+  return next();
+});
+
 // Webhook ingress rate limit — Meta retries up to ~3x per minute per event
 // per WABA, so ~120/min is a generous ceiling. Caps abusive floods that
 // could DoS the DB by inserting WaWebhookLog rows for invalid signatures.
@@ -297,6 +441,20 @@ const webhookRateLimiter = rateLimiter({
   skip: (c) => c.req.method === "OPTIONS",
 });
 app.use("/api/webhooks/*", webhookRateLimiter);
+
+// Public document verification (no auth): /verificar/{code}. The response
+// exposes partial PHI (patient initials, masked RUT, doctor license #, folio)
+// and the code is only ~32 bits of entropy, so an unthrottled endpoint lets an
+// attacker enumerate codes to harvest those fields. 30/min per IP is plenty for
+// a human scanning a QR while blocking bulk enumeration.
+const verificationRateLimiter = rateLimiter({
+  windowMs: 60 * 1000,
+  limit: 30,
+  standardHeaders: "draft-6",
+  keyGenerator: (c) => clientIp(c) ?? "anonymous",
+  skip: (c) => c.req.method === "OPTIONS",
+});
+app.use("/api/orpc/verification/*", verificationRateLimiter);
 
 // Body size cap on webhook ingress: Meta payloads top out near 100KB,
 // OneDrive validation tokens are small. 1 MB is a safe ceiling that
@@ -785,6 +943,167 @@ app.use("/api/orpc/certificates/rpc/*", async (c, next) => {
   return next();
 });
 
+app.use("/api/orpc/medications/rpc/*", async (c, next) => {
+  const { matched, response } = await medicationsORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/medications/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
+// Verificación pública de documentos (sin auth): /verificar/{code}.
+app.use("/api/orpc/verification/rpc/*", async (c, next) => {
+  const { matched, response } = await verificationORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/verification/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
+app.use("/api/orpc/immunotherapy/rpc/*", async (c, next) => {
+  const { matched, response } = await immunotherapyORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/immunotherapy/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
+app.use("/api/orpc/quotes/rpc/*", async (c, next) => {
+  const { matched, response } = await quotesORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/quotes/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
+// Lead público de reactivos: rate-limit por IP antes del handler. La creación es
+// no-autenticada (vitrina) → superficie de spam. 5/min/IP + honeypot + CSRF
+// same-origin. Mirror de `verificationRateLimiter`.
+const reactivosLeadRateLimiter = rateLimiter({
+  windowMs: 60 * 1000,
+  limit: 5,
+  standardHeaders: "draft-6",
+  keyGenerator: (c) => clientIp(c) ?? "anonymous",
+  skip: (c) => c.req.method === "OPTIONS",
+});
+app.use("/api/orpc/reactivos/rpc/createLead", reactivosLeadRateLimiter);
+// Lead público de salud ocupacional: mismo rate-limit por IP.
+app.use("/api/orpc/occupational/rpc/createLead", reactivosLeadRateLimiter);
+
+app.use("/api/orpc/reactivos/rpc/*", async (c, next) => {
+  const { matched, response } = await reactivosORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/reactivos/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
+app.use("/api/orpc/pollen/rpc/*", async (c, next) => {
+  const { matched, response } = await pollenORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/pollen/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
+app.use("/api/orpc/occupational/rpc/*", async (c, next) => {
+  const { matched, response } = await occupationalORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/occupational/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
+app.use("/api/orpc/adherence/rpc/*", async (c, next) => {
+  const { matched, response } = await adherenceORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/adherence/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
+app.use("/api/orpc/allergy-diary/rpc/*", async (c, next) => {
+  const { matched, response } = await allergyDiaryORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/allergy-diary/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
+app.use("/api/orpc/product-documents/rpc/*", async (c, next) => {
+  const { matched, response } = await productDocumentsORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/product-documents/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
+app.use("/api/orpc/clinical-allergens/rpc/*", async (c, next) => {
+  const { matched, response } = await clinicalAllergensORPCHandler.handle(
+    createHonoORPCRequest(c),
+    {
+      prefix: "/api/orpc/clinical-allergens/rpc",
+      context: { hono: c },
+    }
+  );
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
 // ─── Clinical Series SSE progress stream ──────────────────────────────────────
 app.get("/api/clinical-series/progress", async (c) => {
   const user = await getSessionUser(c);
@@ -858,6 +1177,17 @@ app.use("/api/orpc/clinical-skin-tests/rpc/*", async (c, next) => {
 app.use("/api/orpc/clinical-records/rpc/*", async (c, next) => {
   const { matched, response } = await clinicalRecordsORPCHandler.handle(createHonoORPCRequest(c), {
     prefix: "/api/orpc/clinical-records/rpc",
+    context: { hono: c },
+  });
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+  return next();
+});
+
+app.use("/api/orpc/onedrive/rpc/*", async (c, next) => {
+  const { matched, response } = await onedriveORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/onedrive/rpc",
     context: { hono: c },
   });
   if (matched) {
@@ -1079,6 +1409,24 @@ app.use("/api/orpc/expenses/rpc/*", async (c, next) => {
   return next();
 });
 
+app.use("/api/orpc/social/rpc/*", async (c, next) => {
+  const { matched, response } = await socialORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/social/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
+// OAuth oficial de Meta (rutas Hono planas: redirect del navegador, no oRPC).
+registerSocialOauthRoutes(app);
+// OAuth (PKCE) de TikTok Content Posting (rutas Hono planas, redirect navegador).
+registerTiktokOauthRoutes(app);
+
 app.use("/api/orpc/csv-upload/rpc/*", async (c, next) => {
   const { matched, response } = await csvUploadORPCHandler.handle(createHonoORPCRequest(c), {
     prefix: "/api/orpc/csv-upload/rpc",
@@ -1095,6 +1443,32 @@ app.use("/api/orpc/csv-upload/rpc/*", async (c, next) => {
 app.use("/api/orpc/haulmer/rpc/*", async (c, next) => {
   const { matched, response } = await haulmerORPCHandler.handle(createHonoORPCRequest(c), {
     prefix: "/api/orpc/haulmer/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
+app.use("/api/orpc/haulmer-dte/rpc/*", async (c, next) => {
+  const { matched, response } = await haulmerDteORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/haulmer-dte/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
+app.use("/api/orpc/haulmer-dte/*", async (c, next) => {
+  const { matched, response } = await haulmerDteOpenAPIHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/haulmer-dte",
     context: { hono: c },
   });
 
@@ -1130,6 +1504,83 @@ app.use("/api/orpc/mercadopago/rpc/*", async (c, next) => {
 
   return next();
 });
+
+app.use("/api/orpc/catalog/rpc/*", async (c, next) => {
+  const { matched, response } = await catalogORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/catalog/rpc",
+    context: { hono: c },
+  });
+  if (matched) return c.newResponse(response.body, response);
+  return next();
+});
+
+app.use("/api/orpc/cart/rpc/*", async (c, next) => {
+  const { matched, response } = await cartORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/cart/rpc",
+    context: { hono: c },
+  });
+  if (matched) return c.newResponse(response.body, response);
+  return next();
+});
+
+app.use("/api/orpc/site-content/rpc/*", async (c, next) => {
+  const { matched, response } = await siteContentORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/site-content/rpc",
+    context: { hono: c },
+  });
+  if (matched) return c.newResponse(response.body, response);
+  return next();
+});
+
+app.use("/api/orpc/checkout/rpc/*", async (c, next) => {
+  const { matched, response } = await checkoutORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/checkout/rpc",
+    context: { hono: c },
+  });
+  if (matched) return c.newResponse(response.body, response);
+  return next();
+});
+
+app.use("/api/orpc/site-auth/rpc/*", async (c, next) => {
+  const { matched, response } = await siteAuthORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/site-auth/rpc",
+    context: { hono: c },
+  });
+  if (matched) return c.newResponse(response.body, response);
+  return next();
+});
+
+app.use("/api/orpc/account/rpc/*", async (c, next) => {
+  const { matched, response } = await accountORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/account/rpc",
+    context: { hono: c },
+  });
+  if (matched) return c.newResponse(response.body, response);
+  return next();
+});
+
+app.use("/api/orpc/images/rpc/*", async (c, next) => {
+  const { matched, response } = await imagesORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/images/rpc",
+    context: { hono: c },
+  });
+  if (matched) return c.newResponse(response.body, response);
+  return next();
+});
+
+app.use("/api/orpc/ml/rpc/*", async (c, next) => {
+  const { matched, response } = await mlORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/ml/rpc",
+    context: { hono: c },
+  });
+  if (matched) return c.newResponse(response.body, response);
+  return next();
+});
+
+registerMercadolibreOauthCallback(app);
+registerMercadolibreWebhook(app);
+registerGoogleMerchantFeed(app);
+registerMercadopagoCheckoutWebhook(app);
 
 app.use("/api/orpc/inventory/rpc/*", async (c, next) => {
   const { matched, response } = await inventoryORPCHandler.handle(createHonoORPCRequest(c), {
@@ -1222,6 +1673,22 @@ app.use("/api/orpc/utility-bills/rpc/*", async (c, next) => {
   return next();
 });
 
+app.use("/api/orpc/provider-credentials/rpc/*", async (c, next) => {
+  const { matched, response } = await providerCredentialsORPCHandler.handle(
+    createHonoORPCRequest(c),
+    {
+      prefix: "/api/orpc/provider-credentials/rpc",
+      context: { hono: c },
+    }
+  );
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
 app.use("/api/orpc/people/rpc/*", async (c, next) => {
   const { matched, response } = await peopleORPCHandler.handle(createHonoORPCRequest(c), {
     prefix: "/api/orpc/people/rpc",
@@ -1248,9 +1715,129 @@ app.use("/api/orpc/personal-finance/rpc/*", async (c, next) => {
   return next();
 });
 
+app.use("/api/orpc/job-radar/rpc/*", async (c, next) => {
+  const { matched, response } = await jobRadarORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/job-radar/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
 app.use("/api/orpc/settings/rpc/*", async (c, next) => {
   const { matched, response } = await settingsORPCHandler.handle(createHonoORPCRequest(c), {
     prefix: "/api/orpc/settings/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
+app.use("/api/orpc/price-list/rpc/*", async (c, next) => {
+  const { matched, response } = await priceListORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/price-list/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
+app.use("/api/orpc/data-rights/rpc/*", async (c, next) => {
+  const { matched, response } = await dataRightsORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/data-rights/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
+app.use("/api/orpc/breach-incidents/rpc/*", async (c, next) => {
+  const { matched, response } = await breachIncidentsORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/breach-incidents/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
+app.use("/api/orpc/complaints/rpc/*", async (c, next) => {
+  const { matched, response } = await complaintsORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/complaints/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
+app.use("/api/orpc/security-alerts/rpc/*", async (c, next) => {
+  const { matched, response } = await securityAlertsORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/security-alerts/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
+app.use("/api/orpc/processing-activities/rpc/*", async (c, next) => {
+  const { matched, response } = await processingActivitiesORPCHandler.handle(
+    createHonoORPCRequest(c),
+    {
+      prefix: "/api/orpc/processing-activities/rpc",
+      context: { hono: c },
+    }
+  );
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
+app.use("/api/orpc/consent/rpc/*", async (c, next) => {
+  const { matched, response } = await consentORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/consent/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
+app.use("/api/orpc/clinical-consent/rpc/*", async (c, next) => {
+  const { matched, response } = await clinicalConsentORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/clinical-consent/rpc",
     context: { hono: c },
   });
 
@@ -1406,6 +1993,19 @@ app.use("/api/orpc/patient-campaigns/rpc/*", async (c, next) => {
   return next();
 });
 
+app.use("/api/orpc/email/rpc/*", async (c, next) => {
+  const { matched, response } = await emailORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/email/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
 app.use("/api/orpc/outreach/rpc/*", async (c, next) => {
   const { matched, response } = await outreachORPCHandler.handle(createHonoORPCRequest(c), {
     prefix: "/api/orpc/outreach/rpc",
@@ -1481,6 +2081,54 @@ app.use("/api/orpc/dte/*", async (c, next) => {
   return next();
 });
 
+app.use("/api/orpc/catalog/*", async (c, next) => {
+  const { matched, response } = await catalogOpenAPIHandler.handle(createHonoORPCRequest(c), {
+    context: { hono: c },
+  });
+  if (matched) return c.newResponse(response.body, response);
+  return next();
+});
+
+app.use("/api/orpc/site-content/*", async (c, next) => {
+  const { matched, response } = await siteContentOpenAPIHandler.handle(createHonoORPCRequest(c), {
+    context: { hono: c },
+  });
+  if (matched) return c.newResponse(response.body, response);
+  return next();
+});
+
+app.use("/api/orpc/cart/*", async (c, next) => {
+  const { matched, response } = await cartOpenAPIHandler.handle(createHonoORPCRequest(c), {
+    context: { hono: c },
+  });
+  if (matched) return c.newResponse(response.body, response);
+  return next();
+});
+
+app.use("/api/orpc/checkout/*", async (c, next) => {
+  const { matched, response } = await checkoutOpenAPIHandler.handle(createHonoORPCRequest(c), {
+    context: { hono: c },
+  });
+  if (matched) return c.newResponse(response.body, response);
+  return next();
+});
+
+app.use("/api/orpc/images/*", async (c, next) => {
+  const { matched, response } = await imagesOpenAPIHandler.handle(createHonoORPCRequest(c), {
+    context: { hono: c },
+  });
+  if (matched) return c.newResponse(response.body, response);
+  return next();
+});
+
+app.use("/api/orpc/ml/*", async (c, next) => {
+  const { matched, response } = await mlOpenAPIHandler.handle(createHonoORPCRequest(c), {
+    context: { hono: c },
+  });
+  if (matched) return c.newResponse(response.body, response);
+  return next();
+});
+
 app.use("/api/orpc/inventory/*", async (c, next) => {
   const { matched, response } = await inventoryOpenAPIHandler.handle(createHonoORPCRequest(c), {
     context: { hono: c },
@@ -1543,6 +2191,18 @@ app.use("/api/orpc/employees/*", async (c, next) => {
 
 app.use("/api/orpc/expenses/*", async (c, next) => {
   const { matched, response } = await expensesOpenAPIHandler.handle(createHonoORPCRequest(c), {
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
+app.use("/api/orpc/social/*", async (c, next) => {
+  const { matched, response } = await socialOpenAPIHandler.handle(createHonoORPCRequest(c), {
     context: { hono: c },
   });
 
@@ -1656,6 +2316,18 @@ app.use("/api/orpc/personal-finance/*", async (c, next) => {
       context: { hono: c },
     }
   );
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
+app.use("/api/orpc/job-radar/*", async (c, next) => {
+  const { matched, response } = await jobRadarOpenAPIHandler.handle(createHonoORPCRequest(c), {
+    context: { hono: c },
+  });
 
   if (matched) {
     return c.newResponse(response.body, response);
@@ -1790,6 +2462,41 @@ app.use("/api/orpc/patient-campaigns/*", async (c, next) => {
   return next();
 });
 
+app.use("/api/orpc/email/*", async (c, next) => {
+  const { matched, response } = await emailOpenAPIHandler.handle(createHonoORPCRequest(c), {
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
+// Public one-click unsubscribe (RFC 8058). NOT under /api/orpc so it skips
+// CSRF — mail clients POST cross-origin. POST = one-click header target;
+// GET = human clicking the link in the footer (returns a small HTML page).
+async function handleUnsubscribe(c: HonoContext): Promise<Response> {
+  const token = c.req.param("token") ?? "";
+  try {
+    await unsubscribeByToken(token);
+    return c.html(
+      `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Baja confirmada</title></head><body style="font-family:system-ui,sans-serif;max-width:32rem;margin:4rem auto;padding:0 1rem;text-align:center"><h1>Te diste de baja</h1><p>No recibirás más correos de novedades de Bioalergia. Los correos importantes de tu atención (recordatorios, etc.) seguirán llegando.</p></body></html>`,
+      200
+    );
+  } catch (err) {
+    const status = isDomainError(err) && err.kind === "NOT_FOUND" ? 404 : 400;
+    return c.html(
+      `<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Enlace inválido</title></head><body style="font-family:system-ui,sans-serif;max-width:32rem;margin:4rem auto;padding:0 1rem;text-align:center"><h1>Enlace inválido</h1><p>No pudimos procesar la baja. El enlace puede haber expirado.</p></body></html>`,
+      status
+    );
+  }
+}
+
+app.get("/api/email/unsubscribe/:token", handleUnsubscribe);
+app.post("/api/email/unsubscribe/:token", handleUnsubscribe);
+
 app.use("/api/orpc/outreach/*", async (c, next) => {
   const { matched, response } = await outreachOpenAPIHandler.handle(createHonoORPCRequest(c), {
     context: { hono: c },
@@ -1850,6 +2557,105 @@ app.use("/api/orpc/certificates/*", async (c, next) => {
   return next();
 });
 
+app.use("/api/orpc/medications/*", async (c, next) => {
+  const { matched, response } = await medicationsOpenAPIHandler.handle(createHonoORPCRequest(c), {
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
+app.use("/api/orpc/verification/*", async (c, next) => {
+  const { matched, response } = await verificationOpenAPIHandler.handle(createHonoORPCRequest(c), {
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
+app.use("/api/orpc/immunotherapy/*", async (c, next) => {
+  const { matched, response } = await immunotherapyOpenAPIHandler.handle(createHonoORPCRequest(c), {
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
+app.use("/api/orpc/quotes/*", async (c, next) => {
+  const { matched, response } = await quotesOpenAPIHandler.handle(createHonoORPCRequest(c), {
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
+app.use("/api/orpc/reactivos/*", async (c, next) => {
+  const { matched, response } = await reactivosOpenAPIHandler.handle(createHonoORPCRequest(c), {
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
+app.use("/api/orpc/pollen/*", async (c, next) => {
+  const { matched, response } = await pollenOpenAPIHandler.handle(createHonoORPCRequest(c), {
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
+app.use("/api/orpc/occupational/*", async (c, next) => {
+  const { matched, response } = await occupationalOpenAPIHandler.handle(createHonoORPCRequest(c), {
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
+app.use("/api/orpc/clinical-allergens/*", async (c, next) => {
+  const { matched, response } = await clinicalAllergensOpenAPIHandler.handle(
+    createHonoORPCRequest(c),
+    {
+      context: { hono: c },
+    }
+  );
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
 app.use("/api/orpc/clinical-series/*", async (c, next) => {
   const { matched, response } = await clinicalSeriesOpenAPIHandler.handle(
     createHonoORPCRequest(c),
@@ -1885,6 +2691,16 @@ app.use("/api/orpc/clinical-records/*", async (c, next) => {
       context: { hono: c },
     }
   );
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+  return next();
+});
+
+app.use("/api/orpc/onedrive/*", async (c, next) => {
+  const { matched, response } = await onedriveOpenAPIHandler.handle(createHonoORPCRequest(c), {
+    context: { hono: c },
+  });
   if (matched) {
     return c.newResponse(response.body, response);
   }
@@ -1997,6 +2813,23 @@ app.use("/api/orpc/shipments/*", async (c, next) => {
   return next();
 });
 
+app.use("/api/orpc/exam-reports/rpc/*", async (c, next) => {
+  const { matched, response } = await examReportsORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/exam-reports/rpc",
+    context: { hono: c },
+  });
+  if (matched) return c.newResponse(response.body, response);
+  return next();
+});
+
+app.use("/api/orpc/exam-reports/*", async (c, next) => {
+  const { matched, response } = await examReportsOpenAPIHandler.handle(createHonoORPCRequest(c), {
+    context: { hono: c },
+  });
+  if (matched) return c.newResponse(response.body, response);
+  return next();
+});
+
 // Share Target (PWA)
 
 // Dedicated external webhook ingress (Golden Standard 2026)
@@ -2005,7 +2838,39 @@ app.route("/api/webhooks/onedrive", onedriveWebhookRoutes);
 app.route("/api/webhooks/meta", waCloudWebhookRoutes);
 app.route("/api/wa-cloud/media", waCloudMediaRoutes);
 app.route("/api/wa-cloud/sse", waCloudSseRoutes);
+app.route("/api/icd11", icd11TokenRoutes);
+app.route("/api/certificates/medical", medicalCertificatePdfRoutes);
+app.route("/api/certificates/prescription", prescriptionPdfRoutes);
 app.route("/api/webhooks/mercadopago", mercadopagoReportWebhookRoutes);
+
+// Resend email webhooks (svix-signed). Suppresses recipients on permanent
+// bounce / spam complaint. Raw body is required for signature verification —
+// read it BEFORE any JSON parsing. Always 200 on accepted events so Resend's
+// retry backoff stops; 401 only on signature failure.
+app.post("/api/webhooks/resend", async (c) => {
+  const rawBody = await c.req.text();
+  const verified = verifyResendSignature(rawBody, {
+    svixId: c.req.header("svix-id") ?? null,
+    svixTimestamp: c.req.header("svix-timestamp") ?? null,
+    svixSignature: c.req.header("svix-signature") ?? null,
+  });
+  if (!verified) {
+    return c.json({ error: "invalid signature" }, 401);
+  }
+  let event: ResendWebhookEvent;
+  try {
+    event = JSON.parse(rawBody) as ResendWebhookEvent;
+  } catch {
+    return c.json({ error: "invalid payload" }, 400);
+  }
+  try {
+    await handleResendEvent(event);
+  } catch (err) {
+    // Don't make Resend retry forever on our DB hiccup — log + 200.
+    logError(err, { module: "api", operation: "webhook.resend", type: event.type });
+  }
+  return c.json({ ok: true }, 200);
+});
 
 // Bearer-auth ingress for the Doctoralia scraper bot (reads/writes manual cookies).
 app.route("/api/scraper/doctoralia", doctoraliaScraperRoutes);
@@ -2060,6 +2925,7 @@ app.onError((error, c) => {
         path: c.req.path,
         code: error.code,
       });
+      Sentry.captureException(error);
     }
 
     return errorReply(
@@ -2100,6 +2966,7 @@ app.onError((error, c) => {
     method: c.req.method,
     path: c.req.path,
   });
+  Sentry.captureException(error);
   return reply(
     c,
     { status: "error", code: "INTERNAL_ERROR", message: "Internal Server Error" },

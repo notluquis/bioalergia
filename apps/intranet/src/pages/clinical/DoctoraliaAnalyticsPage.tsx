@@ -1,10 +1,13 @@
 import { Button, Card, Chip, Description, Skeleton, Tabs } from "@heroui/react";
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+  useSuspenseQuery,
+} from "@tanstack/react-query";
 import type { ColumnDef, PaginationState } from "@tanstack/react-table";
 import { getRouteApi } from "@tanstack/react-router";
-import dayjs from "dayjs";
-import isoWeek from "dayjs/plugin/isoWeek";
 import { Activity, BarChart3, Mail, RefreshCw, TrendingUp, Users } from "lucide-react";
 import { lazy, startTransition, Suspense, useEffect, useMemo } from "react";
 import type React from "react";
@@ -25,12 +28,8 @@ import {
 } from "@/features/doctoralia/api";
 import type { DoctoraliaEmailNotification, DoctoraliaSyncLog } from "@/features/doctoralia/types";
 import { useLazyTabs } from "@/hooks/use-lazy-tabs";
+import { formatChile } from "@/lib/dates";
 import { numberFormatter } from "@/lib/format";
-
-import "dayjs/locale/es";
-
-dayjs.extend(isoWeek);
-dayjs.locale("es");
 
 type DoctoraliaTabId = "mensual" | "comparativa" | "pacientes" | "eventos" | "sincronizacion";
 
@@ -96,7 +95,7 @@ const notificationColumns: ColumnDef<DoctoraliaEmailNotification>[] = [
     accessorKey: "appointmentDate",
     cell: ({ row }) =>
       row.original.appointmentDate
-        ? dayjs(row.original.appointmentDate).tz().format("DD/MM/YYYY HH:mm")
+        ? formatChile(row.original.appointmentDate, "DD/MM/YYYY HH:mm")
         : "—",
     header: "Fecha cita",
   },
@@ -220,7 +219,7 @@ function formatCounts(counts: Record<string, number>): string {
 const syncLogColumns: ColumnDef<DoctoraliaSyncLog>[] = [
   {
     accessorKey: "startedAt",
-    cell: ({ row }) => dayjs(row.original.startedAt).tz().format("DD/MM/YYYY HH:mm"),
+    cell: ({ row }) => formatChile(row.original.startedAt, "DD/MM/YYYY HH:mm"),
     header: "Inicio",
   },
   {
@@ -367,7 +366,7 @@ function SyncTabPanel() {
               onPress={() => ingestMutation.mutate()}
               variant="primary"
             >
-              <RefreshCw className="h-4 w-4" />
+              <RefreshCw className="size-4" />
               Ingesta de emails
             </Button>
           </Card.Content>
@@ -446,7 +445,7 @@ export function DoctoraliaAnalyticsPage() {
   );
 
   return (
-    <div className="flex h-full min-h-full w-full flex-col gap-4 p-3 md:p-5">
+    <div className="flex min-h-full flex-col gap-4 p-3 md:p-5 size-full">
       <Tabs
         aria-label="Secciones de Doctoralia"
         className="flex min-h-0 flex-1 flex-col"

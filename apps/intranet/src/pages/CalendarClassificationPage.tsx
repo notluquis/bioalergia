@@ -14,7 +14,7 @@ import {
 import { CalendarActionModal } from "@/features/calendar/components/CalendarActionModal";
 import { ClassificationEmptyState } from "@/features/calendar/components/ClassificationEmptyState";
 import { ClassificationFilters } from "@/features/calendar/components/ClassificationFilters";
-import { ClassificationPagination } from "@/features/calendar/components/ClassificationPagination";
+import { AppPagination } from "@/components/pagination/AppPagination";
 import { ClassificationRow } from "@/features/calendar/components/ClassificationRow";
 import { ClassificationStats } from "@/features/calendar/components/ClassificationStats";
 import { ClassificationToolbar } from "@/features/calendar/components/ClassificationToolbar";
@@ -32,7 +32,6 @@ import { useJobProgress } from "@/hooks/use-job-progress";
 import { toast } from "@/lib/toast-interceptor";
 
 const routeApi = getRouteApi("/_authed/clinical/classify");
-import "dayjs/locale/es";
 
 const EMPTY_EVENTS: CalendarUnclassifiedEvent[] = [];
 const PAGE_SIZE = 50;
@@ -312,7 +311,9 @@ function CalendarClassificationPage() {
                 isSaving={savingKey === key}
                 key={key}
                 onReset={handleResetEntry}
-                onSave={handleSave}
+                onSave={(...args) => {
+                  void handleSave(...args);
+                }}
                 patchReadingChoices={patchReadingChoices}
                 testSubtypeChoices={testSubtypeChoices}
                 treatmentStageChoices={treatmentStageChoices}
@@ -322,7 +323,7 @@ function CalendarClassificationPage() {
         </div>
       )}
 
-      <ClassificationPagination
+      <AppPagination
         loading={loading}
         onPageChange={(nextPage) => handleSearchChange({ page: nextPage })}
         page={page}

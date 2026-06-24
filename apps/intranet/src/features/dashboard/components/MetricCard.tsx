@@ -47,11 +47,18 @@ const ACCENT_THEME: Record<
 };
 export function MetricCard({
   accent,
+  badgeLabel,
   loading,
   title,
   value,
 }: {
   accent: Accent;
+  /**
+   * Chip text. Defaults to the accent's label, but `accent` only encodes
+   * color — a card whose value flips sign (e.g. "Neto") must pass an
+   * explicit label so the chip doesn't claim "Egresos" on a rose accent.
+   */
+  badgeLabel?: string;
   loading: boolean;
   title: string;
   value: number;
@@ -72,9 +79,9 @@ export function MetricCard({
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2">
             <div
-              className={`flex h-10 w-10 items-center justify-center rounded-2xl bg-background/80 ring-1 ring-inset backdrop-blur-sm ${theme.ring}`}
+              className={`flex items-center justify-center rounded-2xl bg-background/80 ring-1 ring-inset backdrop-blur-sm size-10 ${theme.ring}`}
             >
-              <Icon className={`h-4 w-4 ${theme.iconColor}`} />
+              <Icon className={`size-4 ${theme.iconColor}`} />
             </div>
             <div className="space-y-1">
               <h2 className="font-medium text-default-700 text-xl/none">{title}</h2>
@@ -84,7 +91,7 @@ export function MetricCard({
           <span
             className={`inline-flex rounded-full px-3 py-1 font-semibold text-xs ${theme.badge}`}
           >
-            {theme.badgeLabel}
+            {badgeLabel ?? theme.badgeLabel}
           </span>
         </div>
         <p className={`font-semibold text-3xl leading-none tracking-tight ${theme.value}`}>

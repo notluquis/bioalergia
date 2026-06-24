@@ -1,6 +1,6 @@
 import { db } from "@finanzas/db";
 import { logEvent, logWarn } from "./logger.ts";
-import { sendPushNotification } from "../services/notifications.ts";
+import { sendPushNotification } from "./notifications.ts";
 
 // Security alert dispatcher with per-(scope, type) throttle. Wires
 // audit-worthy events (LOGIN_LOCKED, repeated MFA failures, lockout

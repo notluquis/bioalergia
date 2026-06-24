@@ -30,8 +30,8 @@ export const MINIMAL_CONFIG = {
     "u",
     "p",
     "br",
-  ],
-  ALLOWED_ATTR: [],
+  ] as string[],
+  ALLOWED_ATTR: [] as string[],
   KEEP_CONTENT: true,
 };
 
@@ -59,12 +59,12 @@ export const MODERATE_CONFIG = {
     "a",
     // Structure
     "div",
-  ],
+  ] as string[],
   ALLOWED_ATTR: [
     // Links only (href is validated by hook)
     "href",
     "title",
-  ],
+  ] as string[],
   KEEP_CONTENT: true,
 };
 
@@ -116,7 +116,7 @@ export const RICH_CONFIG = {
     "h6",
     // Images
     "img",
-  ],
+  ] as string[],
   ALLOWED_ATTR: [
     // Links
     "href",
@@ -137,7 +137,7 @@ export const RICH_CONFIG = {
     "class",
     "id",
     "style",
-  ],
+  ] as string[],
   // Allow data: URLs for images (common in email templates)
   ALLOW_DATA_ATTR: true,
   KEEP_CONTENT: true,
@@ -149,7 +149,7 @@ export const RICH_CONFIG = {
  *
  * Exported for reference, but prefer using sanitizeHtml(html, "rich") instead
  */
-export const SANITIZE_CONFIG = RICH_CONFIG;
+export const SANITIZE_CONFIG: typeof RICH_CONFIG = RICH_CONFIG;
 
 export interface SanitizeOptions {
   /**

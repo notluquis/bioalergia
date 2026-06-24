@@ -1,14 +1,16 @@
-import { Button, Link, Tooltip } from "@heroui/react";
+import { Button, Link, ScrollShadow, Surface, Tooltip } from "@heroui/react";
 import { useDebouncedValue } from "@tanstack/react-pacer";
 import { createFileRoute, getRouteApi, Outlet, useRouterState } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { InstallPrompt } from "@/components/features/InstallPrompt";
 import { UpdateNotification } from "@/components/features/UpdateNotification";
 import { Header } from "@/components/layouts/Header";
 import { BottomNav } from "@/components/layouts/MobileNav";
 import { DeploymentStatusChip } from "@/components/layouts/DeploymentStatusChip";
+import { RouteHeading } from "@/components/layouts/RouteHeading";
 import { Sidebar } from "@/components/layouts/Sidebar";
-import { useAuth } from "@/context/AuthContext";
-import { useSettings } from "@/context/SettingsContext";
+import { useAuth } from "@/features/auth/hooks/use-auth";
+import { useSettings } from "@/features/settings/hooks/use-settings";
 import type { AuthSessionData } from "@/features/auth/types";
 import { ability, updateAbility } from "@/lib/authz/ability";
 import { BUILD_TIMESTAMP } from "@/version";
@@ -66,7 +68,7 @@ function AuthedLayout() {
   const isNavigating = useRouterState({ select: (s) => s.status === "pending" });
   const contentPaddingClass = useRouterState({
     select: (s) => {
-      return s.location.pathname.startsWith("/clinical/day") ? "p-1 md:p-2" : "p-3 md:p-5";
+      return s.location.pathname.startsWith("/clinical/day") ? "p-1" : "p-2 md:p-3";
     },
   });
 
@@ -166,8 +168,13 @@ function AuthedLayout() {
 
   return (
     <>
+      {/* Skip-link golden 2026: single position (absolute), hidden via
+          large negative top + clip-path, revealed on focus by overriding
+          top + clip-path. Avoids the position-class conflict that
+          tailwindcss/no-conflicting-classes flags when mixing sr-only
+          (position:absolute) with `fixed`. */}
       <Link
-        className="sr-only fixed top-3 left-3 z-110 rounded-md bg-background px-3 py-2 font-semibold text-foreground shadow-lg focus:not-sr-only focus:outline-none focus:ring-2 focus:ring-primary/70"
+        className="absolute -top-32 left-3 z-110 [clip-path:inset(50%)] rounded-md bg-background px-3 py-2 font-semibold text-foreground shadow-lg focus:top-3 focus:[clip-path:none] focus:outline-none focus:ring-2 focus:ring-primary/70"
         href="#main-content"
       >
         Saltar al contenido principal
@@ -190,42 +197,16 @@ function AuthedLayout() {
           <div className="nav-progress__indicator" />
         </div>
       )}
-      {/* Layout Shell: Main Flex Container - Height constrained to dynamic viewport */}
-      <div className="layout-shell relative mx-auto flex h-dvh w-full gap-0 overflow-hidden p-0 text-foreground md:gap-4 md:p-4">
-        {/* Hamburger button: accessible, compact, always visible on mobile */}
-        <Button
-          id={menuToggleButtonId}
-          aria-controls={sidebarId}
-          aria-expanded={sidebarOpen}
-          aria-label={sidebarOpen ? "Cerrar menú principal" : "Abrir menú principal"}
-          aria-pressed={sidebarOpen}
-          className="fixed top-[calc(env(safe-area-inset-top)+0.5rem)] left-4 z-40 inline-flex items-center gap-2 rounded-full border border-default-200/70 bg-background/85 px-3 py-2 font-semibold text-foreground text-sm shadow-lg backdrop-blur-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-1 md:hidden"
-          onPress={toggleSidebar}
-          type="button"
-          variant="outline"
-        >
-          <span
-            aria-hidden="true"
-            className={`relative flex h-5 w-5 flex-col items-center justify-center gap-1.25 rounded-full ${
-              sidebarOpen ? "text-primary" : "text-foreground"
-            }`}
-          >
-            <span
-              className={`block h-0.5 w-4 rounded-full bg-current ${
-                sidebarOpen ? "absolute translate-y-0 rotate-45" : ""
-              }`}
-            />
-
-            <span
-              className={`block h-0.5 w-4 rounded-full bg-current ${
-                sidebarOpen ? "absolute translate-y-0 -rotate-45" : ""
-              }`}
-            />
-          </span>
-          <span className="font-medium text-xs uppercase tracking-wide">
-            {sidebarOpen ? "Cerrar" : "Menú"}
-          </span>
-        </Button>
+      {/* Layout Shell.
+          Mobile: `min-h-dvh`, no overflow clamp — the document/body is the
+          scroll container (golden-2026: native momentum, pull-to-refresh,
+          scroll restoration, iOS URL-bar collapse all work; a sticky
+          Header + fixed BottomNav supply the chrome).
+          ≥md: `h-dvh` + `overflow-hidden` — fixed app shell with the inset
+          card scrolling internally (persistent sidebar rail + footer). */}
+      <div className="layout-shell relative mx-auto flex min-h-dvh w-full gap-0 p-0 text-foreground md:h-dvh md:gap-4 md:overflow-hidden md:p-4">
+        {/* Mobile nav toggle lives in-flow inside <Header> (see Header.tsx) —
+            no fixed positioning, so it can't overlap the breadcrumb. */}
 
         {/* Sidebar */}
         <Sidebar
@@ -236,17 +217,34 @@ function AuthedLayout() {
         />
 
         {/* Main content */}
-        <div className="layout-container flex min-w-0 flex-1 flex-col gap-3 pt-[calc(env(safe-area-inset-top)+0.25rem)] pb-[calc(110px+env(safe-area-inset-bottom))] md:pt-0 md:pb-0">
-          <Header />
+        <div className="layout-container flex min-w-0 flex-1 flex-col gap-1 pt-[calc(env(safe-area-inset-top)+0.25rem)] pb-[calc(110px+env(safe-area-inset-bottom))] md:py-0">
+          <Header onMenuToggle={toggleSidebar} sidebarId={sidebarId} sidebarOpen={sidebarOpen} />
 
-          <main className="flex-1 overflow-hidden rounded-3xl " id="main-content" tabIndex={-1}>
-            <div className="surface-recessed h-full w-full overflow-hidden rounded-3xl border border-default-100/50 bg-background/50 shadow-inner">
-              <div
-                className={`h-full w-full overflow-y-auto overflow-x-hidden ${contentPaddingClass}`}
+          {/* Mobile: content flows in the document — no nested scroll, no
+              `overflow-x` clamp (a clamp would silently clip real overflow
+              bugs that layout-integrity.spec is meant to catch).
+              ≥md: the inset recessed card scrolls internally. */}
+          <main
+            className="flex-1 md:overflow-hidden md:rounded-3xl"
+            id="main-content"
+            tabIndex={-1}
+          >
+            <RouteHeading />
+            {/* Mobile: content sits directly on the page — no decorative
+                recessed card (rounded border + inner shadow is desktop
+                chrome that just eats width on a 375px screen).
+                ≥md: the inset recessed card with its own scroll. */}
+            <Surface
+              variant="transparent"
+              className="w-full md:size-full md:overflow-hidden md:rounded-3xl md:border md:border-default-100/50 md:bg-background/50 md:shadow-inner"
+            >
+              <ScrollShadow
+                hideScrollBar
+                className={`${contentPaddingClass} md:size-full md:overflow-x-hidden`}
               >
                 <Outlet />
-              </div>
-            </div>
+              </ScrollShadow>
+            </Surface>
           </main>
 
           <footer className="surface-elevated hidden px-4 py-2 text-foreground text-sm md:flex md:px-6">
@@ -265,7 +263,7 @@ function AuthedLayout() {
                     </Button>
                   </Tooltip.Trigger>
                   <Tooltip.Content
-                    className="select-none whitespace-nowrap break-normal wrap-normal"
+                    className="select-none whitespace-nowrap"
                     placement="top"
                     showArrow
                   >
@@ -285,6 +283,9 @@ function AuthedLayout() {
 
         {/* Update notification popup */}
         <UpdateNotification />
+
+        {/* PWA install affordance (Android/desktop prompt + iOS add-to-home hint) */}
+        <InstallPrompt />
       </div>
     </>
   );

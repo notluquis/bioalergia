@@ -12,12 +12,12 @@ export function PerformanceIndicator() {
     >
       {mode === "high" ? (
         <>
-          <Zap className="h-3.5 w-3.5 text-success" />
+          <Zap className="text-success size-3.5" />
           <span className="font-medium text-success">Alto rendimiento</span>
         </>
       ) : (
         <>
-          <ZapOff className="h-3.5 w-3.5 text-warning" />
+          <ZapOff className="text-warning size-3.5" />
           <span className="font-medium text-warning">Optimizado</span>
         </>
       )}

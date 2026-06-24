@@ -2,10 +2,10 @@
  * Statistics Data Hook
  */
 
-import { useSuspenseQuery } from "@tanstack/react-query";
-import dayjs from "dayjs";
+import { useSuspenseQueries } from "@tanstack/react-query";
 import { useState } from "react";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/features/auth/hooks/use-auth";
+import { addMonths, today } from "@/lib/dates";
 import { balanceKeys } from "@/features/finance/balances/queries";
 import type { BalancesApiResponse } from "@/features/finance/balances/types";
 import { statsKeys } from "../queries";
@@ -30,21 +30,19 @@ interface UseStatsDataResult {
 
 export function useStatsData(): UseStatsDataResult {
   const { can } = useAuth();
-  const [from, setFrom] = useState(
-    dayjs().subtract(3, "month").startOf("month").format("YYYY-MM-DD")
-  );
-  const [to, setTo] = useState(dayjs().format("YYYY-MM-DD"));
+  const [from, setFrom] = useState(addMonths(today(), -3));
+  const [to, setTo] = useState(today());
 
   const canView = can("read", "Transaction");
 
-  // Stats query
-  const statsQuery = useSuspenseQuery(statsKeys.main(from, to));
-
-  // Balances query
-  const balancesQuery = useSuspenseQuery(balanceKeys.range(from, to));
-
-  // Top participants query
-  const participantsQuery = useSuspenseQuery(statsKeys.participants(from, to));
+  // Parallel suspense — fire stats, balances, and participants at once (no waterfall)
+  const [statsQuery, balancesQuery, participantsQuery] = useSuspenseQueries({
+    queries: [
+      statsKeys.main(from, to),
+      balanceKeys.range(from, to),
+      statsKeys.participants(from, to),
+    ],
+  });
 
   const refetch = async () => {
     if (!canView) {

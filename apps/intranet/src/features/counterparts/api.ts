@@ -7,6 +7,7 @@ import {
   counterpartSummaryResponseSchema,
   counterpartsResponseSchema,
   counterpartsSyncResponseSchema,
+  payoutAccountMovementsResponseSchema,
   unassignedPayoutAccountsResponseSchema,
 } from "@finanzas/orpc-contracts/counterparts";
 import {
@@ -107,6 +108,24 @@ export async function fetchUnassignedPayoutAccounts(params?: {
         page: params?.page ?? 1,
         pageSize: params?.pageSize ?? 20,
         query: params?.query?.trim() || undefined,
+      })
+    );
+  } catch (error) {
+    throw toCounterpartsApiError(error);
+  }
+}
+
+export async function fetchPayoutAccountMovements(params: {
+  account: string;
+  page?: number;
+  pageSize?: number;
+}) {
+  try {
+    return payoutAccountMovementsResponseSchema.parse(
+      await counterpartsORPCClient.payoutAccountMovements({
+        account: params.account,
+        page: params.page ?? 1,
+        pageSize: params.pageSize ?? 50,
       })
     );
   } catch (error) {

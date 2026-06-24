@@ -1,10 +1,11 @@
 import { Breadcrumbs, Button } from "@heroui/react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Loader2, LogOut, Moon, Sun } from "lucide-react";
+import { Loader2, LogOut, Menu, Moon, Sun, X } from "lucide-react";
 
-import { useAuth } from "@/context/AuthContext";
+import { useTheme } from "next-themes";
+
+import { useAuth } from "@/features/auth/hooks/use-auth";
 import { NotificationHistory } from "@/features/notifications/components/NotificationHistory";
-import { useTheme } from "@/hooks/use-theme";
 
 import { Clock } from "../features/Clock";
 
@@ -57,8 +58,19 @@ const getFallbackLabelFromPathname = (pathname: string) => {
   return decoded.charAt(0).toUpperCase() + decoded.slice(1);
 };
 
-export function Header() {
-  const { isDark, resolvedTheme, toggleTheme } = useTheme();
+interface HeaderProps {
+  /** Mobile drawer-nav toggle. The button lives in-flow as the first
+   *  header child (no fixed positioning → no overlap with the breadcrumb,
+   *  the May-2026 mobile bug). Hidden ≥md where the sidebar is a rail. */
+  readonly onMenuToggle?: () => void;
+  readonly sidebarOpen?: boolean;
+  readonly sidebarId?: string;
+}
+
+export function Header({ onMenuToggle, sidebarId, sidebarOpen = false }: HeaderProps) {
+  const { resolvedTheme, setTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
+  const toggleTheme = () => setTheme(isDark ? "light" : "dark");
   const routerStatus = useRouterState({ select: (s) => s.status });
   const navigate = useNavigate();
   const { logout } = useAuth();
@@ -93,32 +105,50 @@ export function Header() {
   };
 
   return (
-    <header className="surface-elevated sticky top-0 z-30 px-4 py-3 md:px-6">
+    <header className="surface-elevated sticky top-0 z-30 px-4 py-1.5 md:px-6">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div className="min-w-0 flex-1">
-          {showBreadcrumbs ? (
-            <Breadcrumbs className="font-medium text-default-500 text-xs">
-              {breadcrumbItems.map((crumb) => {
-                const isOnlyBreadcrumb = breadcrumbItems.length === 1;
-                return (
-                  <Breadcrumbs.Item key={`${crumb.to}-${crumb.label}`}>
-                    {!isOnlyBreadcrumb ? (
-                      <Link className=" hover:text-foreground" to={crumb.to}>
-                        {crumb.label}
-                      </Link>
-                    ) : (
-                      crumb.label
-                    )}
-                  </Breadcrumbs.Item>
-                );
-              })}
-            </Breadcrumbs>
-          ) : null}
-          {isNavigating && (
-            <span className="mt-1 flex items-center gap-1 font-semibold text-primary text-xs">
-              <Loader2 className="h-3 w-3 " />
-            </span>
+        <div className="flex min-w-0 flex-1 items-center gap-2">
+          {onMenuToggle && (
+            <Button
+              id="mobile-menu-toggle"
+              aria-controls={sidebarId}
+              aria-expanded={sidebarOpen}
+              aria-label={sidebarOpen ? "Cerrar menú principal" : "Abrir menú principal"}
+              className="shrink-0 md:hidden"
+              isIconOnly
+              onPress={onMenuToggle}
+              size="sm"
+              type="button"
+              variant="secondary"
+            >
+              {sidebarOpen ? <X className="size-4" /> : <Menu className="size-4" />}
+            </Button>
           )}
+          <div className="min-w-0 flex-1 overflow-x-auto" data-scrollbar="none">
+            {showBreadcrumbs ? (
+              <Breadcrumbs className="whitespace-nowrap font-medium text-default-500 text-xs">
+                {breadcrumbItems.map((crumb) => {
+                  const isOnlyBreadcrumb = breadcrumbItems.length === 1;
+                  return (
+                    <Breadcrumbs.Item key={`${crumb.to}-${crumb.label}`}>
+                      {!isOnlyBreadcrumb ? (
+                        <Link className=" hover:text-foreground" to={crumb.to}>
+                          {crumb.label}
+                        </Link>
+                      ) : (
+                        crumb.label
+                      )}
+                    </Breadcrumbs.Item>
+                  );
+                })}
+              </Breadcrumbs>
+            ) : null}
+            {isNavigating && (
+              <span className="mt-1 flex items-center gap-1 font-semibold text-primary text-xs">
+                <Loader2 className="size-3 " />
+              </span>
+            )}
+          </div>
         </div>
 
         <div className="ml-0 flex shrink-0 flex-col items-start gap-2 md:ml-4 md:items-end">
@@ -136,7 +166,7 @@ export function Header() {
               onPress={toggleTheme}
               variant="secondary"
             >
-              {isDark ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+              {isDark ? <Moon className="size-4" /> : <Sun className="size-4" />}
             </Button>
             <Button
               isIconOnly
@@ -147,7 +177,7 @@ export function Header() {
               }}
               variant="danger"
             >
-              <LogOut className="h-4 w-4" />
+              <LogOut className="size-4" />
             </Button>
           </div>
         </div>

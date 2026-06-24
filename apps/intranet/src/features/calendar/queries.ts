@@ -33,7 +33,10 @@ export const calendarKeys = {
   ) => ["calendar", "treatment-analytics", filters, granularity ?? "all"] as const,
   unclassified: (page: number, pageSize: number, filters: MissingFieldFilters) =>
     ["calendar-unclassified", page, pageSize, filters] as const,
-  list: ["calendars"] as const,
+  // Under the ["calendar"] root (was the disjoint sibling ["calendars"]) so a
+  // broad invalidateQueries(calendarKeys.all) after a sync also refreshes the
+  // calendar-list dropdown.
+  list: ["calendar", "list"] as const,
 };
 
 export const calendarDteLinkKeys = {

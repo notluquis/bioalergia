@@ -33,6 +33,15 @@ export const clinicalRecordMatchCandidateSchema = z.object({
   reason: z.string(),
 });
 
+// FHIR-mappable extra payload sections. v1 stores free-text strings;
+// v2 can swap to {condition,onset,…} objects without changing the
+// shape of the parent record because the column is JSONB on the DB
+// side.
+export const clinicalRecordAntecedentsSchema = z.object({
+  personal: z.array(z.string()),
+  family: z.array(z.string()),
+});
+
 export const clinicalRecordParsedPayloadSchema = z.object({
   consultDate: z.string().nullable(),
   patientName: z.string().nullable(),
@@ -41,6 +50,10 @@ export const clinicalRecordParsedPayloadSchema = z.object({
   physicalExam: z.string().nullable(),
   diagnosis: z.string().nullable(),
   indications: z.array(z.string()),
+  antecedents: clinicalRecordAntecedentsSchema.optional(),
+  medications: z.array(z.string()).optional(),
+  knownAllergies: z.array(z.string()).optional(),
+  observations: z.string().nullable().optional(),
   weightKg: z.number().nullable(),
   heightCm: z.number().nullable(),
   headCircumferenceCm: z.number().nullable(),
@@ -83,6 +96,10 @@ export const clinicalRecordSchema = z.object({
   physicalExam: z.string().nullable(),
   diagnosis: z.string().nullable(),
   indications: z.array(z.string()),
+  antecedents: clinicalRecordAntecedentsSchema.nullable(),
+  medications: z.array(z.string()),
+  knownAllergies: z.array(z.string()),
+  observations: z.string().nullable(),
   weightKg: z.number().nullable(),
   heightCm: z.number().nullable(),
   headCircumferenceCm: z.number().nullable(),
@@ -93,6 +110,47 @@ export const clinicalRecordSchema = z.object({
 });
 
 const idInput = z.object({ id: z.string().min(1) });
+
+export const clinicalRecordJobStatusSchema = z.object({
+  id: z.string(),
+  type: z.string(),
+  status: z.enum(["pending", "running", "completed", "failed", "cancelled"]),
+  progress: z.number().int(),
+  total: z.number().int(),
+  message: z.string(),
+  meta: z.record(z.string(), z.unknown()).nullable(),
+  result: z
+    .object({
+      processed: z.number().int(),
+      imported: z.number().int(),
+      pending: z.number().int(),
+      errors: z.number().int(),
+    })
+    .nullable(),
+  error: z.string().nullable(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+});
+
+export const clinicalRecordAnalyticsSchema = z.object({
+  byStatus: z.array(
+    z.object({ status: clinicalRecordImportStatusSchema, count: z.number().int() })
+  ),
+  totals: z.object({
+    imports: z.number().int(),
+    imported: z.number().int(),
+    pending: z.number().int(),
+    discovered: z.number().int(),
+    errors: z.number().int(),
+    rejected: z.number().int(),
+  }),
+  // imported / (imported + pending + rejected), 0..1
+  matchRate: z.number(),
+  records: z.object({ total: z.number().int(), withDate: z.number().int() }),
+  byMonth: z.array(z.object({ month: z.string(), count: z.number().int() })),
+  topDiagnoses: z.array(z.object({ label: z.string(), count: z.number().int() })),
+  topPatients: z.array(z.object({ patientName: z.string(), count: z.number().int() })),
+});
 
 export const clinicalRecordsContract = {
   listImports: oc
@@ -159,6 +217,69 @@ export const clinicalRecordsContract = {
         records: z.array(clinicalRecordSchema),
       })
     ),
+
+  startBulkReprocess: oc
+    .route({ method: "POST", path: "/imports/bulk-reprocess/start", tags: ["Clinical Records"] })
+    .input(z.object({ maxImports: z.number().int().positive().optional() }))
+    .output(z.object({ jobId: z.string() })),
+
+  getBulkJob: oc
+    .route({ method: "POST", path: "/imports/bulk-reprocess/status", tags: ["Clinical Records"] })
+    .input(z.object({ jobId: z.string().min(1) }))
+    .output(z.object({ job: clinicalRecordJobStatusSchema.nullable() })),
+
+  cancelBulkJob: oc
+    .route({ method: "POST", path: "/imports/bulk-reprocess/cancel", tags: ["Clinical Records"] })
+    .input(z.object({ jobId: z.string().min(1) }))
+    .output(z.object({ cancelled: z.boolean() })),
+
+  getActiveBulkJob: oc
+    .route({ method: "POST", path: "/imports/bulk-reprocess/active", tags: ["Clinical Records"] })
+    .input(z.object({}))
+    .output(z.object({ job: clinicalRecordJobStatusSchema.nullable() })),
+
+  // Multi-select queue actions (operator picks rows on the current page).
+  approveImports: oc
+    .route({ method: "POST", path: "/imports/approve-many", tags: ["Clinical Records"] })
+    .input(
+      z.object({
+        items: z
+          .array(
+            z.object({
+              id: z.string().min(1),
+              patientId: z.number().int().positive(),
+            })
+          )
+          .min(1)
+          .max(200),
+        notes: z.string().optional(),
+      })
+    )
+    .output(
+      z.object({
+        approved: z.number().int(),
+        errors: z.array(z.object({ id: z.string(), message: z.string() })),
+      })
+    ),
+
+  rejectImports: oc
+    .route({ method: "POST", path: "/imports/reject-many", tags: ["Clinical Records"] })
+    .input(
+      z.object({ ids: z.array(z.string().min(1)).min(1).max(200), notes: z.string().optional() })
+    )
+    .output(z.object({ rejected: z.number().int() })),
+
+  // Auto-approve every PENDING_REVIEW import whose top match candidate clears
+  // the score threshold. Runs as a background job (same status schema).
+  startAutoApprove: oc
+    .route({ method: "POST", path: "/imports/auto-approve/start", tags: ["Clinical Records"] })
+    .input(z.object({ minScore: z.number().min(0).max(1).default(0.9) }))
+    .output(z.object({ jobId: z.string() })),
+
+  analytics: oc
+    .route({ method: "POST", path: "/analytics", tags: ["Clinical Records"] })
+    .input(z.object({ dateFrom: z.string().optional(), dateTo: z.string().optional() }))
+    .output(clinicalRecordAnalyticsSchema),
 };
 
 export type ClinicalRecordsContract = typeof clinicalRecordsContract;

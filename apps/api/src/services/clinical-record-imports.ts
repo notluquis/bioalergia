@@ -1,15 +1,28 @@
-import { db, kysely } from "@finanzas/db";
-import { sql } from "kysely";
+import { createId } from "@paralleldrive/cuid2";
+import { kysely } from "@finanzas/db";
+import type { SchemaType } from "@finanzas/db/schema";
+import { sql, type Transaction } from "kysely";
 import { logAuditEvent } from "../lib/audit-log.ts";
+import { type AuditRowChangeInput, flushRowChangeAudits } from "../lib/audit-diff.ts";
 import { DomainError } from "../lib/errors.ts";
 import { downloadOneDriveItem } from "../lib/microsoft/onedrive.ts";
 import { logEvent, logWarn } from "../lib/logger.ts";
 import { matchPatientForRecord } from "../modules/clinical-records/match.ts";
+
+type Trx = Transaction<SchemaType>;
 import {
   CLINICAL_RECORD_PARSER_VERSION,
+  parseClinicalRecordRows,
   parseClinicalRecordWorkbook,
   type ParsedClinicalRecord,
 } from "../modules/clinical-records/parser.ts";
+import {
+  findXlsxFileByOneDriveItem,
+  isSnapshotFresh,
+  persistXlsxFileSnapshot,
+  readXlsxFileSnapshot,
+  snapshotToRows,
+} from "./xlsx-snapshot.ts";
 
 // Reprocess pipeline for clinical_record_imports. Mirror of
 // services/clinical-skin-test-imports.reprocessSkinTestImport but for
@@ -65,38 +78,54 @@ function computeResultHash(p: ParsedClinicalRecord): string {
 }
 
 async function ensureClinicalSeries(
+  trx: Trx,
   patientId: number,
   patientName: string | null
 ): Promise<number> {
   // One MEDICAL_CONSULTATION series per patient holds every ficha
-  // clínica row — the timeline orders by consult_date.
+  // clínica row — the timeline orders by consult_date. Runs inside the
+  // caller's transaction so the find-or-create cannot race two parallel
+  // workers into creating two sibling series for the same patient.
   const existing = await sql<{ id: number }>`
     SELECT id FROM clinical_series
     WHERE patient_id = ${patientId} AND kind = 'MEDICAL_CONSULTATION'
     ORDER BY id ASC LIMIT 1
-  `.execute(kysely);
+  `.execute(trx);
   if (existing.rows[0]) return existing.rows[0].id;
   const created = await sql<{ id: number }>`
     INSERT INTO clinical_series (kind, status, display_name, patient_id, patient_name, created_at, updated_at)
     VALUES ('MEDICAL_CONSULTATION', 'ACTIVE', ${patientName ? `${patientName} · Fichas clínicas` : "Fichas clínicas"}, ${patientId}, ${patientName}, now(), now())
     RETURNING id
-  `.execute(kysely);
-  return created.rows[0]!.id;
+  `.execute(trx);
+  return created.rows[0].id;
 }
 
 async function materializeRecord(
+  trx: Trx,
   importId: string,
   parsed: ParsedClinicalRecord,
   clinicalSeriesId: number,
-  resultHash: string
+  resultHash: string,
+  pendingAudits: AuditRowChangeInput[]
 ): Promise<void> {
   // UPSERT on source_import_id keeps the row stable across reprocess.
-  await sql`
+  // RETURNING old/new (PG18) audita qué campos clínicos cambian al reprocesar.
+  const upserted = await sql<{
+    old_result_hash: string | null;
+    new_result_hash: string;
+    old_patient_name: string | null;
+    new_patient_name: string | null;
+    old_diagnosis: string | null;
+    new_diagnosis: string | null;
+    old_consult_date: string | null;
+    new_consult_date: string | null;
+  }>`
     INSERT INTO clinical_records (
       id, clinical_series_id, source_import_id,
       consult_date, patient_name, age_label,
       history, physical_exam, diagnosis,
       indications,
+      antecedents, medications, known_allergies, observations,
       weight_kg, height_cm, head_circumference_cm,
       anthropometric, raw_header, raw_sections, result_hash,
       created_at, updated_at
@@ -107,6 +136,10 @@ async function materializeRecord(
       ${parsed.patientName}, ${parsed.ageLabel},
       ${parsed.history}, ${parsed.physicalExam}, ${parsed.diagnosis},
       ${JSON.stringify(parsed.indications)}::jsonb,
+      ${JSON.stringify(parsed.antecedents)}::jsonb,
+      ${JSON.stringify(parsed.medications)}::jsonb,
+      ${JSON.stringify(parsed.knownAllergies)}::jsonb,
+      ${parsed.observations},
       ${parsed.weightKg}, ${parsed.heightCm}, ${parsed.headCircumferenceCm},
       ${JSON.stringify(parsed.anthropometric)}::jsonb,
       ${JSON.stringify(parsed.rawHeader)}::jsonb,
@@ -123,6 +156,10 @@ async function materializeRecord(
       physical_exam = EXCLUDED.physical_exam,
       diagnosis = EXCLUDED.diagnosis,
       indications = EXCLUDED.indications,
+      antecedents = EXCLUDED.antecedents,
+      medications = EXCLUDED.medications,
+      known_allergies = EXCLUDED.known_allergies,
+      observations = EXCLUDED.observations,
       weight_kg = EXCLUDED.weight_kg,
       height_cm = EXCLUDED.height_cm,
       head_circumference_cm = EXCLUDED.head_circumference_cm,
@@ -131,7 +168,35 @@ async function materializeRecord(
       raw_sections = EXCLUDED.raw_sections,
       result_hash = EXCLUDED.result_hash,
       updated_at = now()
-  `.execute(kysely);
+    RETURNING
+      old.result_hash AS old_result_hash, new.result_hash AS new_result_hash,
+      old.patient_name AS old_patient_name, new.patient_name AS new_patient_name,
+      old.diagnosis AS old_diagnosis, new.diagnosis AS new_diagnosis,
+      old.consult_date AS old_consult_date, new.consult_date AS new_consult_date
+  `.execute(trx);
+
+  // Solo audita updates con cambio real de contenido (old != null y hash distinto).
+  // Se acumula y se vacía DESPUÉS del commit (auditar hechos persistidos).
+  const row = upserted.rows[0];
+  if (row && row.old_result_hash != null && row.old_result_hash !== row.new_result_hash) {
+    pendingAudits.push({
+      kind: "IMPORT_UPSERT",
+      resource: "clinical_record",
+      resourceId: `crr_${importId}`,
+      oldRow: {
+        result_hash: row.old_result_hash,
+        patient_name: row.old_patient_name,
+        diagnosis: row.old_diagnosis,
+        consult_date: row.old_consult_date,
+      },
+      newRow: {
+        result_hash: row.new_result_hash,
+        patient_name: row.new_patient_name,
+        diagnosis: row.new_diagnosis,
+        consult_date: row.new_consult_date,
+      },
+    });
+  }
 }
 
 export async function reprocessClinicalRecordImport(id: string): Promise<{
@@ -139,49 +204,96 @@ export async function reprocessClinicalRecordImport(id: string): Promise<{
   reason?: string;
   candidates?: number;
 }> {
-  // Per-import advisory lock serializes concurrent reprocess workers
-  // on the same row across replicas, preventing the parsed-payload
-  // race that would otherwise produce inconsistent clinical_records
-  // rows. Auto-released at transaction commit/rollback.
-  return kysely.transaction().execute(async (trx) => {
+  // Download + parse run OUTSIDE the transaction so a slow OneDrive
+  // fetch doesn't hold a Postgres connection (default pool size 10).
+  // The DB-touching work then runs inside a single transaction with
+  // the per-import advisory lock, so concurrent workers on the same
+  // id serialise + every UPDATE/UPSERT participates in the lock.
+  const row = await loadImport(id);
+  if (!row) throw new DomainError("NOT_FOUND", `Import ${id} not found`);
+
+  // Prefer the shared snapshot: if the scanned library has a fresh first-sheet
+  // snapshot for this OneDrive item, re-parse from DB and skip the download
+  // entirely. Otherwise download once, parse, and archive the snapshot so the
+  // next reprocess is free.
+  let parsed: ParsedClinicalRecord | null = null;
+  const xlsxFile = await findXlsxFileByOneDriveItem(
+    row.oneDriveAccountId,
+    row.oneDriveDriveId,
+    row.oneDriveItemId
+  );
+  if (xlsxFile) {
+    const snap = await readXlsxFileSnapshot(xlsxFile.id);
+    if (
+      snap &&
+      isSnapshotFresh(snap, { etag: xlsxFile.etag, ctag: xlsxFile.ctag }) &&
+      snap.snapshot
+    ) {
+      parsed = parseClinicalRecordRows(snapshotToRows(snap.snapshot));
+    }
+  }
+
+  if (!parsed) {
+    let buffer: Buffer;
+    try {
+      buffer = await downloadOneDriveItem(
+        row.oneDriveAccountId ?? "",
+        row.oneDriveItemId,
+        row.oneDriveDriveId ?? undefined
+      );
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      await sql`
+        UPDATE clinical_record_imports
+        SET status = 'ERROR', error = ${msg}, parser_version = ${CLINICAL_RECORD_PARSER_VERSION},
+            updated_at = now()
+        WHERE id = ${id}
+      `.execute(kysely);
+      return { status: "ERROR", reason: msg };
+    }
+    parsed = parseClinicalRecordWorkbook(buffer);
+    // Archive for next time (best-effort; only when the library row exists).
+    if (xlsxFile) {
+      try {
+        await persistXlsxFileSnapshot(xlsxFile.id, buffer, {
+          etag: xlsxFile.etag,
+          ctag: xlsxFile.ctag,
+        });
+      } catch (err) {
+        logWarn("[clinical-record] snapshot archive failed", {
+          id,
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
+    }
+  }
+
+  // Acumular audits dentro de la tx; vaciarlos solo si commitea (hechos persistidos).
+  const pendingAudits: AuditRowChangeInput[] = [];
+  const result = await kysely.transaction().execute(async (trx) => {
     await sql`SELECT pg_advisory_xact_lock(hashtextextended(${`cri:${id}`}, 0))`.execute(trx);
-    return reprocessInLock(id);
+    return reprocessInLock(trx, id, parsed, pendingAudits);
   });
+  await flushRowChangeAudits(pendingAudits);
+  return result;
 }
 
-async function reprocessInLock(id: string): Promise<{
+async function reprocessInLock(
+  trx: Trx,
+  id: string,
+  parsed: ParsedClinicalRecord,
+  pendingAudits: AuditRowChangeInput[]
+): Promise<{
   status: "IMPORTED" | "PENDING_REVIEW" | "ERROR";
   reason?: string;
   candidates?: number;
 }> {
-  const row = await loadImport(id);
-  if (!row) throw new DomainError("NOT_FOUND", `Import ${id} not found`);
-
-  let buffer: Buffer;
-  try {
-    buffer = await downloadOneDriveItem(
-      row.oneDriveAccountId ?? "",
-      row.oneDriveItemId,
-      row.oneDriveDriveId ?? undefined
-    );
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    await sql`
-      UPDATE clinical_record_imports
-      SET status = 'ERROR', error = ${msg}, parser_version = ${CLINICAL_RECORD_PARSER_VERSION},
-          updated_at = now()
-      WHERE id = ${id}
-    `.execute(kysely);
-    return { status: "ERROR", reason: msg };
-  }
-
-  const parsed = parseClinicalRecordWorkbook(buffer);
   const resultHash = computeResultHash(parsed);
   const match = await matchPatientForRecord(parsed);
 
   if (match.matchedPatientId) {
-    const seriesId = await ensureClinicalSeries(match.matchedPatientId, parsed.patientName);
-    await materializeRecord(id, parsed, seriesId, resultHash);
+    const seriesId = await ensureClinicalSeries(trx, match.matchedPatientId, parsed.patientName);
+    await materializeRecord(trx, id, parsed, seriesId, resultHash, pendingAudits);
     await sql`
       UPDATE clinical_record_imports SET
         status = 'IMPORTED',
@@ -197,6 +309,10 @@ async function reprocessInLock(id: string): Promise<{
           physicalExam: parsed.physicalExam,
           diagnosis: parsed.diagnosis,
           indications: parsed.indications,
+          antecedents: parsed.antecedents,
+          medications: parsed.medications,
+          knownAllergies: parsed.knownAllergies,
+          observations: parsed.observations,
           weightKg: parsed.weightKg,
           heightCm: parsed.heightCm,
           headCircumferenceCm: parsed.headCircumferenceCm,
@@ -210,7 +326,7 @@ async function reprocessInLock(id: string): Promise<{
         imported_at = now(),
         updated_at = now()
       WHERE id = ${id}
-    `.execute(kysely);
+    `.execute(trx);
     logEvent("[clinical-record.import] materialized", {
       id,
       patientId: match.matchedPatientId,
@@ -262,7 +378,7 @@ async function reprocessInLock(id: string): Promise<{
       match_candidates = ${JSON.stringify(match.candidates)}::jsonb,
       updated_at = now()
     WHERE id = ${id}
-  `.execute(kysely);
+  `.execute(trx);
   return { status: "PENDING_REVIEW", candidates: match.candidates.length };
 }
 
@@ -283,33 +399,45 @@ export async function approveClinicalRecordImport(
   if (!parsed) {
     throw new DomainError("UNPROCESSABLE_ENTITY", "Import has no parsed payload — reprocess first");
   }
-  const seriesId = await ensureClinicalSeries(patientId, parsed.patientName ?? null);
-  await materializeRecord(
-    id,
-    {
-      ...parsed,
-      indications: parsed.indications ?? [],
-      anthropometric: parsed.anthropometric ?? {},
-      rawHeader: parsed.rawHeader ?? {},
-      rawSections: parsed.rawSections ?? {},
-      issues: parsed.issues ?? [],
-      confidence: parsed.confidence ?? 0,
-    } as ParsedClinicalRecord,
-    seriesId,
-    r.rows[0]?.resultHash ?? ""
-  );
-  await sql`
-    UPDATE clinical_record_imports SET
-      status = 'IMPORTED',
-      matched_patient_id = ${patientId},
-      matched_clinical_series_id = ${seriesId},
-      reviewed_by = ${reviewedBy},
-      reviewed_at = now(),
-      review_notes = ${notes ?? null},
-      imported_at = now(),
-      updated_at = now()
-    WHERE id = ${id}
-  `.execute(kysely);
+  const pendingAudits: AuditRowChangeInput[] = [];
+  const seriesId = await kysely.transaction().execute(async (trx) => {
+    await sql`SELECT pg_advisory_xact_lock(hashtextextended(${`cri:${id}`}, 0))`.execute(trx);
+    const sid = await ensureClinicalSeries(trx, patientId, parsed.patientName ?? null);
+    await materializeRecord(
+      trx,
+      id,
+      {
+        ...parsed,
+        indications: parsed.indications ?? [],
+        antecedents: parsed.antecedents ?? { personal: [], family: [] },
+        medications: parsed.medications ?? [],
+        knownAllergies: parsed.knownAllergies ?? [],
+        observations: parsed.observations ?? null,
+        anthropometric: parsed.anthropometric ?? {},
+        rawHeader: parsed.rawHeader ?? {},
+        rawSections: parsed.rawSections ?? {},
+        issues: parsed.issues ?? [],
+        confidence: parsed.confidence ?? 0,
+      } as ParsedClinicalRecord,
+      sid,
+      r.rows[0]?.resultHash ?? "",
+      pendingAudits
+    );
+    await sql`
+      UPDATE clinical_record_imports SET
+        status = 'IMPORTED',
+        matched_patient_id = ${patientId},
+        matched_clinical_series_id = ${sid},
+        reviewed_by = ${reviewedBy},
+        reviewed_at = now(),
+        review_notes = ${notes ?? null},
+        imported_at = now(),
+        updated_at = now()
+      WHERE id = ${id}
+    `.execute(trx);
+    return sid;
+  });
+  await flushRowChangeAudits(pendingAudits);
   await logAuditEvent({
     kind: "OTHER",
     userId: reviewedBy,
@@ -344,6 +472,131 @@ export async function rejectClinicalRecordImport(
     message: "import_rejected",
     metadata: { notes: notes ?? null },
   });
+}
+
+// OneDrive item metadata needed to enqueue a ficha. Mirrors the subset of
+// buildOneDriveItemMetadata the scan already produces — passed in so the ficha
+// module owns the clinical_record_imports insert without depending on the
+// skin-test scan internals.
+export type OneDriveRecordMetadata = {
+  id: string;
+  driveId: string | null;
+  sourceKey?: string | null;
+  sourceDriveId?: string | null;
+  sourceItemId?: string | null;
+  sharePointUniqueId?: string | null;
+  quickXorHash?: string | null;
+  sha1Hash?: string | null;
+  crc32Hash?: string | null;
+  eTag?: string | null;
+  cTag?: string | null;
+  webUrl?: string | null;
+  path?: string | null;
+  filename: string;
+  mimeType?: string | null;
+  size?: number | null;
+  modifiedAt?: string | null;
+};
+
+// Enqueue (or refresh) a OneDrive-discovered ficha into clinical_record_imports
+// as PENDING_REVIEW + unparsed — the same state the corpus backfill produced,
+// so the existing reprocess/auto-approve pipeline picks it up. Owned by the
+// ficha module; the generic OneDrive scan calls this for CLINICAL_RECORD docs.
+// Idempotent: re-discovery of an already-processed row only refreshes the
+// OneDrive metadata, never resets its status/parse.
+export async function enqueueClinicalRecordImportFromOneDrive(
+  accountId: string,
+  metadata: OneDriveRecordMetadata
+): Promise<{ id: string; created: boolean }> {
+  const existing = await sql<{ id: string }>`
+    SELECT id FROM clinical_record_imports
+    WHERE onedrive_account_id = ${accountId}
+      AND onedrive_drive_id = ${metadata.driveId}
+      AND onedrive_item_id = ${metadata.id}
+  `.execute(kysely);
+  const importId = existing.rows[0]?.id ?? createId();
+
+  await sql`
+    INSERT INTO clinical_record_imports (
+      id, onedrive_account_id, onedrive_item_id, onedrive_drive_id,
+      onedrive_source_key, onedrive_source_drive_id, onedrive_source_item_id,
+      onedrive_sharepoint_unique_id, onedrive_quick_xor_hash, onedrive_sha1_hash,
+      onedrive_crc32_hash, onedrive_etag, onedrive_ctag, onedrive_web_url,
+      path, filename, mime_type, size, modified_at,
+      parser_version, status, confidence, created_at, updated_at
+    ) VALUES (
+      ${importId}, ${accountId}, ${metadata.id}, ${metadata.driveId},
+      ${metadata.sourceKey ?? null}, ${metadata.sourceDriveId ?? null}, ${metadata.sourceItemId ?? null},
+      ${metadata.sharePointUniqueId ?? null}, ${metadata.quickXorHash ?? null}, ${metadata.sha1Hash ?? null},
+      ${metadata.crc32Hash ?? null}, ${metadata.eTag ?? null}, ${metadata.cTag ?? null}, ${metadata.webUrl ?? null},
+      ${metadata.path ?? null}, ${metadata.filename}, ${metadata.mimeType ?? null}, ${metadata.size ?? null},
+      ${metadata.modifiedAt ?? null}::timestamptz,
+      '', 'PENDING_REVIEW', 0, now(), now()
+    )
+    ON CONFLICT (onedrive_account_id, onedrive_drive_id, onedrive_item_id)
+    DO UPDATE SET
+      onedrive_etag = EXCLUDED.onedrive_etag,
+      onedrive_ctag = EXCLUDED.onedrive_ctag,
+      onedrive_web_url = EXCLUDED.onedrive_web_url,
+      path = COALESCE(EXCLUDED.path, clinical_record_imports.path),
+      filename = EXCLUDED.filename,
+      mime_type = EXCLUDED.mime_type,
+      size = EXCLUDED.size,
+      modified_at = EXCLUDED.modified_at,
+      updated_at = now()
+  `.execute(kysely);
+
+  return { id: importId, created: existing.rows.length === 0 };
+}
+
+// Multi-select approve: one transaction per import (reusing the single-row
+// path), collecting per-item failures so one bad row doesn't abort the batch.
+export async function approveClinicalRecordImports(
+  items: Array<{ id: string; patientId: number }>,
+  reviewedBy: number,
+  notes?: string
+): Promise<{ approved: number; errors: Array<{ id: string; message: string }> }> {
+  let approved = 0;
+  const errors: Array<{ id: string; message: string }> = [];
+  for (const it of items) {
+    try {
+      await approveClinicalRecordImport(it.id, it.patientId, reviewedBy, notes);
+      approved += 1;
+    } catch (error) {
+      errors.push({ id: it.id, message: error instanceof Error ? error.message : "error" });
+    }
+  }
+  return { approved, errors };
+}
+
+export async function rejectClinicalRecordImports(
+  ids: string[],
+  reviewedBy: number,
+  notes?: string
+): Promise<{ rejected: number }> {
+  if (ids.length === 0) return { rejected: 0 };
+  const r = await sql<{ id: string }>`
+    UPDATE clinical_record_imports SET
+      status = 'REJECTED',
+      reviewed_by = ${reviewedBy},
+      reviewed_at = now(),
+      review_notes = ${notes ?? null},
+      updated_at = now()
+    WHERE id = ANY(${ids})
+    RETURNING id
+  `.execute(kysely);
+  for (const row of r.rows) {
+    await logAuditEvent({
+      kind: "OTHER",
+      userId: reviewedBy,
+      resource: "clinical_record_imports",
+      resourceId: row.id,
+      outcome: "denied",
+      message: "import_rejected",
+      metadata: { notes: notes ?? null, bulk: true },
+    });
+  }
+  return { rejected: r.rows.length };
 }
 
 export async function reprocessPendingClinicalRecordImports(limit = 200): Promise<{

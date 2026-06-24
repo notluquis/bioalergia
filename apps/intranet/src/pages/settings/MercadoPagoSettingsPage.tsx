@@ -1,14 +1,5 @@
-import {
-  Alert,
-  AlertDialog,
-  Button,
-  Card,
-  Description,
-  Modal,
-  Skeleton,
-  Tabs,
-  Tooltip,
-} from "@heroui/react";
+import { formatChile } from "@/lib/dates";
+import { Alert, AlertDialog, Button, Modal, Tabs, Tooltip } from "@heroui/react";
 import {
   keepPreviousData,
   type QueryClient,
@@ -17,27 +8,31 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import type { ColumnDef, PaginationState, VisibilityState } from "@tanstack/react-table";
-import dayjs from "dayjs";
-import { CheckCircle2, Clock, FileText, Plus } from "lucide-react";
+import { CheckCircle2, Clock, Plus } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 
 import { DataTable } from "@/components/data-table/DataTable";
 import { GenerateReportModal } from "@/components/mercadopago/GenerateReportModal";
+import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { useToast } from "@/context/ToastContext";
 import { getMpReportColumns } from "@/features/finance/mercadopago/components/MpReportColumns";
+import { MpReportTabPanel } from "@/features/finance/mercadopago/components/MpReportTabPanel";
 import { mercadoPagoKeys } from "@/features/finance/mercadopago/queries";
+import { isReportPending } from "@/features/finance/mercadopago/reportStatus";
+import {
+  getSyncImportStats,
+  getSyncImportStatsByType,
+  getSyncReportTypes,
+} from "@/features/finance/mercadopago/sync-stats";
 import { cn } from "@/lib/utils";
 import {
   type ImportStats,
   type MPReport,
   MPService,
+  type MpImportChange,
   type MpReportType,
-  type MpSyncChangeDetails,
-  type MpSyncImportStats,
   type MpSyncLog,
 } from "@/services/mercadopago";
-
-const REPORT_PENDING_REGEX = /processing|pending|in_progress|waiting|generating|queued|creating/i;
 
 type MpTab = MpReportType | "sync";
 type ToastFn = (message: string, title?: string) => void;
@@ -53,20 +48,8 @@ type ReportActions = {
   setConfirmingFile: (value: null | string) => void;
 };
 
-const resolveLastReportLabel = (reports: MPReport[]) => {
-  const lastReport = reports[0];
-  if (!lastReport) {
-    return "N/A";
-  }
-
-  const date = lastReport.date_created ?? lastReport.begin_date;
-  return date ? dayjs(date).tz().format("D MMM, HH:mm") : "N/A";
-};
-
 const resolveReportTypeFromTab = (tab: MpTab): MpReportType => (tab === "sync" ? "release" : tab);
 const resolveSyncRefetchInterval = (isSyncTab: boolean) => (isSyncTab ? 30_000 : false);
-const resolveReportTypeLabel = (reportType: MpReportType) =>
-  reportType === "release" ? "Liberación" : "Conciliación";
 
 const useReportActions = ({
   queryClient,
@@ -111,7 +94,7 @@ const useReportActions = ({
     onSuccess: (stats) => {
       setLastImportStats(stats);
       showSuccess(
-        `Reporte procesado: ${stats.insertedRows} insertados, ${stats.duplicateRows} duplicados`
+        `Reporte procesado: ${stats.insertedRows} insertadas, ${stats.updatedRows} actualizadas, ${stats.unchangedRows} sin cambios`
       );
       setProcessingFile(null);
       void queryClient.invalidateQueries({ queryKey: ["mp-reports", reportType] });
@@ -168,6 +151,7 @@ export function MercadoPagoSettingsPage() {
     status: true,
   });
   const [lastImportStats, setLastImportStats] = useState<ImportStats | null>(null);
+  const [selectedChangeLog, setSelectedChangeLog] = useState<MpSyncLog | null>(null);
   const [reportPagination, setReportPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: 10,
@@ -218,6 +202,27 @@ export function MercadoPagoSettingsPage() {
   const syncErrorMessage =
     syncError instanceof Error ? syncError.message : syncError ? String(syncError) : null;
   const isSyncLoading = isSyncPending && !syncResponse;
+  const selectedChangeLogId = selectedChangeLog?.id;
+  const {
+    data: importChangesResponse,
+    error: importChangesError,
+    isPending: isImportChangesPending,
+  } = useQuery({
+    ...mercadoPagoKeys.importChanges({
+      limit: 100,
+      offset: 0,
+      syncLogId: selectedChangeLogId ?? 0n,
+    }),
+    enabled: selectedChangeLogId != null,
+  });
+  const importChanges = importChangesResponse?.changes ?? [];
+  const importChangesTotal = importChangesResponse?.total ?? 0;
+  const importChangesErrorMessage =
+    importChangesError instanceof Error
+      ? importChangesError.message
+      : importChangesError
+        ? String(importChangesError)
+        : null;
 
   const {
     confirmingFile,
@@ -249,7 +254,11 @@ export function MercadoPagoSettingsPage() {
   );
   const reportPageCount = Math.max(1, Math.ceil(reportTotal / reportPagination.pageSize));
 
-  const syncColumns = useMemo<ColumnDef<MpSyncLog>[]>(() => buildSyncColumns(), []);
+  const syncColumns = useMemo<ColumnDef<MpSyncLog>[]>(
+    () => buildSyncColumns(setSelectedChangeLog),
+    [setSelectedChangeLog]
+  );
+  const importChangeColumns = useMemo(() => buildImportChangeColumns(), []);
   const syncPageCount = Math.max(1, Math.ceil(syncTotal / syncPagination.pageSize));
   const onTabChange = (key: React.Key) => {
     const next = String(key);
@@ -296,7 +305,7 @@ export function MercadoPagoSettingsPage() {
               onPress={openGenerateModal}
               variant="primary"
             >
-              <Plus className="mr-2 h-4 w-4" />
+              <Plus className="mr-2 size-4" />
               Generar Reporte
             </Button>
           )}
@@ -304,203 +313,49 @@ export function MercadoPagoSettingsPage() {
 
         <Tabs.Panel className="space-y-5 pt-4" id="release">
           {activeTab === "release" ? (
-            <>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                {/* Last Report Card */}
-                <Card className="h-full p-6" variant="secondary">
-                  <Card.Header className="items-start justify-between p-0">
-                    <div>
-                      <Card.Description className="font-semibold text-default-500 text-xs uppercase tracking-wide">
-                        Último Reporte
-                      </Card.Description>
-                      <Card.Title className="mt-2 line-clamp-1 text-lg">
-                        {isReportLoading ? (
-                          <Skeleton className="h-5 w-28 rounded-lg" />
-                        ) : (
-                          resolveLastReportLabel(reports)
-                        )}
-                      </Card.Title>
-                    </div>
-                    <Clock className="h-5 w-5 text-primary" />
-                  </Card.Header>
-                  <Card.Content className="p-0 pt-4">
-                    <Description className="truncate text-default-400 text-xs">
-                      {isReportLoading
-                        ? "Obteniendo últimos reportes..."
-                        : (reports[0]?.file_name ?? "Sin reportes recientes")}
-                    </Description>
-                  </Card.Content>
-                </Card>
-
-                {/* Total Reports Card */}
-                <Card className="h-full p-6" variant="secondary">
-                  <Card.Header className="items-start justify-between p-0">
-                    <div>
-                      <Card.Title className="text-sm">Total Reportes</Card.Title>
-                      <Card.Description>{`Tipo: ${resolveReportTypeLabel(reportType)}`}</Card.Description>
-                    </div>
-                    <FileText className="h-5 w-5 text-primary" />
-                  </Card.Header>
-                  <Card.Content className="p-0 pt-3">
-                    <p className="font-semibold text-3xl">
-                      {isReportLoading ? "..." : reportTotal}
-                    </p>
-                  </Card.Content>
-                </Card>
-              </div>
-
-              {reportErrorMessage && (
-                <Alert status="danger">
-                  <Alert.Content>
-                    <Alert.Description>{reportErrorMessage}</Alert.Description>
-                  </Alert.Content>
-                </Alert>
-              )}
-
-              <div className="space-y-3">
-                <div className="flex flex-wrap items-center justify-between gap-3 px-1">
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4 text-primary" />
-                    <div>
-                      <span className="block font-semibold text-lg">Historial de Reportes</span>
-                      <span className="block text-default-500 text-xs">Total: {reportTotal}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <DataTable
-                  columns={columns}
-                  containerVariant="plain"
-                  columnVisibility={columnVisibility}
-                  data={reports}
-                  enableExport={false}
-                  enableGlobalFilter={false}
-                  isLoading={isReportLoading}
-                  key={`mp-reports-${reportType}-${reportPagination.pageIndex}-${reports.length}`}
-                  pageSizeOptions={[10, 25, 50]}
-                  pagination={reportPagination}
-                  onPaginationChange={setReportPagination}
-                  onColumnVisibilityChange={setColumnVisibility}
-                  pageCount={reportPageCount}
-                  noDataMessage={
-                    isReportLoading
-                      ? "Cargando reportes de MercadoPago..."
-                      : "Aún no hay reportes. Genera uno para comenzar."
-                  }
-                  scrollMaxHeight="min(68dvh, 760px)"
-                />
-              </div>
-            </>
+            <MpReportTabPanel
+              columns={columns}
+              columnVisibility={columnVisibility}
+              errorMessage={reportErrorMessage}
+              isLoading={isReportLoading}
+              onColumnVisibilityChange={setColumnVisibility}
+              onPaginationChange={setReportPagination}
+              pageCount={reportPageCount}
+              pagination={reportPagination}
+              reports={reports}
+              reportTotal={reportTotal}
+              reportType={reportType}
+            />
           ) : null}
         </Tabs.Panel>
 
         <Tabs.Panel className="space-y-5 pt-4" id="settlement">
           {activeTab === "settlement" ? (
-            <>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                {/* Last Report Card */}
-                <Card className="h-full p-6" variant="secondary">
-                  <Card.Header className="items-start justify-between p-0">
-                    <div>
-                      <Card.Description className="font-semibold text-default-500 text-xs uppercase tracking-wide">
-                        Último Reporte
-                      </Card.Description>
-                      <Card.Title className="mt-2 line-clamp-1 text-lg">
-                        {isReportLoading ? (
-                          <Skeleton className="h-5 w-28 rounded-lg" />
-                        ) : (
-                          resolveLastReportLabel(reports)
-                        )}
-                      </Card.Title>
-                    </div>
-                    <Clock className="h-5 w-5 text-primary" />
-                  </Card.Header>
-                  <Card.Content className="p-0 pt-4">
-                    <Description className="truncate text-default-400 text-xs">
-                      {isReportLoading
-                        ? "Obteniendo últimos reportes..."
-                        : (reports[0]?.file_name ?? "Sin reportes recientes")}
-                    </Description>
-                  </Card.Content>
-                </Card>
-
-                {/* Total Reports Card */}
-                <Card className="h-full p-6" variant="secondary">
-                  <Card.Header className="items-start justify-between p-0">
-                    <div>
-                      <Card.Title className="text-sm">Total Reportes</Card.Title>
-                      <Card.Description>{`Tipo: ${resolveReportTypeLabel(reportType)}`}</Card.Description>
-                    </div>
-                    <FileText className="h-5 w-5 text-primary" />
-                  </Card.Header>
-                  <Card.Content className="p-0 pt-3">
-                    <p className="font-semibold text-3xl">
-                      {isReportLoading ? "..." : reportTotal}
-                    </p>
-                  </Card.Content>
-                </Card>
-              </div>
-
-              {reportErrorMessage && (
-                <Alert status="danger">
-                  <Alert.Content>
-                    <Alert.Description>{reportErrorMessage}</Alert.Description>
-                  </Alert.Content>
-                </Alert>
-              )}
-
-              <div className="space-y-3">
-                <div className="flex flex-wrap items-center justify-between gap-3 px-1">
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4 text-primary" />
-                    <div>
-                      <span className="block font-semibold text-lg">Historial de Reportes</span>
-                      <span className="block text-default-500 text-xs">Total: {reportTotal}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <DataTable
-                  columns={columns}
-                  containerVariant="plain"
-                  columnVisibility={columnVisibility}
-                  data={reports}
-                  enableExport={false}
-                  enableGlobalFilter={false}
-                  isLoading={isReportLoading}
-                  key={`mp-reports-${reportType}-${reportPagination.pageIndex}-${reports.length}`}
-                  pageSizeOptions={[10, 25, 50]}
-                  pagination={reportPagination}
-                  onPaginationChange={setReportPagination}
-                  onColumnVisibilityChange={setColumnVisibility}
-                  pageCount={reportPageCount}
-                  noDataMessage={
-                    isReportLoading
-                      ? "Cargando reportes de MercadoPago..."
-                      : "Aún no hay reportes. Genera uno para comenzar."
-                  }
-                  scrollMaxHeight="min(68dvh, 760px)"
-                />
-              </div>
-            </>
+            <MpReportTabPanel
+              columns={columns}
+              columnVisibility={columnVisibility}
+              errorMessage={reportErrorMessage}
+              isLoading={isReportLoading}
+              onColumnVisibilityChange={setColumnVisibility}
+              onPaginationChange={setReportPagination}
+              pageCount={reportPageCount}
+              pagination={reportPagination}
+              reports={reports}
+              reportTotal={reportTotal}
+              reportType={reportType}
+            />
           ) : null}
         </Tabs.Panel>
 
         <Tabs.Panel className="space-y-5 pt-4" id="sync">
           {activeTab === "sync" ? (
             <>
-              {syncErrorMessage && (
-                <Alert status="danger">
-                  <Alert.Content>
-                    <Alert.Description>{syncErrorMessage}</Alert.Description>
-                  </Alert.Content>
-                </Alert>
-              )}
+              <ErrorAlert message={syncErrorMessage} />
 
               <div className="space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-3 px-1">
                   <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-primary" />
+                    <Clock className="text-primary size-4" />
                     <div>
                       <span className="block font-semibold text-lg">Historial de Sync</span>
                       <span className="block text-default-500 text-xs">Total: {syncTotal}</span>
@@ -584,7 +439,7 @@ export function MercadoPagoSettingsPage() {
                 {lastImportStats && (
                   <div className="space-y-4">
                     <div className="flex items-center gap-2 text-success">
-                      <CheckCircle2 className="h-5 w-5" />
+                      <CheckCircle2 className="size-5" />
                       <span className="font-medium">Procesamiento completado</span>
                     </div>
 
@@ -608,10 +463,16 @@ export function MercadoPagoSettingsPage() {
                         <span className="block text-success/70 text-xs">Insertadas</span>
                       </div>
                       <div className="text-center">
-                        <span className="block font-bold text-2xl text-warning">
-                          {lastImportStats.duplicateRows}
+                        <span className="block font-bold text-2xl text-primary">
+                          {lastImportStats.updatedRows}
                         </span>
-                        <span className="block text-warning/70 text-xs">Duplicados</span>
+                        <span className="block text-primary/70 text-xs">Actualizadas</span>
+                      </div>
+                      <div className="text-center">
+                        <span className="block font-bold text-2xl text-warning">
+                          {lastImportStats.unchangedRows}
+                        </span>
+                        <span className="block text-warning/70 text-xs">Sin cambios</span>
                       </div>
                       <div className="text-center">
                         <span className="block font-bold text-2xl">
@@ -658,6 +519,70 @@ export function MercadoPagoSettingsPage() {
         </Modal.Backdrop>
       </Modal>
 
+      <Modal>
+        <Modal.Backdrop
+          isOpen={Boolean(selectedChangeLog)}
+          onOpenChange={(open) => {
+            if (!open) {
+              setSelectedChangeLog(null);
+            }
+          }}
+        >
+          <Modal.Container placement="center">
+            <Modal.Dialog className="w-full max-w-5xl">
+              <Modal.Header>
+                <Modal.Heading>Cambios por campo</Modal.Heading>
+              </Modal.Header>
+              <Modal.Body>
+                <div className="space-y-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-default-500 text-sm">
+                    <span>
+                      Sync #{selectedChangeLog?.id.toString() ?? "-"} ·{" "}
+                      {selectedChangeLog?.triggerLabel ?? selectedChangeLog?.triggerSource ?? "-"}
+                    </span>
+                    <span>Total cambios: {importChangesTotal}</span>
+                  </div>
+
+                  {importChangesErrorMessage && (
+                    <Alert status="danger">
+                      <Alert.Content>
+                        <Alert.Description>{importChangesErrorMessage}</Alert.Description>
+                      </Alert.Content>
+                    </Alert>
+                  )}
+
+                  <DataTable
+                    columns={importChangeColumns}
+                    containerVariant="plain"
+                    data={importChanges}
+                    enableExport={false}
+                    enableGlobalFilter={false}
+                    enablePagination={false}
+                    enableToolbar={false}
+                    isLoading={isImportChangesPending}
+                    noDataMessage="No hay cambios de campo para este sync."
+                    scrollMaxHeight="62dvh"
+                  />
+
+                  {importChangesTotal > importChanges.length && (
+                    <p className="text-default-500 text-xs">
+                      Mostrando primeros {importChanges.length} cambios. Usa el backend con filtros
+                      por SOURCE_ID/campo para auditorías más específicas.
+                    </p>
+                  )}
+
+                  <div className="flex justify-end">
+                    <Button onPress={() => setSelectedChangeLog(null)} variant="primary">
+                      Cerrar
+                    </Button>
+                  </div>
+                </div>
+              </Modal.Body>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
+      </Modal>
+
       {/* Modals */}
       {isGenerateModalOpen ? (
         <GenerateReportModal
@@ -672,7 +597,7 @@ export function MercadoPagoSettingsPage() {
   );
 }
 
-function buildSyncColumns(): ColumnDef<MpSyncLog>[] {
+function buildSyncColumns(onViewChanges: (log: MpSyncLog) => void): ColumnDef<MpSyncLog>[] {
   return [
     {
       accessorKey: "status",
@@ -693,7 +618,7 @@ function buildSyncColumns(): ColumnDef<MpSyncLog>[] {
     {
       accessorKey: "startedAt",
       header: "Fecha",
-      cell: ({ row }) => dayjs(row.original.startedAt).tz().format("DD/MM/YYYY HH:mm"),
+      cell: ({ row }) => formatChile(row.original.startedAt, "DD/MM/YYYY HH:mm"),
     },
     {
       accessorKey: "triggerSource",
@@ -714,22 +639,10 @@ function buildSyncColumns(): ColumnDef<MpSyncLog>[] {
         const importStatsByType = getSyncImportStatsByType(row.original);
         const reportTypes = getSyncReportTypes(row.original);
         if (importStatsByType) {
+          // Each per-type stats group below already renders its own type label
+          // ({label}), so the standalone reportTypes chips would duplicate it.
           return (
             <div className="flex flex-wrap items-center gap-2 text-xs">
-              {reportTypes.length > 0 && (
-                <div className="flex items-center gap-1">
-                  {reportTypes.includes("release") && (
-                    <span className="rounded bg-primary/10 px-1.5 py-0.5 text-primary">
-                      Liberación
-                    </span>
-                  )}
-                  {reportTypes.includes("settlement") && (
-                    <span className="rounded bg-warning/10 px-1.5 py-0.5 text-warning">
-                      Conciliación
-                    </span>
-                  )}
-                </div>
-              )}
               {importStatsByType.map(({ label, stats, tone }) =>
                 stats ? (
                   <div className="flex items-center gap-1" key={label}>
@@ -737,7 +650,8 @@ function buildSyncColumns(): ColumnDef<MpSyncLog>[] {
                       className={cn(
                         "rounded px-1.5 py-0.5 text-caption",
                         tone === "release" && "bg-primary/10 text-primary",
-                        tone === "settlement" && "bg-warning/10 text-warning"
+                        tone === "settlement" && "bg-warning/10 text-warning",
+                        tone === "withdraw" && "bg-secondary/10 text-secondary"
                       )}
                     >
                       {label}
@@ -773,13 +687,23 @@ function buildSyncColumns(): ColumnDef<MpSyncLog>[] {
                       </Tooltip.Content>
                     </Tooltip>
                     <Tooltip delay={0}>
-                      <Tooltip.Trigger aria-label="Filas duplicadas">
-                        <span className="rounded bg-warning/10 px-1.5 py-0.5 text-warning">
-                          D{stats.duplicateRows}
+                      <Tooltip.Trigger aria-label="Filas actualizadas">
+                        <span className="rounded bg-primary/10 px-1.5 py-0.5 text-primary">
+                          U{stats.updatedRows}
                         </span>
                       </Tooltip.Trigger>
                       <Tooltip.Content>
-                        <p>Duplicados</p>
+                        <p>Actualizadas</p>
+                      </Tooltip.Content>
+                    </Tooltip>
+                    <Tooltip delay={0}>
+                      <Tooltip.Trigger aria-label="Filas sin cambios">
+                        <span className="rounded bg-warning/10 px-1.5 py-0.5 text-warning">
+                          ={stats.unchangedRows}
+                        </span>
+                      </Tooltip.Trigger>
+                      <Tooltip.Content>
+                        <p>Sin cambios</p>
                       </Tooltip.Content>
                     </Tooltip>
                     <Tooltip delay={0}>
@@ -825,6 +749,11 @@ function buildSyncColumns(): ColumnDef<MpSyncLog>[] {
                     Conciliación
                   </span>
                 )}
+                {reportTypes.includes("withdraw") && (
+                  <span className="rounded bg-secondary/10 px-1.5 py-0.5 text-secondary">
+                    Retiros
+                  </span>
+                )}
               </div>
             )}
             <span className="rounded bg-success/10 px-1.5 py-0.5 text-success">
@@ -849,7 +778,92 @@ function buildSyncColumns(): ColumnDef<MpSyncLog>[] {
         );
       },
     },
+    {
+      id: "changes",
+      header: "Cambios",
+      cell: ({ row }) => {
+        const stats = getSyncImportStats(row.original.changeDetails);
+        const changeCount = stats?.fieldChangeCount ?? 0;
+        const updatedRows = stats?.updatedRows ?? row.original.updated ?? 0;
+        const disabled = changeCount <= 0 && updatedRows <= 0;
+
+        return (
+          <Button
+            isDisabled={disabled}
+            onPress={() => onViewChanges(row.original)}
+            size="sm"
+            variant="secondary"
+          >
+            Ver cambios
+          </Button>
+        );
+      },
+    },
   ];
+}
+
+function buildImportChangeColumns(): ColumnDef<MpImportChange>[] {
+  return [
+    {
+      accessorKey: "sourceId",
+      cell: ({ row }) => <span className="font-mono text-xs">{row.original.sourceId}</span>,
+      header: "SOURCE_ID",
+    },
+    {
+      accessorKey: "reportType",
+      cell: ({ row }) => (
+        <span
+          className={cn(
+            "rounded px-1.5 py-0.5 text-caption",
+            row.original.reportType === "release" && "bg-primary/10 text-primary",
+            row.original.reportType === "settlement" && "bg-warning/10 text-warning",
+            row.original.reportType === "withdraw" && "bg-secondary/10 text-secondary"
+          )}
+        >
+          {row.original.reportType === "release"
+            ? "Liberación"
+            : row.original.reportType === "settlement"
+              ? "Conciliación"
+              : "Retiros"}
+        </span>
+      ),
+      header: "Reporte",
+    },
+    {
+      accessorKey: "fieldName",
+      cell: ({ row }) => <span className="font-medium">{row.original.fieldName}</span>,
+      header: "Campo",
+    },
+    {
+      accessorKey: "oldValue",
+      cell: ({ row }) => <AuditValue value={row.original.oldValue} />,
+      header: "Antes",
+    },
+    {
+      accessorKey: "newValue",
+      cell: ({ row }) => <AuditValue value={row.original.newValue} />,
+      header: "Después",
+    },
+  ];
+}
+
+function AuditValue({ value }: { value: unknown }) {
+  const text = formatAuditValue(value);
+  return (
+    <code className="block truncate rounded bg-default-50 px-1.5 py-1 text-default-700 text-xs">
+      {text}
+    </code>
+  );
+}
+
+function formatAuditValue(value: unknown) {
+  if (value == null) {
+    return "null";
+  }
+  if (typeof value === "string") {
+    return value;
+  }
+  return JSON.stringify(value);
 }
 
 function getPagination(pagination: PaginationState) {
@@ -871,110 +885,4 @@ function getMpReportsRefetchInterval(query: { state: { data?: { reports?: MPRepo
 
   const hasPending = reports.some((report) => isReportPending(report.status));
   return hasPending ? 15_000 : 60_000;
-}
-
-function isReportPending(status?: null | string) {
-  if (!status) {
-    return false;
-  }
-  return REPORT_PENDING_REGEX.test(status);
-}
-
-function getSyncImportStats(details?: MpSyncChangeDetails | null) {
-  if (!details || typeof details !== "object") {
-    return null;
-  }
-  const raw = details.importStats;
-  if (!raw || typeof raw !== "object") {
-    return null;
-  }
-  const toNumber = (value: unknown) => {
-    const num = Number(value);
-    return Number.isFinite(num) ? num : 0;
-  };
-  return {
-    totalRows: toNumber(raw.totalRows),
-    validRows: toNumber(raw.validRows),
-    insertedRows: toNumber(raw.insertedRows),
-    duplicateRows: toNumber(raw.duplicateRows),
-    skippedRows: toNumber(raw.skippedRows),
-    errorCount: toNumber(raw.errorCount),
-  };
-}
-
-function getSyncImportStatsByType(log: MpSyncLog) {
-  const details = log.changeDetails;
-  if (!details || typeof details !== "object") {
-    return null;
-  }
-  const raw = details.importStatsByType;
-  const toNumber = (value: unknown) => {
-    const num = Number(value);
-    return Number.isFinite(num) ? num : 0;
-  };
-
-  const buildStats = (stats?: MpSyncImportStats | null) => {
-    if (!stats) {
-      return null;
-    }
-    return {
-      totalRows: toNumber(stats.totalRows),
-      validRows: toNumber(stats.validRows),
-      insertedRows: toNumber(stats.insertedRows),
-      duplicateRows: toNumber(stats.duplicateRows),
-      skippedRows: toNumber(stats.skippedRows),
-      errorCount: toNumber(stats.errorCount),
-    };
-  };
-
-  const entries: Array<{
-    label: string;
-    stats: ReturnType<typeof buildStats>;
-    tone: "release" | "settlement";
-  }> = [];
-
-  if (raw && typeof raw === "object") {
-    const releaseStats = buildStats(raw.release ?? null);
-    if (releaseStats) {
-      entries.push({ label: "Liberación", stats: releaseStats, tone: "release" });
-    }
-    const settlementStats = buildStats(raw.settlement ?? null);
-    if (settlementStats) {
-      entries.push({ label: "Conciliación", stats: settlementStats, tone: "settlement" });
-    }
-  }
-
-  if (entries.length > 0) {
-    return entries;
-  }
-
-  const fallback = getSyncImportStats(details);
-  const reportTypes = getSyncReportTypes(log);
-  if (!fallback || reportTypes.length !== 1) {
-    return null;
-  }
-
-  return [
-    {
-      label: reportTypes[0] === "release" ? "Liberación" : "Conciliación",
-      stats: fallback,
-      tone: reportTypes[0],
-    },
-  ];
-}
-
-function getSyncReportTypes(log: MpSyncLog) {
-  const details = log.changeDetails;
-  if (details && typeof details === "object") {
-    const raw = details.reportTypes;
-    if (Array.isArray(raw)) {
-      return raw.filter(
-        (item): item is "release" | "settlement" => item === "release" || item === "settlement"
-      );
-    }
-  }
-  if (log.triggerSource === "mp:auto-sync") {
-    return ["release", "settlement"] as const;
-  }
-  return [];
 }

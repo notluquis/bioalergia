@@ -44,7 +44,7 @@ export function ClassificationToolbar({
         type="button"
         variant="outline"
       >
-        <RefreshCw className="h-4 w-4" />
+        <RefreshCw className="size-4" />
         <span className="hidden sm:inline">{loading ? "Cargando..." : "Actualizar"}</span>
       </Button>
 
@@ -71,12 +71,12 @@ export function ClassificationToolbar({
         <span className="relative z-10 flex items-center gap-2">
           {isJobRunning ? (
             <>
-              <RefreshCw className="h-4 w-4" />
+              <RefreshCw className="size-4" />
               <span className="tabular-nums">{progress}%</span>
             </>
           ) : (
             <>
-              <Clipboard className="h-4 w-4" />
+              <Clipboard className="size-4" />
               Reclasificar pendientes
             </>
           )}
@@ -103,7 +103,7 @@ export function ClassificationToolbar({
             size="sm"
             variant="outline"
           >
-            <RefreshCw className="h-4 w-4" />
+            <RefreshCw className="size-4" />
           </Button>
         </Tooltip.Trigger>
         <Tooltip.Content
@@ -125,7 +125,7 @@ export function ClassificationToolbar({
             size="sm"
             variant="outline"
           >
-            <ArrowDownToLine className="h-4 w-4" />
+            <ArrowDownToLine className="size-4" />
           </Button>
         </Tooltip.Trigger>
         <Tooltip.Content
@@ -147,7 +147,7 @@ export function ClassificationToolbar({
             size="sm"
             variant="outline"
           >
-            <Settings className="h-4 w-4" />
+            <Settings className="size-4" />
           </Button>
         </Tooltip.Trigger>
         <Tooltip.Content

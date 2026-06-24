@@ -1,6 +1,6 @@
+import { formatChile } from "@/lib/dates";
 import { Skeleton } from "@heroui/react";
 import type { ColumnDef } from "@tanstack/react-table";
-import dayjs from "dayjs";
 import { DataTable } from "@/components/data-table/DataTable";
 import type { FinancialSummary, IncomeItem } from "../types";
 
@@ -32,9 +32,7 @@ export function IncomeBreakdown({ summary, isLoading }: Readonly<IncomeBreakdown
     {
       accessorKey: "date",
       cell: ({ row }) => (
-        <span className="text-xs tabular-nums">
-          {dayjs(row.original.date).format("DD/MM/YYYY")}
-        </span>
+        <span className="text-xs tabular-nums">{formatChile(row.original.date, "DD/MM/YYYY")}</span>
       ),
       header: "Fecha",
       minSize: 120,

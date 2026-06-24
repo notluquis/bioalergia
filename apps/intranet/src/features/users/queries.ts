@@ -1,12 +1,10 @@
-import { queryOptions } from "@tanstack/react-query";
-
-import { fetchUsers } from "./api";
-
-export const userKeys = {
-  adminList: () =>
-    queryOptions({
-      queryFn: fetchUsers,
-      queryKey: ["users", "admin-list"],
-    }),
-  all: ["users"] as const,
-};
+/**
+ * Canonical query keys for the authenticated user's own data.
+ *
+ * `userProfileKey` is the single source of truth for the self-service
+ * profile cache, shared by `ProfilePanel` (`/account?tab=perfil`) and the
+ * onboarding wizard (`useOnboardingForm`). Both fetch `fetchUserProfile`
+ * and must invalidate the same cache entry — keep them on this key to
+ * avoid drift.
+ */
+export const userProfileKey = ["user", "profile"] as const;

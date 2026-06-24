@@ -4,6 +4,7 @@ export const DoctoraliaEventServiceSchema = z.strictObject({
   duration: z.number(),
   isDefault: z.boolean().optional(),
   price: z.number(),
+  priceFrom: z.union([z.number(), z.string()]).nullish(),
   quantity: z.number(),
   serviceId: z.number(),
   serviceName: z.string(),
@@ -11,6 +12,7 @@ export const DoctoraliaEventServiceSchema = z.strictObject({
 });
 
 export const DoctoraliaCalendarAppointmentSchema = z.strictObject({
+  attendance: z.number(),
   colorSchemaId: z.number().nullable(),
   comments: z.string().nullable(),
   duration: z.number(),
@@ -18,13 +20,14 @@ export const DoctoraliaCalendarAppointmentSchema = z.strictObject({
   eventServices: z.object({ items: z.array(DoctoraliaEventServiceSchema) }).nullable(),
   eventType: z.number(),
   externalId: z.number(),
+  followUpDate: z.coerce.date().nullable(),
   hasPatient: z.boolean(),
   id: z.number(),
   isPatientFirstAdminBooking: z.boolean(),
   isPatientFirstTime: z.boolean(),
   patientBirthDate: z.coerce.date().nullable(),
   patientExternalId: z.number(),
-  patientReferenceId: z.string(),
+  patientReferenceId: z.string().nullable(),
   schedule: z.strictObject({
     displayName: z.string(),
     externalId: z.number(),

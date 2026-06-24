@@ -3,6 +3,131 @@
     "title": "Bioalergia Suite",
     "loading": "Cargando..."
   },
+  "jobRadar": {
+    "title": "Job Radar",
+    "count": "{{count}} ofertas",
+    "sync": "Sincronizar ahora",
+    "syncProgress": {
+      "fetched": "{{count}} ofertas encontradas",
+      "phase": {
+        "idle": "En espera",
+        "fetching": "Buscando ofertas en las fuentes",
+        "saving": "Guardando ofertas",
+        "notifying": "Notificando",
+        "done": "Listo"
+      }
+    },
+    "syncResult": {
+      "fetched": "{{count}} encontradas",
+      "inserted": "{{count}} nuevas",
+      "updated": "{{count}} modificadas",
+      "unchanged": "{{count}} sin cambios",
+      "closed": "{{count}} cerradas",
+      "notified": "{{count}} notificadas"
+    },
+    "loading": "Cargando ofertas",
+    "empty": "No hay ofertas con estos filtros.",
+    "matched": "Match perfil",
+    "location": {
+      "unnormalized": "No normalizada"
+    },
+    "changeStatus": "Cambiar estado",
+    "statusUpdated": "Estado: {{status}}",
+    "bulkUpdated": "{{count}} ofertas → {{status}}",
+    "bulk": {
+      "selected": "{{count}} seleccionadas",
+      "changeStatus": "Cambiar estado a…",
+      "clear": "Limpiar selección"
+    },
+    "undo": "Deshacer",
+    "undone": "Acción deshecha",
+    "viewOffer": "Ver oferta",
+    "col": {
+      "status": "Estado",
+      "title": "Cargo",
+      "company": "Empresa",
+      "source": "Fuente",
+      "department": "Área",
+      "location": "Ubicación",
+      "salary": "Salario",
+      "published": "Publicado",
+      "detected": "Detectado",
+      "match": "Match",
+      "actions": "Acciones"
+    },
+    "actions": {
+      "view": "Ver oferta",
+      "seen": "Marcar vista",
+      "interested": "Me interesa",
+      "applied": "Marcar postulado",
+      "discard": "Descartar"
+    },
+    "sources": {
+      "title": "Fuentes (empresas a scrapear)",
+      "kind": "ATS",
+      "identifier": "Identificador",
+      "add": "Agregar",
+      "remove": "Quitar"
+    },
+    "detail": {
+      "notes": "Notas",
+      "notesPlaceholder": "Apuntes, contacto, seguimiento…",
+      "description": "Descripción",
+      "noDescription": "Sin descripción disponible.",
+      "save": "Guardar",
+      "saved": "Guardado"
+    },
+    "settings": {
+      "toggle": "Ajustes",
+      "title": "Ajustes de Job Radar",
+      "description": "Configuración guardada en la base de datos.",
+      "enabled": "Sincronización automática",
+      "bci": "Incluir BCI (Chile + Perú)",
+      "getonbrd": "Incluir GetOnBoard (busca por keywords)",
+      "empleospublicos": "Incluir Empleos Públicos 🇨🇱 (sector público)",
+      "muevete": "Incluir Falabella (grupo: Sodimac, Tottus, IKEA…)",
+      "companies": "Empresas Teamtailor (CSV de subdominios)",
+      "greenhouse": "Boards Greenhouse (CSV de tokens)",
+      "lever": "Empresas Lever (CSV de slugs)",
+      "ashby": "Boards Ashby (CSV de slugs)",
+      "smartrecruiters": "SmartRecruiters (CSV de companyId, case-sensitive)",
+      "workday": "Workday (CSV de tenant:wd:site)",
+      "airavirtual": "airavirtual 🇨🇱 (CSV: walmart, cencosud, ripley…)",
+      "cron": "Frecuencia (cron)",
+      "keywords": "Palabras clave del perfil (CSV)",
+      "departments": "Departamentos (CSV)",
+      "telegramBotToken": "Telegram Bot Token",
+      "telegramChatId": "Telegram Chat ID",
+      "save": "Guardar",
+      "saved": "Guardado",
+      "cronNote": "Cambiar la frecuencia requiere reiniciar el servicio; el on/off es inmediato."
+    },
+    "filters": {
+      "all": "Todos",
+      "applicationStatus": "Estado postulación",
+      "postingStatus": "Vigencia",
+      "source": "Fuente",
+      "company": "Empresa",
+      "location": "Ubicación",
+      "search": "Buscar",
+      "searchPlaceholder": "Cargo, empresa, área…"
+    },
+    "posting": {
+      "OPEN": "Abierta",
+      "CLOSED": "Cerrada",
+      "ALL": "Todas"
+    },
+    "status": {
+      "NEW": "Nueva",
+      "SEEN": "Vista",
+      "INTERESTED": "Me interesa",
+      "APPLIED": "Postulado",
+      "INTERVIEW": "En entrevista",
+      "OFFER": "Oferta",
+      "REJECTED": "Rechazado",
+      "DISCARDED": "Descartada"
+    }
+  },
   "calendar": {
     "heatmap": "Mapa de calor de calendario",
     "schedule": "Calendario interactivo",

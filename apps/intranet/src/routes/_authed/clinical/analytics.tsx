@@ -1,7 +1,8 @@
-import { createFileRoute, getRouteApi } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
+import { requirePermission } from "@/lib/authz/route-guards";
 
 import { z } from "zod";
-import { TreatmentAnalyticsPage } from "@/features/operations/supplies/pages/TreatmentAnalyticsPage";
+import { TreatmentAnalyticsPage } from "@/features/calendar/pages/TreatmentAnalyticsPage";
 
 const MONTH_FORMAT_REGEX = /^\d{4}-\d{2}$/;
 
@@ -29,20 +30,18 @@ const analyticsSearchSchema = z.object({
     }),
 });
 
-const routeApi = getRouteApi("/_authed/clinical/analytics");
-
 export const Route = createFileRoute("/_authed/clinical/analytics")({
   staticData: {
-    nav: { iconKey: "TrendingUp", label: "Analytics", order: 70, section: "Clínica" },
+    nav: {
+      iconKey: "TrendingUp",
+      label: "Tratamientos — analytics",
+      order: 25,
+      section: "Clínica",
+    },
     permission: { action: "read", subject: "CalendarEvent" },
     title: "Analytics clínico",
   },
-  beforeLoad: ({ context }) => {
-    if (!context.can("read", "CalendarEvent")) {
-      // eslint-disable-next-line @typescript-eslint/only-throw-error
-      throw routeApi.redirect({ to: "/" });
-    }
-  },
+  beforeLoad: requirePermission("read", "CalendarEvent"),
   validateSearch: analyticsSearchSchema,
   component: TreatmentAnalyticsPage,
 });

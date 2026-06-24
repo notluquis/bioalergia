@@ -54,7 +54,7 @@ function ChangeGroup({ action, items }: Readonly<{ action: string; items: Change
           <div key={`${cfg.label}-${item.summary}`} className="flex gap-3">
             <div
               className={cn(
-                "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border bg-content1 shadow-sm",
+                "flex shrink-0 items-center justify-center rounded-lg border bg-content1 shadow-sm size-8",
                 cfg.color === "success" && "border-success-200 text-success",
                 cfg.color === "primary" && "border-primary-200 text-info",
                 cfg.color === "danger" && "border-danger-200 text-danger",
@@ -62,7 +62,7 @@ function ChangeGroup({ action, items }: Readonly<{ action: string; items: Change
                 cfg.color === "default" && "border-default-200 text-foreground-500"
               )}
             >
-              <Icon className="h-4 w-4" />
+              <Icon className="size-4" />
             </div>
             <div className="min-w-0 flex-1 space-y-1 py-1">
               <p className="text-foreground-600 text-sm leading-relaxed">{item.summary}</p>

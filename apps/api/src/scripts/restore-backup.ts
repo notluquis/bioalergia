@@ -1,7 +1,7 @@
 // Restore from backup_*.json[.gz] produced by services/backups.ts
 //
 // Usage:
-//   pnpm tsx src/scripts/restore-backup.ts /path/to/backup.json[.gz] [--dry] [--truncate] [--tables=A,B]
+//   node src/scripts/restore-backup.ts /path/to/backup.json[.gz] [--dry] [--truncate] [--tables=A,B]
 
 import { createReadStream, existsSync, statSync } from "node:fs";
 import { dirname, resolve as resolvePath } from "node:path";
@@ -376,11 +376,13 @@ class SinglePassProgress {
   start = Date.now();
   bytesRead = 0;
   lastTick = 0;
+  totalBytes: number;
+  label: string;
 
-  constructor(
-    readonly totalBytes: number,
-    readonly label: string
-  ) {}
+  constructor(totalBytes: number, label: string) {
+    this.totalBytes = totalBytes;
+    this.label = label;
+  }
 
   addBytes(n: number) {
     this.bytesRead += n;
@@ -660,12 +662,12 @@ async function main() {
         progress.tick();
       })) {
         for (let i = 0; i < chunk.length; i++) progress.addRow();
-        if (dry) continue;
+        if (dry || !delegate) continue;
         try {
           const data = chunk.map((row) => normalizeRow(modelName, row));
           const r =
             (await createManyOverride(modelName, chunk, dbModule)) ??
-            (await delegate!.createMany({ data, skipDuplicates: true }));
+            (await delegate.createMany({ data, skipDuplicates: true }));
           inserted += r.count;
         } catch (err) {
           chunkErrors += 1;

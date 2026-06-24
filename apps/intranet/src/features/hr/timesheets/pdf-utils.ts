@@ -1,4 +1,4 @@
-import dayjs from "dayjs";
+import { formatChile } from "@/lib/dates";
 import ky from "ky";
 import type { Employee } from "@/features/hr/employees/types";
 import { formatRetentionPercent } from "~/shared/retention";
@@ -86,7 +86,7 @@ export async function generateTimesheetPdfBase64(
     const detailBody = bulkRows
       .filter((row) => row.entrada || row.salida)
       .map((row) => [
-        dayjs(row.date).format("DD-MM-YYYY"),
+        formatChile(row.date, "DD-MM-YYYY"),
         row.entrada || "-",
         row.salida || "-",
         row.overtime || "-",

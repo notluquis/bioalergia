@@ -1,6 +1,6 @@
+import { formatChile } from "@/lib/dates";
 import { Button, Card, Checkbox, Chip, Spinner } from "@heroui/react";
 import { Link, useParams } from "@tanstack/react-router";
-import dayjs from "dayjs";
 import { useState } from "react";
 import { AppDateTimePicker } from "@/components/forms/AppDatePicker";
 import type {
@@ -79,7 +79,7 @@ export function OutreachEstablishmentDetailPage() {
   const [showInterForm, setShowInterForm] = useState(false);
   const [interDraft, setInterDraft] = useState({
     tipo: "LLAMADA_REALIZADA" as OutreachInteractionType,
-    fecha: dayjs().format("YYYY-MM-DDTHH:mm"),
+    fecha: formatChile(new Date(), "YYYY-MM-DDTHH:mm"),
     contenido: "",
     contactoId: "",
     resultado: "",
@@ -104,7 +104,11 @@ export function OutreachEstablishmentDetailPage() {
 
   return (
     <div className="space-y-4 p-6">
-      <Link to="/outreach/establecimientos" className="text-default-500 text-sm hover:underline">
+      <Link
+        to="/outreach/directorio"
+        search={{ tab: "establecimientos" }}
+        className="text-default-500 text-sm hover:underline"
+      >
         ← Volver al listado
       </Link>
 
@@ -269,25 +273,27 @@ export function OutreachEstablishmentDetailPage() {
         <Card.Content className="space-y-3 p-4">
           {showContactForm && (
             <form
-              onSubmit={async (ev) => {
+              onSubmit={(ev) => {
                 ev.preventDefault();
                 if (!contactDraft.nombre || !contactDraft.cargo) return;
-                await upsertContact.mutateAsync({
-                  establecimientoRbd: e.rbd,
-                  nombre: contactDraft.nombre,
-                  cargo: contactDraft.cargo,
-                  email: contactDraft.email || null,
-                  telefono: contactDraft.telefono || null,
-                  esPrincipal: contactDraft.esPrincipal,
-                });
-                setContactDraft({
-                  nombre: "",
-                  cargo: "",
-                  email: "",
-                  telefono: "",
-                  esPrincipal: false,
-                });
-                setShowContactForm(false);
+                void (async () => {
+                  await upsertContact.mutateAsync({
+                    establecimientoRbd: e.rbd,
+                    nombre: contactDraft.nombre,
+                    cargo: contactDraft.cargo,
+                    email: contactDraft.email || null,
+                    telefono: contactDraft.telefono || null,
+                    esPrincipal: contactDraft.esPrincipal,
+                  });
+                  setContactDraft({
+                    nombre: "",
+                    cargo: "",
+                    email: "",
+                    telefono: "",
+                    esPrincipal: false,
+                  });
+                  setShowContactForm(false);
+                })();
               }}
               className="grid grid-cols-1 gap-3 rounded-medium bg-default-100 p-3 md:grid-cols-2"
             >
@@ -372,27 +378,29 @@ export function OutreachEstablishmentDetailPage() {
         <Card.Content className="space-y-3 p-4">
           {showInterForm && (
             <form
-              onSubmit={async (ev) => {
+              onSubmit={(ev) => {
                 ev.preventDefault();
                 if (!interDraft.contenido) return;
-                await createInter.mutateAsync({
-                  establecimientoRbd: e.rbd,
-                  tipo: interDraft.tipo,
-                  fecha: new Date(interDraft.fecha),
-                  contenido: interDraft.contenido,
-                  contactoId: interDraft.contactoId
-                    ? Number.parseInt(interDraft.contactoId, 10)
-                    : null,
-                  resultado: interDraft.resultado || null,
-                });
-                setInterDraft({
-                  tipo: "LLAMADA_REALIZADA",
-                  fecha: dayjs().format("YYYY-MM-DDTHH:mm"),
-                  contenido: "",
-                  contactoId: "",
-                  resultado: "",
-                });
-                setShowInterForm(false);
+                void (async () => {
+                  await createInter.mutateAsync({
+                    establecimientoRbd: e.rbd,
+                    tipo: interDraft.tipo,
+                    fecha: new Date(interDraft.fecha),
+                    contenido: interDraft.contenido,
+                    contactoId: interDraft.contactoId
+                      ? Number.parseInt(interDraft.contactoId, 10)
+                      : null,
+                    resultado: interDraft.resultado || null,
+                  });
+                  setInterDraft({
+                    tipo: "LLAMADA_REALIZADA",
+                    fecha: formatChile(new Date(), "YYYY-MM-DDTHH:mm"),
+                    contenido: "",
+                    contactoId: "",
+                    resultado: "",
+                  });
+                  setShowInterForm(false);
+                })();
               }}
               className="grid grid-cols-1 gap-3 rounded-medium bg-default-100 p-3 md:grid-cols-2"
             >
@@ -452,7 +460,7 @@ export function OutreachEstablishmentDetailPage() {
                         {INTERACCION_LABELS[i.tipo]}
                       </Chip>
                       <span className="text-default-500 text-xs">
-                        {dayjs(i.fecha).format("DD-MM-YYYY HH:mm")}
+                        {formatChile(i.fecha, "DD-MM-YYYY HH:mm")}
                       </span>
                       {i.creadoPorNombre && (
                         <span className="text-default-400 text-xs">· {i.creadoPorNombre}</span>

@@ -1,7 +1,9 @@
-import { Button, Chip, Dropdown, Label, SearchField, type Selection } from "@heroui/react";
+import { Chip, Dropdown, Label, SearchField, type Selection } from "@heroui/react";
 import type { Column } from "@tanstack/react-table";
 import { Check, PlusCircle } from "lucide-react";
 import { type ComponentType, useMemo, useState } from "react";
+
+import { filterOptionsBySearch, resolveFacetedFilterValue } from "./faceted-filter-utils";
 
 interface DataTableFacetedFilterProps<TData, TValue> {
   readonly column?: Column<TData, TValue>;
@@ -25,35 +27,25 @@ export function DataTableFacetedFilter<TData, TValue>({
   );
   const [search, setSearch] = useState("");
 
-  const filteredOptions = options.filter((option) =>
-    option.label.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredOptions = filterOptionsBySearch(options, search);
 
   const handleSelectionChange = (keys: Selection) => {
-    const nextKeys =
-      keys === "all" ? new Set(options.map((option) => option.value)) : new Set(keys);
-    if (nextKeys.has("clear")) {
-      column?.setFilterValue(undefined);
-      return;
-    }
-    column?.setFilterValue(nextKeys.size > 0 ? [...nextKeys] : undefined);
+    column?.setFilterValue(resolveFacetedFilterValue(options, keys));
   };
 
   return (
     <Dropdown>
-      <Dropdown.Trigger>
-        <Button className="h-8 border-dashed" size="sm" variant="outline">
-          <PlusCircle className="mr-2 h-4 w-4" />
-          {title}
-          {selectedKeys.size > 0 && (
-            <>
-              <div className="mx-2 h-4 w-px bg-default-100" />
-              <Chip size="sm" variant="soft">
-                {selectedKeys.size}
-              </Chip>
-            </>
-          )}
-        </Button>
+      <Dropdown.Trigger className="button button--sm button--outline h-8 border-dashed">
+        <PlusCircle className="mr-2 size-4" aria-hidden />
+        {title}
+        {selectedKeys.size > 0 && (
+          <>
+            <div className="mx-2 h-4 w-px bg-default-100" />
+            <Chip size="sm" variant="soft">
+              {selectedKeys.size}
+            </Chip>
+          </>
+        )}
       </Dropdown.Trigger>
       <Dropdown.Popover className="w-50 p-0" placement="bottom start">
         <div className="border-default-200/60 border-b p-2">
@@ -79,20 +71,20 @@ export function DataTableFacetedFilter<TData, TValue>({
         >
           {filteredOptions.length === 0 && (
             <Dropdown.Item id="empty" isDisabled textValue="No results found">
-              <span className="py-6 text-center text-default-400 text-sm">No results found.</span>
+              <span className="py-6 text-center text-default-600 text-sm">No results found.</span>
             </Dropdown.Item>
           )}
           {filteredOptions.map((option) => (
             <Dropdown.Item id={option.value} key={option.value} textValue={option.label}>
               <Dropdown.ItemIndicator>
                 {({ isSelected }) =>
-                  isSelected ? <Check className="h-4 w-4 text-primary" /> : null
+                  isSelected ? <Check className="text-primary size-4" /> : null
                 }
               </Dropdown.ItemIndicator>
-              {option.icon && <option.icon className="mr-2 h-4 w-4 opacity-50" />}
+              {option.icon && <option.icon className="mr-2 opacity-50 size-4" />}
               <Label>{option.label}</Label>
               {facets?.get(option.value) && (
-                <span className="ml-auto flex h-4 w-4 items-center justify-center font-mono text-xs">
+                <span className="ml-auto flex items-center justify-center font-mono text-xs size-4">
                   {facets.get(option.value)}
                 </span>
               )}

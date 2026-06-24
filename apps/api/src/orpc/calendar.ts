@@ -59,8 +59,9 @@ import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
 import { z } from "zod";
-import { getSessionUser, hasPermission } from "../auth.ts";
-import { googleCalendarConfig } from "../config.ts";
+import { getSessionUser, hasPermission } from "../lib/auth.ts";
+import { googleCalendarConfig } from "../lib/config.ts";
+import { dbDateToISO } from "../lib/time.ts";
 import {
   getCalendarJobStatus,
   isMissingClassificationFilterKey,
@@ -96,7 +97,7 @@ import {
   loadSettings,
   updateCalendarEventClassification,
 } from "../services/calendar.ts";
-import { rebuildClinicalSeries } from "../services/clinical-series.ts";
+import { rebuildClinicalSeries } from "../services/clinical-series/rebuild.ts";
 import { SuperJSONRPCHandler } from "./superjson.ts";
 
 configureSuperjson();
@@ -212,11 +213,8 @@ function normalizeDateRange(from: string, to: string) {
 }
 
 function toDateOnlyString(value: Date | null | undefined): null | string {
-  if (!value) {
-    return null;
-  }
-
-  return value.toISOString().slice(0, 10);
+  // @db.Date (UTC-anchored) -> "YYYY-MM-DD". Canonical helper in lib/time.ts.
+  return dbDateToISO(value);
 }
 
 function toDateTimeString(value: Date | null | undefined): null | string {
@@ -636,7 +634,7 @@ const listSyncLogs = authed
       excluded: Number(log.excluded ?? 0),
       errorMessage: log.errorMessage ?? null,
       changeDetails: log.changeDetails ?? null,
-      logEntries: log.logEntries.map((entry) => ({
+      logEntries: log.logEntries.map((entry: (typeof log.logEntries)[number]) => ({
         message: entry.message,
         severity: entry.severity,
         attributes: entry.attributes,

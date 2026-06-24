@@ -1,6 +1,6 @@
+import { formatChile } from "@/lib/dates";
 import { Button } from "@heroui/react";
 import { type ColumnDef, createColumnHelper } from "@tanstack/react-table";
-import dayjs from "dayjs";
 import type { Transaction } from "@/features/finance/types";
 import { fmtCLP } from "@/lib/format";
 
@@ -77,7 +77,7 @@ const quickViewHelper = createColumnHelper<Transaction>();
 export const getQuickViewColumns = () =>
   [
     quickViewHelper.accessor("transactionDate", {
-      cell: ({ getValue }) => dayjs(getValue()).tz().format("DD MMM YYYY HH:mm"),
+      cell: ({ getValue }) => formatChile(getValue(), "DD MMM YYYY HH:mm"),
       header: "Fecha",
     }),
     quickViewHelper.accessor("description", {

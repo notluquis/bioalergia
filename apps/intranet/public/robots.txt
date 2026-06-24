@@ -1,0 +1,5 @@
+# Intranet clínica — no se indexa.
+User-agent: *
+Disallow: /
+
+# Sitemap intencionalmente omitido (no public surface).

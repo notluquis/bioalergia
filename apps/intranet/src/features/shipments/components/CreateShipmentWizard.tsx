@@ -1,6 +1,8 @@
+// oxlint-disable typescript/no-non-null-assertion -- TODO(strict-null): refactor each `!` to invariant() or explicit guard. Tracked in repo-wide non-null cleanup.
 import type { Key } from "@heroui/react";
 import {
   Button,
+  Checkbox,
   Chip,
   Description,
   FieldError,
@@ -27,13 +29,17 @@ import {
   PackageCheck,
   Phone,
   Plus,
+  Sparkles,
   Truck,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { FeatureErrorBoundary } from "@/components/ui/FeatureErrorBoundary";
 import { useToast } from "@/context/ToastContext";
 import { listAddresses } from "@/features/addresses/api";
 import { AddressFormModal } from "@/features/addresses/components/AddressFormModal";
+import { addressKeys, cxKeys } from "@/features/addresses/queries";
 import { fetchPatient } from "@/features/patients/api";
+import { patientKeys } from "@/features/patients/queries";
 import {
   createShipment,
   fetchCommercialOffices,
@@ -42,6 +48,7 @@ import {
   fetchRegions,
   quoteShipment,
 } from "../api";
+import { shipmentKeys } from "../queries";
 
 const CLP = new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP" });
 
@@ -61,6 +68,13 @@ interface WizardState {
   serviceTypeCode: string;
   serviceDescription: string;
   serviceValue: number;
+  // Add-on services (e.g. 417 = Cobertura Extendida) the operator
+  // opted into during the quote step. Persisted so they're attached
+  // to the OT request when the shipment is created.
+  additionalServiceCodes: number[];
+  // Sum of add-on costs (CLP) computed at quote time. Stored on the
+  // shipment row so revenue reports don't need to re-quote.
+  additionalServicesCost: number;
   weight: number;
   height: number;
   width: number;
@@ -91,16 +105,21 @@ export function CreateShipmentWizard({
   const [step, setStep] = useState<Step>("coverage");
   const [state, setState] = useState<Partial<WizardState>>({
     deliveryMode: "home",
-    weight: 1,
-    height: 10,
-    width: 10,
-    length: 10,
-    declaredValue: 10000,
+    // Defaults match the clinic's most common shipment: a 20×12×5 cm
+    // box with a 80 g refrigerant + insulin syringe + 0.5 ml
+    // immunotherapy fluid (~0.15 kg total). Operator tweaks per
+    // exception, not per shipment.
+    weight: 0.2,
+    height: 5,
+    width: 12,
+    length: 20,
+    declaredValue: 60000,
     cashOnDelivery: 0,
+    contentDescription: "Vacuna inmunoterapia con caja de 20×12×5 cm + unidad refrigerante 80 gr",
   });
 
   const { data: patientData } = useQuery({
-    queryKey: ["patient", String(patientId)],
+    queryKey: patientKeys.detail(String(patientId)),
     queryFn: () => fetchPatient(patientId),
     staleTime: 1000 * 60 * 5,
   });
@@ -112,12 +131,13 @@ export function CreateShipmentWizard({
     setStep("coverage");
     setState({
       deliveryMode: "home",
-      weight: 1,
-      height: 10,
-      width: 10,
-      length: 10,
-      declaredValue: 10000,
+      weight: 0.2,
+      height: 5,
+      width: 12,
+      length: 20,
+      declaredValue: 60000,
       cashOnDelivery: 0,
+      contentDescription: "Vacuna inmunoterapia con caja de 20×12×5 cm + unidad refrigerante 80 gr",
     });
     setResult(null);
     onClose();
@@ -147,62 +167,70 @@ export function CreateShipmentWizard({
             <StepIndicator step={step} />
 
             <Modal.Body className="mt-4 max-h-[70vh] overflow-y-auto overscroll-contain">
-              {step === "coverage" && patientData && (
-                <CoverageStep
-                  state={state}
-                  personId={patientData.person.id}
-                  onNext={(data) => {
-                    merge(data);
-                    setStep("quote");
-                  }}
-                />
-              )}
-              {step === "quote" && (
-                <QuoteStep
-                  state={state}
-                  onBack={() => setStep("coverage")}
-                  onNext={(data) => {
-                    merge(data);
-                    setStep("recipient");
-                  }}
-                />
-              )}
-              {step === "recipient" && (
-                <RecipientStep
-                  state={state}
-                  patientDefaults={{
-                    name: patientName,
-                    phone: patientData?.person.phone ?? "",
-                    email: patientData?.person.email ?? "",
-                  }}
-                  onBack={() => setStep("quote")}
-                  onNext={(data) => {
-                    merge(data);
-                    setStep("confirm");
-                  }}
-                />
-              )}
-              {step === "confirm" && (
-                <ConfirmStep
-                  state={state as WizardState}
-                  patientId={patientId}
-                  onBack={() => setStep("recipient")}
-                  onSuccess={(res) => {
-                    setResult(res);
-                    setStep("done");
-                    void queryClient.invalidateQueries({ queryKey: ["shipments", patientId] });
-                    success(`OT ${res.otNumber} creada correctamente`);
-                  }}
-                  onError={(msg) => toastError(msg)}
-                />
-              )}
-              {step === "done" && result && (
-                <DoneStep
-                  otNumber={result.otNumber}
-                  labelBase64={result.labelBase64}
-                  onClose={handleClose}
-                />
-              )}
+              <FeatureErrorBoundary
+                featureName="Nuevo Despacho"
+                onClose={handleClose}
+                resetKey={step}
+              >
+                {step === "coverage" && patientData && (
+                  <CoverageStep
+                    state={state}
+                    personId={patientData.person.id}
+                    onNext={(data) => {
+                      merge(data);
+                      setStep("quote");
+                    }}
+                  />
+                )}
+                {step === "quote" && (
+                  <QuoteStep
+                    state={state}
+                    onBack={() => setStep("coverage")}
+                    onNext={(data) => {
+                      merge(data);
+                      setStep("recipient");
+                    }}
+                  />
+                )}
+                {step === "recipient" && (
+                  <RecipientStep
+                    state={state}
+                    patientDefaults={{
+                      name: patientName,
+                      phone: patientData?.person.phone ?? "",
+                      email: patientData?.person.email ?? "",
+                    }}
+                    onBack={() => setStep("quote")}
+                    onNext={(data) => {
+                      merge(data);
+                      setStep("confirm");
+                    }}
+                  />
+                )}
+                {step === "confirm" && (
+                  <ConfirmStep
+                    state={state as WizardState}
+                    patientId={patientId}
+                    onBack={() => setStep("recipient")}
+                    onSuccess={(res) => {
+                      setResult(res);
+                      setStep("done");
+                      void queryClient.invalidateQueries({
+                        queryKey: shipmentKeys.byPatient(patientId),
+                      });
+                      success(`OT ${res.otNumber} creada correctamente`);
+                    }}
+                    onError={(msg) => toastError(msg)}
+                  />
+                )}
+                {step === "done" && result && (
+                  <DoneStep
+                    otNumber={result.otNumber}
+                    labelBase64={result.labelBase64}
+                    onClose={handleClose}
+                  />
+                )}
+              </FeatureErrorBoundary>
             </Modal.Body>
           </Modal.Dialog>
         </Modal.Container>
@@ -223,31 +251,32 @@ const STEP_LABELS: Record<Step, string> = {
 };
 
 function StepIndicator({ step }: { step: Step }) {
+  // Wizard progress (NOT Tabs — clicking should not jump steps). <ol>
+  // + aria-current="step" per WAI-ARIA Authoring Practices; completed
+  // steps show a check so progress is not color-only. Same compound
+  // pattern as PhoneMigrationCard's StepIndicator.
   const current = STEPS.indexOf(step);
   return (
-    <div className="flex items-center gap-1">
-      {STEPS.map((s, i) => (
-        <div key={s} className="flex items-center gap-1">
-          <div
-            className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${
-              i < current
-                ? "bg-primary text-primary-foreground"
-                : i === current
-                  ? "bg-primary/20 text-primary"
-                  : "bg-default-100 text-default-400"
-            }`}
-          >
-            {i + 1}
-          </div>
-          <span
-            className={`text-xs ${i === current ? "font-semibold text-primary" : "text-default-400"}`}
-          >
-            {STEP_LABELS[s]}
-          </span>
-          {i < STEPS.length - 1 && <div className="mx-1 h-px w-4 bg-default-200" />}
-        </div>
-      ))}
-    </div>
+    <ol aria-label="Progreso del despacho" className="flex flex-wrap items-center gap-1.5">
+      {STEPS.map((s, i) => {
+        const isComplete = i < current;
+        const isCurrent = i === current;
+        return (
+          <li key={s} aria-current={isCurrent ? "step" : undefined}>
+            <Chip
+              size="sm"
+              variant={isCurrent ? "primary" : "soft"}
+              color={isComplete ? "success" : isCurrent ? "accent" : "default"}
+            >
+              {isComplete ? <CheckCircle size={12} aria-hidden /> : null}
+              <Chip.Label>
+                {i + 1}. {STEP_LABELS[s]}
+              </Chip.Label>
+            </Chip>
+          </li>
+        );
+      })}
+    </ol>
   );
 }
 
@@ -379,7 +408,7 @@ function HomeAddressPicker({
   onNext: (data: Partial<WizardState>) => void;
 }) {
   const { data: addresses = [], isLoading } = useQuery({
-    queryKey: ["addresses", personId],
+    queryKey: addressKeys.byPerson(personId),
     queryFn: () => listAddresses(personId),
   });
   // Auto-select primary (or first) on first render. User can override.
@@ -473,17 +502,24 @@ function HomeAddressPicker({
         </Button>
         <Button
           isDisabled={!canContinue}
-          onPress={() =>
+          onPress={() => {
+            // canContinue guards against null selected, but the deployed
+            // bundle was crashing on `selected!.comuna` (likely a stale
+            // closure or an address row whose schema-required comuna
+            // arrived null from the backend). Defensive guard + ?? "" so
+            // the wizard never throws — downstream API call will surface
+            // the missing-comuna case as a validation error instead.
+            if (!selected) return;
             onNext({
               deliveryMode: "home",
-              addressId: selected!.id,
-              coverageRegionCode: selected!.coverageCode ?? "",
-              communeName: selected!.comuna,
-              regionId: selected!.regionCode ?? "",
+              addressId: selected.id,
+              coverageRegionCode: selected.coverageCode ?? "",
+              communeName: selected.comuna ?? "",
+              regionId: selected.regionCode ?? "",
               commercialOfficeId: "",
               commercialOfficeName: "",
-            })
-          }
+            });
+          }}
         >
           Continuar
         </Button>
@@ -517,20 +553,20 @@ function OfficePicker({
   const [officeKind, setOfficeKind] = useState<"0" | "4">("0");
 
   const { data: regionsData, isLoading: loadingRegions } = useQuery({
-    queryKey: ["cx-regions"],
+    queryKey: cxKeys.regions,
     queryFn: fetchRegions,
     staleTime: 1000 * 60 * 60,
   });
 
   const { data: communesData, isLoading: loadingCommunes } = useQuery({
-    queryKey: ["cx-communes", regionId],
+    queryKey: cxKeys.communes(regionId),
     queryFn: () => fetchCommunes(String(regionId)),
     enabled: Boolean(regionId),
     staleTime: 1000 * 60 * 60,
   });
 
   const { data: officesData, isLoading: loadingOffices } = useQuery({
-    queryKey: ["cx-offices", regionId, communeName, officeKind],
+    queryKey: cxKeys.offices(regionId, communeName, officeKind),
     queryFn: () =>
       fetchCommercialOffices({
         regionCode: String(regionId),
@@ -546,7 +582,7 @@ function OfficePicker({
   // /addresses/georeference). Only enabled when we have a chilexpress
   // addressId on file.
   const { data: addressesData } = useQuery({
-    queryKey: ["addresses", personId],
+    queryKey: addressKeys.byPerson(personId),
     queryFn: () => listAddresses(personId),
     staleTime: 1000 * 60,
   });
@@ -556,7 +592,7 @@ function OfficePicker({
   const nearbyAddressId = primaryAddressId?.chilexpressAddressId ?? null;
 
   const { data: nearbyData } = useQuery({
-    queryKey: ["cx-nearby-offices", nearbyAddressId],
+    queryKey: cxKeys.nearbyOffices(nearbyAddressId),
     queryFn: () => fetchNearbyOffices(nearbyAddressId!),
     enabled: nearbyAddressId != null,
     staleTime: 1000 * 60 * 30,
@@ -684,6 +720,30 @@ function OfficePicker({
           </Select.Popover>
         </Select>
       </div>
+
+      {coverageCode
+        ? (() => {
+            const picked = (communesData?.communes ?? []).find(
+              (c) => c.coverageRegionCode === coverageCode
+            );
+            if (!picked) return null;
+            const warnings: string[] = [];
+            if (!picked.supportsCashOnDelivery)
+              warnings.push("La comuna NO acepta envío por pagar destino (cash on delivery).");
+            if (!picked.supportsReturn) warnings.push("La comuna NO acepta logística inversa.");
+            if (warnings.length === 0) return null;
+            return (
+              <div className="flex items-start gap-2 rounded-xl border border-warning-200 bg-warning-50 px-3 py-2 text-warning-900 text-xs">
+                <AlertTriangle size={16} className="mt-0.5 shrink-0" />
+                <ul className="list-disc space-y-0.5 pl-4">
+                  {warnings.map((w) => (
+                    <li key={w}>{w}</li>
+                  ))}
+                </ul>
+              </div>
+            );
+          })()
+        : null}
 
       {coverageCode && (
         <div className="space-y-3">
@@ -843,13 +903,28 @@ function QuoteStep({
   onNext: (data: Partial<WizardState>) => void;
 }) {
   const [dims, setDims] = useState({
-    weight: state.weight ?? 1,
-    height: state.height ?? 10,
-    width: state.width ?? 10,
-    length: state.length ?? 10,
-    declaredValue: state.declaredValue ?? 10000,
+    weight: state.weight ?? 0.2,
+    height: state.height ?? 5,
+    width: state.width ?? 12,
+    length: state.length ?? 20,
+    declaredValue: state.declaredValue ?? 60000,
   });
+
+  // Clinic shipping presets. Each one swaps every dimension at once
+  // (no half-applied state) and resets the selected service so a fresh
+  // quote runs. Add more presets here when new packaging is approved.
+  const presets: { id: string; label: string; values: typeof dims }[] = [
+    {
+      id: "vacuna-inmuno",
+      label: "Vacuna inmunoterapia (20×12×5 cm · 200 g)",
+      values: { weight: 0.2, height: 5, width: 12, length: 20, declaredValue: 60000 },
+    },
+  ];
   const [selectedCode, setSelectedCode] = useState<string | null>(state.serviceTypeCode ?? null);
+  // Opt-in add-on services per service tier. Required ones are
+  // always included regardless of operator action; required toggle is
+  // disabled in the UI.
+  const [extraCodes, setExtraCodes] = useState<number[]>(state.additionalServiceCodes ?? []);
 
   // Debounce dims so re-typing a value doesn't blast Chilexpress.
   const [debouncedDims, setDebouncedDims] = useState(dims);
@@ -865,15 +940,14 @@ function QuoteStep({
     isError,
     error,
   } = useQuery({
-    queryKey: [
-      "cx-quote",
+    queryKey: cxKeys.quote(
       state.coverageRegionCode,
       debouncedDims.weight,
       debouncedDims.height,
       debouncedDims.width,
       debouncedDims.length,
-      debouncedDims.declaredValue,
-    ],
+      debouncedDims.declaredValue
+    ),
     queryFn: () =>
       quoteShipment({
         originCoverageCode: state.coverageRegionCode ?? "",
@@ -907,64 +981,134 @@ function QuoteStep({
         Ajusta las dimensiones — la cotización se actualiza automáticamente.
       </div>
 
+      {presets.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 rounded-xl bg-default-50 px-3 py-2">
+          <span className="flex items-center gap-1 text-default-500 text-xs">
+            <Sparkles size={12} />
+            Presets:
+          </span>
+          {presets.map((p) => (
+            <Button
+              key={p.id}
+              size="sm"
+              variant="tertiary"
+              onPress={() => {
+                setDims(p.values);
+                setSelectedCode(null);
+              }}
+            >
+              <Package size={14} />
+              {p.label}
+            </Button>
+          ))}
+        </div>
+      )}
+
       <div className="grid grid-cols-2 gap-4">
         <NumberField
+          fullWidth
           isRequired
           minValue={0.1}
+          // Chilexpress rejects shipments over 100 kg (FAQ "Dimensión y/o peso máximo").
+          maxValue={100}
+          step={0.1}
           value={dims.weight}
+          // FAQ "Cómo se ingresan los valores de pesos y dimensiones": hasta 2 decimales,
+          // separados por punto. JS number → JSON.stringify usa siempre punto.
+          formatOptions={{ minimumFractionDigits: 1, maximumFractionDigits: 2 }}
           onChange={(v) => setDims((d) => ({ ...d, weight: v }))}
         >
           <Label>Peso (kg)</Label>
           <NumberField.Group>
-            <NumberField.Input />
+            <NumberField.DecrementButton />
+            <NumberField.Input className="flex-1" />
+            <NumberField.IncrementButton />
           </NumberField.Group>
         </NumberField>
         <NumberField
+          fullWidth
           isRequired
-          minValue={1}
+          // minValue DEBE ser múltiplo de step: React Aria engancha el valor a la
+          // grilla minValue + n*step. Con minValue=1, step=1000 la grilla era
+          // 1, 1001, …, 60001 → 60000 se redondeaba a 60001. minValue=0 alinea.
+          minValue={0}
+          step={1000}
           value={dims.declaredValue}
+          formatOptions={{ style: "currency", currency: "CLP", maximumFractionDigits: 0 }}
           onChange={(v) => setDims((d) => ({ ...d, declaredValue: v }))}
         >
-          <Label>Valor declarado ($)</Label>
+          <Label>Valor declarado</Label>
           <NumberField.Group>
-            <NumberField.Input />
+            <NumberField.DecrementButton />
+            <NumberField.Input className="flex-1" />
+            <NumberField.IncrementButton />
           </NumberField.Group>
         </NumberField>
+        {/*
+          Chilexpress acepta hasta 2 decimales por lado (FAQ "valores de pesos y
+          dimensiones") y rechaza envíos con cualquier lado >200 cm. Sobre 70 cm
+          o sobre 15 kg el servicio se enruta a "Encomiendas Grandes" (cód 41/42).
+        */}
         <NumberField
+          fullWidth
           isRequired
           minValue={1}
+          maxValue={200}
+          step={0.5}
           value={dims.height}
+          formatOptions={{ maximumFractionDigits: 2 }}
           onChange={(v) => setDims((d) => ({ ...d, height: v }))}
         >
           <Label>Alto (cm)</Label>
           <NumberField.Group>
-            <NumberField.Input />
+            <NumberField.DecrementButton />
+            <NumberField.Input className="flex-1" />
+            <NumberField.IncrementButton />
           </NumberField.Group>
         </NumberField>
         <NumberField
+          fullWidth
           isRequired
           minValue={1}
+          maxValue={200}
+          step={0.5}
           value={dims.width}
+          formatOptions={{ maximumFractionDigits: 2 }}
           onChange={(v) => setDims((d) => ({ ...d, width: v }))}
         >
           <Label>Ancho (cm)</Label>
           <NumberField.Group>
-            <NumberField.Input />
+            <NumberField.DecrementButton />
+            <NumberField.Input className="flex-1" />
+            <NumberField.IncrementButton />
           </NumberField.Group>
         </NumberField>
         <NumberField
+          fullWidth
           isRequired
           minValue={1}
+          maxValue={200}
+          step={0.5}
           value={dims.length}
           className="col-span-2"
+          formatOptions={{ maximumFractionDigits: 2 }}
           onChange={(v) => setDims((d) => ({ ...d, length: v }))}
         >
           <Label>Largo (cm)</Label>
           <NumberField.Group>
-            <NumberField.Input />
+            <NumberField.DecrementButton />
+            <NumberField.Input className="flex-1" />
+            <NumberField.IncrementButton />
           </NumberField.Group>
         </NumberField>
       </div>
+
+      {(dims.weight > 15 || dims.height > 70 || dims.width > 70 || dims.length > 70) && (
+        <p className="rounded-md bg-warning-50 px-3 py-2 text-sm text-warning-700">
+          Esta carga supera 70 cm o 15 kg: Chilexpress la enrutará al servicio{" "}
+          <strong>Encomiendas Grandes</strong> (tarifa distinta, tiempo de entrega más largo).
+        </p>
+      )}
 
       {isFetching ? (
         <div className="flex items-center justify-center gap-2 py-4 text-default-500 text-sm">
@@ -986,21 +1130,64 @@ function QuoteStep({
               <Radio.Control>
                 <Radio.Indicator />
               </Radio.Control>
-              <Radio.Content className="w-full">
+              <Radio.Content className="w-full space-y-1">
                 <div className="flex items-center justify-between gap-2">
                   <Label>{svc.serviceDescription}</Label>
                   <span className="font-bold text-primary text-sm">
                     {CLP.format(svc.serviceValue)}
                   </span>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-1.5">
                   {svc.deliveryTime && <Description>{svc.deliveryTime}</Description>}
                   {svc.serviceTypeCode === cheapestCode && (
                     <Chip color="success" size="sm" variant="soft">
-                      Más barato
+                      <Chip.Label>Más barato</Chip.Label>
+                    </Chip>
+                  )}
+                  {svc.didUseVolumetricWeight && (
+                    <Chip color="warning" size="sm" variant="soft">
+                      <Chip.Label>Peso volumétrico</Chip.Label>
+                    </Chip>
+                  )}
+                  {typeof svc.finalWeight === "number" && (
+                    <Chip color="default" size="sm" variant="soft">
+                      <Chip.Label>Cobrado por {svc.finalWeight.toFixed(2)} kg</Chip.Label>
                     </Chip>
                   )}
                 </div>
+                {svc.conditions ? (
+                  <p className="text-default-500 text-xs">{svc.conditions}</p>
+                ) : null}
+                {svc.additionalServices && svc.additionalServices.length > 0 ? (
+                  <div className="flex flex-col gap-1.5 pt-1">
+                    <span className="text-default-400 text-xs">Servicios opcionales:</span>
+                    {svc.additionalServices.map((extra) => {
+                      const isSelected =
+                        extra.required || extraCodes.includes(extra.serviceTypeCode);
+                      const isPicked = svc.serviceTypeCode === selectedCode;
+                      return (
+                        <Checkbox
+                          key={`${svc.serviceTypeCode}-${extra.serviceTypeCode}`}
+                          isSelected={isSelected}
+                          isDisabled={!isPicked || extra.required}
+                          onChange={(next) => {
+                            setExtraCodes((arr) =>
+                              next
+                                ? Array.from(new Set([...arr, extra.serviceTypeCode]))
+                                : arr.filter((c) => c !== extra.serviceTypeCode)
+                            );
+                          }}
+                        >
+                          <Checkbox.Indicator />
+                          <span className="text-xs">
+                            {extra.serviceDescription} (+{CLP.format(extra.serviceValue)})
+                            {extra.required ? " · obligatorio" : ""}
+                          </span>
+                        </Checkbox>
+                      );
+                    })}
+                  </div>
+                ) : null}
               </Radio.Content>
             </Radio>
           ))}
@@ -1019,14 +1206,28 @@ function QuoteStep({
         </Button>
         <Button
           isDisabled={!selectedService}
-          onPress={() =>
+          onPress={() => {
+            if (!selectedService) return;
+            // Merge required add-ons with operator-chosen ones so the
+            // server-side request always reflects what the carrier
+            // actually charges (required=true means Chilexpress
+            // mandates the add-on regardless of opt-in).
+            const required = (selectedService.additionalServices ?? [])
+              .filter((a) => a.required)
+              .map((a) => a.serviceTypeCode);
+            const merged = Array.from(new Set([...required, ...extraCodes]));
+            const cost = (selectedService.additionalServices ?? [])
+              .filter((a) => merged.includes(a.serviceTypeCode))
+              .reduce((sum, a) => sum + (a.serviceValue ?? 0), 0);
             onNext({
               ...debouncedDims,
-              serviceTypeCode: selectedService!.serviceTypeCode,
-              serviceDescription: selectedService!.serviceDescription,
-              serviceValue: selectedService!.serviceValue,
-            })
-          }
+              serviceTypeCode: selectedService.serviceTypeCode,
+              serviceDescription: selectedService.serviceDescription,
+              serviceValue: selectedService.serviceValue,
+              additionalServiceCodes: merged,
+              additionalServicesCost: cost,
+            });
+          }}
         >
           Continuar
         </Button>
@@ -1213,6 +1414,11 @@ function ConfirmStep({
         declaredValue: state.declaredValue,
         cashOnDelivery: state.cashOnDelivery,
         contentDescription: state.contentDescription,
+        additionalServiceCodes:
+          state.additionalServiceCodes && state.additionalServiceCodes.length > 0
+            ? state.additionalServiceCodes
+            : undefined,
+        additionalServicesCost: state.additionalServicesCost,
       }),
     onSuccess: (data) => onSuccess({ otNumber: data.otNumber, labelBase64: data.labelBase64 }),
     onError: (err) => onError((err as Error).message),

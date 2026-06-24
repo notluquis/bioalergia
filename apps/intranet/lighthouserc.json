@@ -14,7 +14,10 @@
           "is-on-https",
           "redirects-http",
           "uses-long-cache-ttl",
-          "service-worker"
+          "service-worker",
+          "errors-in-console",
+          "inspector-issues",
+          "csp-xss"
         ]
       }
     },

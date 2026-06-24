@@ -1,6 +1,5 @@
 import { Accordion, Button, Card, Chip, Skeleton, Surface } from "@heroui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import dayjs from "dayjs";
 import { Calendar as CalendarIcon, ChevronDown, RefreshCw, Settings2 } from "lucide-react";
 import { useState } from "react";
 
@@ -10,6 +9,7 @@ import { SyncProgressPanel } from "@/features/calendar/components/SyncProgressPa
 import { useCalendarEvents } from "@/features/calendar/hooks/use-calendar-events";
 import { calendarQueries } from "@/features/calendar/queries";
 import type { CalendarData, CalendarSyncLog } from "@/features/calendar/types";
+import { formatChile } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 export function CalendarSyncHistoryPage() {
   const [showConfig, setShowConfig] = useState(false);
@@ -40,9 +40,9 @@ export function CalendarSyncHistoryPage() {
     if (!log.startedAt) {
       return false;
     }
-    const started = dayjs(log.startedAt);
+    const started = new Date(log.startedAt).getTime();
     // Match backend stale timeout: 15 minutes
-    return started.isValid() && Date.now() - started.valueOf() < 15 * 60 * 1000;
+    return !Number.isNaN(started) && Date.now() - started < 15 * 60 * 1000;
   });
   const isSyncing = syncing || hasRunningSyncFromOtherSource || hasRunningSyncInHistory;
 
@@ -64,12 +64,14 @@ export function CalendarSyncHistoryPage() {
               <Button
                 isDisabled={isLoading || isSyncing}
                 isIconOnly
-                onPress={() => refetch()}
+                onPress={() => {
+                  void refetch();
+                }}
                 size="sm"
                 type="button"
                 variant="outline"
               >
-                <RefreshCw className={cn("h-4 w-4", isLoading && "")} />
+                <RefreshCw className={cn("size-4", isLoading && "")} />
               </Button>
               <Button isDisabled={isSyncing || isLoading} onPress={syncNow} size="sm" type="button">
                 {isSyncing ? "Sincronizando..." : "Sincronizar ahora"}
@@ -108,7 +110,9 @@ export function CalendarSyncHistoryPage() {
           {renderSyncHistoryContent({
             isErrorSyncLogs,
             isLoading,
-            refetch,
+            refetch: () => {
+              void refetch();
+            },
             syncError,
             syncLogs,
           })}
@@ -190,8 +194,12 @@ function SyncHistoryItem({
   defaultExpanded: boolean;
   log: CalendarSyncLog;
 }) {
-  const startedAt = log.startedAt ? dayjs(log.startedAt) : null;
-  const duration = log.finishedAt && startedAt ? dayjs(log.finishedAt).diff(startedAt, "s") : null;
+  const startedMs = log.startedAt ? new Date(log.startedAt).getTime() : Number.NaN;
+  const startedValid = !Number.isNaN(startedMs);
+  const duration =
+    log.finishedAt && startedValid
+      ? Math.round((new Date(log.finishedAt).getTime() - startedMs) / 1000)
+      : null;
   const isEmptyChange =
     log.inserted === 0 && log.updated === 0 && log.excluded === 0 && log.skipped === 0;
 
@@ -202,10 +210,10 @@ function SyncHistoryItem({
           <StatusBadge status={log.status} />
           <div className="min-w-24">
             <div className="font-medium text-sm">
-              {startedAt?.isValid() ? startedAt.tz().format("DD/MM/YYYY") : "-"}
+              {startedValid && log.startedAt ? formatChile(log.startedAt, "DD/MM/YYYY") : "-"}
             </div>
             <div className="text-default-400 text-xs">
-              {startedAt?.isValid() ? startedAt.tz().format("HH:mm:ss") : "-"}
+              {startedValid && log.startedAt ? formatChile(log.startedAt, "HH:mm:ss") : "-"}
             </div>
           </div>
           <div className="flex min-w-40 flex-1 flex-wrap items-center gap-2">
@@ -246,7 +254,7 @@ function SyncHistoryItem({
             {duration === null ? "-" : `${duration}s`}
           </div>
           <Accordion.Indicator className="ml-auto text-default-300 sm:ml-0">
-            <ChevronDown className="h-4 w-4" />
+            <ChevronDown className="size-4" />
           </Accordion.Indicator>
         </Accordion.Trigger>
       </Accordion.Heading>
@@ -320,7 +328,7 @@ function renderCalendarsList(calendars: CalendarData[]) {
           className="flex items-center gap-3 rounded-lg border border-default-100 p-3"
           key={cal.id}
         >
-          <div className="h-2 w-2 shrink-0 rounded-full bg-blue-500" />
+          <div className="shrink-0 rounded-full bg-blue-500 size-2" />
           <div className="min-w-0 flex-1">
             <span className="block truncate font-medium text-sm">{cal.name}</span>
             <div className="flex items-center justify-between gap-2">

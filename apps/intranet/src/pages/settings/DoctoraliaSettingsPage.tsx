@@ -1,3 +1,4 @@
+import { formatChile } from "@/lib/dates";
 import {
   Alert,
   Button,
@@ -9,7 +10,6 @@ import {
   Tabs,
 } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import dayjs from "dayjs";
 import {
   Activity,
   AlertCircle,
@@ -27,10 +27,10 @@ import { DoctoraliaScraperRunControlPanel } from "@/features/doctoralia/componen
 import { DoctoraliaSyncLogsPanel } from "@/features/doctoralia/components/DoctoraliaSyncLogsPanel";
 import { useMemo } from "react";
 
+import { Page } from "@/components/layouts/Page";
 import { useToast } from "@/context/ToastContext";
 import { triggerDoctoraliaEmailIngest } from "@/features/doctoralia/settings-api";
 import { doctoraliaSettingsKeys } from "@/features/doctoralia/settings-queries";
-import { PAGE_CONTAINER } from "@/lib/styles";
 import { ChecklistRow, FlowStep } from "./messaging-settings-shared";
 
 export function DoctoraliaSettingsPage() {
@@ -122,7 +122,7 @@ export function DoctoraliaSettingsPage() {
   }, [overview]);
 
   return (
-    <div className={PAGE_CONTAINER}>
+    <Page>
       <Tabs defaultSelectedKey="overview">
         <Tabs.ListContainer>
           <Tabs.List aria-label="Secciones de Doctoralia">
@@ -303,7 +303,7 @@ export function DoctoraliaSettingsPage() {
                   size="sm"
                   variant="secondary"
                 >
-                  <RefreshCw className="h-4 w-4" />
+                  <RefreshCw className="size-4" />
                   Ejecutar ingesta
                 </Button>
               </Card.Header>
@@ -356,7 +356,7 @@ export function DoctoraliaSettingsPage() {
                 {!overviewPending && overview?.listener.lastErrorMessage ? (
                   <Alert status="warning">
                     <Alert.Indicator>
-                      <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                      <AlertCircle className="mt-0.5 shrink-0 size-4" />
                     </Alert.Indicator>
                     <Alert.Content>
                       <Alert.Title>Último error IMAP</Alert.Title>
@@ -411,7 +411,7 @@ export function DoctoraliaSettingsPage() {
             <Card className="xl:col-span-2">
               <Card.Header className="flex flex-col items-start gap-1">
                 <h2 className="flex items-center gap-2 font-semibold text-base">
-                  <Cookie className="h-4 w-4" /> Bot de calendario
+                  <Cookie className="size-4" /> Bot de calendario
                 </h2>
                 <Card.Description className="text-default-500 text-xs">
                   Cómo funcionan las cookies pegadas aquí.
@@ -439,10 +439,10 @@ export function DoctoraliaSettingsPage() {
           <DoctoraliaSyncLogsPanel />
         </Tabs.Panel>
       </Tabs>
-    </div>
+    </Page>
   );
 }
 
 function formatStatusDate(value: Date | null | undefined) {
-  return value ? dayjs(value).tz().format("DD/MM/YYYY HH:mm") : "Sin registro";
+  return value ? formatChile(value, "DD/MM/YYYY HH:mm") : "Sin registro";
 }

@@ -1,5 +1,6 @@
-import { Spinner } from "@heroui/react";
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { createFileRoute } from "@tanstack/react-router";
+import { requirePermission } from "@/lib/authz/route-guards";
 import { lazy, Suspense } from "react";
 
 // Lazy: CashFlowPage is ~2200 LOC, contains charts + Recharts. Split out so
@@ -16,16 +17,12 @@ export const Route = createFileRoute("/_authed/finanzas/cash-flow")({
     permission: { action: "read", subject: "Transaction" },
     title: "Flujo de Caja",
   },
-  beforeLoad: ({ context }) => {
-    if (!context.can("read", "Transaction")) {
-      throw redirect({ to: "/" });
-    }
-  },
+  beforeLoad: requirePermission("read", "Transaction"),
   component: () => (
     <Suspense
       fallback={
         <div className="flex items-center justify-center py-24">
-          <Spinner aria-label="Cargando flujo de caja" />
+          <LoadingSpinner label="Cargando flujo de caja" />
         </div>
       }
     >

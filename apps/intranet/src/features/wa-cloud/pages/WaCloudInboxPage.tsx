@@ -1,23 +1,85 @@
+// oxlint-disable typescript/no-non-null-assertion -- TODO(strict-null): refactor each `!` to invariant() or explicit guard. Tracked in repo-wide non-null cleanup.
 import {
   Avatar,
-  Badge,
+  Button,
   Card,
   Chip,
   Dropdown,
   EmptyState,
   Input,
+  Kbd,
   Label,
   ListBox,
+  Modal,
+  ScrollShadow,
   SearchField,
   Select,
-  Spinner,
+  Skeleton,
+  Tag,
+  TagGroup,
 } from "@heroui/react";
-import dayjs from "dayjs";
-import { Filter, Inbox, MessageSquareText, Phone } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+// Spinner removed in favour of ConversationListSkeleton for the inbox list.
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { getRouteApi } from "@tanstack/react-router";
+import {
+  ArrowLeft,
+  Bell,
+  BellOff,
+  ClipboardList,
+  FileText,
+  Filter,
+  Image as ImageIcon,
+  Inbox,
+  List,
+  type LucideIcon,
+  MapPin,
+  MessageSquareText,
+  Mic,
+  Phone,
+  Search,
+  Sticker,
+  User,
+  Video,
+} from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { WaConversationStatus } from "@finanzas/orpc-contracts/wa-cloud";
-import { ConversationDetail } from "../components/ConversationDetail";
+import { useAuth } from "@/features/auth/hooks/use-auth";
+import { ConversationDetail } from "../components/inbox/ConversationDetail";
+import { SharedPayloadModal } from "../components/modals/SharedPayloadModal";
+import { useFaviconBadge } from "../hooks/useFaviconBadge";
+import { useSharedPayload } from "../hooks/useSharedPayload";
 import { useAccounts, useConversations, useMarkRead, useSearchMessages } from "../hooks/useWaCloud";
+import { addDays, chileDay, diffDays, formatChile, today } from "@/lib/dates";
+import { usePushNotifications } from "@/hooks/use-push-notifications";
+import {
+  getPushPreviewMode,
+  type PushPreviewMode,
+  setPushPreviewMode,
+} from "@/features/notifications/api";
+
+// `?conversation=N` is the canonical deep-link param (validated in
+// the route file). Reading via getRouteApi avoids the optional
+// `useSearch` typing dance and gives us strong inference of the Zod
+// schema's output type.
+const inboxRouteApi = getRouteApi("/_authed/wa-cloud/");
+
+// iOS-style stack navigation: on viewports <lg, list and detail are
+// mutually exclusive screens (selecting a conversation pushes the
+// detail "view" on top). On >=lg the classic split view stays.
+const MOBILE_BREAKPOINT_QUERY = "(max-width: 1023px)";
+
+function useIsMobile(): boolean {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mq = window.matchMedia(MOBILE_BREAKPOINT_QUERY);
+    setIsMobile(mq.matches);
+    const onChange = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+  return isMobile;
+}
 
 const STATUS_OPTIONS: { value: "" | WaConversationStatus; label: string }[] = [
   { value: "", label: "Todos" },
@@ -27,13 +89,16 @@ const STATUS_OPTIONS: { value: "" | WaConversationStatus; label: string }[] = [
   { value: "ARCHIVED", label: "Archivados" },
 ];
 
-// Stable color per phone number — hash to one of HeroUI semantic colors
+// Stable color per phone number, hashed into a small palette. Uses
+// alpha-tinted backgrounds + the matching semantic foreground so the
+// initials stay legible across light/dark themes (the previous
+// `bg-success-200 text-success-900` pair was illegible in dark mode).
 const AVATAR_COLORS = [
-  "bg-success-200 text-success-900",
-  "bg-warning-200 text-warning-900",
-  "bg-accent-200 text-accent-900",
-  "bg-danger-200 text-danger-900",
-  "bg-default-300 text-default-900",
+  "bg-success/15 text-success",
+  "bg-warning/15 text-warning",
+  "bg-accent/15 text-accent",
+  "bg-danger/15 text-danger",
+  "bg-default/40 text-default-foreground",
 ];
 function colorFor(seed: string): string {
   let h = 0;
@@ -46,31 +111,129 @@ function initialsOf(name: string): string {
   if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase();
   return (parts[0]![0]! + parts[parts.length - 1]![0]!).toUpperCase();
 }
+// Backend stores raw bracket placeholders ("[sticker]", "[image]"…) as the
+// last-message preview. Render them with a lucide glyph + plain label so the
+// list reads like a chat app (no emoji chrome) — icon-first, WhatsApp/Chatwoot
+// convention.
+type PreviewParts = { Icon: LucideIcon | null; label: string };
+function previewParts(preview: string | null | undefined): PreviewParts {
+  if (!preview) return { Icon: null, label: "Sin actividad" };
+  const lower = preview.toLowerCase();
+  const exact: Record<string, PreviewParts> = {
+    "[sticker]": { Icon: Sticker, label: "Sticker" },
+    "[image]": { Icon: ImageIcon, label: "Imagen" },
+    "[video]": { Icon: Video, label: "Vídeo" },
+    "[audio]": { Icon: Mic, label: "Nota de voz" },
+    "[document]": { Icon: FileText, label: "Documento" },
+  };
+  if (exact[lower]) return exact[lower]!;
+  if (lower.startsWith("[plantilla]"))
+    return { Icon: FileText, label: preview.replace(/^\[plantilla\]\s*/i, "Plantilla: ") };
+  if (lower.startsWith("[ubicación]") || lower.startsWith("[ubicacion]"))
+    return { Icon: MapPin, label: "Ubicación" };
+  if (lower.startsWith("[contacto]"))
+    return { Icon: User, label: preview.replace(/^\[contacto\]\s*/i, "") || "Contacto" };
+  if (lower.startsWith("[flow]")) return { Icon: ClipboardList, label: "Formulario" };
+  if (lower.startsWith("[lista]")) return { Icon: List, label: "Lista" };
+  return { Icon: null, label: preview };
+}
 function formatRelative(d: Date | null | undefined): string {
   if (!d) return "";
-  const now = dayjs();
-  const m = dayjs(d);
-  if (m.isSame(now, "day")) return m.format("HH:mm");
-  if (m.isSame(now.subtract(1, "day"), "day")) return "Ayer";
-  if (m.isAfter(now.subtract(7, "day"))) return m.format("ddd");
-  return m.format("DD-MM-YY");
+  const day = chileDay(d);
+  const t = today();
+  if (day === t) return formatChile(d, "HH:mm");
+  if (day === addDays(t, -1)) return "Ayer";
+  if (diffDays(t, day) < 7) return formatChile(d, "ddd").replace(/\.$/, "");
+  return formatChile(d, "DD-MM-YY");
 }
 
-export function WaCloudInboxPage() {
+export interface WaCloudInboxPageProps {
+  /**
+   * Optional handler that opens the global-search drawer (rendered by
+   * the unified `/wa-cloud` host). When provided, the inbox header
+   * shows a search-icon button next to the filters. The `cmd/ctrl+k`
+   * shortcut is handled by the host so it works regardless of the
+   * inbox tab being active.
+   */
+  onOpenSearchDrawer?: () => void;
+}
+
+export function WaCloudInboxPage({ onOpenSearchDrawer }: WaCloudInboxPageProps = {}) {
+  const { user: currentUser } = useAuth();
   const accounts = useAccounts();
   const allPhones = useMemo(
     () => (accounts.data?.accounts ?? []).flatMap((a) => a.phoneNumbers),
     [accounts.data]
   );
 
+  const navigate = inboxRouteApi.useNavigate();
+  const { conversation: deepLinkedId, shared } = inboxRouteApi.useSearch();
+  const qc = useQueryClient();
+  const sharedPayload = useSharedPayload(!!shared);
+
+  // Cross-tab + SW → tab inbox sync via BroadcastChannel. The SW
+  // posts on every push receipt and on action-button mark-read; we
+  // invalidate conversations + the affected detail so every open
+  // intranet tab refreshes without polling. Falls back silently in
+  // browsers without BroadcastChannel (Safari < 15.4 etc.).
+  useEffect(() => {
+    if (typeof BroadcastChannel === "undefined") return;
+    const ch = new BroadcastChannel("inbox-state");
+    ch.addEventListener("message", (e) => {
+      const m = e.data as { type?: string; conversationId?: number };
+      if (m?.type === "push-received" || m?.type === "marked-read") {
+        void qc.invalidateQueries({ queryKey: ["wa-cloud", "conversations"] });
+        if (m.conversationId) {
+          void qc.invalidateQueries({
+            queryKey: ["wa-cloud", "conversation", m.conversationId],
+          });
+        }
+      }
+    });
+    return () => ch.close();
+  }, [qc]);
+
   const [status, setStatus] = useState<WaConversationStatus | "">("");
   const [phoneFilter, setPhoneFilter] = useState("");
+  const [assignFilter, setAssignFilter] = useState<"all" | "mine" | "unassigned">("all");
   const [search, setSearch] = useState("");
-  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [selectedId, setSelectedId] = useState<number | null>(deepLinkedId ?? null);
+  const [showHelp, setShowHelp] = useState(false);
+  const isMobile = useIsMobile();
 
+  // Sync URL → state whenever the deep-link param changes (back/forward
+  // navigation, paste from another tab, search result click). Skip the
+  // round-trip if local state already matches so we don't re-render on
+  // every router transition.
+  useEffect(() => {
+    if (deepLinkedId != null && deepLinkedId !== selectedId) {
+      setSelectedId(deepLinkedId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deepLinkedId]);
+
+  // Sync state → URL so refresh/share keeps the open conversation. We
+  // replace the entry (don't push) to avoid spamming history while the
+  // operator hops between threads with j/k.
+  useEffect(() => {
+    if ((deepLinkedId ?? null) !== selectedId) {
+      void navigate({
+        search: (prev) => ({ ...prev, conversation: selectedId ?? undefined }),
+        replace: true,
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId]);
+  // On mobile we render either the list or the detail view, not both.
+  const showDetail = isMobile ? selectedId !== null : true;
+  const showList = isMobile ? selectedId === null : true;
+
+  const currentUserId = currentUser?.id;
   const conversations = useConversations({
     status: status || undefined,
     phoneNumberId: phoneFilter ? Number.parseInt(phoneFilter, 10) : undefined,
+    assignedToUserId:
+      assignFilter === "mine" ? currentUserId : assignFilter === "unassigned" ? null : undefined,
     search: search.trim() || undefined,
     page: 1,
     pageSize: 50,
@@ -81,173 +244,577 @@ export function WaCloudInboxPage() {
   );
 
   useEffect(() => {
-    if (selectedId) markRead.mutate(selectedId);
+    if (selectedId) {
+      markRead.mutate(selectedId);
+      // Close any OS notifications stacked under this conversation
+      // tag — prevents leftover banners after the operator already
+      // opened the chat from another surface.
+      void (async () => {
+        try {
+          // `serviceWorker.ready` resolves to the active registration —
+          // avoids the race with `getRegistration()` returning the
+          // installing/waiting worker on a cold load.
+          const reg = await navigator.serviceWorker?.ready;
+          const stale = await reg?.getNotifications({ tag: `wa-conv-${selectedId}` });
+          stale?.forEach((n) => n.close());
+        } catch {
+          // ignore — notification API not available
+        }
+      })();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedId]);
 
   const items = conversations.data?.items ?? [];
   const activeFiltersCount = (status ? 1 : 0) + (phoneFilter ? 1 : 0);
+  const totalUnread = useMemo(
+    () => items.reduce((sum, c) => sum + (c.unreadCount || 0), 0),
+    [items]
+  );
+
+  // Keep the OS app badge in sync with the visible inbox unread total.
+  // The SW also paints the badge on push receipt; this covers the
+  // case where the operator reads everything without a new push (e.g.
+  // marks-as-read in the UI), so the icon dot disappears immediately.
+  useEffect(() => {
+    type BadgeNav = Navigator & {
+      setAppBadge?: (n?: number) => Promise<void>;
+      clearAppBadge?: () => Promise<void>;
+    };
+    const nav = navigator as BadgeNav;
+    void (async () => {
+      try {
+        if (totalUnread > 0) await nav.setAppBadge?.(totalUnread);
+        else await nav.clearAppBadge?.();
+      } catch {
+        // ignore — Badging API not available
+      }
+    })();
+  }, [totalUnread]);
+
+  // Tab title shows the unread total so the operator notices new
+  // WhatsApp activity even from another tab. Favicon also gets a
+  // red badge so the visual signal works without reading the title.
+  useEffect(() => {
+    const base = "Inbox WhatsApp · Bioalergia";
+    document.title = totalUnread > 0 ? `(${totalUnread}) ${base}` : base;
+    return () => {
+      document.title = "Bioalergia";
+    };
+  }, [totalUnread]);
+  useFaviconBadge(totalUnread);
+
+  // Keyboard shortcuts: j/k navigate list, Enter open, Esc close,
+  // / focus search, ? show help. Inputs/textareas are excluded so
+  // typing in the composer doesn't hijack keys.
+  const onKey = useCallback(
+    (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      const inEditable =
+        !!t &&
+        (t.tagName === "INPUT" ||
+          t.tagName === "TEXTAREA" ||
+          t.tagName === "SELECT" ||
+          t.isContentEditable);
+      if (inEditable && e.key !== "Escape") return;
+      if (e.key === "Escape") {
+        if (showHelp) {
+          setShowHelp(false);
+        } else if (selectedId !== null) {
+          setSelectedId(null);
+        }
+        e.preventDefault();
+        return;
+      }
+      if (e.key === "?" || (e.shiftKey && e.key === "/")) {
+        setShowHelp((v) => !v);
+        e.preventDefault();
+        return;
+      }
+      if (e.key === "/") {
+        const input = document.querySelector<HTMLInputElement>(
+          "input[aria-label='Buscar conversación']"
+        );
+        if (input) {
+          input.focus();
+          e.preventDefault();
+        }
+        return;
+      }
+      if (items.length === 0) return;
+      const idx = selectedId ? items.findIndex((c) => c.id === selectedId) : -1;
+      if (e.key === "j" || e.key === "ArrowDown") {
+        const next = items[Math.min(items.length - 1, idx + 1)];
+        if (next) setSelectedId(next.id);
+        e.preventDefault();
+      } else if (e.key === "k" || e.key === "ArrowUp") {
+        const prev = items[Math.max(0, idx - 1)];
+        if (prev) setSelectedId(prev.id);
+        e.preventDefault();
+      }
+    },
+    [items, selectedId, showHelp]
+  );
+  useEffect(() => {
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onKey]);
 
   return (
-    <div className="h-[calc(100vh-7rem)] p-4">
-      <Card className="grid h-full grid-cols-1 overflow-hidden p-0 lg:grid-cols-[360px_1fr]">
-        <aside className="flex h-full flex-col border-default-200 lg:border-r">
-          <header className="flex flex-col gap-2 border-default-200 border-b p-3">
-            <div className="flex items-center justify-between">
-              <h2 className="flex items-center gap-2 font-semibold text-base">
-                <Inbox size={18} className="text-success" />
-                Bandeja
-              </h2>
-              <FilterDropdown
-                status={status}
-                onStatusChange={setStatus}
-                phoneFilter={phoneFilter}
-                onPhoneChange={setPhoneFilter}
-                phones={allPhones}
-                activeCount={activeFiltersCount}
-              />
-            </div>
+    <div className="flex h-[calc(100dvh-7rem)] min-h-0 flex-col p-4 md:h-full">
+      {sharedPayload.payload && (
+        <SharedPayloadModal
+          payload={sharedPayload.payload}
+          conversationId={selectedId}
+          onClose={() => {
+            // Dismiss without clearing — operator may want to retry
+            // against a different conversation. The cache survives
+            // refresh + ?shared=1 reappearance.
+            void navigate({
+              search: (prev) => ({ ...prev, shared: undefined }),
+              replace: true,
+            });
+          }}
+          onClear={async () => {
+            await sharedPayload.clear();
+            void navigate({
+              search: (prev) => ({ ...prev, shared: undefined }),
+              replace: true,
+            });
+          }}
+        />
+      )}
+      <Card className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden p-0 lg:grid-cols-[360px_1fr]">
+        {showList && (
+          <aside className="flex min-h-0 flex-col border-default-200 lg:border-r">
+            <header className="flex flex-col gap-2 border-default-200 border-b p-3">
+              <div className="flex items-center justify-between gap-2">
+                <h2 className="flex items-center gap-2 font-semibold text-base">
+                  <Inbox size={18} className="text-success" />
+                  Bandeja
+                </h2>
+                <div className="flex items-center gap-1">
+                  {onOpenSearchDrawer ? (
+                    <Button
+                      variant="tertiary"
+                      size="sm"
+                      isIconOnly
+                      aria-label="Buscar mensajes (Cmd/Ctrl + K)"
+                      onPress={onOpenSearchDrawer}
+                    >
+                      <Search size={14} />
+                    </Button>
+                  ) : null}
+                  <PushToggle />
+                  <FilterDropdown
+                    status={status}
+                    onStatusChange={setStatus}
+                    phoneFilter={phoneFilter}
+                    onPhoneChange={setPhoneFilter}
+                    phones={allPhones}
+                    activeCount={activeFiltersCount}
+                  />
+                </div>
+              </div>
 
-            <SearchField
-              variant="secondary"
-              value={search}
-              onChange={setSearch}
-              aria-label="Buscar conversación"
+              <SearchField
+                variant="secondary"
+                value={search}
+                onChange={setSearch}
+                aria-label="Buscar conversación"
+              >
+                <SearchField.Group>
+                  <SearchField.SearchIcon />
+                  <SearchField.Input placeholder="Buscar por nombre o teléfono" />
+                  <SearchField.ClearButton />
+                </SearchField.Group>
+              </SearchField>
+
+              <div className="mt-2 flex gap-1" role="group" aria-label="Filtrar por asignación">
+                {(
+                  [
+                    ["all", "Todas"],
+                    ["mine", "Mías"],
+                    ["unassigned", "Sin asignar"],
+                  ] as const
+                ).map(([val, label]) => (
+                  <button
+                    key={val}
+                    type="button"
+                    onClick={() => setAssignFilter(val)}
+                    aria-pressed={assignFilter === val}
+                    className={`min-h-9 flex-1 rounded-full px-2 py-1 font-medium text-xs transition ${
+                      assignFilter === val
+                        ? "bg-success/15 text-success"
+                        : "bg-content2 text-default-500 hover:bg-content3"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </header>
+
+            <ActiveFilterChips
+              status={status}
+              onStatusClear={() => setStatus("")}
+              phoneFilter={phoneFilter}
+              onPhoneClear={() => setPhoneFilter("")}
+              phones={allPhones}
+            />
+
+            <ScrollShadow
+              orientation="vertical"
+              size={32}
+              hideScrollBar
+              className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain"
             >
-              <SearchField.Group>
-                <SearchField.SearchIcon />
-                <SearchField.Input placeholder="Buscar por nombre o teléfono" />
-                <SearchField.ClearButton />
-              </SearchField.Group>
-            </SearchField>
-          </header>
+              {conversations.isLoading || !conversations.data ? (
+                <ConversationListSkeleton />
+              ) : items.length === 0 ? (
+                <EmptyState className="m-4 p-6 text-center">
+                  <MessageSquareText size={28} className="mx-auto text-default-400" />
+                  <p className="mt-2 font-medium text-sm">Sin conversaciones</p>
+                  <p className="text-default-500 text-xs">
+                    {search || activeFiltersCount > 0
+                      ? "Cambia los filtros para ver más."
+                      : "Cuando lleguen mensajes, aparecerán aquí."}
+                  </p>
+                </EmptyState>
+              ) : (
+                <ListBox
+                  aria-label="Conversaciones"
+                  selectionMode="single"
+                  selectedKeys={selectedId ? new Set([String(selectedId)]) : new Set()}
+                  onSelectionChange={(keys) => {
+                    const k = [...(keys as Set<string>)][0];
+                    if (k) setSelectedId(Number(k));
+                  }}
+                  className="border-0 bg-transparent p-0"
+                >
+                  {items.map((c) => {
+                    const name = c.contact.name ?? c.contact.pushName ?? c.contact.phoneE164;
+                    const initials = initialsOf(name);
+                    const avatarColor = colorFor(c.contact.phoneE164);
+                    return (
+                      <ListBox.Item
+                        key={c.id}
+                        id={String(c.id)}
+                        textValue={name}
+                        className="rounded-none border-default-200 border-b transition-[background-color] duration-150 ease-out p-3"
+                      >
+                        <div className="flex w-full items-center gap-3" data-phi-block>
+                          <div className="relative shrink-0">
+                            <Avatar className={`size-11 ${avatarColor}`}>
+                              <Avatar.Fallback delayMs={0} className="font-semibold text-sm">
+                                {initials}
+                              </Avatar.Fallback>
+                            </Avatar>
+                            {c.unreadCount > 0 && (
+                              <span
+                                aria-label={`${c.unreadCount} sin leer`}
+                                className="-top-1 -right-1 absolute flex min-h-5 min-w-5 items-center justify-center rounded-full bg-success px-1 font-semibold text-success-foreground text-xs tabular-nums shadow ring-2 ring-background"
+                              >
+                                {c.unreadCount > 99 ? "99+" : c.unreadCount}
+                              </span>
+                            )}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-baseline justify-between gap-2">
+                              <span
+                                className={`truncate text-sm ${c.unreadCount > 0 ? "font-semibold" : "font-medium"}`}
+                              >
+                                {name}
+                              </span>
+                              <span
+                                className={`shrink-0 text-xs ${c.unreadCount > 0 ? "font-semibold text-success" : "text-default-500"}`}
+                              >
+                                {formatRelative(c.lastMessageAt)}
+                              </span>
+                            </div>
+                            <div className="mt-0.5 flex items-center justify-between gap-2">
+                              {(() => {
+                                const { Icon, label } = previewParts(c.lastMessagePreview);
+                                return (
+                                  <p
+                                    className={`flex min-w-0 items-center gap-1 text-xs ${c.unreadCount > 0 ? "font-medium text-default-700" : "text-default-500"}`}
+                                  >
+                                    {Icon && <Icon size={12} className="shrink-0 opacity-70" />}
+                                    <span className="line-clamp-1">{label}</span>
+                                  </p>
+                                );
+                              })()}
+                              <ConversationStatusChip status={c.status} />
+                            </div>
+                          </div>
+                        </div>
+                      </ListBox.Item>
+                    );
+                  })}
+                </ListBox>
+              )}
+              {messageHits.data && messageHits.data.results.length > 0 && (
+                <div className="border-default-200 border-t bg-content2 p-2">
+                  <p className="px-2 pb-1 font-semibold text-default-500 text-xs uppercase">
+                    Mensajes ({messageHits.data.results.length})
+                  </p>
+                  <ul className="space-y-1">
+                    {messageHits.data.results.map((m) => (
+                      <li key={m.messageId}>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedId(m.conversationId)}
+                          className="flex w-full flex-col gap-0.5 rounded-md px-2 py-1.5 text-left transition hover:bg-default-100"
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="truncate font-medium text-xs">
+                              {m.contactName ?? m.phoneE164}
+                            </span>
+                            <span className="shrink-0 text-default-400 text-xs">
+                              {formatChile(m.timestamp, "DD-MM HH:mm")}
+                            </span>
+                          </div>
+                          <p className="line-clamp-2 text-default-600 text-xs">
+                            {m.body ?? `[${m.type.toLowerCase()}]`}
+                          </p>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </ScrollShadow>
+          </aside>
+        )}
 
-          <div className="flex-1 overflow-y-auto">
-            {conversations.isLoading || !conversations.data ? (
-              <div className="flex h-32 items-center justify-center">
-                <Spinner />
+        {showDetail && (
+          <section className="flex min-h-0 flex-col overflow-hidden bg-content1">
+            {isMobile && selectedId && (
+              <div className="flex items-center gap-2 border-default-200 border-b bg-content2 px-2 py-1.5">
+                <Button
+                  variant="tertiary"
+                  size="sm"
+                  onPress={() => setSelectedId(null)}
+                  aria-label="Volver a la bandeja"
+                >
+                  <ArrowLeft size={16} />
+                  Bandeja
+                </Button>
               </div>
-            ) : items.length === 0 ? (
-              <EmptyState className="m-4 p-6 text-center">
-                <MessageSquareText size={28} className="mx-auto text-default-400" />
-                <p className="mt-2 font-medium text-sm">Sin conversaciones</p>
-                <p className="text-default-500 text-xs">
-                  {search || activeFiltersCount > 0
-                    ? "Cambia los filtros para ver más."
-                    : "Cuando lleguen mensajes, aparecerán aquí."}
-                </p>
-              </EmptyState>
+            )}
+            {selectedId ? (
+              <ConversationDetail conversationId={selectedId} />
             ) : (
-              <ul className="divide-y divide-default-200">
-                {items.map((c) => {
-                  const sel = selectedId === c.id;
-                  const name = c.contact.name ?? c.contact.pushName ?? c.contact.phoneE164;
-                  const initials = initialsOf(name);
-                  const avatarColor = colorFor(c.contact.phoneE164);
-                  return (
-                    <li key={c.id}>
-                      <button
-                        type="button"
-                        className={`flex w-full items-center gap-3 px-3 py-3 text-left transition-colors hover:bg-default-100 ${sel ? "bg-default-100" : ""}`}
-                        onClick={() => setSelectedId(c.id)}
-                      >
-                        {c.unreadCount > 0 ? (
-                          <Badge color="success" placement="top-right" size="sm">
-                            <Badge.Label>{c.unreadCount}</Badge.Label>
-                            <Badge.Anchor>
-                              <Avatar className={`size-11 shrink-0 ${avatarColor}`}>
-                                <Avatar.Fallback delayMs={0} className="font-semibold text-sm">
-                                  {initials}
-                                </Avatar.Fallback>
-                              </Avatar>
-                            </Badge.Anchor>
-                          </Badge>
-                        ) : (
-                          <Avatar className={`size-11 shrink-0 ${avatarColor}`}>
-                            <Avatar.Fallback delayMs={0} className="font-semibold text-sm">
-                              {initials}
-                            </Avatar.Fallback>
-                          </Avatar>
-                        )}
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-baseline justify-between gap-2">
-                            <span
-                              className={`truncate text-sm ${c.unreadCount > 0 ? "font-semibold" : "font-medium"}`}
-                            >
-                              {name}
-                            </span>
-                            <span
-                              className={`shrink-0 text-xs ${c.unreadCount > 0 ? "font-semibold text-success" : "text-default-500"}`}
-                            >
-                              {formatRelative(c.lastMessageAt)}
-                            </span>
-                          </div>
-                          <div className="mt-0.5 flex items-center justify-between gap-2">
-                            <p
-                              className={`line-clamp-1 text-xs ${c.unreadCount > 0 ? "font-medium text-default-700" : "text-default-500"}`}
-                            >
-                              {c.lastMessagePreview ?? "Sin actividad"}
-                            </p>
-                            <ConversationStatusChip status={c.status} />
-                          </div>
-                        </div>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-            {messageHits.data && messageHits.data.results.length > 0 && (
-              <div className="border-default-200 border-t bg-content2 p-2">
-                <p className="px-2 pb-1 font-semibold text-default-500 text-xs uppercase">
-                  Mensajes ({messageHits.data.results.length})
-                </p>
-                <ul className="space-y-1">
-                  {messageHits.data.results.map((m) => (
-                    <li key={m.messageId}>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedId(m.conversationId)}
-                        className="flex w-full flex-col gap-0.5 rounded-md px-2 py-1.5 text-left transition hover:bg-default-100"
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="truncate font-medium text-xs">
-                            {m.contactName ?? m.phoneE164}
-                          </span>
-                          <span className="shrink-0 text-default-400 text-xs">
-                            {dayjs(m.timestamp).format("DD-MM HH:mm")}
-                          </span>
-                        </div>
-                        <p className="line-clamp-2 text-default-600 text-xs">
-                          {m.body ?? `[${m.type.toLowerCase()}]`}
-                        </p>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
+              <div className="flex min-h-0 flex-1 items-center justify-center bg-default-50 p-8">
+                <EmptyState className="max-w-sm text-center">
+                  <MessageSquareText size={48} className="mx-auto text-default-300" />
+                  <p className="mt-3 font-semibold text-base">Selecciona una conversación</p>
+                  <p className="mt-1 text-default-500 text-sm">
+                    Tus mensajes WhatsApp aparecen en la bandeja de la izquierda. Click en
+                    cualquiera para responder. Atajos: <kbd>j</kbd>/<kbd>k</kbd> navegar,{" "}
+                    <kbd>/</kbd> buscar, <kbd>Esc</kbd> cerrar.
+                  </p>
+                </EmptyState>
               </div>
             )}
-          </div>
-        </aside>
-
-        <section className="flex h-full flex-col overflow-hidden bg-content1">
-          {selectedId ? (
-            <ConversationDetail conversationId={selectedId} />
-          ) : (
-            <div className="flex h-full flex-1 items-center justify-center bg-default-50 p-8">
-              <EmptyState className="max-w-sm text-center">
-                <MessageSquareText size={48} className="mx-auto text-default-300" />
-                <p className="mt-3 font-semibold text-base">Selecciona una conversación</p>
-                <p className="mt-1 text-default-500 text-sm">
-                  Tus mensajes WhatsApp aparecen en la bandeja de la izquierda. Click en cualquiera
-                  para responder.
-                </p>
-              </EmptyState>
-            </div>
-          )}
-        </section>
+          </section>
+        )}
       </Card>
+      <KeyboardHelpModal open={showHelp} onClose={() => setShowHelp(false)} />
     </div>
+  );
+}
+
+function ConversationListSkeleton() {
+  return (
+    <div className="space-y-0 divide-default-200 divide-y">
+      {Array.from({ length: 8 }).map((_, i) => (
+        <div key={i} className="flex items-center gap-3 p-3">
+          <Skeleton className="size-11 shrink-0 rounded-full" />
+          <div className="min-w-0 flex-1 space-y-2">
+            <div className="flex items-baseline justify-between gap-2">
+              <Skeleton className="h-3 w-28 rounded" />
+              <Skeleton className="h-2.5 w-10 rounded" />
+            </div>
+            <Skeleton className="h-2.5 w-3/4 rounded" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function PushToggle() {
+  // Surfaces the Web Push opt-in/out as a single icon button. Uses the
+  // existing usePushNotifications hook (subscribe / unsubscribe) so
+  // the wa-cloud webhook can dispatch broadcastPushNotification to
+  // every subscribed device. Hidden when the browser doesn't support
+  // the Notification API at all (very old Safari builds).
+  const { isSubscribed, permission, toggleSubscription } = usePushNotifications();
+  const qc = useQueryClient();
+  const previewModeQ = useQuery({
+    queryKey: ["notifications", "previewMode"],
+    queryFn: () => getPushPreviewMode(),
+    enabled: isSubscribed,
+  });
+  const setMode = useMutation({
+    mutationFn: (mode: PushPreviewMode) => setPushPreviewMode(mode),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["notifications", "previewMode"] }),
+  });
+  if (typeof window === "undefined" || !("Notification" in window)) return null;
+  const isBlocked = permission === "denied";
+  const mode = previewModeQ.data?.mode ?? "GENERIC";
+  return (
+    <Dropdown>
+      <Dropdown.Trigger>
+        <Button
+          variant="tertiary"
+          size="sm"
+          isIconOnly
+          isDisabled={isBlocked}
+          aria-label={
+            isBlocked
+              ? "Notificaciones bloqueadas en el navegador"
+              : isSubscribed
+                ? "Ajustes de notificaciones push"
+                : "Activar notificaciones push"
+          }
+        >
+          {isSubscribed ? <Bell size={14} className="text-success" /> : <BellOff size={14} />}
+        </Button>
+      </Dropdown.Trigger>
+      <Dropdown.Popover className="w-72 space-y-3 p-3">
+        <div className="flex items-center justify-between gap-2">
+          <Label className="text-sm">Notificaciones push</Label>
+          <Button size="sm" variant="ghost" onPress={() => void toggleSubscription()}>
+            {isSubscribed ? "Desactivar" : "Activar"}
+          </Button>
+        </div>
+        {isSubscribed && (
+          <>
+            <Label className="text-default-600 text-xs">
+              Contenido visible en la pantalla bloqueada
+            </Label>
+            <Select
+              value={mode}
+              onChange={(k) => setMode.mutate(k as PushPreviewMode)}
+              isDisabled={setMode.isPending || previewModeQ.isLoading}
+            >
+              <Select.Trigger>
+                <Select.Value />
+                <Select.Indicator />
+              </Select.Trigger>
+              <Select.Popover>
+                <ListBox>
+                  <ListBox.Item id="GENERIC" textValue="Genérico (recomendado)">
+                    Genérico (recomendado)
+                  </ListBox.Item>
+                  <ListBox.Item id="SENDER_NAME" textValue="Solo nombre del remitente">
+                    Solo nombre del remitente
+                  </ListBox.Item>
+                  <ListBox.Item id="FULL" textValue="Nombre + preview del mensaje">
+                    Nombre + preview del mensaje
+                  </ListBox.Item>
+                </ListBox>
+              </Select.Popover>
+            </Select>
+            <p className="rounded-md bg-default/40 p-2 text-default-700 text-xs">
+              {mode === "GENERIC"
+                ? "Sin información del paciente en la pantalla bloqueada. Default per Ley 21.719 + HIPAA 2026."
+                : mode === "SENDER_NAME"
+                  ? "Verás el nombre del remitente. Asegúrate de tener pantalla protegida con biometría."
+                  : "Verás nombre + preview. Recomendado solo con device biometric-locked."}
+            </p>
+            <p className="text-default-500 text-xs">
+              Al tocar la notificación, la app exige sesión PASETO activa antes de mostrar el
+              contenido completo. La sesión expira tras 8 h de inactividad.
+            </p>
+          </>
+        )}
+      </Dropdown.Popover>
+    </Dropdown>
+  );
+}
+
+function ActiveFilterChips({
+  status,
+  onStatusClear,
+  phoneFilter,
+  onPhoneClear,
+  phones,
+}: {
+  status: WaConversationStatus | "";
+  onStatusClear: () => void;
+  phoneFilter: string;
+  onPhoneClear: () => void;
+  phones: { id: number; label: string | null; displayPhoneNumber: string }[];
+}) {
+  if (!status && !phoneFilter) return null;
+  const statusLabel = STATUS_OPTIONS.find((o) => o.value === status)?.label ?? "";
+  const phoneRow = phones.find((p) => String(p.id) === phoneFilter);
+  const phoneLabel = phoneRow ? (phoneRow.label ?? phoneRow.displayPhoneNumber) : "";
+  return (
+    <div className="border-default-200 border-b bg-content2 px-3 py-2">
+      <TagGroup
+        aria-label="Filtros activos"
+        size="sm"
+        onRemove={(keys) => {
+          for (const k of keys as Set<string>) {
+            if (k === "status") onStatusClear();
+            if (k === "phone") onPhoneClear();
+          }
+        }}
+      >
+        <TagGroup.List>
+          {status ? (
+            <Tag id="status" textValue={`Estado: ${statusLabel}`}>
+              Estado: {statusLabel}
+            </Tag>
+          ) : null}
+          {phoneFilter ? (
+            <Tag id="phone" textValue={`Número: ${phoneLabel}`}>
+              Número: {phoneLabel}
+            </Tag>
+          ) : null}
+        </TagGroup.List>
+      </TagGroup>
+    </div>
+  );
+}
+
+function KeyboardHelpModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const rows: { keys: string[]; label: string }[] = [
+    { keys: ["j"], label: "Siguiente conversación" },
+    { keys: ["k"], label: "Conversación anterior" },
+    { keys: ["/"], label: "Buscar" },
+    { keys: ["Esc"], label: "Cerrar conversación o ayuda" },
+    { keys: ["?"], label: "Mostrar / ocultar atajos" },
+  ];
+  return (
+    <Modal isOpen={open} onOpenChange={(v) => !v && onClose()}>
+      <Modal.Backdrop />
+      <Modal.Container placement="center">
+        <Modal.Dialog className="w-full max-w-md rounded-2xl bg-background p-5 shadow-2xl">
+          <Modal.Header className="mb-3">
+            <Modal.Heading className="font-semibold text-base">Atajos de teclado</Modal.Heading>
+          </Modal.Header>
+          <Modal.Body className="space-y-2">
+            {rows.map((r) => (
+              <div key={r.label} className="flex items-center justify-between gap-3 text-sm">
+                <span className="text-default-700">{r.label}</span>
+                <span className="flex gap-1">
+                  {r.keys.map((k) => (
+                    <Kbd key={k}>
+                      <Kbd.Content>{k}</Kbd.Content>
+                    </Kbd>
+                  ))}
+                </span>
+              </div>
+            ))}
+          </Modal.Body>
+        </Modal.Dialog>
+      </Modal.Container>
+    </Modal>
   );
 }
 
@@ -287,19 +854,15 @@ function FilterDropdown({
   return (
     <Dropdown>
       <Dropdown.Trigger>
-        <button
-          type="button"
-          className="relative inline-flex items-center gap-1 rounded-md border border-default-200 bg-default-100 px-2.5 py-1 text-default-700 text-xs hover:bg-default-200"
-          aria-label="Filtros"
-        >
+        <Button variant="tertiary" size="sm" aria-label="Filtros">
           <Filter size={14} />
           Filtros
-          {activeCount > 0 && (
-            <span className="ml-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-success px-1 font-semibold text-xs text-success-foreground">
-              {activeCount}
-            </span>
-          )}
-        </button>
+          {activeCount > 0 ? (
+            <Chip size="sm" color="success" variant="soft" className="ml-1">
+              <Chip.Label>{activeCount}</Chip.Label>
+            </Chip>
+          ) : null}
+        </Button>
       </Dropdown.Trigger>
       <Dropdown.Popover className="w-72 space-y-3 p-3">
         <Select value={status} onChange={(k) => onStatusChange((k as WaConversationStatus) ?? "")}>

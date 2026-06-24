@@ -58,6 +58,15 @@ export interface UnassignedPayoutAccount {
   withdrawRut: null | string;
 }
 
+export interface PayoutAccountMovement {
+  amount: number;
+  date: Date | null;
+  description: null | string;
+  source: "release" | "settlement";
+  sourceId: string;
+  type: null | string;
+}
+
 export interface CounterpartDetail {
   accounts: CounterpartAccount[];
   counterpart: Counterpart;

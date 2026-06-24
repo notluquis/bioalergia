@@ -3,8 +3,16 @@ import { z } from "zod";
 
 export const loanStatusSchema = z.enum(["ACTIVE", "COMPLETED", "DEFAULTED"]);
 export const loanBorrowerTypeSchema = z.enum(["COMPANY", "PERSON"]);
-export const loanFrequencySchema = z.enum(["BIWEEKLY", "MONTHLY", "WEEKLY"]);
+export const loanFrequencySchema = z.enum(["BIWEEKLY", "IRREGULAR", "MONTHLY", "WEEKLY"]);
 export const loanInterestTypeSchema = z.enum(["COMPOUND", "SIMPLE"]);
+export const loanSourceTypeSchema = z.enum([
+  "BANK_CREDIT",
+  "CREDIT_CARD",
+  "PERSON_LOAN",
+  "TRANSFER",
+  "OTHER",
+]);
+export const loanSchedulePaymentKindSchema = z.enum(["PAYMENT", "DISCOUNT", "ADJUSTMENT"]);
 export const loanScheduleStatusSchema = z.enum([
   "OVERDUE",
   "PAID",
@@ -24,6 +32,7 @@ export const loanScheduleIdSchema = z.object({
 export const loanCreateInputSchema = z.object({
   borrowerName: z.string().min(1),
   borrowerType: loanBorrowerTypeSchema,
+  counterpartId: z.number().int().positive().nullable().optional(),
   frequency: loanFrequencySchema,
   generateSchedule: z.boolean().optional(),
   interestRate: z.number(),
@@ -34,6 +43,56 @@ export const loanCreateInputSchema = z.object({
   status: loanStatusSchema.optional(),
   title: z.string().min(1),
   totalInstallments: z.number().int().positive(),
+});
+
+export const loanStructuredSourceInputSchema = z.object({
+  disbursementDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+  feeAmount: z.number().default(0),
+  fixedInterestRate: z.number().default(0),
+  label: z.string().trim().min(1),
+  note: z.string().nullable().optional(),
+  principalAmount: z.number().positive(),
+  sourceType: loanSourceTypeSchema.default("OTHER"),
+  totalAmount: z.number().positive().optional(),
+});
+
+export const loanStructuredSchedulePaymentInputSchema = z.object({
+  amount: z.number().positive(),
+  kind: loanSchedulePaymentKindSchema.default("PAYMENT"),
+  note: z.string().nullable().optional(),
+  paidDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  transactionId: z.number().int().positive().optional(),
+});
+
+export const loanStructuredManualInstallmentInputSchema = z.object({
+  dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  expectedAmount: z.number().positive(),
+  expectedInterest: z.number().min(0).optional(),
+  expectedPrincipal: z.number().min(0).optional(),
+  note: z.string().nullable().optional(),
+  payments: z.array(loanStructuredSchedulePaymentInputSchema).default([]),
+});
+
+export const loanStructuredEqualScheduleInputSchema = z.object({
+  firstDueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  frequency: loanFrequencySchema,
+  installments: z.number().int().positive(),
+});
+
+export const loanStructuredCreateInputSchema = z.object({
+  borrowerName: z.string().min(1),
+  borrowerType: loanBorrowerTypeSchema,
+  counterpartId: z.number().int().positive().nullable().optional(),
+  equalSchedule: loanStructuredEqualScheduleInputSchema.optional(),
+  manualInstallments: z.array(loanStructuredManualInstallmentInputSchema).optional(),
+  notes: z.string().nullable().optional(),
+  sources: z.array(loanStructuredSourceInputSchema).min(1),
+  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  status: loanStatusSchema.optional(),
+  title: z.string().min(1),
 });
 
 export const loanUpdateInputSchema = loanCreateInputSchema.partial();
@@ -49,9 +108,29 @@ export const loanRegenerateSchedulesInputSchema = z.object({
 });
 
 export const loanPaymentInputSchema = z.object({
+  kind: loanSchedulePaymentKindSchema.default("PAYMENT"),
+  note: z.string().nullable().optional(),
   paidAmount: z.number().positive(),
   paidDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  transactionId: z.number().int().positive(),
+  transactionId: z.number().int().positive().nullable().optional(),
+});
+
+export const loanScheduleUpdateInputSchema = z.object({
+  dueDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+  expectedAmount: z.number().positive().optional(),
+  expectedInterest: z.number().min(0).optional(),
+  expectedPrincipal: z.number().min(0).optional(),
+  note: z.string().nullable().optional(),
+});
+
+export const loanSchedulePaymentCandidatesInputSchema = z.object({
+  daysAfter: z.coerce.number().int().min(0).max(30).default(7),
+  daysBefore: z.coerce.number().int().min(0).max(30).default(7),
+  id: z.coerce.number().int().positive(),
+  limit: z.coerce.number().int().min(1).max(50).default(12),
 });
 
 export const loanScheduleTransactionSchema = z.object({
@@ -59,6 +138,44 @@ export const loanScheduleTransactionSchema = z.object({
   description: z.string().nullable(),
   id: z.number().int(),
   timestamp: z.coerce.date(),
+});
+
+export const loanSourceSchema = z.object({
+  disbursement_date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .nullable(),
+  fee_amount: z.number(),
+  fixed_interest_rate: z.number(),
+  id: z.number().int(),
+  interest_amount: z.number(),
+  label: z.string(),
+  note: z.string().nullable(),
+  principal_amount: z.number(),
+  source_type: loanSourceTypeSchema,
+  total_amount: z.number(),
+});
+
+export const loanSchedulePaymentSchema = z.object({
+  amount: z.number(),
+  id: z.number().int(),
+  kind: loanSchedulePaymentKindSchema,
+  note: z.string().nullable(),
+  paid_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  transaction: loanScheduleTransactionSchema.nullable().optional(),
+  transaction_id: z.number().int().nullable(),
+});
+
+export const loanSchedulePaymentCandidateSchema = z.object({
+  already_linked_amount: z.number(),
+  amount: z.number(),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  days_from_due: z.number().int(),
+  description: z.string(),
+  id: z.number().int(),
+  is_linked: z.boolean(),
+  score: z.number(),
+  source_id: z.string().nullable(),
 });
 
 export const loanScheduleSchema = z.object({
@@ -70,11 +187,13 @@ export const loanScheduleSchema = z.object({
   id: z.number().int(),
   installment_number: z.number().int(),
   loan_id: z.number().int(),
+  note: z.string().nullable(),
   paid_amount: z.number().nullable(),
   paid_date: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/)
     .nullable(),
+  payments: z.array(loanSchedulePaymentSchema).optional(),
   status: loanScheduleStatusSchema,
   transaction: loanScheduleTransactionSchema.nullable().optional(),
   transaction_id: z.number().int().nullable(),
@@ -84,6 +203,16 @@ export const loanScheduleSchema = z.object({
 export const loanSummarySchema = z.object({
   borrower_name: z.string(),
   borrower_type: loanBorrowerTypeSchema,
+  counterpart: z
+    .object({
+      bankAccountHolder: z.string(),
+      category: z.string(),
+      id: z.number().int(),
+      identificationNumber: z.string(),
+    })
+    .nullable()
+    .optional(),
+  counterpart_id: z.number().int().nullable(),
   created_at: z.coerce.date(),
   frequency: loanFrequencySchema,
   id: z.number().int(),
@@ -112,6 +241,7 @@ export const loanListResponseSchema = z.object({
 export const loanDetailResponseSchema = z.object({
   loan: loanSummarySchema,
   schedules: z.array(loanScheduleSchema),
+  sources: z.array(loanSourceSchema).optional(),
   status: z.literal("ok"),
   summary: z.object({
     paid_installments: z.number().int(),
@@ -127,6 +257,11 @@ export const loanScheduleResponseSchema = z.object({
   status: z.literal("ok"),
 });
 
+export const loanSchedulePaymentCandidatesResponseSchema = z.object({
+  candidates: z.array(loanSchedulePaymentCandidateSchema),
+  status: z.literal("ok"),
+});
+
 export const loanDeleteResponseSchema = z.object({
   status: z.literal("ok"),
 });
@@ -135,6 +270,10 @@ export const loansContract = {
   create: oc
     .route({ method: "POST", path: "/" })
     .input(loanCreateInputSchema)
+    .output(loanDetailResponseSchema),
+  createStructured: oc
+    .route({ method: "POST", path: "/structured" })
+    .input(loanStructuredCreateInputSchema)
     .output(loanDetailResponseSchema),
   delete: oc
     .route({ method: "DELETE", path: "/{publicId}" })
@@ -145,6 +284,10 @@ export const loansContract = {
     .input(loanPublicIdSchema)
     .output(loanDetailResponseSchema),
   list: oc.route({ method: "GET", path: "/" }).output(loanListResponseSchema),
+  paymentCandidates: oc
+    .route({ method: "GET", path: "/schedules/{id}/payment-candidates" })
+    .input(loanSchedulePaymentCandidatesInputSchema)
+    .output(loanSchedulePaymentCandidatesResponseSchema),
   paySchedule: oc
     .route({ method: "POST", path: "/schedules/{id}/pay" })
     .input(loanScheduleIdSchema.extend({ payload: loanPaymentInputSchema }))
@@ -156,6 +299,10 @@ export const loansContract = {
   unlinkSchedulePayment: oc
     .route({ method: "POST", path: "/schedules/{id}/unlink" })
     .input(loanScheduleIdSchema)
+    .output(loanScheduleResponseSchema),
+  updateSchedule: oc
+    .route({ method: "PUT", path: "/schedules/{id}" })
+    .input(loanScheduleIdSchema.extend({ payload: loanScheduleUpdateInputSchema }))
     .output(loanScheduleResponseSchema),
   update: oc
     .route({ method: "PUT", path: "/{publicId}" })

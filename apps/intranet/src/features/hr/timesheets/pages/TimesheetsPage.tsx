@@ -1,16 +1,16 @@
 import { Label, ListBox, Select, Surface } from "@heroui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import dayjs from "dayjs";
 import { startTransition, useState } from "react";
 
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/features/auth/hooks/use-auth";
+import { addMonths, formatChile, today } from "@/lib/dates";
 import { employeeKeys } from "@/features/hr/employees/queries";
 import { TimesheetEditor } from "@/features/hr/timesheets/components/TimesheetEditor";
 import { TimesheetSummaryTable } from "@/features/hr/timesheets/components/TimesheetSummaryTable";
 import { useMonths } from "@/features/hr/timesheets/hooks/use-months";
 import { timesheetQueries } from "@/features/hr/timesheets/queries";
 import { useWakeLock } from "@/hooks/use-wake-lock";
-import { PAGE_CONTAINER } from "@/lib/styles";
+import { Page } from "@/components/layouts/Page";
 
 const MONTH_STRING_REGEX = /^\d{4}-\d{2}$/;
 export function TimesheetsPage() {
@@ -20,7 +20,7 @@ export function TimesheetsPage() {
   // --- State ---
   const { months, monthsWithData } = useMonths();
   // Init month synchronously to previous month
-  const [month, setMonth] = useState<string>(() => dayjs().subtract(1, "month").format("YYYY-MM"));
+  const [month, setMonth] = useState<string>(() => addMonths(today(), -1).slice(0, 7));
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<null | number>(null);
 
   // --- Queries ---
@@ -52,9 +52,8 @@ export function TimesheetsPage() {
     if (!month) {
       return "";
     }
-    const [year, monthStr] = month.split("-");
-    const d = dayjs(`${year}-${monthStr}-01`);
-    return d.isValid() ? d.format("MMMM YYYY") : month;
+    const iso = `${month}-01`;
+    return /^\d{4}-\d{2}-\d{2}$/.test(iso) ? formatChile(iso, "MMMM YYYY") : month;
   })();
 
   // Group months
@@ -68,7 +67,7 @@ export function TimesheetsPage() {
   }
 
   return (
-    <section className={PAGE_CONTAINER}>
+    <Page>
       <Surface
         className="rounded-[28px] border border-default-200/70 p-4 sm:p-5"
         variant="secondary"
@@ -124,7 +123,7 @@ export function TimesheetsPage() {
                     </ListBox.Item>,
                     ...group.months.map((m) => {
                       const hasData = monthsWithData.has(m);
-                      const label = dayjs(`${m}-01`).format("MMMM");
+                      const label = formatChile(`${m}-01`, "MMMM");
                       return (
                         <ListBox.Item id={m} key={m}>
                           {label} {hasData ? "✓" : ""}
@@ -158,7 +157,7 @@ export function TimesheetsPage() {
           summaryRow={employeeSummaryRow}
         />
       )}
-    </section>
+    </Page>
   );
 }
 
@@ -167,9 +166,17 @@ function formatMonthString(m: string): string {
   if (MONTH_STRING_REGEX.test(m)) {
     return m;
   }
-  const d = dayjs(m, ["YYYY-MM", "YYYY/MM", "MM/YYYY", "YYYY-MM-DD", "DD/MM/YYYY"]);
-  if (d.isValid()) {
-    return d.format("YYYY-MM");
+  const ymSep = m.match(/^(\d{4})[/-](\d{2})(?:[/-]\d{2})?$/); // YYYY-MM, YYYY/MM, YYYY-MM-DD
+  if (ymSep) {
+    return `${ymSep[1]}-${ymSep[2]}`;
   }
-  return dayjs().format("YYYY-MM");
+  const mY = m.match(/^(\d{2})\/(\d{4})$/); // MM/YYYY
+  if (mY) {
+    return `${mY[2]}-${mY[1]}`;
+  }
+  const dmY = m.match(/^\d{2}\/(\d{2})\/(\d{4})$/); // DD/MM/YYYY
+  if (dmY) {
+    return `${dmY[2]}-${dmY[1]}`;
+  }
+  return today().slice(0, 7);
 }

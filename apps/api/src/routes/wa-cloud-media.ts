@@ -1,8 +1,9 @@
 import { db } from "@finanzas/db";
 import { type Context, Hono } from "hono";
-import { getSessionUser, hasPermission } from "../auth.ts";
+import { getSessionUser, hasPermission } from "../lib/auth.ts";
 import { logWarn } from "../lib/logger.ts";
 import { decryptSecret } from "../lib/secret-cipher.ts";
+import { getR2Object, putR2Object } from "../modules/cloudflare/r2.ts";
 import {
   downloadMediaUrl,
   updateBusinessProfile,
@@ -178,6 +179,131 @@ waCloudMediaRoutes.post("/upload", async (c) => {
 });
 
 /**
+ * Stream a saved sticker (.webp) from R2. Auth-gated like the other media
+ * routes (read on WaBusinessAccount). The durable R2 copy is private — we never
+ * expose unsigned public R2 URLs — so the picker thumbnails load through here.
+ *
+ * Registered BEFORE the `/:messageId` catch-all so "saved-sticker" is matched
+ * as a static segment, not as a message id.
+ */
+waCloudMediaRoutes.get("/saved-sticker/:id", async (c) => {
+  const session = await getSessionUser(c);
+  if (!session) return c.text("Unauthorized", 401);
+  if (!(await hasPermission(session, "read", "WaBusinessAccount"))) {
+    return c.text("Forbidden", 403);
+  }
+  const id = Number.parseInt(c.req.param("id"), 10);
+  if (!Number.isFinite(id)) return c.text("Bad id", 400);
+
+  const sticker = await db.waSavedSticker.findUnique({
+    where: { id },
+    select: { r2Key: true, mimeType: true },
+  });
+  if (!sticker) return c.text("Not found", 404);
+
+  try {
+    const obj = await getR2Object(sticker.r2Key);
+    const headers: Record<string, string> = {
+      "Content-Type": sticker.mimeType || obj.contentType || "image/webp",
+      "X-Content-Type-Options": "nosniff",
+      // Content-addressed by sha256 → immutable; safe to cache aggressively.
+      "Cache-Control": "private, max-age=86400, immutable",
+    };
+    if (obj.contentLength != null) headers["Content-Length"] = String(obj.contentLength);
+    return new Response(obj.body, { status: 200, headers });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    logWarn("[wa-cloud.saved-sticker] R2 stream failed", { id, error: msg });
+    return c.text("Sticker fetch error", 502);
+  }
+});
+
+/**
+ * Proxy + cache OSM map tiles for location-message mini-maps. Privacy: the
+ * patient's shared location (PHI) must NOT leak to OpenStreetMap from every
+ * operator's browser — so the staff browser hits THIS route, and the server
+ * fetches OSM once (with a policy-compliant User-Agent) and caches the tile in
+ * R2. Subsequent loads serve from R2; OSM is hit only on a cache miss.
+ *
+ * Registered BEFORE the `/:messageId` catch-all.
+ */
+waCloudMediaRoutes.get("/map-tile/:z/:x/:y", async (c) => {
+  const session = await getSessionUser(c);
+  if (!session) return c.text("Unauthorized", 401);
+  if (!(await hasPermission(session, "read", "WaBusinessAccount"))) {
+    return c.text("Forbidden", 403);
+  }
+  const z = Number.parseInt(c.req.param("z"), 10);
+  const x = Number.parseInt(c.req.param("x"), 10);
+  const y = Number.parseInt(c.req.param("y"), 10);
+  const n = 2 ** z;
+  if (
+    !Number.isInteger(z) ||
+    z < 0 ||
+    z > 19 ||
+    !Number.isInteger(x) ||
+    !Number.isInteger(y) ||
+    x < 0 ||
+    y < 0 ||
+    x >= n ||
+    y >= n
+  ) {
+    return c.text("Bad tile coords", 400);
+  }
+
+  const key = `wa-map-tiles/${z}/${x}/${y}.png`;
+  const headers: Record<string, string> = {
+    "Content-Type": "image/png",
+    "X-Content-Type-Options": "nosniff",
+    // Tiles are effectively immutable for our purposes; cache hard.
+    "Cache-Control": "private, max-age=604800, immutable",
+  };
+
+  // Cache hit?
+  try {
+    const obj = await getR2Object(key);
+    if (obj.contentLength != null) headers["Content-Length"] = String(obj.contentLength);
+    return new Response(obj.body, { status: 200, headers });
+  } catch {
+    // miss → fetch from OSM below
+  }
+
+  try {
+    const res = await fetch(`https://tile.openstreetmap.org/${z}/${x}/${y}.png`, {
+      headers: {
+        // OSM tile usage policy requires an identifying User-Agent.
+        "User-Agent": "BioalergiaInbox/1.0 (+https://bioalergia.cl; soporte@bioalergia.cl)",
+      },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!res.ok) {
+      logWarn("[wa-cloud.map-tile] OSM fetch failed", { z, x, y, status: res.status });
+      return c.text("Tile fetch error", 502);
+    }
+    const bytes = new Uint8Array(await res.arrayBuffer());
+    await putR2Object(key, bytes, "image/png").catch((err) => {
+      // Cache write is best-effort; still serve the tile this time.
+      logWarn("[wa-cloud.map-tile] R2 cache write failed", {
+        z,
+        x,
+        y,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    });
+    headers["Content-Length"] = String(bytes.byteLength);
+    return new Response(bytes, { status: 200, headers });
+  } catch (err) {
+    logWarn("[wa-cloud.map-tile] proxy failed", {
+      z,
+      x,
+      y,
+      error: err instanceof Error ? err.message : String(err),
+    });
+    return c.text("Tile error", 502);
+  }
+});
+
+/**
  * Proxy media binaries (image / sticker / video / audio / document) for WA
  * Cloud messages. The Meta media URLs are short-lived (~5 min) and require
  * the system user token, so we cannot link them directly from the browser.
@@ -271,14 +397,27 @@ waCloudMediaRoutes.get("/:messageId", async (c) => {
     // Strip quote and any control char from caption-derived filename to
     // prevent header injection. RFC 6266 also lets us drop CR/LF.
     const safeFilename = filename.replace(/[\x00-\x1f\x7f"\\]/g, "_").slice(0, 200);
-    const disposition = wantsDownload
-      ? `attachment; filename="${safeFilename}"`
-      : `inline; filename="${safeFilename}"`;
+    // Only render trusted media types inline. The content-type comes from an
+    // untrusted contact (upstream/Meta); text/html or image/svg+xml served
+    // inline same-origin is a stored-XSS / defacement surface. Force download
+    // for anything outside the safe render allowlist.
+    const ct = contentType.toLowerCase();
+    const inlineSafe =
+      ct === "application/pdf" ||
+      (ct.startsWith("image/") && ct !== "image/svg+xml") ||
+      ct.startsWith("video/") ||
+      ct.startsWith("audio/");
+    const disposition =
+      wantsDownload || !inlineSafe
+        ? `attachment; filename="${safeFilename}"`
+        : `inline; filename="${safeFilename}"`;
     return new Response(upstream.body, {
       status: 200,
       headers: {
         "Content-Type": contentType,
         "Content-Disposition": disposition,
+        // Don't let the browser MIME-sniff around the declared content-type.
+        "X-Content-Type-Options": "nosniff",
         // Allow same-origin iframe embedding for the PDF viewer modal.
         "X-Frame-Options": "SAMEORIGIN",
         "Cache-Control": "private, max-age=300",

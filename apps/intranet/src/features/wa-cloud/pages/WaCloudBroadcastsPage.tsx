@@ -1,7 +1,11 @@
-import { Button, Card, Chip, Modal, ProgressBar, Spinner, Table } from "@heroui/react";
+// oxlint-disable typescript/no-non-null-assertion -- TODO(strict-null): refactor each `!` to invariant() or explicit guard. Tracked in repo-wide non-null cleanup.
+import { Button, Card, Chip, ProgressBar, Spinner } from "@heroui/react";
+import type { ColumnDef } from "@tanstack/react-table";
 import { CalendarClock, Megaphone, Play, Plus, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { DataTable } from "@/components/data-table/DataTable";
 import { AppDateTimePicker } from "@/components/forms/AppDatePicker";
+import { AppModal } from "@/components/ui/AppModal";
 import { confirmAction } from "@/components/ui/ConfirmDialog";
 import { SelectInput, TextAreaInput, TextInput } from "@/features/outreach/components/FormField";
 import { toast } from "@/lib/toast-interceptor";
@@ -29,6 +33,79 @@ export function WaCloudBroadcastsPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
 
+  const broadcasts = list.data?.broadcasts ?? [];
+  type BroadcastRow = (typeof broadcasts)[number];
+
+  const columns: ColumnDef<BroadcastRow>[] = [
+    {
+      id: "name",
+      header: "Nombre",
+      cell: ({ row }) => (
+        <button
+          type="button"
+          className="text-left font-medium text-accent hover:underline"
+          onClick={() => setSelectedId(row.original.id)}
+        >
+          {row.original.name}
+        </button>
+      ),
+    },
+    {
+      id: "template",
+      header: "Plantilla",
+      cell: ({ row }) => (
+        <span className="font-mono text-xs">
+          {row.original.templateName} · {row.original.templateLanguage}
+        </span>
+      ),
+    },
+    {
+      id: "status",
+      header: "Estado",
+      cell: ({ row }) => (
+        <Chip size="sm" color={STATUS_COLOR[row.original.status]} variant="soft">
+          <Chip.Label>{row.original.status}</Chip.Label>
+        </Chip>
+      ),
+    },
+    {
+      id: "progress",
+      header: "Progreso",
+      cell: ({ row }) => (
+        <ProgressLine
+          sent={row.original.sentCount}
+          failed={row.original.failedCount}
+          total={row.original.totalRecipients}
+        />
+      ),
+    },
+    {
+      id: "scheduledAt",
+      header: "Programada",
+      cell: ({ row }) =>
+        row.original.scheduledAt ? (
+          <span className="font-mono text-default-600 text-xs">
+            {new Date(row.original.scheduledAt).toLocaleString("es-CL", {
+              day: "2-digit",
+              month: "2-digit",
+              year: "2-digit",
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </span>
+        ) : (
+          <span className="text-default-400 text-xs">—</span>
+        ),
+    },
+    {
+      id: "actions",
+      header: "Acciones",
+      cell: ({ row }) => (
+        <BroadcastActions broadcastId={row.original.id} status={row.original.status} />
+      ),
+    },
+  ];
+
   return (
     <div className="space-y-4 p-6">
       <div className="flex items-center justify-between">
@@ -42,86 +119,17 @@ export function WaCloudBroadcastsPage() {
         </Button>
       </div>
 
-      {list.isLoading ? (
-        <div className="flex justify-center py-12">
-          <Spinner />
-        </div>
-      ) : (list.data?.broadcasts.length ?? 0) === 0 ? (
-        <Card>
-          <Card.Content className="p-8 text-center text-default-500 text-sm">
-            Sin campañas todavía. Crea una para enviar plantillas a múltiples contactos.
-          </Card.Content>
-        </Card>
-      ) : (
-        <Card>
-          <Card.Content className="p-0">
-            <Table>
-              <Table.ScrollContainer>
-                <Table.Content aria-label="Campañas">
-                  <Table.Header>
-                    <Table.Column isRowHeader>Nombre</Table.Column>
-                    <Table.Column>Plantilla</Table.Column>
-                    <Table.Column>Estado</Table.Column>
-                    <Table.Column>Progreso</Table.Column>
-                    <Table.Column>Programada</Table.Column>
-                    <Table.Column>Acciones</Table.Column>
-                  </Table.Header>
-                  <Table.Body items={list.data?.broadcasts ?? []}>
-                    {(b) => (
-                      <Table.Row id={String(b.id)}>
-                        <Table.Cell>
-                          <button
-                            type="button"
-                            className="text-left font-medium text-accent hover:underline"
-                            onClick={() => setSelectedId(b.id)}
-                          >
-                            {b.name}
-                          </button>
-                        </Table.Cell>
-                        <Table.Cell>
-                          <span className="font-mono text-xs">
-                            {b.templateName} · {b.templateLanguage}
-                          </span>
-                        </Table.Cell>
-                        <Table.Cell>
-                          <Chip size="sm" color={STATUS_COLOR[b.status]} variant="soft">
-                            <Chip.Label>{b.status}</Chip.Label>
-                          </Chip>
-                        </Table.Cell>
-                        <Table.Cell>
-                          <ProgressLine
-                            sent={b.sentCount}
-                            failed={b.failedCount}
-                            total={b.totalRecipients}
-                          />
-                        </Table.Cell>
-                        <Table.Cell>
-                          {b.scheduledAt ? (
-                            <span className="font-mono text-default-600 text-xs">
-                              {new Date(b.scheduledAt).toLocaleString("es-CL", {
-                                day: "2-digit",
-                                month: "2-digit",
-                                year: "2-digit",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
-                            </span>
-                          ) : (
-                            <span className="text-default-400 text-xs">—</span>
-                          )}
-                        </Table.Cell>
-                        <Table.Cell>
-                          <BroadcastActions broadcastId={b.id} status={b.status} />
-                        </Table.Cell>
-                      </Table.Row>
-                    )}
-                  </Table.Body>
-                </Table.Content>
-              </Table.ScrollContainer>
-            </Table>
-          </Card.Content>
-        </Card>
-      )}
+      <Card>
+        <Card.Content className="p-0">
+          <DataTable
+            enableToolbar={false}
+            columns={columns}
+            data={broadcasts}
+            isLoading={list.isLoading}
+            noDataMessage="Sin campañas todavía. Crea una para enviar plantillas a múltiples contactos."
+          />
+        </Card.Content>
+      </Card>
 
       {selectedId && <BroadcastDetail id={selectedId} onClose={() => setSelectedId(null)} />}
 
@@ -169,17 +177,19 @@ function BroadcastActions({ broadcastId, status }: { broadcastId: number; status
           isIconOnly
           aria-label="Cancelar"
           isPending={cancel.isPending}
-          onPress={async () => {
-            const ok = await confirmAction({
-              title: "Cancelar campaña",
-              description:
-                "Los destinatarios pendientes no recibirán el mensaje. Esta acción no se puede deshacer.",
-              confirmLabel: "Cancelar campaña",
-              cancelLabel: "Volver",
-              variant: "danger",
-            });
-            if (!ok) return;
-            cancel.mutate(broadcastId);
+          onPress={() => {
+            void (async () => {
+              const ok = await confirmAction({
+                title: "Cancelar campaña",
+                description:
+                  "Los destinatarios pendientes no recibirán el mensaje. Esta acción no se puede deshacer.",
+                confirmLabel: "Cancelar campaña",
+                cancelLabel: "Volver",
+                variant: "danger",
+              });
+              if (!ok) return;
+              cancel.mutate(broadcastId);
+            })();
           }}
         >
           <X size={12} />
@@ -191,6 +201,53 @@ function BroadcastActions({ broadcastId, status }: { broadcastId: number; status
 
 function BroadcastDetail({ id, onClose }: { id: number; onClose: () => void }) {
   const detail = useBroadcast(id);
+  const recipients = detail.data?.recipients ?? [];
+  type RecipientRow = (typeof recipients)[number];
+
+  const columns: ColumnDef<RecipientRow>[] = [
+    {
+      id: "phone",
+      header: "Teléfono",
+      cell: ({ row }) => <span className="font-mono text-xs">{row.original.phoneE164}</span>,
+    },
+    {
+      id: "variables",
+      header: "Variables",
+      cell: ({ row }) => (
+        <span className="text-default-600 text-xs">
+          {row.original.variables.length > 0 ? row.original.variables.join(" · ") : "—"}
+        </span>
+      ),
+    },
+    {
+      id: "status",
+      header: "Estado",
+      cell: ({ row }) => (
+        <Chip
+          size="sm"
+          color={
+            row.original.status === "SENT"
+              ? "success"
+              : row.original.status === "FAILED"
+                ? "danger"
+                : row.original.status === "SKIPPED"
+                  ? "warning"
+                  : "default"
+          }
+          variant="soft"
+        >
+          <Chip.Label>{row.original.status}</Chip.Label>
+        </Chip>
+      ),
+    },
+    {
+      id: "error",
+      header: "Error",
+      cell: ({ row }) => (
+        <span className="line-clamp-1 text-danger text-xs">{row.original.errorMessage ?? ""}</span>
+      ),
+    },
+  ];
 
   return (
     <Card>
@@ -209,54 +266,13 @@ function BroadcastDetail({ id, onClose }: { id: number; onClose: () => void }) {
             <Spinner size="sm" />
           </div>
         ) : (
-          <Table>
-            <Table.ScrollContainer className="max-h-96">
-              <Table.Content aria-label="Destinatarios">
-                <Table.Header>
-                  <Table.Column isRowHeader>Teléfono</Table.Column>
-                  <Table.Column>Variables</Table.Column>
-                  <Table.Column>Estado</Table.Column>
-                  <Table.Column>Error</Table.Column>
-                </Table.Header>
-                <Table.Body items={detail.data.recipients}>
-                  {(r) => (
-                    <Table.Row id={String(r.id)}>
-                      <Table.Cell>
-                        <span className="font-mono text-xs">{r.phoneE164}</span>
-                      </Table.Cell>
-                      <Table.Cell>
-                        <span className="text-default-600 text-xs">
-                          {r.variables.length > 0 ? r.variables.join(" · ") : "—"}
-                        </span>
-                      </Table.Cell>
-                      <Table.Cell>
-                        <Chip
-                          size="sm"
-                          color={
-                            r.status === "SENT"
-                              ? "success"
-                              : r.status === "FAILED"
-                                ? "danger"
-                                : r.status === "SKIPPED"
-                                  ? "warning"
-                                  : "default"
-                          }
-                          variant="soft"
-                        >
-                          <Chip.Label>{r.status}</Chip.Label>
-                        </Chip>
-                      </Table.Cell>
-                      <Table.Cell>
-                        <span className="line-clamp-1 text-danger text-xs">
-                          {r.errorMessage ?? ""}
-                        </span>
-                      </Table.Cell>
-                    </Table.Row>
-                  )}
-                </Table.Body>
-              </Table.Content>
-            </Table.ScrollContainer>
-          </Table>
+          <DataTable
+            enableToolbar={false}
+            columns={columns}
+            data={recipients}
+            noDataMessage="Sin destinatarios."
+            scrollMaxHeight={384}
+          />
         )}
       </Card.Content>
     </Card>
@@ -374,94 +390,88 @@ function CreateBroadcastModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
   };
 
   return (
-    <Modal>
-      <Modal.Backdrop
-        isOpen={isOpen}
-        onOpenChange={(o) => !o && onClose()}
-        isDismissable
-        className="bg-black/40 backdrop-blur-[2px]"
-      >
-        <Modal.Container placement="center">
-          <Modal.Dialog className="relative w-full max-w-2xl rounded-[28px] bg-background p-6 shadow-2xl">
-            <Modal.Header className="mb-4">
-              <Modal.Heading className="font-bold text-primary text-xl">
-                Nueva campaña
-              </Modal.Heading>
-              <p className="text-default-500 text-xs">
-                Recuerda: marketing requiere opt-in. Auth/Utility no requieren ventana 24h pero sí
-                plantilla aprobada.
-              </p>
-            </Modal.Header>
-            <Modal.Body className="max-h-[70vh] space-y-3 overflow-y-auto">
-              <TextInput
-                label="Nombre"
-                value={name}
-                onValueChange={setName}
-                placeholder="Recordatorio cita Mayo"
-              />
-              <div className="grid grid-cols-2 gap-3">
-                <SelectInput
-                  label="Cuenta WABA"
-                  value={accountId}
-                  onValueChange={(v) => {
-                    setAccountId(v);
-                    setPhoneNumberId("");
-                    setTplKey("");
-                  }}
-                  options={accountOptions}
-                />
-                <SelectInput
-                  label="Enviar desde"
-                  value={phoneNumberId}
-                  onValueChange={setPhoneNumberId}
-                  options={phoneOptions}
-                />
-              </div>
-              <SelectInput
-                label="Plantilla"
-                value={tplKey}
-                onValueChange={setTplKey}
-                options={tplOptions}
-              />
-              <div className="grid grid-cols-2 gap-3">
-                <AppDateTimePicker
-                  label="Programar (opcional)"
-                  value={scheduledAt}
-                  onChange={setScheduledAt}
-                />
-                <TextInput
-                  label="Rate limit (msg/seg)"
-                  value={rateLimit}
-                  onValueChange={setRateLimit}
-                  placeholder="5"
-                />
-              </div>
-              <TextAreaInput
-                label="Destinatarios (uno por línea: teléfono[,var1,var2,…])"
-                value={recipientsRaw}
-                onValueChange={setRecipientsRaw}
-                placeholder={
-                  "+56912345678,Juan,2026-05-12 10:00\n+56987654321,María,2026-05-12 11:30"
-                }
-                rows={8}
-              />
-              <p className="text-default-500 text-xs">
-                Variables se mapean a {"{{1}}"}, {"{{2}}"}, … en la plantilla.
-              </p>
-            </Modal.Body>
-            <Modal.Footer className="mt-4 flex justify-end gap-2">
-              <Button variant="outline" onPress={onClose}>
-                <X size={14} />
-                Cancelar
-              </Button>
-              <Button onPress={submit} isPending={create.isPending}>
-                {scheduledAt ? <CalendarClock size={14} /> : <Plus size={14} />}
-                {scheduledAt ? "Crear y programar" : "Crear borrador"}
-              </Button>
-            </Modal.Footer>
-          </Modal.Dialog>
-        </Modal.Container>
-      </Modal.Backdrop>
-    </Modal>
+    <AppModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Nueva campaña"
+      size="lg"
+      footer={
+        <>
+          <Button variant="outline" onPress={onClose}>
+            <X size={14} />
+            Cancelar
+          </Button>
+          <Button
+            onPress={() => {
+              void submit();
+            }}
+            isPending={create.isPending}
+          >
+            {scheduledAt ? <CalendarClock size={14} /> : <Plus size={14} />}
+            {scheduledAt ? "Crear y programar" : "Crear borrador"}
+          </Button>
+        </>
+      }
+    >
+      <div className="space-y-3">
+        <p className="text-default-500 text-xs">
+          Recuerda: marketing requiere opt-in. Auth/Utility no requieren ventana 24h pero sí
+          plantilla aprobada.
+        </p>
+        <TextInput
+          label="Nombre"
+          value={name}
+          onValueChange={setName}
+          placeholder="Recordatorio cita Mayo"
+        />
+        <div className="grid grid-cols-2 gap-3">
+          <SelectInput
+            label="Cuenta WABA"
+            value={accountId}
+            onValueChange={(v) => {
+              setAccountId(v);
+              setPhoneNumberId("");
+              setTplKey("");
+            }}
+            options={accountOptions}
+          />
+          <SelectInput
+            label="Enviar desde"
+            value={phoneNumberId}
+            onValueChange={setPhoneNumberId}
+            options={phoneOptions}
+          />
+        </div>
+        <SelectInput
+          label="Plantilla"
+          value={tplKey}
+          onValueChange={setTplKey}
+          options={tplOptions}
+        />
+        <div className="grid grid-cols-2 gap-3">
+          <AppDateTimePicker
+            label="Programar (opcional)"
+            value={scheduledAt}
+            onChange={setScheduledAt}
+          />
+          <TextInput
+            label="Rate limit (msg/seg)"
+            value={rateLimit}
+            onValueChange={setRateLimit}
+            placeholder="5"
+          />
+        </div>
+        <TextAreaInput
+          label="Destinatarios (uno por línea: teléfono[,var1,var2,…])"
+          value={recipientsRaw}
+          onValueChange={setRecipientsRaw}
+          placeholder={"+56912345678,Juan,2026-05-12 10:00\n+56987654321,María,2026-05-12 11:30"}
+          rows={8}
+        />
+        <p className="text-default-500 text-xs">
+          Variables se mapean a {"{{1}}"}, {"{{2}}"}, … en la plantilla.
+        </p>
+      </div>
+    </AppModal>
   );
 }

@@ -1,15 +1,8 @@
+import { formatChile } from "@/lib/dates";
 import { Card, Chip, Link } from "@heroui/react";
 import type { attendanceMarkSchema } from "@finanzas/orpc-contracts/attendance";
-import dayjs from "dayjs";
-import timezone from "dayjs/plugin/timezone";
-import utc from "dayjs/plugin/utc";
 import type { z } from "zod";
 import { getAttendanceNetworkOrigin } from "./network-origin";
-
-dayjs.extend(utc);
-dayjs.extend(timezone);
-
-const TIMEZONE = "America/Santiago";
 
 type AttendanceMark = z.infer<typeof attendanceMarkSchema>;
 
@@ -54,10 +47,10 @@ export function TodayMarksList({ marks }: TodayMarksListProps) {
                     </Chip>
                     <div className="min-w-0">
                       <p className="text-lg font-semibold leading-none text-foreground">
-                        {dayjs(mark.markedAt).tz(TIMEZONE).format("HH:mm")}
+                        {formatChile(mark.markedAt, "HH:mm")}
                       </p>
                       <p className="mt-1 text-sm text-foreground-500">
-                        {dayjs(mark.markedAt).tz(TIMEZONE).format("dddd D [de] MMMM")}
+                        {formatChile(mark.markedAt, "dddd D [de] MMMM")}
                       </p>
                     </div>
                   </div>

@@ -3,6 +3,13 @@ import { z } from "zod";
 
 export const transactionsInsightsStatsQuerySchema = z.object({
   from: z.string(),
+  /**
+   * Bucket granularity for the `monthly` series. `"month"` (default) keeps the
+   * legacy month-start buckets; `"day"` buckets per calendar day — used by the
+   * home dashboard so the "últimos 30 días" chart shows real daily activity
+   * instead of 1–2 month-wide blocks.
+   */
+  granularity: z.enum(["day", "month"]).default("month"),
   to: z.string(),
 });
 
@@ -20,7 +27,9 @@ export const transactionsInsightsParticipantInsightInputSchema = z.object({
 });
 
 export const transactionsInsightsParticipantLeaderboardItemSchema = z.object({
+  bankAccountNumber: z.string().nullable(),
   count: z.number(),
+  identificationNumber: z.string().nullable(),
   personId: z.string(),
   personName: z.string(),
   total: z.number(),
@@ -71,6 +80,11 @@ export const transactionsInsightsParticipantInsightResponseSchema = z.object({
 
 export const transactionsInsightsStatsResponseSchema = z.object({
   byType: z.array(transactionsInsightsMovementTypeSchema),
+  /**
+   * Aggregated flow series, ascending. `month` is the ISO bucket start date:
+   * `YYYY-MM-01` when the request used `granularity: "month"`, `YYYY-MM-DD`
+   * when it used `granularity: "day"`. (Name kept for backward compatibility.)
+   */
   monthly: z.array(
     z.object({
       in: z.number(),

@@ -21,10 +21,9 @@ import {
   Tooltip,
 } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import dayjs from "dayjs";
-import "dayjs/locale/es";
 import { ChevronDown } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { addMonths, formatChile, today } from "@/lib/dates";
 import { useToast } from "@/context/ToastContext";
 import {
   autoLinkEventDteByPeriod,
@@ -141,12 +140,11 @@ function autoLinkStrategyLabel(strategy: AutoLinkStrategy): string {
 }
 
 function buildPeriodOptions(count = 24): Array<{ label: string; value: string }> {
-  dayjs.locale("es");
   return Array.from({ length: count }, (_, index) => {
-    const period = dayjs().subtract(index, "month");
+    const period = addMonths(today(), -index);
     return {
-      label: period.format("MMMM YYYY"),
-      value: period.format("YYYY-MM"),
+      label: formatChile(period, "MMMM YYYY"),
+      value: period.slice(0, 7),
     };
   });
 }
@@ -185,7 +183,7 @@ function linkStatusLabel(status: EventDteOverviewItem["linkStatus"]): string {
 }
 
 function formatAutoLinkAttempt(attemptedAt: string): string {
-  return dayjs(attemptedAt).tz().format("DD-MM-YYYY HH:mm");
+  return formatChile(attemptedAt, "DD-MM-YYYY HH:mm");
 }
 
 function seriesKindLabel(kind: EventDteOverviewItem["seriesKind"]): string | null {
@@ -317,7 +315,7 @@ function KpiTile({ description, title, value }: Readonly<KpiTileProps>) {
 }
 
 function formatEventDayLabel(date: string): string {
-  return dayjs(date).locale("es").format("dddd D [de] MMMM");
+  return formatChile(date, "dddd D [de] MMMM");
 }
 
 function groupOverviewItemsByDate(items: EventDteOverviewItem[]): EventDayGroup[] {
@@ -383,7 +381,7 @@ function SuggestionCandidateCard({
           <Card.Title className="truncate text-sm">{candidate.clientName}</Card.Title>
           <Card.Description>
             {candidate.clientRUT} · Folio {candidate.folio} ·{" "}
-            {dayjs(candidate.documentDate).format("DD-MM-YYYY")}
+            {formatChile(candidate.documentDate, "DD-MM-YYYY")}
           </Card.Description>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -476,7 +474,7 @@ function HypothesisCard({
           <Card.Description>
             {hypothesis.clientRUT} ·{" "}
             {hypothesis.folios.map((folio) => `Folio ${folio}`).join(" + ")} ·{" "}
-            {dayjs(hypothesis.documentDate).format("DD-MM-YYYY")}
+            {formatChile(hypothesis.documentDate, "DD-MM-YYYY")}
           </Card.Description>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -894,7 +892,7 @@ export function CalendarDteLinksOverview({
             onChange={(value) =>
               onSearchChange({
                 page: 0,
-                period: value ? String(value) : dayjs().format("YYYY-MM"),
+                period: value ? String(value) : today().slice(0, 7),
               })
             }
           >
@@ -954,7 +952,7 @@ export function CalendarDteLinksOverview({
                 variant="primary"
               >
                 Auto-vincular
-                <ChevronDown className="h-4 w-4" />
+                <ChevronDown className="size-4" />
               </Button>
             </Dropdown.Trigger>
             <Dropdown.Popover className="min-w-75" placement="bottom end">
@@ -1194,7 +1192,7 @@ export function CalendarDteLinksOverview({
                                 {formatEventDayLabel(group.date)}
                               </p>
                               <Description className="text-xs">
-                                {dayjs(group.date).format("DD-MM-YYYY")} · {group.items.length}{" "}
+                                {formatChile(group.date, "DD-MM-YYYY")} · {group.items.length}{" "}
                                 eventos
                               </Description>
                             </div>
@@ -1219,7 +1217,7 @@ export function CalendarDteLinksOverview({
                           </Accordion.Trigger>
                         </Accordion.Heading>
                         <Accordion.Panel className="pb-0">
-                          <Accordion.Body className="border-default-200/70 border-t px-3 py-3 sm:px-4">
+                          <Accordion.Body className="border-default-200/70 border-t sm:px-4 p-3">
                             <div className="space-y-3">
                               {group.items.map((item) => {
                                 const primarySuggestion = item.topHypothesis;
@@ -1254,7 +1252,7 @@ export function CalendarDteLinksOverview({
                                           {item.summary ?? "(Sin título)"}
                                         </Card.Title>
                                         <Card.Description>
-                                          {dayjs(item.eventDate).format("DD-MM-YYYY")}
+                                          {formatChile(item.eventDate, "DD-MM-YYYY")}
                                           {item.eventTime ? ` · ${item.eventTime}` : ""}
                                         </Card.Description>
                                       </div>

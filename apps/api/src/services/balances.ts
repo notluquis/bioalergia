@@ -1,13 +1,19 @@
 import { db } from "@finanzas/db";
-import dayjs from "dayjs";
-import timezone from "dayjs/plugin/timezone.js";
-import utc from "dayjs/plugin/utc.js";
+import { Decimal } from "decimal.js";
+import {
+  dbDateToISO,
+  instantToChileDate,
+  isoToDbDate,
+  iterateDateRange,
+  parseChileDateOnly,
+} from "../lib/time.ts";
 
-dayjs.extend(utc);
-dayjs.extend(timezone);
-
-const TIMEZONE = "America/Santiago";
-const parseDateOnly = (value: string) => dayjs.tz(value, "YYYY-MM-DD", TIMEZONE);
+// Chile-day bounds as UTC instants for range queries on instant columns.
+const chileDayStart = (value: string) => parseChileDateOnly(value) ?? new Date(NaN);
+const chileDayEnd = (value: string) => {
+  const start = parseChileDateOnly(value);
+  return start ? new Date(start.getTime() + 86_400_000 - 1) : new Date(NaN);
+};
 
 export interface DailyBalanceRecord {
   date: string; // YYYY-MM-DD
@@ -32,7 +38,7 @@ export interface BalancesApiResponse {
 export async function getBalancesReport(from: string, to: string): Promise<BalancesApiResponse> {
   const previous = await db.dailyBalance.findFirst({
     where: {
-      date: { lt: parseDateOnly(from).startOf("day").toDate() },
+      date: { lt: chileDayStart(from) },
     },
     orderBy: { date: "desc" },
   });
@@ -40,8 +46,8 @@ export async function getBalancesReport(from: string, to: string): Promise<Balan
   const settlements = await db.settlementTransaction.findMany({
     where: {
       transactionDate: {
-        gte: parseDateOnly(from).startOf("day").toDate(),
-        lte: parseDateOnly(to).endOf("day").toDate(),
+        gte: chileDayStart(from),
+        lte: chileDayEnd(to),
       },
     },
     select: {
@@ -53,8 +59,8 @@ export async function getBalancesReport(from: string, to: string): Promise<Balan
   const releases = await db.releaseTransaction.findMany({
     where: {
       date: {
-        gte: parseDateOnly(from).startOf("day").toDate(),
-        lte: parseDateOnly(to).endOf("day").toDate(),
+        gte: chileDayStart(from),
+        lte: chileDayEnd(to),
       },
     },
     select: {
@@ -84,25 +90,22 @@ export async function getBalancesReport(from: string, to: string): Promise<Balan
   const existingBalances = await db.dailyBalance.findMany({
     where: {
       date: {
-        gte: parseDateOnly(from).startOf("day").toDate(),
-        lte: parseDateOnly(to).endOf("day").toDate(),
+        gte: chileDayStart(from),
+        lte: chileDayEnd(to),
       },
     },
   });
 
-  const balanceMap = new Map(
-    existingBalances.map((b) => [dayjs(b.date).tz(TIMEZONE).format("YYYY-MM-DD"), b])
-  );
+  // b.date is @db.Date (UTC-anchored) -> dbDateToISO; dayjs(x).tz() would roll
+  // the day back under Santiago (the off-by-one bug class).
+  const balanceMap = new Map(existingBalances.map((b) => [dbDateToISO(b.date) ?? "", b]));
 
   const days: DailyBalanceRecord[] = [];
   let runningBalance = previous ? Number(previous.amount) : 0;
 
-  let current = parseDateOnly(from);
-  const end = parseDateOnly(to);
-
-  while (current.isBefore(end) || current.isSame(end, "day")) {
-    const dateStr = current.format("YYYY-MM-DD");
-    const dayTx = movements.filter((t) => dayjs(t.date).format("YYYY-MM-DD") === dateStr);
+  for (const dateStr of iterateDateRange(chileDayStart(from), chileDayStart(to))) {
+    // t.date is a real instant (transactionDate / release date) -> local date.
+    const dayTx = movements.filter((t) => instantToChileDate(t.date) === dateStr);
 
     let totalIn = 0;
     let totalOut = 0;
@@ -140,25 +143,23 @@ export async function getBalancesReport(from: string, to: string): Promise<Balan
     } else {
       runningBalance = expectedBalance;
     }
-
-    current = current.add(1, "day");
   }
 
   return {
     days,
     previous: previous
       ? {
-          date: dayjs(previous.date).tz(TIMEZONE).format("YYYY-MM-DD"),
+          // @db.Date -> dbDateToISO (UTC, no rollback).
+          date: dbDateToISO(previous.date) ?? "",
           balance: Number(previous.amount),
         }
       : null,
   };
 }
 
-import { Decimal } from "decimal.js";
-
 export async function upsertDailyBalance(date: string, amount: number, note?: string) {
-  const parsed = parseDateOnly(date).toDate();
+  // @db.Date write -> UTC-midnight anchor (canonical).
+  const parsed = isoToDbDate(date);
   return db.dailyBalance.upsert({
     where: { date: parsed },
     update: {

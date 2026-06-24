@@ -1,11 +1,11 @@
-import { db } from "@finanzas/db";
-import dayjs from "dayjs";
-import timezone from "dayjs/plugin/timezone.js";
-import utc from "dayjs/plugin/utc.js";
+import { db, type JsonValue } from "@finanzas/db";
 import jaroWinkler from "talisman/metrics/jaro-winkler.js";
 import { symmetric as mongeElkanSymmetric } from "talisman/metrics/monge-elkan.js";
 import { joinClinicalText } from "../lib/clinical-text.ts";
+import { DomainError } from "../lib/errors.ts";
+import { logError, logEvent } from "../lib/logger.ts";
 import { normalizeRut } from "../lib/rut.ts";
+import { getMonthRange, toChileDateString } from "../lib/time.ts";
 import {
   type ClinicalSeriesSnapshot,
   extractIdentityHints,
@@ -13,8 +13,7 @@ import {
   syncClinicalSeriesForInternalEventId,
 } from "./clinical-series.ts";
 
-dayjs.extend(utc);
-dayjs.extend(timezone);
+const PERIOD_REGEX = /^\d{4}-(0[1-9]|1[0-2])$/;
 
 const TIMEZONE = "America/Santiago";
 const RUT_REGEX = /\b\d{1,2}\.?\d{3}\.?\d{3}-?[\dkK]\b/g;
@@ -385,25 +384,16 @@ async function recordAutoLinkAttempt(params: {
       ? Math.max(0, Math.min(100, params.confidenceScore))
       : null;
 
-  await db.$executeRaw`
-    INSERT INTO event_dte_auto_link_attempts (
-      event_id,
-      candidate_dte_sale_detail_id,
-      status,
-      reason,
-      confidence_score,
-      created_by,
-      created_at
-    ) VALUES (
-      ${params.eventId},
-      ${params.dteSaleDetailId ?? null},
-      ${params.status},
-      ${params.reason},
-      ${normalizedScore},
-      ${params.userId},
-      NOW()
-    )
-  `;
+  await db.eventDteAutoLinkAttempt.create({
+    data: {
+      eventId: params.eventId,
+      candidateDteSaleDetailId: params.dteSaleDetailId ?? null,
+      status: params.status,
+      reason: params.reason,
+      confidenceScore: normalizedScore,
+      createdBy: params.userId,
+    },
+  });
 }
 
 async function recordMatchReview(params: {
@@ -414,25 +404,50 @@ async function recordMatchReview(params: {
   hypothesis?: unknown;
   hypothesisKind?: null | HypothesisKind;
 }) {
-  await db.$executeRaw`
-    INSERT INTO event_dte_match_reviews (
-      event_id,
-      action,
-      hypothesis_kind,
-      dte_sale_detail_ids,
-      hypothesis,
-      created_by,
-      created_at
-    ) VALUES (
-      ${params.eventId},
-      ${params.action},
-      ${params.hypothesisKind ?? null},
-      ${JSON.stringify(params.dteSaleDetailIds)}::jsonb,
-      ${params.hypothesis ? JSON.stringify(params.hypothesis) : null}::jsonb,
-      ${params.createdBy ?? null},
-      NOW()
-    )
-  `;
+  const creator = params.createdBy != null ? { connect: { id: params.createdBy } } : undefined;
+  const rawHypothesis = params.hypothesis ?? null;
+  const dteSaleDetailIdsJson = toJsonValue(params.dteSaleDetailIds);
+  const hypothesisJson = toJsonValue(rawHypothesis);
+  const data = {
+    action: params.action,
+    event: { connect: { id: params.eventId } },
+    hypothesisKind: params.hypothesisKind ?? null,
+    dteSaleDetailIds: dteSaleDetailIdsJson as never,
+    hypothesis: hypothesisJson as never,
+    ...(creator ? { creator } : {}),
+  };
+
+  try {
+    await db.eventDteMatchReview.create({ data });
+  } catch (error) {
+    logError("dte.match_review.create_failed", error, {
+      action: params.action,
+      createdBy: params.createdBy ?? null,
+      dteSaleDetailIds: params.dteSaleDetailIds,
+      eventId: params.eventId,
+      hypothesisKind: params.hypothesisKind ?? null,
+      hypothesisShape: summarizeJsonForLog(rawHypothesis),
+      hypothesisUndefinedPaths: collectUndefinedPaths(rawHypothesis),
+      sanitizedHypothesisUndefinedPaths: collectUndefinedPaths(hypothesisJson),
+    });
+  }
+}
+
+async function hasCommittedEventDteLinks(params: {
+  dteSaleDetailIds: string[];
+  eventId: number;
+}): Promise<boolean> {
+  if (params.dteSaleDetailIds.length === 0) return false;
+
+  const linkedCount = await db.eventDteSaleLink.count({
+    where: {
+      dteSaleDetailId: { in: params.dteSaleDetailIds },
+      eventId: params.eventId,
+      status: { not: "REJECTED" },
+    },
+  });
+
+  return linkedCount >= params.dteSaleDetailIds.length;
 }
 
 function normalizeText(value: string): string {
@@ -629,8 +644,52 @@ export function resolveMatchAmountHint(params: {
   return null;
 }
 
+function toJsonValue(value: unknown): JsonValue {
+  if (value === undefined) {
+    return null;
+  }
+
+  return JSON.parse(JSON.stringify(value)) as JsonValue;
+}
+
+function collectUndefinedPaths(value: unknown, path = "$"): string[] {
+  if (value === undefined) {
+    return [path];
+  }
+
+  if (Array.isArray(value)) {
+    return value.flatMap((item, index) => collectUndefinedPaths(item, `${path}[${index}]`));
+  }
+
+  if (value !== null && typeof value === "object") {
+    return Object.entries(value).flatMap(([key, child]) =>
+      collectUndefinedPaths(child, `${path}.${key}`)
+    );
+  }
+
+  return [];
+}
+
+function summarizeJsonForLog(value: unknown): Record<string, unknown> {
+  const text = safeJsonStringify(value);
+  return {
+    jsonLength: text.length,
+    rootKind: Array.isArray(value) ? "array" : value === null ? "null" : typeof value,
+  };
+}
+
+function safeJsonStringify(value: unknown): string {
+  try {
+    return JSON.stringify(value, (_key, nestedValue) =>
+      typeof nestedValue === "bigint" ? nestedValue.toString() : nestedValue
+    );
+  } catch (error) {
+    return `[unserializable:${error instanceof Error ? error.message : String(error)}]`;
+  }
+}
+
 function toSignal(code: string, label: string, weight: number, value?: null | string): MatchSignal {
-  return { code, label, value, weight };
+  return value === undefined ? { code, label, weight } : { code, label, value, weight };
 }
 
 function extractIdentityClaims(params: {
@@ -729,12 +788,11 @@ export function resolveSuggestionDateWindow(params: {
     params.sameDayOnly && reembolsoMultiDateBundleEnabled && isReembolsoBundleEvent(params.event);
 
   if (enableReembolsoMultiDate) {
-    const parsedDate = dayjs(params.event.eventDate, "YYYY-MM-DD", true);
-    const eventDate = parsedDate.isValid() ? parsedDate : dayjs(params.event.eventDate);
+    const base = Temporal.PlainDate.from(params.event.eventDate.slice(0, 10));
     return {
-      from: eventDate.subtract(reembolsoMultiDateWindowDays, "day").format("YYYY-MM-DD"),
+      from: base.subtract({ days: reembolsoMultiDateWindowDays }).toString(),
       mode: "reembolso_multi_date",
-      to: eventDate.add(reembolsoMultiDateWindowDays, "day").format("YYYY-MM-DD"),
+      to: base.add({ days: reembolsoMultiDateWindowDays }).toString(),
     };
   }
 
@@ -1225,14 +1283,14 @@ function buildBundleHypotheses(params: {
         bundles.set(dteSaleDetailIds.join("|"), {
           amountDiff,
           autoLinkEligible: score >= MIN_AUTO_LINK_SCORE,
-          clientName: sorted[0]!.document.clientName,
-          clientRUT: sorted[0]!.document.clientRUT,
+          clientName: sorted[0].document.clientName,
+          clientRUT: sorted[0].document.clientRUT,
           crossSeriesConflicts: [
             ...new Map(
               sorted.flatMap((a) => a.crossSeriesConflicts).map((c) => [c.seriesId, c])
             ).values(),
           ],
-          documentDate: sorted[0]!.document.documentDate,
+          documentDate: sorted[0].document.documentDate,
           documents: sorted.map((analysis) => analysis.document),
           dteSaleDetailIds,
           folios: sorted.map((analysis) => analysis.document.folio),
@@ -1263,7 +1321,7 @@ function buildBundleHypotheses(params: {
 
     if (current.length === 3) return;
     for (let index = startIndex; index < eligible.length; index += 1) {
-      current.push(eligible[index]!);
+      current.push(eligible[index]);
       visit(index + 1, current);
       current.pop();
     }
@@ -1737,13 +1795,10 @@ export async function listEventDteLinkOverview(params: {
   const trimmedQuery = params.query?.trim() ?? "";
   const hasSearch = trimmedQuery.length > 0;
   const offset = page * pageSize;
-  const periodDate = dayjs(`${params.period}-01`, "YYYY-MM-DD", true);
-  const today = dayjs().tz(TIMEZONE).format("YYYY-MM-DD");
-
-  if (!periodDate.isValid()) throw new Error("Periodo inválido. Usa formato YYYY-MM");
-
-  const periodStart = periodDate.startOf("month").format("YYYY-MM-DD");
-  const periodEnd = periodDate.endOf("month").format("YYYY-MM-DD");
+  if (!PERIOD_REGEX.test(params.period))
+    throw new DomainError("BAD_REQUEST", "Periodo inválido. Usa formato YYYY-MM");
+  const today = toChileDateString(new Date());
+  const { from: periodStart, to: periodEnd } = getMonthRange(params.period);
   const searchLike = `%${trimmedQuery}%`;
 
   const statsRows = await db.$queryRaw<
@@ -2108,29 +2163,28 @@ export async function confirmEventDteLink(params: {
   userId: number;
 }) {
   const event = await getEventByExternalIds(params.calendarId, params.eventId);
-  if (!event) throw new Error("Evento no encontrado");
+  if (!event) throw new DomainError("NOT_FOUND", "Evento no encontrado");
 
   const normalizedDteSaleDetailIds = [...new Set(params.dteSaleDetailIds)].slice(0, 3);
   if (normalizedDteSaleDetailIds.length === 0) {
-    throw new Error("Debes indicar al menos un DTE para confirmar el vínculo");
+    throw new DomainError("BAD_REQUEST", "Debes indicar al menos un DTE para confirmar el vínculo");
   }
 
-  const dteRows = await db.$queryRaw<Array<{ id: string }>>`
-    SELECT s.id
-    FROM dte_sale_details s
-    WHERE s.id = ANY(${normalizedDteSaleDetailIds}::text[])
-  `;
+  const dteRows = await db.dTESaleDetail.findMany({
+    where: { id: { in: normalizedDteSaleDetailIds } },
+    select: { id: true },
+  });
   if (dteRows.length !== normalizedDteSaleDetailIds.length) {
-    throw new Error("Uno o más DTE de venta no existen");
+    throw new DomainError("BAD_REQUEST", "Uno o más DTE de venta no existen");
   }
 
   const previousLinks = await getEventDteLinksByInternalEventId(event.eventId);
 
-  await db.$executeRaw`
-    DELETE FROM event_dte_sale_links
-    WHERE event_id = ${event.eventId}
-       OR dte_sale_detail_id = ANY(${normalizedDteSaleDetailIds}::text[])
-  `;
+  await db.eventDteSaleLink.deleteMany({
+    where: {
+      OR: [{ eventId: event.eventId }, { dteSaleDetailId: { in: normalizedDteSaleDetailIds } }],
+    },
+  });
 
   const evidence = JSON.stringify(
     params.hypothesis ?? {
@@ -2203,10 +2257,9 @@ export async function unlinkEventDteLink(params: {
   if (!event) return { deleted: false };
 
   const previousLinks = await getEventDteLinksByInternalEventId(event.eventId);
-  const deleted = await db.$executeRaw`
-    DELETE FROM event_dte_sale_links
-    WHERE event_id = ${event.eventId}
-  `;
+  const { count: deleted } = await db.eventDteSaleLink.deleteMany({
+    where: { eventId: event.eventId },
+  });
 
   if (previousLinks.length > 0) {
     await recordMatchReview({
@@ -2219,7 +2272,7 @@ export async function unlinkEventDteLink(params: {
     });
   }
 
-  return { deleted: Number(deleted) > 0 };
+  return { deleted: deleted > 0 };
 }
 
 function hypothesisSkipReason(
@@ -2279,8 +2332,8 @@ export function selectGlobalAutoLinkHypotheses(
 
   const maxRemaining = new Array<number>(ordered.length + 1).fill(0);
   for (let index = ordered.length - 1; index >= 0; index -= 1) {
-    const maxScore = ordered[index]!.hypotheses[0]?.score ?? 0;
-    maxRemaining[index] = maxRemaining[index + 1]! + maxScore;
+    const maxScore = ordered[index].hypotheses[0]?.score ?? 0;
+    maxRemaining[index] = maxRemaining[index + 1] + maxScore;
   }
 
   const visit = (
@@ -2289,7 +2342,7 @@ export function selectGlobalAutoLinkHypotheses(
     current: Map<string, MatchHypothesis>,
     usedDtes: Set<string>
   ) => {
-    if (currentScore + maxRemaining[index]! < bestScore) return;
+    if (currentScore + maxRemaining[index] < bestScore) return;
     if (index >= ordered.length) {
       if (currentScore > bestScore) {
         bestScore = currentScore;
@@ -2298,7 +2351,7 @@ export function selectGlobalAutoLinkHypotheses(
       return;
     }
 
-    const entry = ordered[index]!;
+    const entry = ordered[index];
     visit(index + 1, currentScore, current, usedDtes);
 
     for (const hypothesis of entry.hypotheses) {
@@ -2321,9 +2374,10 @@ export async function autoLinkEventDate(params: {
   strategy?: AutoLinkStrategy;
   userId: number;
 }) {
-  const today = dayjs().tz(TIMEZONE).format("YYYY-MM-DD");
+  const today = toChileDateString(new Date());
   if (params.date > today) {
-    throw new Error(
+    throw new DomainError(
+      "BAD_REQUEST",
       `No se puede auto-vincular una fecha futura (${params.date}). Hoy es ${today} en ${TIMEZONE}.`
     );
   }
@@ -2356,6 +2410,16 @@ export async function autoLinkEventDate(params: {
   const selected = selectGlobalAutoLinkHypotheses(
     suggestionEntries.map((entry) => ({ event: entry.event, hypotheses: entry.eligible }))
   );
+  logEvent("dte.autolink.date_candidates", {
+    date: params.date,
+    eligibleEvents: suggestionEntries.filter((entry) => entry.eligible.length > 0).length,
+    eventsToProcess: eventsToProcess.length,
+    minScore,
+    selectedEvents: selected.size,
+    strategy,
+    totalEvents: events.length,
+    userId: params.userId,
+  });
 
   let linked = 0;
   let skipped = 0;
@@ -2383,41 +2447,136 @@ export async function autoLinkEventDate(params: {
       continue;
     }
 
-    await confirmEventDteLink({
-      calendarId: entry.event.googleCalendarId,
-      confidenceScore: chosen.score,
-      dteSaleDetailIds: chosen.dteSaleDetailIds,
-      eventId: entry.event.externalEventId,
-      hypothesis: chosen,
-      hypothesisKind: chosen.kind,
-      matchedBy: chosen.method,
-      matchedName: chosen.clientName,
-      matchedRUT: chosen.clientRUT,
-      policyKey: chosen.policyKey,
-      userId: params.userId,
-    });
-    await recordAutoLinkAttempt({
-      confidenceScore: chosen.score,
-      dteSaleDetailId: chosen.dteSaleDetailIds[0] ?? null,
-      eventId: entry.event.eventId,
-      reason:
-        chosen.kind === "bundle"
-          ? `Auto-linked bundle (${chosen.score})`
-          : `Auto-linked (${chosen.score})`,
-      status: "LINKED",
-      userId: params.userId,
-    });
-    linked += 1;
-    details.push({
-      eventId: entry.event.externalEventId,
-      reason:
-        chosen.kind === "bundle"
-          ? `Auto-linked bundle (${chosen.score})`
-          : `Auto-linked (${chosen.score})`,
-    });
+    const linkedReason =
+      chosen.kind === "bundle"
+        ? `Auto-linked bundle (${chosen.score})`
+        : `Auto-linked (${chosen.score})`;
+    try {
+      const linkedDocuments = await confirmEventDteLink({
+        calendarId: entry.event.googleCalendarId,
+        confidenceScore: chosen.score,
+        dteSaleDetailIds: chosen.dteSaleDetailIds,
+        eventId: entry.event.externalEventId,
+        hypothesis: chosen,
+        hypothesisKind: chosen.kind,
+        matchedBy: chosen.method,
+        matchedName: chosen.clientName,
+        matchedRUT: chosen.clientRUT,
+        policyKey: chosen.policyKey,
+        userId: params.userId,
+      });
+      linked += 1;
+      details.push({ eventId: entry.event.externalEventId, reason: linkedReason });
+      try {
+        await recordAutoLinkAttempt({
+          confidenceScore: chosen.score,
+          dteSaleDetailId: chosen.dteSaleDetailIds[0] ?? null,
+          eventId: entry.event.eventId,
+          reason: linkedReason,
+          status: "LINKED",
+          userId: params.userId,
+        });
+      } catch (attemptError) {
+        logError("dte.autolink.linked_attempt_record_failed", attemptError, {
+          date: params.date,
+          eventId: entry.event.eventId,
+          externalEventId: entry.event.externalEventId,
+          linkedDocumentCount: linkedDocuments.length,
+          userId: params.userId,
+        });
+      }
+    } catch (error) {
+      const reason = "Error al auto-vincular DTE";
+      let linkWasCommitted = false;
+      try {
+        linkWasCommitted = await hasCommittedEventDteLinks({
+          dteSaleDetailIds: chosen.dteSaleDetailIds,
+          eventId: entry.event.eventId,
+        });
+      } catch (commitCheckError) {
+        logError("dte.autolink.commit_check_failed", commitCheckError, {
+          date: params.date,
+          eventId: entry.event.eventId,
+          externalEventId: entry.event.externalEventId,
+          originalError: error instanceof Error ? error.message : String(error),
+          userId: params.userId,
+        });
+      }
+
+      if (linkWasCommitted) {
+        logError("dte.autolink.post_commit_failed", error, {
+          calendarId: entry.event.googleCalendarId,
+          candidateDteSaleDetailIds: chosen.dteSaleDetailIds,
+          date: params.date,
+          eventId: entry.event.eventId,
+          externalEventId: entry.event.externalEventId,
+          hypothesisKind: chosen.kind,
+          hypothesisScore: chosen.score,
+          hypothesisShape: summarizeJsonForLog(chosen),
+          hypothesisUndefinedPaths: collectUndefinedPaths(chosen),
+          userId: params.userId,
+        });
+        linked += 1;
+        details.push({ eventId: entry.event.externalEventId, reason: linkedReason });
+
+        try {
+          await recordAutoLinkAttempt({
+            confidenceScore: chosen.score,
+            dteSaleDetailId: chosen.dteSaleDetailIds[0] ?? null,
+            eventId: entry.event.eventId,
+            reason: linkedReason,
+            status: "LINKED",
+            userId: params.userId,
+          });
+        } catch (attemptError) {
+          logError("dte.autolink.linked_attempt_record_failed", attemptError, {
+            date: params.date,
+            eventId: entry.event.eventId,
+            externalEventId: entry.event.externalEventId,
+            userId: params.userId,
+          });
+        }
+        continue;
+      }
+
+      logError("dte.autolink.event_failed", error, {
+        calendarId: entry.event.googleCalendarId,
+        candidateDteSaleDetailIds: chosen.dteSaleDetailIds,
+        date: params.date,
+        eventId: entry.event.eventId,
+        externalEventId: entry.event.externalEventId,
+        hypothesisKind: chosen.kind,
+        hypothesisScore: chosen.score,
+        hypothesisShape: summarizeJsonForLog(chosen),
+        hypothesisUndefinedPaths: collectUndefinedPaths(chosen),
+        userId: params.userId,
+      });
+      skipped += 1;
+      incrementReason(skippedByReason, reason);
+      details.push({ eventId: entry.event.externalEventId, reason });
+
+      try {
+        await recordAutoLinkAttempt({
+          confidenceScore: chosen.score,
+          dteSaleDetailId: chosen.dteSaleDetailIds[0] ?? null,
+          eventId: entry.event.eventId,
+          reason,
+          status: "SKIPPED",
+          userId: params.userId,
+        });
+      } catch (attemptError) {
+        logError("dte.autolink.failure_attempt_record_failed", attemptError, {
+          date: params.date,
+          eventId: entry.event.eventId,
+          externalEventId: entry.event.externalEventId,
+          originalError: error instanceof Error ? error.message : String(error),
+          userId: params.userId,
+        });
+      }
+    }
   }
 
-  return {
+  const result = {
     date: params.date,
     details,
     linked,
@@ -2425,6 +2584,16 @@ export async function autoLinkEventDate(params: {
     skippedByReason: normalizeReasonCounts(skippedByReason),
     totalEvents: eventsToProcess.length,
   };
+  logEvent("dte.autolink.date_result", {
+    date: params.date,
+    linked,
+    skipped,
+    skippedByReason: result.skippedByReason,
+    totalEvents: eventsToProcess.length,
+    userId: params.userId,
+  });
+
+  return result;
 }
 
 export async function autoLinkEventPeriod(params: {
@@ -2433,12 +2602,11 @@ export async function autoLinkEventPeriod(params: {
   strategy?: AutoLinkStrategy;
   userId: number;
 }) {
-  const periodDate = dayjs(`${params.period}-01`, "YYYY-MM-DD", true);
-  if (!periodDate.isValid()) throw new Error("Periodo inválido. Usa formato YYYY-MM");
+  if (!PERIOD_REGEX.test(params.period))
+    throw new DomainError("BAD_REQUEST", "Periodo inválido. Usa formato YYYY-MM");
 
-  const today = dayjs().tz(TIMEZONE).format("YYYY-MM-DD");
-  const periodStart = periodDate.startOf("month").format("YYYY-MM-DD");
-  const periodEnd = periodDate.endOf("month").format("YYYY-MM-DD");
+  const today = toChileDateString(new Date());
+  const { from: periodStart, to: periodEnd } = getMonthRange(params.period);
   const maxDate = periodEnd < today ? periodEnd : today;
 
   if (periodStart > maxDate) {
@@ -2561,7 +2729,7 @@ export async function autoLinkAllEventPeriods(params: {
 }
 
 export async function listAutoLinkEligiblePeriods() {
-  const today = dayjs().tz(TIMEZONE).format("YYYY-MM-DD");
+  const today = toChileDateString(new Date());
   return db.$queryRaw<Array<{ period: string }>>`
     SELECT DISTINCT
       to_char(COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date), 'YYYY-MM') AS "period"
@@ -2644,7 +2812,27 @@ export async function autoLinkAllEventPeriodsWithProgress(params: {
 }
 
 export function normalizeLinkDate(input: string): string {
-  const parsed = dayjs(input, "YYYY-MM-DD", true);
-  if (!parsed.isValid()) throw new Error("Fecha inválida. Usa formato YYYY-MM-DD");
-  return parsed.tz(TIMEZONE).format("YYYY-MM-DD");
+  // A link date is a CALENDAR DATE (the day the user picked), not an instant. The
+  // DB compares it as `${date}::date` against the event's local date (start_date,
+  // or start_date_time AT TIME ZONE TIMEZONE), so the input must round-trip its
+  // Y/M/D exactly. We validate the components directly (UTC, no instant/tz
+  // conversion, no dayjs plugin dependency) so the result is timezone-independent
+  // by construction — the prior `dayjs(input).tz(TIMEZONE)` shifted the day by one
+  // whenever the process TZ was at/east of UTC (CI runs UTC → off-by-one), and
+  // strict calendar validity depended on whether customParseFormat was loaded.
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(input);
+  if (!match) throw new DomainError("BAD_REQUEST", "Fecha inválida. Usa formato YYYY-MM-DD");
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  // Reject impossible dates (month 13, Feb 30, …) that would otherwise roll over.
+  if (
+    date.getUTCFullYear() !== year ||
+    date.getUTCMonth() !== month - 1 ||
+    date.getUTCDate() !== day
+  ) {
+    throw new DomainError("BAD_REQUEST", "Fecha inválida. Usa formato YYYY-MM-DD");
+  }
+  return input;
 }

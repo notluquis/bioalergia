@@ -4,6 +4,7 @@ import { ErrorBoundary } from "react-error-boundary";
 
 import { signalAppFallback } from "@/lib/app-recovery";
 import { logger } from "@/lib/logger";
+import { isSentryEnabled, Sentry } from "@/lib/sentry";
 
 // Errores que indican un nuevo deploy (cache stale)
 const DEPLOY_ERROR_PATTERNS = [
@@ -51,9 +52,9 @@ function GlobalErrorFallback({
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4 text-center">
       <Card className="max-w-md space-y-6 border-none bg-transparent shadow-none">
-        <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-danger/10 text-danger">
+        <div className="mx-auto flex items-center justify-center rounded-full bg-danger/10 text-danger size-20">
           <svg
-            className="h-10 w-10"
+            className="size-10"
             fill="none"
             stroke="currentColor"
             strokeWidth={1.5}
@@ -109,6 +110,15 @@ function handleGlobalError(rawError: unknown, info: ErrorInfo) {
   if (isDeployError(error)) {
     logger.info("[GlobalError] 🔄 Deploy error detected, waiting for user action...");
     signalAppFallback("update");
+    // Don't ship deploy/chunk errors to Sentry — they're expected after
+    // a release and just generate noise.
+    return;
+  }
+  if (isSentryEnabled()) {
+    Sentry.captureException(error, {
+      tags: { source: "global-error-boundary" },
+      contexts: { react: { componentStack: info.componentStack } },
+    });
   }
 }
 

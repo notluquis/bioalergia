@@ -1,3 +1,4 @@
+import { formatChile } from "@/lib/dates";
 import {
   Button,
   Chip,
@@ -13,31 +14,50 @@ import {
   TextField,
 } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import dayjs from "dayjs";
-import { PencilIcon, PlusIcon, RefreshCwIcon, Trash2Icon } from "lucide-react";
+import { HistoryIcon, PencilIcon, PlusIcon, RefreshCwIcon, Trash2Icon } from "lucide-react";
 import { useState } from "react";
 
 import type { UtilityProvider } from "@finanzas/orpc-contracts/utility-bills";
 import { toast } from "@/lib/toast-interceptor";
 
 import { toUtilityBillsError, utilityBillsClient } from "../utility-bills-orpc";
+import { UtilityBillHistoryModal } from "./UtilityBillHistoryModal";
 
 const UTILITY_ACCOUNTS_KEY = ["utility-accounts"] as const;
 
 const PROVIDER_LABELS: Record<UtilityProvider, string> = {
   CGE: "CGE",
+  DOCTORALIA: "Doctoralia",
   ESSBIO: "ESSBIO",
+  GASTOS_COMUNES: "Gastos Comunes",
+  MASVIDA: "Isapre MasVida",
+  MEDIPASS: "Medipass",
+  MOVISTAR: "Movistar",
   OTHER: "Otro",
+  PREVIRED: "Previred",
+  SII: "SII",
+  TELSUR: "Telsur",
+  TGR: "TGR",
 };
 
 const PROVIDER_COLORS: Record<UtilityProvider, "warning" | "success" | "default"> = {
   CGE: "warning",
+  DOCTORALIA: "default",
   ESSBIO: "success",
+  GASTOS_COMUNES: "default",
+  MASVIDA: "default",
+  MEDIPASS: "default",
+  MOVISTAR: "default",
   OTHER: "default",
+  PREVIRED: "default",
+  SII: "default",
+  TELSUR: "default",
+  TGR: "default",
 };
 
 type AccountFormState = {
   expenseServiceId: null;
+  externalAccountId: string;
   isActive: boolean;
   label: string;
   notes: string;
@@ -47,6 +67,7 @@ type AccountFormState = {
 
 const DEFAULT_FORM: AccountFormState = {
   expenseServiceId: null,
+  externalAccountId: "",
   isActive: true,
   label: "",
   notes: "",
@@ -61,6 +82,12 @@ export function UtilityAccountsTab() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<EditTarget>(null);
   const [form, setForm] = useState<AccountFormState>(DEFAULT_FORM);
+  const [historyTarget, setHistoryTarget] = useState<null | {
+    accountId: number;
+    accountLabel: string;
+    hasExternalId: boolean;
+    provider: UtilityProvider;
+  }>(null);
 
   const { data, isLoading } = useQuery({
     queryFn: () => utilityBillsClient.listAccounts({ scope: "PERSONAL" }),
@@ -71,6 +98,7 @@ export function UtilityAccountsTab() {
     mutationFn: (values: AccountFormState) =>
       utilityBillsClient.createAccount({
         expenseServiceId: values.expenseServiceId,
+        externalAccountId: values.externalAccountId || null,
         isActive: values.isActive,
         label: values.label || null,
         notes: values.notes || null,
@@ -96,6 +124,7 @@ export function UtilityAccountsTab() {
         id,
         payload: {
           expenseServiceId: values.expenseServiceId,
+          externalAccountId: values.externalAccountId || null,
           isActive: values.isActive,
           label: values.label || null,
           notes: values.notes || null,
@@ -205,7 +234,7 @@ export function UtilityAccountsTab() {
                     </div>
                     {account.lastFetchedAt && (
                       <div className="text-xs text-default-400">
-                        {dayjs(account.lastFetchedAt).format("DD/MM/YYYY HH:mm")}
+                        {formatChile(account.lastFetchedAt, "DD/MM/YYYY HH:mm")}
                       </div>
                     )}
                   </div>
@@ -228,11 +257,29 @@ export function UtilityAccountsTab() {
                     isIconOnly
                     size="sm"
                     variant="outline"
+                    aria-label="Historial"
+                    onPress={() =>
+                      setHistoryTarget({
+                        accountId: account.id,
+                        accountLabel:
+                          account.label ?? `${account.provider} ${account.serviceNumber}`,
+                        hasExternalId: Boolean(account.externalAccountId),
+                        provider: account.provider,
+                      })
+                    }
+                  >
+                    <HistoryIcon className="size-4" />
+                  </Button>
+                  <Button
+                    isIconOnly
+                    size="sm"
+                    variant="outline"
                     onPress={() =>
                       setEditTarget({
                         id: account.id,
                         values: {
                           expenseServiceId: null,
+                          externalAccountId: account.externalAccountId ?? "",
                           isActive: account.isActive,
                           label: account.label ?? "",
                           notes: account.notes ?? "",
@@ -285,6 +332,16 @@ export function UtilityAccountsTab() {
         }}
         onClose={() => setEditTarget(null)}
       />
+
+      {historyTarget && (
+        <UtilityBillHistoryModal
+          accountId={historyTarget.accountId}
+          accountLabel={historyTarget.accountLabel}
+          canImportEssbio={historyTarget.provider === "ESSBIO" && historyTarget.hasExternalId}
+          provider={historyTarget.provider}
+          onClose={() => setHistoryTarget(null)}
+        />
+      )}
     </div>
   );
 }
@@ -348,6 +405,10 @@ function AccountFormModal({
                         CGE
                         <ListBox.ItemIndicator />
                       </ListBox.Item>
+                      <ListBox.Item id="MEDIPASS" textValue="Medipass">
+                        Medipass
+                        <ListBox.ItemIndicator />
+                      </ListBox.Item>
                       <ListBox.Item id="OTHER" textValue="Otro">
                         Otro
                         <ListBox.ItemIndicator />
@@ -365,6 +426,18 @@ function AccountFormModal({
                   <Input placeholder="Ej: 1234567890" />
                   <FieldError />
                 </TextField>
+
+                {values.provider === "ESSBIO" && (
+                  <TextField value={values.externalAccountId} onChange={field("externalAccountId")}>
+                    <Label>ID servicio Essbio (opcional)</Label>
+                    <Input placeholder="Ej: 677471 — idservicio del login" />
+                    <p className="text-default-400 text-xs">
+                      Requerido para importar historial de facturación. Lo entrega el login de
+                      Essbio (campo idservicio).
+                    </p>
+                    <FieldError />
+                  </TextField>
+                )}
 
                 <TextField value={values.label} onChange={field("label")}>
                   <Label>Etiqueta (opcional)</Label>

@@ -1,12 +1,4 @@
-import dayjs from "dayjs";
-import customParseFormat from "dayjs/plugin/customParseFormat.js";
-import timezone from "dayjs/plugin/timezone.js";
-import utc from "dayjs/plugin/utc.js";
-
-dayjs.extend(utc);
-dayjs.extend(timezone);
-dayjs.extend(customParseFormat);
-
+// This module is dayjs-free: native Temporal + Intl + Date only.
 export const TIMEZONE = "America/Santiago";
 
 const PERIOD_REGEX = /^\d{4}-(0[1-9]|1[0-2])$/;
@@ -23,10 +15,11 @@ export function getPeriodRange(period: string): { from: Date; to: Date } {
   if (!PERIOD_REGEX.test(period)) {
     throw new Error(`Invalid period: ${period}`);
   }
-  const start = dayjs.tz(`${period}-01`, "YYYY-MM-DD", TIMEZONE);
+  const [year, month] = period.split("-").map(Number);
+  const start = Temporal.PlainDate.from({ year, month, day: 1 }).toZonedDateTime(TIMEZONE);
   return {
-    from: start.toDate(),
-    to: start.add(1, "month").subtract(1, "millisecond").toDate(),
+    from: new Date(start.epochMilliseconds),
+    to: new Date(start.add({ months: 1 }).epochMilliseconds - 1),
   };
 }
 
@@ -34,24 +27,267 @@ export function getPeriodRange(period: string): { from: Date; to: Date } {
  * Return the YYYY-MM period that a given Date belongs to, in Chile local time.
  */
 export function toChilePeriod(date: Date): string {
-  return dayjs(date).tz(TIMEZONE).format("YYYY-MM");
+  return (instantToChileDate(date) ?? "").slice(0, 7);
 }
 
 /**
  * Return the YYYY-MM-DD string of a given Date, in Chile local time.
  */
 export function toChileDateString(date: Date): string {
-  return dayjs(date).tz(TIMEZONE).format("YYYY-MM-DD");
+  return instantToChileDate(date) ?? "";
+}
+
+// ===========================================================================
+// Canonical DB date/time helpers — the ONE way to read/write @db.Date,
+// @db.Time and @db.Timestamptz columns. See ~/.claude memory
+// "project-datetime-architecture" + plan starry-sauteeing-moon.
+//
+// Empirically verified (server TZ=America/Santiago, ZenStack v3 = Kysely+pg):
+//   @db.Date (1082)  -> Date at UTC midnight in BOTH ZenStack and $qb.
+//   @db.Time (1083)  -> Date anchored 1970-01-01 UTC (ZenStack) OR "HH:MM:SS"
+//                       string ($qb). Helpers accept Date | string.
+//   @db.Timestamptz  -> a real instant; this is the ONLY class where .tz() is
+//                       correct (instantToChileDate).
+//
+// Anti-pattern that caused the recurring off-by-one bugs: bare `dayjs(x)` or
+// `dayjs(x).tz(TZ)` on a @db.Date/@db.Time value rolls the calendar day back
+// under Santiago. NEVER do that — use these helpers.
+//
+// These helpers use native Temporal + Intl + Date (Temporal is present in the
+// Node 26 official/nvm build + node:26-slim prod + CI). `en-CA` locale renders
+// YYYY-MM-DD, which combined with `timeZone` gives a DST-aware local calendar date.
+// ===========================================================================
+
+const HHMM_OR_HHMMSS = /^(\d{1,2}):(\d{2})(?::\d{2})?/;
+
+// Reusable: a true instant -> its calendar date in America/Santiago, "YYYY-MM-DD".
+const CHILE_DATE_FORMAT = new Intl.DateTimeFormat("en-CA", {
+  timeZone: TIMEZONE,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+const ISO_DATE_ONLY = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+// A JS Date (instant) as a Temporal.ZonedDateTime in Chile local time. Native
+// Temporal is present in Node 26 official/nvm builds + node:26-slim (prod) + CI.
+function toChileZoned(date: Date): Temporal.ZonedDateTime {
+  return Temporal.Instant.fromEpochMilliseconds(date.getTime()).toZonedDateTimeISO(TIMEZONE);
+}
+
+// Display formatters (es-CL, Chile timezone). Replace dayjs locale formatting.
+const CHILE_LONG_DATE = new Intl.DateTimeFormat("es-CL", {
+  timeZone: TIMEZONE,
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+});
+const CHILE_SHORT_DATE = new Intl.DateTimeFormat("es-CL", {
+  timeZone: TIMEZONE,
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+});
+
+// Coerce a display input to a Date: null/undefined -> now; a bare "YYYY-MM-DD"
+// is anchored at noon UTC so it renders as that same calendar day in Chile
+// (avoids the midnight-rollback); anything else parses as an instant.
+function toDisplayDate(value: Date | string | null | undefined): Date {
+  if (value == null) return new Date();
+  if (value instanceof Date) return value;
+  const s = value.trim();
+  return /^\d{4}-\d{2}-\d{2}$/.test(s) ? new Date(`${s}T12:00:00Z`) : new Date(s);
+}
+
+/** Spanish long date, e.g. "5 de junio de 2026". (Replaces dayjs "D [de] MMMM [de] YYYY".) */
+export function formatChileLongDate(value: Date | string | null | undefined): string {
+  return CHILE_LONG_DATE.format(toDisplayDate(value));
+}
+
+/** "DD/MM/YYYY" in Chile. (Replaces dayjs "DD/MM/YYYY"; Intl alone uses "-".) */
+export function formatChileShortDate(value: Date | string | null | undefined): string {
+  const p = Object.fromEntries(
+    CHILE_SHORT_DATE.formatToParts(toDisplayDate(value)).map((x) => [x.type, x.value])
+  );
+  return `${p.day}/${p.month}/${p.year}`;
+}
+
+// ---- dayjs-token format shim (Intl, es-CL, Chile tz) -----------------------
+// Replaces dayjs `.tz(TZ).format(pattern)`. Verified byte-identical to dayjs es
+// across YYYY/YY/MMMM/MMM/MM/M/DD/D/dddd/ddd/HH/mm/ss + "[de]" literals.
+const TOKEN_NUMERIC = new Intl.DateTimeFormat("en-CA", {
+  timeZone: TIMEZONE,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  hour12: false,
+});
+const TOKEN_MONTH_LONG = new Intl.DateTimeFormat("es-CL", { timeZone: TIMEZONE, month: "long" });
+const TOKEN_MONTH_SHORT = new Intl.DateTimeFormat("es-CL", { timeZone: TIMEZONE, month: "short" });
+const TOKEN_WEEKDAY_LONG = new Intl.DateTimeFormat("es-CL", {
+  timeZone: TIMEZONE,
+  weekday: "long",
+});
+const TOKEN_WEEKDAY_SHORT = new Intl.DateTimeFormat("es-CL", {
+  timeZone: TIMEZONE,
+  weekday: "short",
+});
+const TOKEN_RE = /\[([^\]]*)\]|YYYY|YY|MMMM|MMM|MM|M|DD|D|dddd|ddd|HH|mm|ss/g;
+
+function chileTokens(date: Date): Record<string, string> {
+  const p = Object.fromEntries(TOKEN_NUMERIC.formatToParts(date).map((x) => [x.type, x.value]));
+  return {
+    YYYY: p.year,
+    YY: p.year.slice(-2),
+    MM: p.month,
+    M: String(Number(p.month)),
+    DD: p.day,
+    D: String(Number(p.day)),
+    HH: p.hour === "24" ? "00" : p.hour, // en-CA emits "24" at midnight
+    mm: p.minute,
+    ss: p.second,
+    MMMM: TOKEN_MONTH_LONG.format(date),
+    MMM: TOKEN_MONTH_SHORT.format(date).replace(".", ""),
+    dddd: TOKEN_WEEKDAY_LONG.format(date),
+    ddd: TOKEN_WEEKDAY_SHORT.format(date).replace(".", ""),
+  };
+}
+
+/**
+ * Format a value with a dayjs-style token pattern in Chile local time.
+ * Native (Intl), replaces `dayjs(value).tz(TZ).format(pattern)`.
+ */
+export function formatChile(value: Date | string | null | undefined, pattern: string): string {
+  const tokens = chileTokens(toDisplayDate(value));
+  return pattern.replace(TOKEN_RE, (match, literal) =>
+    literal === undefined ? (tokens[match] ?? match) : literal
+  );
+}
+
+/** "HH:mm" of an instant in Chile. (Replaces dayjs `.tz(TZ).format("HH:mm")`.) */
+export function formatChileTime(value: Date | string | null | undefined): string {
+  return formatChile(value, "HH:mm");
+}
+
+/**
+ * Format a @db.Date column value as "YYYY-MM-DD". Reads the UTC wall-clock
+ * (the column has no timezone; both ZenStack and $qb return UTC-midnight).
+ * Accepts the Date from ZenStack/$qb, or an already-"YYYY-MM-DD" string.
+ */
+export function dbDateToISO(value: Date | string | null | undefined): string | null {
+  if (value == null) return null;
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value.toISOString().slice(0, 10);
+  }
+  const trimmed = value.trim();
+  return /^\d{4}-\d{2}-\d{2}/.test(trimmed) ? trimmed.slice(0, 10) : null;
+}
+
+/**
+ * Edad en años cumplidos a partir de un @db.Date de nacimiento (anclado a UTC
+ * medianoche). Devuelve undefined si no hay fecha o es futura/ inválida.
+ */
+export function ageFromBirthDate(value: Date | string | null | undefined): number | undefined {
+  const iso = dbDateToISO(value);
+  if (!iso) return undefined;
+  const [y, m, d] = iso.split("-").map(Number);
+  if (!y || !m || !d) return undefined;
+  const now = new Date();
+  let age = now.getUTCFullYear() - y;
+  const beforeBirthday =
+    now.getUTCMonth() + 1 < m || (now.getUTCMonth() + 1 === m && now.getUTCDate() < d);
+  if (beforeBirthday) age -= 1;
+  return age >= 0 && age < 130 ? age : undefined;
+}
+
+/**
+ * Build the value to WRITE to a @db.Date column from a "YYYY-MM-DD" string:
+ * a Date anchored at UTC midnight, so the stored calendar day is exact.
+ */
+export function isoToDbDate(iso: string): Date {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) {
+    throw new Error(`Invalid date: ${iso}. Expected YYYY-MM-DD`);
+  }
+  return new Date(`${iso}T00:00:00.000Z`);
+}
+
+/**
+ * Epoch-ms at the UTC-midnight anchor of a @db.Date column. Use this for
+ * day-window arithmetic on calendar columns instead of raw `.getTime()`, so
+ * the access stays correct if the pg parser ever returns "YYYY-MM-DD" strings.
+ * Only for @db.Date fields — NOT for @db.Timestamp/Timestamptz instants
+ * (those carry a real time-of-day that this would silently discard).
+ */
+export function dbDateToMs(value: Date | string): number {
+  if (value instanceof Date) return value.getTime();
+  const iso = dbDateToISO(value);
+  return iso == null ? Number.NaN : new Date(`${iso}T00:00:00.000Z`).getTime();
+}
+
+/**
+ * Format a @db.Time column value as "HH:mm". Accepts the UTC-anchored Date
+ * (ZenStack) or the "HH:MM:SS" string ($qb). Reads UTC components.
+ */
+export function dbTimeToHHmm(value: Date | string | null | undefined): string | null {
+  if (value == null) return null;
+  if (value instanceof Date) {
+    // UTC-anchored @db.Time Date -> "HH:mm" from the UTC time part (native).
+    return Number.isNaN(value.getTime()) ? null : value.toISOString().slice(11, 16);
+  }
+  const match = value.match(HHMM_OR_HHMMSS);
+  if (!match) return null;
+  const [, hours, minutes] = match;
+  if (!hours || !minutes) return null;
+  return `${hours.padStart(2, "0")}:${minutes}`;
+}
+
+/**
+ * Build the value to WRITE to a @db.Time column from "HH:mm[:ss]": a Date whose
+ * UTC components are the wall-clock time (Postgres stores the UTC time part).
+ * Anchored at the epoch day (Postgres ignores the date for a TIME column).
+ */
+export function hhmmToDbTime(value: string | null | undefined): Date | null {
+  if (value == null) return null;
+  const match = value.trim().match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+  if (!match) return null;
+  const [, h, m, s = "0"] = match;
+  const hours = Number(h);
+  const minutes = Number(m);
+  const seconds = Number(s);
+  if (hours > 23 || minutes > 59 || seconds > 59) return null;
+  return new Date(Date.UTC(1970, 0, 1, hours, minutes, seconds, 0));
+}
+
+/**
+ * Format a @db.Timestamptz (true instant) as its Chile-local calendar date
+ * "YYYY-MM-DD". This is the ONLY date helper that applies .tz() — never use it
+ * on a @db.Date value.
+ */
+export function instantToChileDate(value: Date | string | null | undefined): string | null {
+  if (value == null) return null;
+  const d = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(d.getTime()) ? null : CHILE_DATE_FORMAT.format(d);
 }
 
 /**
  * Parse "YYYY-MM-DD" as midnight in Chile local time, returning the equivalent UTC instant.
  */
 export function parseChileDateOnly(value: string): Date | null {
-  const trimmed = value.trim();
-  if (!trimmed) return null;
-  const parsed = dayjs.tz(trimmed, "YYYY-MM-DD", TIMEZONE);
-  return parsed.isValid() ? parsed.startOf("day").toDate() : null;
+  const m = value.trim().match(ISO_DATE_ONLY);
+  if (!m) return null;
+  try {
+    const zoned = Temporal.PlainDate.from(
+      { year: +m[1], month: +m[2], day: +m[3] },
+      { overflow: "reject" }
+    ).toZonedDateTime(TIMEZONE);
+    return new Date(zoned.epochMilliseconds);
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -71,14 +307,50 @@ export function buildChileDate(
   minute: number,
   second = 0
 ): Date {
-  const pad = (n: number) => n.toString().padStart(2, "0");
-  const iso = `${year}-${pad(month + 1)}-${pad(day)}T${pad(hour)}:${pad(minute)}:${pad(second)}`;
-  return dayjs.tz(iso, TIMEZONE).toDate();
+  const zoned = Temporal.ZonedDateTime.from({
+    timeZone: TIMEZONE,
+    year,
+    month: month + 1, // Temporal months are 1-indexed; param is 0-indexed (JS Date)
+    day,
+    hour,
+    minute,
+    second,
+  });
+  return new Date(zoned.epochMilliseconds);
+}
+
+// YYYY-MM-DD or YYYY/MM/DD, optional " HH:mm[:ss]" / "THH:mm[:ss]".
+const YMD = /^(\d{4})[-/](\d{2})[-/](\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?$/;
+// DD/MM/YYYY (slashes only — the dash form DD-MM-YYYY is intentionally
+// unsupported/ambiguous, returns null), optional time.
+const DMY = /^(\d{2})\/(\d{2})\/(\d{4})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?$/;
+
+// Wall-clock components interpreted in Chile -> UTC instant; null if invalid.
+function chileWallClockToInstant(
+  year: number,
+  month: number,
+  day: number,
+  hour: number,
+  minute: number,
+  second: number
+): Date | null {
+  try {
+    const zdt = Temporal.ZonedDateTime.from(
+      { timeZone: TIMEZONE, year, month, day, hour, minute, second },
+      { overflow: "reject" }
+    );
+    return new Date(zdt.epochMilliseconds);
+  } catch {
+    return null;
+  }
 }
 
 /**
- * Parse an arbitrary date string as Chile local time when no timezone designator is present.
- * If the string already carries a `Z`/offset, honor that offset.
+ * Parse an arbitrary date string as Chile local time when no timezone designator
+ * is present. A string with a `Z`/offset is honored as an absolute instant.
+ * Supported local forms: YYYY-MM-DD, YYYY/MM/DD, DD/MM/YYYY (each with an
+ * optional " HH:mm[:ss]" / "THH:mm[:ss]" tail). Invalid calendar dates and the
+ * ambiguous DD-MM-YYYY (dash) form return null. Native (Temporal), no dayjs.
  */
 export function parseChileDateTime(value: string | null | undefined): Date | null {
   if (value == null) return null;
@@ -90,29 +362,29 @@ export function parseChileDateTime(value: string | null | undefined): Date | nul
     return Number.isNaN(d.getTime()) ? null : d;
   }
 
-  const formats = [
-    "YYYY-MM-DDTHH:mm:ss.SSS",
-    "YYYY-MM-DDTHH:mm:ss",
-    "YYYY-MM-DD HH:mm:ss.SSS",
-    "YYYY-MM-DD HH:mm:ss",
-    "YYYY-MM-DD HH:mm",
-    "YYYY-MM-DD",
-    "DD-MM-YYYY HH:mm:ss",
-    "DD-MM-YYYY HH:mm",
-    "DD-MM-YYYY",
-    "DD/MM/YYYY HH:mm:ss",
-    "DD/MM/YYYY HH:mm",
-    "DD/MM/YYYY",
-  ];
-  for (const fmt of formats) {
-    const parsed = dayjs.tz(trimmed, fmt, TIMEZONE);
-    if (parsed.isValid() && parsed.format(fmt) === trimmed) {
-      return parsed.toDate();
-    }
+  const ymd = trimmed.match(YMD);
+  if (ymd) {
+    return chileWallClockToInstant(
+      +ymd[1],
+      +ymd[2],
+      +ymd[3],
+      +(ymd[4] ?? 0),
+      +(ymd[5] ?? 0),
+      +(ymd[6] ?? 0)
+    );
   }
-
-  const loose = dayjs.tz(trimmed, TIMEZONE);
-  return loose.isValid() ? loose.toDate() : null;
+  const dmy = trimmed.match(DMY);
+  if (dmy) {
+    return chileWallClockToInstant(
+      +dmy[3],
+      +dmy[2],
+      +dmy[1],
+      +(dmy[4] ?? 0),
+      +(dmy[5] ?? 0),
+      +(dmy[6] ?? 0)
+    );
+  }
+  return null;
 }
 
 export function formatDateForDB(date: Date) {
@@ -126,7 +398,7 @@ export function formatDateForDB(date: Date) {
   return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 }
 
-export function normalizeDate(input: string, boundary: "start" | "end") {
+export function normalizeDate(input: string, boundary: "start" | "end"): string | null {
   const trimmed = input.trim();
   if (!trimmed) {
     return null;
@@ -139,15 +411,16 @@ export function normalizeDate(input: string, boundary: "start" | "end") {
   if (!year || !month || !day) {
     return null;
   }
-  const base = dayjs.tz(trimmed, "YYYY-MM-DD", TIMEZONE);
-  if (!base.isValid()) {
+  try {
+    // Validate the calendar date; the boundary time is a fixed wall-clock suffix.
+    const date = Temporal.PlainDate.from({ year, month, day }, { overflow: "reject" }).toString();
+    return boundary === "start" ? `${date} 00:00:00` : `${date} 23:59:59`;
+  } catch {
     return null;
   }
-  const adjusted = boundary === "start" ? base.startOf("day") : base.endOf("day");
-  return adjusted.format("YYYY-MM-DD HH:mm:ss");
 }
 
-export function normalizeTimestamp(primary: string | Date | null, fallback: string | null) {
+export function normalizeTimestamp(primary: string | Date | null, fallback: string | null): string {
   const normalizedFallback = normalizeTimestampString(fallback);
   if (normalizedFallback) {
     return normalizedFallback;
@@ -168,7 +441,7 @@ export function normalizeTimestamp(primary: string | Date | null, fallback: stri
 export function normalizeTimestampForDb(
   primary: string | null | undefined,
   fallback: Date | null | undefined
-) {
+): string {
   const normalized = normalizeTimestampString(primary ?? null);
   if (normalized) {
     return normalized.replace("T", " ");
@@ -181,7 +454,7 @@ export function normalizeTimestampForDb(
   return "";
 }
 
-export function normalizeTimestampString(value: string | Date | null) {
+export function normalizeTimestampString(value: string | Date | null): string {
   if (value == null) {
     return "";
   }
@@ -209,76 +482,93 @@ export function normalizeTimestampString(value: string | Date | null) {
   return trimmed.replace(" ", "T");
 }
 
-export function iterateDateRange(start: Date, end: Date) {
+export function iterateDateRange(start: Date, end: Date): string[] {
   const dates: string[] = [];
-  let cursor = dayjs(start).tz(TIMEZONE).startOf("day");
-  const limit = dayjs(end).tz(TIMEZONE).startOf("day");
-  while (cursor.valueOf() <= limit.valueOf()) {
-    dates.push(cursor.format("YYYY-MM-DD"));
-    cursor = cursor.add(1, "day");
+  let cursor = toChileZoned(start).toPlainDate();
+  const limit = toChileZoned(end).toPlainDate();
+  while (Temporal.PlainDate.compare(cursor, limit) <= 0) {
+    dates.push(cursor.toString());
+    cursor = cursor.add({ days: 1 });
   }
   return dates;
 }
 
-export function parseDateOnly(value: string) {
-  const trimmed = value.trim();
-  if (!trimmed) {
+export function parseDateOnly(value: string): Date | null {
+  const m = value.trim().match(ISO_DATE_ONLY);
+  if (!m) {
     return null;
   }
-  const parts = trimmed.split("-").map(Number);
-  if (parts.length !== 3) {
+  try {
+    // overflow: "reject" rejects impossible calendar dates (2024-02-30, 2024-13-01).
+    const zoned = Temporal.PlainDate.from(
+      { year: +m[1], month: +m[2], day: +m[3] },
+      { overflow: "reject" }
+    ).toZonedDateTime(TIMEZONE);
+    return new Date(zoned.epochMilliseconds);
+  } catch {
     return null;
   }
-  const [year, month, day] = parts;
-  if (!year || !month || !day) {
-    return null;
-  }
-  const parsed = dayjs.tz(trimmed, "YYYY-MM-DD", TIMEZONE);
-  if (
-    !parsed.isValid() ||
-    parsed.year() !== year ||
-    parsed.month() !== month - 1 ||
-    parsed.date() !== day
-  ) {
-    return null;
-  }
-  return parsed.toDate();
 }
 
-export function formatDateOnly(date: Date) {
-  return dayjs(date).tz(TIMEZONE).format("YYYY-MM-DD");
+export function formatDateOnly(date: Date): string {
+  return instantToChileDate(date) ?? "";
 }
 
-export function formatChileDateTime(date: Date | string, pattern = "DD/MM/YYYY HH:mm") {
-  return dayjs(date).tz(TIMEZONE).format(pattern);
+export function formatChileDateTime(date: Date | string, pattern = "DD/MM/YYYY HH:mm"): string {
+  return formatChile(date, pattern);
 }
 
-export function coerceDateOnly(value: string) {
+export function coerceDateOnly(value: string): string | null {
   const parsed = parseDateOnly(value);
   return parsed ? formatDateOnly(parsed) : null;
 }
 
-export function getNthBusinessDay(base: Date, n: number) {
-  let cursor = dayjs(base).tz(TIMEZONE);
+export function getNthBusinessDay(base: Date, n: number): Date {
+  let cursor = toChileZoned(base);
   let count = 0;
   while (count < n) {
-    const day = cursor.day();
-    if (day !== 0 && day !== 6) {
+    const dow = cursor.dayOfWeek; // Temporal: 1=Mon … 6=Sat, 7=Sun
+    if (dow !== 6 && dow !== 7) {
       count += 1;
       if (count === n) {
         break;
       }
     }
-    cursor = cursor.add(1, "day");
+    cursor = cursor.add({ days: 1 });
   }
-  return cursor.toDate();
+  return new Date(cursor.epochMilliseconds);
 }
 
-export function getMonthRange(month: string) {
-  const start = dayjs.tz(`${month}-01`, "YYYY-MM-DD", TIMEZONE);
-  const end = start.add(1, "month").subtract(1, "day");
+export function getMonthRange(month: string): { from: string; to: string } {
+  const [year, m] = month.split("-").map(Number);
+  const start = Temporal.PlainDate.from({ year, month: m, day: 1 });
+  const end = start.add({ months: 1 }).subtract({ days: 1 });
   return {
-    from: start.format("YYYY-MM-DD"),
-    to: end.format("YYYY-MM-DD"),
+    from: start.toString(),
+    to: end.toString(),
   };
+}
+
+/**
+ * The current calendar date in Chile, shifted back `n` months, as "YYYY-MM-DD".
+ * (Replaces `dayjs.tz(TZ).subtract(n, "month").format("YYYY-MM-DD")`.)
+ */
+export function chileDateMonthsAgo(n: number): string {
+  return toChileZoned(new Date()).toPlainDate().subtract({ months: n }).toString();
+}
+
+/**
+ * Inclusive list of "YYYY-MM" months spanned by `from`..`to`. Accepts
+ * "YYYY-MM-DD" or "YYYY-MM" bounds (only the year-month is used).
+ * (Replaces the dayjs month-iteration loop in salary summaries.)
+ */
+export function iterateChileMonths(from: string, to: string): string[] {
+  let cursor = Temporal.PlainYearMonth.from(from.slice(0, 7));
+  const end = Temporal.PlainYearMonth.from(to.slice(0, 7));
+  const months: string[] = [];
+  while (Temporal.PlainYearMonth.compare(cursor, end) <= 0) {
+    months.push(cursor.toString());
+    cursor = cursor.add({ months: 1 });
+  }
+  return months;
 }

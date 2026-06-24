@@ -99,6 +99,11 @@ storybook-static/
 **/playwright-report/
 **/test-results/
 **/.lighthouseci/
+# Per-worker auth state — holds LIVE production session cookies for the
+# E2E user (see apps/intranet/e2e/fixtures.ts workerStorageState).
+# Already covered by `**/e2e-results/` above; kept explicit so this
+# secrets-bearing path stays ignored even if that rule is ever narrowed.
+**/e2e-results/.auth/
 
 # Deployments
 .vercel
@@ -133,6 +138,12 @@ email_backup/
 
 # Baileys WhatsApp auth state
 data/
+# Excepción: crosswalk CIE-10↔CIE-11 (datos estáticos generados, deben versionarse)
+!apps/intranet/src/features/certificates/data/
+!apps/intranet/src/features/certificates/data/*.json
+# Excepción: contenido estático del site público (hardcoded, debe versionarse)
+!apps/site/src/data/
+!apps/site/src/data/*.ts
 
 # Sensitive data files
 **/credentials.json
@@ -140,8 +151,22 @@ data/
 **/config.local.json
 
 # Local Claude context (not for repo)
+CLAUDE.md
 CLAUDE.local.md
+.claude/
+
+# Playwright local profiles / throwaway diagnostic runs
+apps/api/scripts/*-test.mjs
 
 # Loose debug/query scripts in apps/api root (keep config files only)
 apps/api/*.ts
 !apps/api/vitest.config.ts
+!apps/api/vitest.stryker.config.ts
+playwright/.auth/
+**/playwright/.auth/
+
+# pnpm local store (set via env on some setups)
+.pnpm-store/
+
+# turbo prune output (local debugging, regenerated each Docker build)
+out/

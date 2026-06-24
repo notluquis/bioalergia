@@ -11,7 +11,20 @@ type TransactionRow = {
   settlementNetAmount: null | number;
 };
 
-export function mapTransaction(row: TransactionRow) {
+export interface MappedTransaction {
+  id: number;
+  transactionDate: Date;
+  description: null | string;
+  transactionType: string;
+  transactionAmount: null | number;
+  status: null | string;
+  externalReference: null | string;
+  sourceId: null | string;
+  paymentMethod: null | string;
+  settlementNetAmount: null | number;
+}
+
+export function mapTransaction(row: TransactionRow): MappedTransaction {
   return {
     id: Number(row.id),
     transactionDate: row.transactionDate,

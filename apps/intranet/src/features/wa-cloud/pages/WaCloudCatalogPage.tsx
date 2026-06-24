@@ -1,4 +1,6 @@
-import { Button, Card, Chip, Modal, Spinner, Table } from "@heroui/react";
+// oxlint-disable typescript/no-non-null-assertion -- TODO(strict-null): refactor each `!` to invariant() or explicit guard. Tracked in repo-wide non-null cleanup.
+import { Button, Card, Chip, Modal, Tabs } from "@heroui/react";
+import type { ColumnDef } from "@tanstack/react-table";
 import {
   CheckCircle2,
   Layers,
@@ -12,6 +14,7 @@ import {
   Zap,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { DataTable } from "@/components/data-table/DataTable";
 import { confirmAction } from "@/components/ui/ConfirmDialog";
 import { SelectInput, TextAreaInput, TextInput } from "@/features/outreach/components/FormField";
 import { toast } from "@/lib/toast-interceptor";
@@ -44,50 +47,41 @@ export function WaCloudCatalogPage() {
         <h2 className="font-semibold text-lg">Catálogo WhatsApp</h2>
       </div>
 
-      <div className="flex gap-2 border-default-200 border-b">
-        <TabBtn active={tab === "locations"} onClick={() => setTab("locations")}>
-          <MapPin size={14} /> Ubicaciones
-        </TabBtn>
-        <TabBtn active={tab === "lists"} onClick={() => setTab("lists")}>
-          <List size={14} /> Listas interactivas
-        </TabBtn>
-        <TabBtn active={tab === "flows"} onClick={() => setTab("flows")}>
-          <Layers size={14} /> Flows
-        </TabBtn>
-        <TabBtn active={tab === "snippets"} onClick={() => setTab("snippets")}>
-          <Zap size={14} /> Snippets
-        </TabBtn>
-      </div>
-
-      {tab === "locations" && <LocationsTab />}
-      {tab === "lists" && <ListsTab />}
-      {tab === "flows" && <FlowsTab />}
-      {tab === "snippets" && <SnippetsTab />}
+      <Tabs variant="secondary" selectedKey={tab} onSelectionChange={(k) => setTab(k as Tab)}>
+        <Tabs.ListContainer>
+          <Tabs.List aria-label="Secciones del catálogo">
+            <Tabs.Tab id="locations">
+              <MapPin size={14} /> Ubicaciones
+              <Tabs.Indicator />
+            </Tabs.Tab>
+            <Tabs.Tab id="lists">
+              <List size={14} /> Listas interactivas
+              <Tabs.Indicator />
+            </Tabs.Tab>
+            <Tabs.Tab id="flows">
+              <Layers size={14} /> Flows
+              <Tabs.Indicator />
+            </Tabs.Tab>
+            <Tabs.Tab id="snippets">
+              <Zap size={14} /> Snippets
+              <Tabs.Indicator />
+            </Tabs.Tab>
+          </Tabs.List>
+        </Tabs.ListContainer>
+        <Tabs.Panel id="locations" className="pt-4">
+          <LocationsTab />
+        </Tabs.Panel>
+        <Tabs.Panel id="lists" className="pt-4">
+          <ListsTab />
+        </Tabs.Panel>
+        <Tabs.Panel id="flows" className="pt-4">
+          <FlowsTab />
+        </Tabs.Panel>
+        <Tabs.Panel id="snippets" className="pt-4">
+          <SnippetsTab />
+        </Tabs.Panel>
+      </Tabs>
     </div>
-  );
-}
-
-function TabBtn({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`flex items-center gap-1.5 border-b-2 px-3 py-2 font-medium text-sm transition ${
-        active
-          ? "border-success text-success"
-          : "border-transparent text-default-500 hover:text-default-700"
-      }`}
-    >
-      {children}
-    </button>
   );
 }
 
@@ -103,6 +97,84 @@ function LocationsTab() {
     isDefault: boolean;
   }>(null);
   const items = list.data?.locations ?? [];
+  type LocationRow = (typeof items)[number];
+
+  const columns: ColumnDef<LocationRow>[] = [
+    {
+      id: "name",
+      header: "Nombre",
+      cell: ({ row }) => (
+        <button
+          type="button"
+          className="text-left font-medium text-accent hover:underline"
+          onClick={() =>
+            setEditing({
+              id: row.original.id,
+              name: row.original.name,
+              latitude: String(row.original.latitude),
+              longitude: String(row.original.longitude),
+              address: row.original.address ?? "",
+              isDefault: row.original.isDefault,
+            })
+          }
+        >
+          {row.original.name}
+        </button>
+      ),
+    },
+    {
+      id: "coords",
+      header: "Coords",
+      cell: ({ row }) => (
+        <span className="font-mono text-default-500 text-xs">
+          {row.original.latitude.toFixed(5)}, {row.original.longitude.toFixed(5)}
+        </span>
+      ),
+    },
+    {
+      id: "address",
+      header: "Dirección",
+      cell: ({ row }) => (
+        <span className="line-clamp-1 text-default-700 text-xs">{row.original.address ?? "—"}</span>
+      ),
+    },
+    {
+      id: "default",
+      header: "Default",
+      cell: ({ row }) =>
+        row.original.isDefault ? (
+          <Chip size="sm" color="success" variant="soft">
+            <Chip.Label>default</Chip.Label>
+          </Chip>
+        ) : null,
+    },
+    {
+      id: "actions",
+      header: "Acción",
+      cell: ({ row }) => (
+        <Button
+          size="sm"
+          variant="danger-soft"
+          isIconOnly
+          aria-label="Archivar"
+          onPress={() => {
+            void (async () => {
+              const ok = await confirmAction({
+                title: "Archivar elemento",
+                description: "Quedará oculto del catálogo activo. Se puede restaurar luego.",
+                confirmLabel: "Archivar",
+                variant: "danger",
+              });
+              if (!ok) return;
+              archive.mutate(row.original.id);
+            })();
+          }}
+        >
+          <Trash2 size={12} />
+        </Button>
+      ),
+    },
+  ];
 
   return (
     <div className="space-y-3">
@@ -115,95 +187,18 @@ function LocationsTab() {
           <Plus size={14} /> Nueva ubicación
         </Button>
       </div>
-      {list.isLoading ? (
-        <Spinner />
-      ) : items.length === 0 ? (
-        <Card>
-          <Card.Content className="p-6 text-center text-default-500 text-sm">
-            Sin ubicaciones guardadas.
-          </Card.Content>
-        </Card>
-      ) : (
-        <Card>
-          <Card.Content className="p-0">
-            <Table>
-              <Table.ScrollContainer>
-                <Table.Content aria-label="Ubicaciones">
-                  <Table.Header>
-                    <Table.Column isRowHeader>Nombre</Table.Column>
-                    <Table.Column>Coords</Table.Column>
-                    <Table.Column>Dirección</Table.Column>
-                    <Table.Column>Default</Table.Column>
-                    <Table.Column>Acción</Table.Column>
-                  </Table.Header>
-                  <Table.Body items={items}>
-                    {(l) => (
-                      <Table.Row id={String(l.id)}>
-                        <Table.Cell>
-                          <button
-                            type="button"
-                            className="text-left font-medium text-accent hover:underline"
-                            onClick={() =>
-                              setEditing({
-                                id: l.id,
-                                name: l.name,
-                                latitude: String(l.latitude),
-                                longitude: String(l.longitude),
-                                address: l.address ?? "",
-                                isDefault: l.isDefault,
-                              })
-                            }
-                          >
-                            {l.name}
-                          </button>
-                        </Table.Cell>
-                        <Table.Cell>
-                          <span className="font-mono text-default-500 text-xs">
-                            {l.latitude.toFixed(5)}, {l.longitude.toFixed(5)}
-                          </span>
-                        </Table.Cell>
-                        <Table.Cell>
-                          <span className="line-clamp-1 text-default-700 text-xs">
-                            {l.address ?? "—"}
-                          </span>
-                        </Table.Cell>
-                        <Table.Cell>
-                          {l.isDefault && (
-                            <Chip size="sm" color="success" variant="soft">
-                              <Chip.Label>default</Chip.Label>
-                            </Chip>
-                          )}
-                        </Table.Cell>
-                        <Table.Cell>
-                          <Button
-                            size="sm"
-                            variant="danger-soft"
-                            isIconOnly
-                            aria-label="Archivar"
-                            onPress={async () => {
-                              const ok = await confirmAction({
-                                title: "Archivar elemento",
-                                description:
-                                  "Quedará oculto del catálogo activo. Se puede restaurar luego.",
-                                confirmLabel: "Archivar",
-                                variant: "danger",
-                              });
-                              if (!ok) return;
-                              archive.mutate(l.id);
-                            }}
-                          >
-                            <Trash2 size={12} />
-                          </Button>
-                        </Table.Cell>
-                      </Table.Row>
-                    )}
-                  </Table.Body>
-                </Table.Content>
-              </Table.ScrollContainer>
-            </Table>
-          </Card.Content>
-        </Card>
-      )}
+      <Card>
+        <Card.Content className="p-0">
+          <DataTable
+            enableToolbar={false}
+            columns={columns}
+            data={items}
+            isLoading={list.isLoading}
+            noDataMessage="Sin ubicaciones guardadas."
+            enablePagination={false}
+          />
+        </Card.Content>
+      </Card>
       {editing && <LocationEditModal target={editing} onClose={() => setEditing(null)} />}
     </div>
   );
@@ -299,6 +294,7 @@ function LocationEditModal({
               <label className="flex items-center gap-2 text-sm">
                 <input
                   type="checkbox"
+                  aria-label="Predeterminada"
                   checked={isDefault}
                   onChange={(e) => setIsDefault(e.currentTarget.checked)}
                 />
@@ -310,7 +306,12 @@ function LocationEditModal({
                 <X size={14} />
                 Cancelar
               </Button>
-              <Button onPress={submit} isPending={upsert.isPending}>
+              <Button
+                onPress={() => {
+                  void submit();
+                }}
+                isPending={upsert.isPending}
+              >
                 <CheckCircle2 size={14} />
                 Guardar
               </Button>
@@ -337,6 +338,89 @@ function ListsTab() {
     rowsRaw: string;
   }>(null);
   const items = list.data?.lists ?? [];
+  type ListRow = (typeof items)[number];
+
+  const columns: ColumnDef<ListRow>[] = [
+    {
+      id: "name",
+      header: "Nombre",
+      cell: ({ row }) => {
+        const l = row.original;
+        return (
+          <>
+            <button
+              type="button"
+              className="text-left font-medium text-accent hover:underline"
+              onClick={() => {
+                const rowsText = l.sections
+                  .flatMap((s) =>
+                    s.rows.map(
+                      (r) => `${r.id}|${r.title}${r.description ? `|${r.description}` : ""}`
+                    )
+                  )
+                  .join("\n");
+                setEditing({
+                  id: l.id,
+                  name: l.name,
+                  description: l.description ?? "",
+                  headerText: l.headerText ?? "",
+                  bodyText: l.bodyText,
+                  footerText: l.footerText ?? "",
+                  buttonText: l.buttonText,
+                  sectionTitle: l.sections[0]?.title ?? "Opciones",
+                  rowsRaw: rowsText,
+                });
+              }}
+            >
+              {l.name}
+            </button>
+            {l.description && <p className="text-default-500 text-xs">{l.description}</p>}
+          </>
+        );
+      },
+    },
+    {
+      id: "buttonText",
+      header: "Botón",
+      cell: ({ row }) => row.original.buttonText,
+    },
+    {
+      id: "rows",
+      header: "Filas",
+      cell: ({ row }) => row.original.sections.reduce((n, s) => n + s.rows.length, 0),
+    },
+    {
+      id: "hitCount",
+      header: "Usado",
+      cell: ({ row }) => `${row.original.hitCount}×`,
+    },
+    {
+      id: "actions",
+      header: "Acción",
+      cell: ({ row }) => (
+        <Button
+          size="sm"
+          variant="danger-soft"
+          isIconOnly
+          aria-label="Archivar"
+          onPress={() => {
+            void (async () => {
+              const ok = await confirmAction({
+                title: "Archivar elemento",
+                description: "Quedará oculto del catálogo activo. Se puede restaurar luego.",
+                confirmLabel: "Archivar",
+                variant: "danger",
+              });
+              if (!ok) return;
+              archive.mutate(row.original.id);
+            })();
+          }}
+        >
+          <Trash2 size={12} />
+        </Button>
+      ),
+    },
+  ];
 
   return (
     <div className="space-y-3">
@@ -358,95 +442,18 @@ function ListsTab() {
           <Plus size={14} /> Nueva lista
         </Button>
       </div>
-      {list.isLoading ? (
-        <Spinner />
-      ) : items.length === 0 ? (
-        <Card>
-          <Card.Content className="p-6 text-center text-default-500 text-sm">
-            Sin listas guardadas.
-          </Card.Content>
-        </Card>
-      ) : (
-        <Card>
-          <Card.Content className="p-0">
-            <Table>
-              <Table.ScrollContainer>
-                <Table.Content aria-label="Listas">
-                  <Table.Header>
-                    <Table.Column isRowHeader>Nombre</Table.Column>
-                    <Table.Column>Botón</Table.Column>
-                    <Table.Column>Filas</Table.Column>
-                    <Table.Column>Usado</Table.Column>
-                    <Table.Column>Acción</Table.Column>
-                  </Table.Header>
-                  <Table.Body items={items}>
-                    {(l) => (
-                      <Table.Row id={String(l.id)}>
-                        <Table.Cell>
-                          <button
-                            type="button"
-                            className="text-left font-medium text-accent hover:underline"
-                            onClick={() => {
-                              const rowsText = l.sections
-                                .flatMap((s) =>
-                                  s.rows.map(
-                                    (r) =>
-                                      `${r.id}|${r.title}${r.description ? `|${r.description}` : ""}`
-                                  )
-                                )
-                                .join("\n");
-                              setEditing({
-                                id: l.id,
-                                name: l.name,
-                                description: l.description ?? "",
-                                headerText: l.headerText ?? "",
-                                bodyText: l.bodyText,
-                                footerText: l.footerText ?? "",
-                                buttonText: l.buttonText,
-                                sectionTitle: l.sections[0]?.title ?? "Opciones",
-                                rowsRaw: rowsText,
-                              });
-                            }}
-                          >
-                            {l.name}
-                          </button>
-                          {l.description && (
-                            <p className="text-default-500 text-xs">{l.description}</p>
-                          )}
-                        </Table.Cell>
-                        <Table.Cell>{l.buttonText}</Table.Cell>
-                        <Table.Cell>{l.sections.reduce((n, s) => n + s.rows.length, 0)}</Table.Cell>
-                        <Table.Cell>{l.hitCount}×</Table.Cell>
-                        <Table.Cell>
-                          <Button
-                            size="sm"
-                            variant="danger-soft"
-                            isIconOnly
-                            aria-label="Archivar"
-                            onPress={async () => {
-                              const ok = await confirmAction({
-                                title: "Archivar elemento",
-                                description:
-                                  "Quedará oculto del catálogo activo. Se puede restaurar luego.",
-                                confirmLabel: "Archivar",
-                                variant: "danger",
-                              });
-                              if (!ok) return;
-                              archive.mutate(l.id);
-                            }}
-                          >
-                            <Trash2 size={12} />
-                          </Button>
-                        </Table.Cell>
-                      </Table.Row>
-                    )}
-                  </Table.Body>
-                </Table.Content>
-              </Table.ScrollContainer>
-            </Table>
-          </Card.Content>
-        </Card>
-      )}
+      <Card>
+        <Card.Content className="p-0">
+          <DataTable
+            enableToolbar={false}
+            columns={columns}
+            data={items}
+            isLoading={list.isLoading}
+            noDataMessage="Sin listas guardadas."
+            enablePagination={false}
+          />
+        </Card.Content>
+      </Card>
       {editing && <ListEditModal target={editing} onClose={() => setEditing(null)} />}
     </div>
   );
@@ -575,7 +582,12 @@ function ListEditModal({
               <Button variant="outline" onPress={onClose}>
                 <X size={14} /> Cancelar
               </Button>
-              <Button onPress={submit} isPending={upsert.isPending}>
+              <Button
+                onPress={() => {
+                  void submit();
+                }}
+                isPending={upsert.isPending}
+              >
                 <CheckCircle2 size={14} /> Guardar
               </Button>
             </Modal.Footer>
@@ -601,6 +613,7 @@ function FlowsTab() {
     defaultCta: string;
   }>(null);
   const items = list.data?.flows ?? [];
+  type FlowRow = (typeof items)[number];
   const accountOptions = useMemo(
     () =>
       (accounts.data?.accounts ?? []).map((a) => ({
@@ -609,6 +622,101 @@ function FlowsTab() {
       })),
     [accounts.data]
   );
+
+  const columns: ColumnDef<FlowRow>[] = [
+    {
+      id: "name",
+      header: "Nombre",
+      cell: ({ row }) => {
+        const f = row.original;
+        return (
+          <button
+            type="button"
+            className="text-left font-medium text-accent hover:underline"
+            onClick={() =>
+              setEditing({
+                id: f.id,
+                accountId: f.accountId ?? undefined,
+                name: f.name,
+                description: f.description ?? "",
+                flowId: f.flowId,
+                defaultBody: f.defaultBody,
+                defaultCta: f.defaultCta,
+              })
+            }
+          >
+            {f.name}
+          </button>
+        );
+      },
+    },
+    {
+      id: "flowId",
+      header: "Flow ID",
+      cell: ({ row }) => <code className="text-default-500 text-xs">{row.original.flowId}</code>,
+    },
+    {
+      id: "metaStatus",
+      header: "Estado Meta",
+      cell: ({ row }) =>
+        row.original.metaStatus ? (
+          <Chip
+            size="sm"
+            color={
+              row.original.metaStatus === "PUBLISHED"
+                ? "success"
+                : row.original.metaStatus === "DRAFT"
+                  ? "warning"
+                  : "danger"
+            }
+            variant="soft"
+          >
+            <Chip.Label>{row.original.metaStatus}</Chip.Label>
+          </Chip>
+        ) : (
+          <span className="text-default-400 text-xs">manual</span>
+        ),
+    },
+    {
+      id: "categories",
+      header: "Categorías",
+      cell: ({ row }) => (
+        <div className="flex flex-wrap gap-1">
+          {row.original.metaCategories.map((c) => (
+            <Chip key={c} size="sm" variant="soft" color="default">
+              <Chip.Label>{c}</Chip.Label>
+            </Chip>
+          ))}
+        </div>
+      ),
+    },
+    {
+      id: "actions",
+      header: "Acción",
+      cell: ({ row }) => (
+        <Button
+          size="sm"
+          variant="danger-soft"
+          isIconOnly
+          aria-label="Archivar"
+          onPress={() => {
+            void (async () => {
+              const ok = await confirmAction({
+                title: "Archivar elemento",
+                description: "Quedará oculto del catálogo activo. Se puede restaurar luego.",
+                confirmLabel: "Archivar",
+                variant: "danger",
+              });
+              if (!ok) return;
+              archive.mutate(row.original.id);
+            })();
+          }}
+        >
+          <Trash2 size={12} />
+        </Button>
+      ),
+    },
+  ];
 
   return (
     <div className="space-y-3">
@@ -651,110 +759,18 @@ function FlowsTab() {
         </div>
       </div>
 
-      {list.isLoading ? (
-        <Spinner />
-      ) : items.length === 0 ? (
-        <Card>
-          <Card.Content className="p-6 text-center text-default-500 text-sm">
-            Sin Flows. Click "Sync desde Meta" para importar los aprobados.
-          </Card.Content>
-        </Card>
-      ) : (
-        <Card>
-          <Card.Content className="p-0">
-            <Table>
-              <Table.ScrollContainer>
-                <Table.Content aria-label="Flows">
-                  <Table.Header>
-                    <Table.Column isRowHeader>Nombre</Table.Column>
-                    <Table.Column>Flow ID</Table.Column>
-                    <Table.Column>Estado Meta</Table.Column>
-                    <Table.Column>Categorías</Table.Column>
-                    <Table.Column>Acción</Table.Column>
-                  </Table.Header>
-                  <Table.Body items={items}>
-                    {(f) => (
-                      <Table.Row id={String(f.id)}>
-                        <Table.Cell>
-                          <button
-                            type="button"
-                            className="text-left font-medium text-accent hover:underline"
-                            onClick={() =>
-                              setEditing({
-                                id: f.id,
-                                accountId: f.accountId ?? undefined,
-                                name: f.name,
-                                description: f.description ?? "",
-                                flowId: f.flowId,
-                                defaultBody: f.defaultBody,
-                                defaultCta: f.defaultCta,
-                              })
-                            }
-                          >
-                            {f.name}
-                          </button>
-                        </Table.Cell>
-                        <Table.Cell>
-                          <code className="text-default-500 text-xs">{f.flowId}</code>
-                        </Table.Cell>
-                        <Table.Cell>
-                          {f.metaStatus ? (
-                            <Chip
-                              size="sm"
-                              color={
-                                f.metaStatus === "PUBLISHED"
-                                  ? "success"
-                                  : f.metaStatus === "DRAFT"
-                                    ? "warning"
-                                    : "danger"
-                              }
-                              variant="soft"
-                            >
-                              <Chip.Label>{f.metaStatus}</Chip.Label>
-                            </Chip>
-                          ) : (
-                            <span className="text-default-400 text-xs">manual</span>
-                          )}
-                        </Table.Cell>
-                        <Table.Cell>
-                          <div className="flex flex-wrap gap-1">
-                            {f.metaCategories.map((c) => (
-                              <Chip key={c} size="sm" variant="soft" color="default">
-                                <Chip.Label>{c}</Chip.Label>
-                              </Chip>
-                            ))}
-                          </div>
-                        </Table.Cell>
-                        <Table.Cell>
-                          <Button
-                            size="sm"
-                            variant="danger-soft"
-                            isIconOnly
-                            aria-label="Archivar"
-                            onPress={async () => {
-                              const ok = await confirmAction({
-                                title: "Archivar elemento",
-                                description:
-                                  "Quedará oculto del catálogo activo. Se puede restaurar luego.",
-                                confirmLabel: "Archivar",
-                                variant: "danger",
-                              });
-                              if (!ok) return;
-                              archive.mutate(f.id);
-                            }}
-                          >
-                            <Trash2 size={12} />
-                          </Button>
-                        </Table.Cell>
-                      </Table.Row>
-                    )}
-                  </Table.Body>
-                </Table.Content>
-              </Table.ScrollContainer>
-            </Table>
-          </Card.Content>
-        </Card>
-      )}
+      <Card>
+        <Card.Content className="p-0">
+          <DataTable
+            enableToolbar={false}
+            columns={columns}
+            data={items}
+            isLoading={list.isLoading}
+            noDataMessage='Sin Flows. Click "Sync desde Meta" para importar los aprobados.'
+            enablePagination={false}
+          />
+        </Card.Content>
+      </Card>
       {editing && (
         <FlowEditModal
           target={editing}
@@ -865,7 +881,12 @@ function FlowEditModal({
               <Button variant="outline" onPress={onClose}>
                 <X size={14} /> Cancelar
               </Button>
-              <Button onPress={submit} isPending={upsert.isPending}>
+              <Button
+                onPress={() => {
+                  void submit();
+                }}
+                isPending={upsert.isPending}
+              >
                 <CheckCircle2 size={14} /> Guardar
               </Button>
             </Modal.Footer>
@@ -947,6 +968,115 @@ function SnippetsTab() {
   const archive = useArchiveSnippet();
   const [editing, setEditing] = useState<SnippetEditState | null>(null);
   const items = list.data?.snippets ?? [];
+  type SnippetRow = (typeof items)[number];
+
+  const columns: ColumnDef<SnippetRow>[] = [
+    {
+      id: "name",
+      header: "Nombre",
+      cell: ({ row }) => {
+        const s = row.original;
+        return (
+          <>
+            <button
+              type="button"
+              className="text-left font-medium text-accent hover:underline"
+              onClick={() =>
+                setEditing({
+                  id: s.id,
+                  kind: s.kind as SnippetKind,
+                  category: s.category ?? "",
+                  name: s.name,
+                  description: s.description ?? "",
+                  shortcut: s.shortcut ?? "",
+                  bodyText: s.bodyText ?? "",
+                  ctaUrl: s.ctaUrl ?? "",
+                  ctaButtonText: s.ctaButtonText ?? "",
+                  ctaHeader: s.ctaHeader ?? "",
+                  ctaFooter: s.ctaFooter ?? "",
+                  replyButtonsRaw: (s.replyButtons ?? [])
+                    .map((b) => `${b.id}|${b.title}`)
+                    .join("\n"),
+                  replyHeader: s.replyHeader ?? "",
+                  replyFooter: s.replyFooter ?? "",
+                  mediaHandle: s.mediaHandle ?? "",
+                  mediaUrl: s.mediaUrl ?? "",
+                  mediaMimeType: s.mediaMimeType ?? "",
+                  mediaFilename: s.mediaFilename ?? "",
+                  mediaSize: s.mediaSize,
+                })
+              }
+            >
+              {s.name}
+            </button>
+            {s.description && <p className="text-default-500 text-xs">{s.description}</p>}
+          </>
+        );
+      },
+    },
+    {
+      id: "kind",
+      header: "Tipo",
+      cell: ({ row }) => (
+        <Chip size="sm" variant="soft" color="default">
+          <Chip.Label>{row.original.kind}</Chip.Label>
+        </Chip>
+      ),
+    },
+    {
+      id: "category",
+      header: "Categoría",
+      cell: ({ row }) =>
+        row.original.category ? (
+          <Chip size="sm" variant="soft" color="accent">
+            <Chip.Label>{row.original.category}</Chip.Label>
+          </Chip>
+        ) : (
+          <span className="text-default-400 text-xs">—</span>
+        ),
+    },
+    {
+      id: "shortcut",
+      header: "Atajo",
+      cell: ({ row }) =>
+        row.original.shortcut ? (
+          <code className="rounded bg-default-200 px-1 text-xs">{row.original.shortcut}</code>
+        ) : (
+          <span className="text-default-400 text-xs">—</span>
+        ),
+    },
+    {
+      id: "hitCount",
+      header: "Usado",
+      cell: ({ row }) => `${row.original.hitCount}×`,
+    },
+    {
+      id: "actions",
+      header: "Acción",
+      cell: ({ row }) => (
+        <Button
+          size="sm"
+          variant="danger-soft"
+          isIconOnly
+          aria-label="Archivar"
+          onPress={() => {
+            void (async () => {
+              const ok = await confirmAction({
+                title: "Archivar elemento",
+                description: "Quedará oculto del catálogo activo. Se puede restaurar luego.",
+                confirmLabel: "Archivar",
+                variant: "danger",
+              });
+              if (!ok) return;
+              archive.mutate(row.original.id);
+            })();
+          }}
+        >
+          <Trash2 size={12} />
+        </Button>
+      ),
+    },
+  ];
 
   return (
     <div className="space-y-3">
@@ -955,121 +1085,18 @@ function SnippetsTab() {
           <Plus size={14} /> Nuevo snippet
         </Button>
       </div>
-      {list.isLoading ? (
-        <Spinner />
-      ) : items.length === 0 ? (
-        <Card>
-          <Card.Content className="p-6 text-center text-default-500 text-sm">
-            Sin snippets. Crea uno para que las chiquillas tengan respuestas rápidas.
-          </Card.Content>
-        </Card>
-      ) : (
-        <Card>
-          <Card.Content className="p-0">
-            <Table>
-              <Table.ScrollContainer>
-                <Table.Content aria-label="Snippets">
-                  <Table.Header>
-                    <Table.Column isRowHeader>Nombre</Table.Column>
-                    <Table.Column>Tipo</Table.Column>
-                    <Table.Column>Categoría</Table.Column>
-                    <Table.Column>Atajo</Table.Column>
-                    <Table.Column>Usado</Table.Column>
-                    <Table.Column>Acción</Table.Column>
-                  </Table.Header>
-                  <Table.Body items={items}>
-                    {(s) => (
-                      <Table.Row id={String(s.id)}>
-                        <Table.Cell>
-                          <button
-                            type="button"
-                            className="text-left font-medium text-accent hover:underline"
-                            onClick={() =>
-                              setEditing({
-                                id: s.id,
-                                kind: s.kind as SnippetKind,
-                                category: s.category ?? "",
-                                name: s.name,
-                                description: s.description ?? "",
-                                shortcut: s.shortcut ?? "",
-                                bodyText: s.bodyText ?? "",
-                                ctaUrl: s.ctaUrl ?? "",
-                                ctaButtonText: s.ctaButtonText ?? "",
-                                ctaHeader: s.ctaHeader ?? "",
-                                ctaFooter: s.ctaFooter ?? "",
-                                replyButtonsRaw: (s.replyButtons ?? [])
-                                  .map((b) => `${b.id}|${b.title}`)
-                                  .join("\n"),
-                                replyHeader: s.replyHeader ?? "",
-                                replyFooter: s.replyFooter ?? "",
-                                mediaHandle: s.mediaHandle ?? "",
-                                mediaUrl: s.mediaUrl ?? "",
-                                mediaMimeType: s.mediaMimeType ?? "",
-                                mediaFilename: s.mediaFilename ?? "",
-                                mediaSize: s.mediaSize,
-                              })
-                            }
-                          >
-                            {s.name}
-                          </button>
-                          {s.description && (
-                            <p className="text-default-500 text-xs">{s.description}</p>
-                          )}
-                        </Table.Cell>
-                        <Table.Cell>
-                          <Chip size="sm" variant="soft" color="default">
-                            <Chip.Label>{s.kind}</Chip.Label>
-                          </Chip>
-                        </Table.Cell>
-                        <Table.Cell>
-                          {s.category ? (
-                            <Chip size="sm" variant="soft" color="accent">
-                              <Chip.Label>{s.category}</Chip.Label>
-                            </Chip>
-                          ) : (
-                            <span className="text-default-400 text-xs">—</span>
-                          )}
-                        </Table.Cell>
-                        <Table.Cell>
-                          {s.shortcut ? (
-                            <code className="rounded bg-default-200 px-1 text-xs">
-                              {s.shortcut}
-                            </code>
-                          ) : (
-                            <span className="text-default-400 text-xs">—</span>
-                          )}
-                        </Table.Cell>
-                        <Table.Cell>{s.hitCount}×</Table.Cell>
-                        <Table.Cell>
-                          <Button
-                            size="sm"
-                            variant="danger-soft"
-                            isIconOnly
-                            aria-label="Archivar"
-                            onPress={async () => {
-                              const ok = await confirmAction({
-                                title: "Archivar elemento",
-                                description:
-                                  "Quedará oculto del catálogo activo. Se puede restaurar luego.",
-                                confirmLabel: "Archivar",
-                                variant: "danger",
-                              });
-                              if (!ok) return;
-                              archive.mutate(s.id);
-                            }}
-                          >
-                            <Trash2 size={12} />
-                          </Button>
-                        </Table.Cell>
-                      </Table.Row>
-                    )}
-                  </Table.Body>
-                </Table.Content>
-              </Table.ScrollContainer>
-            </Table>
-          </Card.Content>
-        </Card>
-      )}
+      <Card>
+        <Card.Content className="p-0">
+          <DataTable
+            enableToolbar={false}
+            columns={columns}
+            data={items}
+            isLoading={list.isLoading}
+            noDataMessage="Sin snippets. Crea uno para que las chiquillas tengan respuestas rápidas."
+            enablePagination={false}
+          />
+        </Card.Content>
+      </Card>
       {editing && <SnippetEditModal target={editing} onClose={() => setEditing(null)} />}
     </div>
   );
@@ -1292,6 +1319,7 @@ function SnippetEditModal({ target, onClose }: { target: SnippetEditState; onClo
                   <input
                     ref={fileRef}
                     type="file"
+                    aria-label="Subir archivo"
                     className="hidden"
                     onChange={(e) => {
                       const f = e.target.files?.[0];
@@ -1341,7 +1369,12 @@ function SnippetEditModal({ target, onClose }: { target: SnippetEditState; onClo
               <Button variant="outline" onPress={onClose}>
                 <X size={14} /> Cancelar
               </Button>
-              <Button onPress={submit} isPending={upsert.isPending}>
+              <Button
+                onPress={() => {
+                  void submit();
+                }}
+                isPending={upsert.isPending}
+              >
                 <CheckCircle2 size={14} /> Guardar
               </Button>
             </Modal.Footer>

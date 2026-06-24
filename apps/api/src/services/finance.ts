@@ -1,7 +1,10 @@
 import type { TransactionType } from "@finanzas/db";
-import { db } from "@finanzas/db";
+import { db, kysely } from "@finanzas/db";
 import { Decimal } from "decimal.js";
+import { sql } from "kysely";
 import { AppError } from "../lib/app-error.ts";
+import { auditRowChange } from "../lib/audit-diff.ts";
+import { DomainError } from "../lib/errors.ts";
 import { getPeriodRange, toChilePeriod } from "../lib/time.ts";
 import {
   fetchMergedTransactions,
@@ -395,6 +398,8 @@ async function applyPersonalDrPatternCategoryToExistingTransactions(
   categoryId: number,
   options?: { onlyUncategorized?: boolean }
 ) {
+  // kept raw: POSIX case-insensitive regex match (~*) on comment — ORM has no
+  // regex filter operator.
   if (options?.onlyUncategorized) {
     const updatedRows = await db.$executeRaw`
       UPDATE financial_transactions
@@ -428,6 +433,9 @@ async function applyPatientsPatternCategoryToExistingTransactions(
   const normalizedKeyword = normalizeSearchText(keyword) || PATIENTS_KEYWORD;
   const likePattern = `%${normalizedKeyword}%`;
 
+  // kept raw: correlated EXISTS subqueries against release/settlement by
+  // source_id with ILIKE on sale_detail — multi-table correlated existence not
+  // expressible via the financial_transactions ORM relations.
   if (options?.onlyUncategorized) {
     const updatedRows = await db.$executeRaw`
       UPDATE financial_transactions ft
@@ -506,6 +514,7 @@ async function applyAutoCategoryRuleRow(
 ) {
   const needsReleaseJoin =
     rule.matchAmountOn === "gross" ||
+    rule.descriptionContains != null ||
     rule.paymentMethods.length > 0 ||
     rule.amountsExact.length > 0;
 
@@ -526,10 +535,10 @@ async function applyAutoCategoryRuleRow(
           },
         }),
         ...(rule.commentContains != null && {
-          comment: { contains: rule.commentContains, mode: "insensitive" },
+          comment: { contains: rule.commentContains, mode: "insensitive" as const },
         }),
         ...(rule.descriptionContains != null && {
-          description: { contains: rule.descriptionContains, mode: "insensitive" },
+          description: { contains: rule.descriptionContains, mode: "insensitive" as const },
         }),
         type: rule.type,
       },
@@ -540,71 +549,84 @@ async function applyAutoCategoryRuleRow(
     return count;
   }
 
-  const amountSourceExpr =
+  // amountSource / paymentMethod are trusted column EXPRESSIONS (never user
+  // input) → sql.raw. Everything derived from `rule.*` goes through ${bind}.
+  const exactAmountSourceSql =
     rule.matchAmountOn === "gross"
-      ? "COALESCE(rt.gross_amount, st.transaction_amount, ABS(ft.amount))"
-      : "ABS(ft.amount)";
+      ? sql.raw("COALESCE(rt.gross_amount, st.transaction_amount, ABS(ft.amount))")
+      : sql.raw("ABS(ft.amount)");
+  const boundedAmountSourceSql =
+    rule.matchAmountOn === "gross"
+      ? sql.raw("COALESCE(rt.gross_amount, st.transaction_amount, ABS(ft.amount))")
+      : sql.raw("ft.amount");
+  const paymentMethodSql = sql.raw("COALESCE(rt.payment_method_type, st.payment_method_type)");
 
-  const paymentMethodExpr = "COALESCE(rt.payment_method_type, st.payment_method_type)";
-
-  const whereClauses: string[] = [`ft.type = '${rule.type}'`];
+  const conditions: ReturnType<typeof sql>[] = [sql`ft.type = ${rule.type}`];
   if (options?.onlyUncategorized) {
-    whereClauses.push("ft.category_id IS NULL");
+    conditions.push(sql`ft.category_id IS NULL`);
   } else {
-    whereClauses.push(`ft.category_id IS DISTINCT FROM ${rule.categoryId}`);
+    conditions.push(sql`ft.category_id IS DISTINCT FROM ${rule.categoryId}`);
   }
   if (rule.counterpartId != null) {
-    whereClauses.push(`ft.counterpart_id = ${rule.counterpartId}`);
+    conditions.push(sql`ft.counterpart_id = ${rule.counterpartId}`);
   }
   if (rule.commentContains != null) {
-    whereClauses.push(
-      `ft.comment ILIKE ${sqlLiteral(`%${rule.commentContains.replace(/[%_]/g, "\\$&")}%`)}`
-    );
+    // Escape LIKE metacharacters in the literal, then bind the whole pattern.
+    const pattern = `%${rule.commentContains.replace(/[%_]/g, "\\$&")}%`;
+    conditions.push(sql`ft.comment ILIKE ${pattern}`);
   }
   if (rule.descriptionContains != null) {
-    whereClauses.push(
-      `ft.description ILIKE ${sqlLiteral(`%${rule.descriptionContains.replace(/[%_]/g, "\\$&")}%`)}`
-    );
+    const pattern = `%${rule.descriptionContains.replace(/[%_]/g, "\\$&")}%`;
+    conditions.push(sql`(
+      ft.description ILIKE ${pattern}
+      OR rt.sale_detail ILIKE ${pattern}
+      OR st.sale_detail ILIKE ${pattern}
+    )`);
   }
   if (rule.paymentMethods.length > 0) {
-    const values = rule.paymentMethods.map((method) => sqlLiteral(method)).join(", ");
-    whereClauses.push(`${paymentMethodExpr} IN (${values})`);
+    const methods = sql.join(rule.paymentMethods.map((m) => sql`${m}`));
+    conditions.push(sql`${paymentMethodSql} IN (${methods})`);
   }
   if (rule.amountsExact.length > 0) {
-    const values = rule.amountsExact.map((value) => Number(value).toFixed(4)).join(", ");
-    whereClauses.push(
-      `EXISTS (SELECT 1 FROM (VALUES (${values})) AS amounts_exact(v) WHERE ABS(${amountSourceExpr} - amounts_exact.v) <= ${AMOUNT_MATCH_EPSILON})`
+    // VALUES as N rows of 1 column (matches the amounts_exact(v) alias). The
+    // old string form built ONE N-column row, which errored at runtime for ≥2
+    // exact amounts — this parametrized form fixes that latent bug.
+    const valueRows = sql.join(rule.amountsExact.map((v) => sql`(${Number(v)}::numeric)`));
+    conditions.push(
+      sql`EXISTS (
+        SELECT 1 FROM (VALUES ${valueRows}) AS amounts_exact(v)
+        WHERE ABS(${exactAmountSourceSql} - amounts_exact.v) <= ${AMOUNT_MATCH_EPSILON}
+      )`
     );
   } else {
     if (rule.minAmount != null) {
-      whereClauses.push(`${amountSourceExpr} >= ${Number(rule.minAmount)}`);
+      conditions.push(sql`${boundedAmountSourceSql} >= ${Number(rule.minAmount)}`);
     }
     if (rule.maxAmount != null) {
-      whereClauses.push(`${amountSourceExpr} <= ${Number(rule.maxAmount)}`);
+      conditions.push(sql`${boundedAmountSourceSql} <= ${Number(rule.maxAmount)}`);
     }
   }
 
-  const sql = `
+  // kept raw: CTE (WITH matches) + UPDATE … FROM with parametrized VALUES rows
+  // and multi-table LEFT JOINs; the parametrization here is correctness-critical
+  // (see VALUES-rows note above) — keep the audited raw form.
+  const where = sql.join(conditions, sql` AND `);
+  const result = await sql`
     WITH matches AS (
       SELECT DISTINCT ft.id
       FROM financial_transactions ft
       LEFT JOIN release_transactions rt ON rt.source_id = ft.source_id
       LEFT JOIN settlement_transactions st ON st.source_id = ft.source_id
-      WHERE ${whereClauses.join("\n        AND ")}
+      WHERE ${where}
     )
     UPDATE financial_transactions ft
     SET category_id = ${rule.categoryId},
         updated_at = NOW()
     FROM matches
     WHERE ft.id = matches.id
-  `;
+  `.execute(kysely);
 
-  const updated = await db.$executeRawUnsafe(sql);
-  return Number(updated);
-}
-
-function sqlLiteral(value: string) {
-  return `'${value.replace(/'/g, "''")}'`;
+  return Number(result.numAffectedRows ?? 0n);
 }
 
 async function ensurePatientsAutoCategoryRule() {
@@ -931,17 +953,22 @@ async function syncUnifiedTransactions(
 
       const type: TransactionType = tour.transactionAmount >= 0 ? "INCOME" : "EXPENSE";
       const comment = tour.externalReference ? `Ref: ${tour.externalReference}` : undefined;
-      const sourceSaleDetails = tour.sourceId
-        ? (saleDetailsBySourceId.get(tour.sourceId.trim()) ?? [])
-        : [];
+      const sourceIdKey = tour.sourceId?.trim() ?? "";
+      const sourceSaleDetails = sourceIdKey ? (saleDetailsBySourceId.get(sourceIdKey) ?? []) : [];
+      const sourceGrossAmount = sourceIdKey
+        ? (grossBySourceId.get(sourceIdKey) ?? tour.grossAmount ?? null)
+        : (tour.grossAmount ?? null);
+      const sourcePaymentMethodType = sourceIdKey
+        ? (paymentMethodTypeBySourceId.get(sourceIdKey) ?? tour.paymentMethodType ?? null)
+        : (tour.paymentMethodType ?? null);
       const categoryId = resolveAutoCategoryId(
         {
           amount: tour.transactionAmount,
           comment,
           counterpartId,
           description: mergeDescriptionWithSaleDetails(tour.description, sourceSaleDetails),
-          grossAmount: tour.grossAmount ?? null,
-          paymentMethodType: tour.paymentMethodType ?? null,
+          grossAmount: sourceGrossAmount,
+          paymentMethodType: sourcePaymentMethodType,
           type,
         },
         autoCategoryRules
@@ -1080,8 +1107,8 @@ export async function listFinancialTransactions(params: {
   if (params.type) where.type = params.type as TransactionType;
   if (params.search) {
     where.OR = [
-      { description: { contains: params.search, mode: "insensitive" } },
-      { comment: { contains: params.search, mode: "insensitive" } },
+      { description: { contains: params.search, mode: "insensitive" as const } },
+      { comment: { contains: params.search, mode: "insensitive" as const } },
     ];
   }
 
@@ -1107,6 +1134,8 @@ export async function listFinancialTransactions(params: {
     assertPeriodOrThrow(params.effectivePeriod);
     const { from, to } = getPeriodRange(params.effectivePeriod);
     const [periodAllocations, periodTransactionsWithoutAllocations] = await Promise.all([
+      // kept raw: per-row CASE-based signed SUM (ROLLOVER_OUT negates) inside a
+      // GROUP BY — not expressible via ORM groupBy aggregates.
       db.$queryRaw<Array<{ netAmount: number; transactionId: number }>>`
         SELECT
           transaction_id AS "transactionId",
@@ -1124,17 +1153,13 @@ export async function listFinancialTransactions(params: {
         WHERE period = ${params.effectivePeriod}
         GROUP BY transaction_id
       `,
-      db.$queryRaw<Array<{ id: number }>>`
-        SELECT ft.id
-        FROM financial_transactions ft
-        WHERE ft.date >= ${from}
-          AND ft.date <= ${to}
-          AND NOT EXISTS (
-            SELECT 1
-            FROM financial_transaction_allocations fta
-            WHERE fta.transaction_id = ft.id
-          )
-      `,
+      db.financialTransaction.findMany({
+        where: {
+          date: { gte: from, lte: to },
+          allocations: { none: {} },
+        },
+        select: { id: true },
+      }),
     ]);
 
     const effectiveTransactionIds = Array.from(
@@ -1185,7 +1210,7 @@ export async function listFinancialTransactions(params: {
     )
   );
 
-  const [releaseRows, settlementRows] =
+  const [releaseRows, settlementRows, withdrawRows] =
     sourceIds.length > 0
       ? await Promise.all([
           db.releaseTransaction.findMany({
@@ -1207,8 +1232,19 @@ export async function listFinancialTransactions(params: {
               sourceId: true,
             },
           }),
+          db.withdrawTransaction.findMany({
+            where: { withdrawId: { in: sourceIds } },
+            select: {
+              bankAccountHolder: true,
+              bankAccountNumber: true,
+              bankAccountType: true,
+              bankName: true,
+              identificationNumber: true,
+              withdrawId: true,
+            },
+          }),
         ])
-      : [[], []];
+      : [[], [], []];
 
   const transactionIds = transactions.map((transaction) => transaction.id);
   const allocationRows =
@@ -1264,11 +1300,13 @@ export async function listFinancialTransactions(params: {
 
   const releaseBySourceId = new Map(releaseRows.map((row) => [row.sourceId, row]));
   const settlementBySourceId = new Map(settlementRows.map((row) => [row.sourceId, row]));
+  const withdrawBySourceId = new Map(withdrawRows.map((row) => [row.withdrawId, row]));
 
   const enrichedTransactions = transactions.map((transaction) => {
     const sourceId = transaction.sourceId ?? null;
     const release = sourceId ? releaseBySourceId.get(sourceId) : undefined;
     const settlement = sourceId ? settlementBySourceId.get(sourceId) : undefined;
+    const withdraw = sourceId ? withdrawBySourceId.get(sourceId) : undefined;
     const allocationSummary = allocationSummaryByTransaction.get(transaction.id);
     const reallocatedInTotal = allocationSummary?.inTotal ?? 0;
     const reallocatedOutTotal = allocationSummary?.outTotal ?? 0;
@@ -1288,6 +1326,7 @@ export async function listFinancialTransactions(params: {
     return {
       ...transaction,
       amount: effectiveAmount,
+      counterpartLinkedAccountNumber: transaction.counterpart?.accounts?.[0]?.accountNumber ?? null,
       counterpartAccountNumber:
         release?.payoutBankAccountNumber ??
         transaction.counterpart?.accounts?.[0]?.accountNumber ??
@@ -1298,6 +1337,11 @@ export async function listFinancialTransactions(params: {
       settlementPaymentMethod: settlement?.paymentMethod ?? null,
       settlementPaymentMethodType: settlement?.paymentMethodType ?? null,
       settlementSaleDetail: settlement?.saleDetail ?? null,
+      withdrawBankAccountHolder: withdraw?.bankAccountHolder ?? null,
+      withdrawBankAccountNumber: withdraw?.bankAccountNumber ?? null,
+      withdrawBankAccountType: withdraw?.bankAccountType ?? null,
+      withdrawBankName: withdraw?.bankName ?? null,
+      withdrawIdentificationNumber: withdraw?.identificationNumber ?? null,
       hasReallocation: reallocatedInTotal > 0 || reallocatedOutTotal > 0,
       hasReallocationInEffectivePeriod:
         reallocatedInEffectivePeriod > 0 || reallocatedOutEffectivePeriod > 0,
@@ -1320,6 +1364,8 @@ export async function listFinancialTransactions(params: {
 }
 
 export async function listAvailableFinancialTransactionMonths() {
+  // kept raw: UNION of two GROUP BY queries with date_trunc/to_char period
+  // formatting + a IS DISTINCT FROM cashback filter across joins — no clean ORM form.
   const rows = await db.$queryRaw<Array<{ month: string }>>`
     SELECT month
     FROM (
@@ -1385,14 +1431,24 @@ export async function getFinancialSummaryByCategory(params: { from?: Date; to?: 
     ];
   }
 
-  const grouped = await db.financialTransaction.groupBy({
+  // Explicit row type — ZenStack v3 inference for groupBy collapses to
+  // `unknown` in large files, so we annotate the row shape locally
+  // instead of relying on inference. Matches the by + _count + _sum
+  // contract above.
+  type FinanceGroupRow = {
+    categoryId: number | null;
+    type: "INCOME" | "EXPENSE";
+    _count: { _all: number };
+    _sum: { amount: number | null };
+  };
+  const grouped = (await db.financialTransaction.groupBy({
     by: ["categoryId", "type"],
     where,
     _count: { _all: true },
     _sum: { amount: true },
-  });
+  })) as FinanceGroupRow[];
 
-  const categoryIds = Array.from(
+  const categoryIds: number[] = Array.from(
     new Set(grouped.map((row) => row.categoryId).filter((id): id is number => id != null))
   );
 
@@ -1466,6 +1522,20 @@ export async function updateFinancialTransaction(
   id: number,
   data: UpdateFinancialTransactionInput
 ) {
+  // Snapshot previo para auditar el diff (edición manual de transacción = sensible).
+  const before = await db.financialTransaction.findUnique({
+    where: { id },
+    select: {
+      amount: true,
+      categoryId: true,
+      comment: true,
+      counterpartId: true,
+      date: true,
+      description: true,
+      type: true,
+    },
+  });
+
   const updateArgs = parseOrmArgs(db, "financialTransaction", "update", {
     where: { id },
     data: {
@@ -1478,7 +1548,18 @@ export async function updateFinancialTransaction(
       ...(data.comment !== undefined && { comment: data.comment }),
     },
   });
-  return db.financialTransaction.update(updateArgs);
+  const updated = await db.financialTransaction.update(updateArgs);
+
+  await auditRowChange({
+    kind: "FINANCIAL_CHANGE",
+    resource: "financial_transaction",
+    resourceId: id,
+    oldRow: (before ?? null) as Record<string, unknown> | null,
+    newRow: updated as unknown as Record<string, unknown>,
+    fields: ["amount", "type", "categoryId", "counterpartId", "description", "date"],
+  });
+
+  return updated;
 }
 
 export async function deleteFinancialTransaction(id: number) {
@@ -1577,12 +1658,12 @@ export async function createTransactionCategory(data: {
 
   const cleanName = data.name.trim().replace(/\s+/g, " ");
   if (!cleanName) {
-    throw new Error("El nombre de la categoría es obligatorio");
+    throw new DomainError("BAD_REQUEST", "El nombre de la categoría es obligatorio");
   }
 
   const duplicate = await findCategoryByNormalizedName(cleanName);
   if (duplicate) {
-    throw new Error("Ya existe una categoría con ese nombre");
+    throw new DomainError("CONFLICT", "Ya existe una categoría con ese nombre");
   }
 
   const createArgs = parseOrmArgs(db, "transactionCategory", "create", {
@@ -1608,12 +1689,12 @@ export async function updateTransactionCategory(
   if (data.name !== undefined) {
     const cleanName = data.name.trim().replace(/\s+/g, " ");
     if (!cleanName) {
-      throw new Error("El nombre de la categoría es obligatorio");
+      throw new DomainError("BAD_REQUEST", "El nombre de la categoría es obligatorio");
     }
 
     const duplicate = await findCategoryByNormalizedName(cleanName, id);
     if (duplicate) {
-      throw new Error("Ya existe una categoría con ese nombre");
+      throw new DomainError("CONFLICT", "Ya existe una categoría con ese nombre");
     }
 
     data.name = cleanName;
@@ -1638,7 +1719,10 @@ export async function deleteTransactionCategory(id: number) {
   });
 
   if (usageCount > 0) {
-    throw new Error("No se puede eliminar: la categoría está en uso por movimientos financieros.");
+    throw new DomainError(
+      "CONFLICT",
+      "No se puede eliminar: la categoría está en uso por movimientos financieros."
+    );
   }
 
   return db.transactionCategory.delete({
@@ -1668,7 +1752,7 @@ async function ensureCategoryExists(categoryId: number) {
     select: { id: true },
   });
   if (!category) {
-    throw new Error("Categoría no encontrada");
+    throw new DomainError("NOT_FOUND", "Categoría no encontrada");
   }
 }
 
@@ -1894,7 +1978,7 @@ export async function updateFinancialAutoCategoryRule(
     },
   });
   if (!existing) {
-    throw new Error("Regla no encontrada");
+    throw new DomainError("NOT_FOUND", "Regla no encontrada");
   }
 
   const nextCategoryId = data.categoryId ?? existing.categoryId;
@@ -2069,46 +2153,37 @@ function mapCompensationProfileRow(row: CompensationProfileRow) {
   };
 }
 
+const compensationProfileBaseQuery = () =>
+  db.$qb
+    .selectFrom("CompensationProfile as cp")
+    .innerJoin("TransactionCategory as tc", "tc.id", "cp.categoryId")
+    .leftJoin("Counterpart as c", "c.id", "cp.counterpartId")
+    .select([
+      "cp.id as id",
+      "cp.name as name",
+      "cp.isActive as isActive",
+      "cp.timezone as timezone",
+      "cp.categoryId as categoryId",
+      "tc.name as categoryName",
+      "cp.counterpartId as counterpartId",
+      "c.bankAccountHolder as counterpartBankAccountHolder",
+      "c.identificationNumber as counterpartIdentificationNumber",
+    ]);
+
 async function getCompensationProfileById(id: number) {
-  const rows = await db.$queryRaw<CompensationProfileRow[]>`
-    SELECT
-      cp.id AS id,
-      cp.name AS name,
-      cp.is_active AS "isActive",
-      cp.timezone AS timezone,
-      cp.category_id AS "categoryId",
-      tc.name AS "categoryName",
-      cp.counterpart_id AS "counterpartId",
-      c.bank_account_holder AS "counterpartBankAccountHolder",
-      c.identification_number AS "counterpartIdentificationNumber"
-    FROM compensation_profiles cp
-    INNER JOIN transaction_categories tc ON tc.id = cp.category_id
-    LEFT JOIN counterparts c ON c.id = cp.counterpart_id
-    WHERE cp.id = ${id}
-    LIMIT 1
-  `;
-  const row = rows[0];
-  return row ? mapCompensationProfileRow(row) : null;
+  const row = await compensationProfileBaseQuery()
+    .where("cp.id", "=", id)
+    .limit(1)
+    .executeTakeFirst();
+  return row ? mapCompensationProfileRow(row as unknown as CompensationProfileRow) : null;
 }
 
 export async function listCompensationProfiles() {
-  const rows = await db.$queryRaw<CompensationProfileRow[]>`
-    SELECT
-      cp.id AS id,
-      cp.name AS name,
-      cp.is_active AS "isActive",
-      cp.timezone AS timezone,
-      cp.category_id AS "categoryId",
-      tc.name AS "categoryName",
-      cp.counterpart_id AS "counterpartId",
-      c.bank_account_holder AS "counterpartBankAccountHolder",
-      c.identification_number AS "counterpartIdentificationNumber"
-    FROM compensation_profiles cp
-    INNER JOIN transaction_categories tc ON tc.id = cp.category_id
-    LEFT JOIN counterparts c ON c.id = cp.counterpart_id
-    ORDER BY cp.is_active DESC, cp.name ASC
-  `;
-  return rows.map(mapCompensationProfileRow);
+  const rows = await compensationProfileBaseQuery()
+    .orderBy("cp.isActive", "desc")
+    .orderBy("cp.name", "asc")
+    .execute();
+  return (rows as unknown as CompensationProfileRow[]).map(mapCompensationProfileRow);
 }
 
 export async function createCompensationProfile(data: CompensationProfileInput) {
@@ -2117,7 +2192,7 @@ export async function createCompensationProfile(data: CompensationProfileInput) 
     select: { id: true },
   });
   if (!category) {
-    throw new Error("Categoría no encontrada");
+    throw new DomainError("NOT_FOUND", "Categoría no encontrada");
   }
 
   if (data.counterpartId != null) {
@@ -2126,31 +2201,26 @@ export async function createCompensationProfile(data: CompensationProfileInput) 
       select: { id: true },
     });
     if (!counterpart) {
-      throw new Error("Contraparte no encontrada");
+      throw new DomainError("NOT_FOUND", "Contraparte no encontrada");
     }
   }
 
   const name = data.name.trim();
   if (!name) {
-    throw new Error("El nombre del perfil es obligatorio");
+    throw new DomainError("BAD_REQUEST", "El nombre del perfil es obligatorio");
   }
 
-  const rows = await db.$queryRaw<Array<{ id: number }>>`
-    INSERT INTO compensation_profiles (
-      name, category_id, counterpart_id, is_active, timezone, created_at, updated_at
-    )
-    VALUES (
-      ${name},
-      ${data.categoryId},
-      ${data.counterpartId ?? null},
-      ${data.isActive ?? true},
-      ${data.timezone?.trim() || "America/Santiago"},
-      NOW(),
-      NOW()
-    )
-    RETURNING id
-  `;
-  const createdId = rows[0]?.id;
+  const createdRow = await db.compensationProfile.create({
+    data: {
+      name,
+      categoryId: data.categoryId,
+      counterpartId: data.counterpartId ?? null,
+      isActive: data.isActive ?? true,
+      timezone: data.timezone?.trim() || "America/Santiago",
+    },
+    select: { id: true },
+  });
+  const createdId = createdRow?.id;
   if (!createdId) {
     throw new Error("No se pudo crear el perfil de compensación");
   }
@@ -2171,7 +2241,7 @@ export async function updateCompensationProfile(
       select: { id: true },
     });
     if (!category) {
-      throw new Error("Categoría no encontrada");
+      throw new DomainError("NOT_FOUND", "Categoría no encontrada");
     }
   }
 
@@ -2181,32 +2251,34 @@ export async function updateCompensationProfile(
       select: { id: true },
     });
     if (!counterpart) {
-      throw new Error("Contraparte no encontrada");
+      throw new DomainError("NOT_FOUND", "Contraparte no encontrada");
     }
   }
 
-  const existing = await db.$queryRaw<Array<{ id: number }>>`
-    SELECT id FROM compensation_profiles WHERE id = ${id} LIMIT 1
-  `;
-  if (existing.length === 0) {
-    throw new Error("Perfil de compensación no encontrado");
+  const existing = await db.compensationProfile.findUnique({
+    where: { id },
+    select: { id: true },
+  });
+  if (!existing) {
+    throw new DomainError("NOT_FOUND", "Perfil de compensación no encontrado");
   }
 
-  await db.$executeRaw`
-    UPDATE compensation_profiles
-    SET
-      name = COALESCE(${data.name?.trim() || null}, name),
-      category_id = COALESCE(${data.categoryId ?? null}, category_id),
-      counterpart_id = CASE
-        WHEN ${data.counterpartId !== undefined}
-        THEN ${data.counterpartId ?? null}
-        ELSE counterpart_id
-      END,
-      is_active = COALESCE(${data.isActive ?? null}, is_active),
-      timezone = COALESCE(${data.timezone?.trim() || null}, timezone),
-      updated_at = NOW()
-    WHERE id = ${id}
-  `;
+  // Mirrors the prior COALESCE/CASE semantics: name/categoryId/isActive/timezone
+  // only overwrite when a non-blank value is provided; counterpartId is written
+  // whenever the key is present (including an explicit null = clear), matching the
+  // old `CASE WHEN ${counterpartId !== undefined}` branch.
+  const trimmedName = data.name?.trim() || null;
+  const trimmedTimezone = data.timezone?.trim() || null;
+  await db.compensationProfile.update({
+    where: { id },
+    data: {
+      ...(trimmedName != null && { name: trimmedName }),
+      ...(data.categoryId != null && { categoryId: data.categoryId }),
+      ...(data.counterpartId !== undefined && { counterpartId: data.counterpartId ?? null }),
+      ...(data.isActive != null && { isActive: data.isActive }),
+      ...(trimmedTimezone != null && { timezone: trimmedTimezone }),
+    },
+  });
 
   const updated = await getCompensationProfileById(id);
   if (!updated) {
@@ -2220,13 +2292,16 @@ export async function upsertCompensationPeriodBudget(
   data: CompensationBudgetInput
 ) {
   assertPeriodOrThrow(data.period);
-  const profile = await db.$queryRaw<Array<{ id: number }>>`
-    SELECT id FROM compensation_profiles WHERE id = ${profileId} LIMIT 1
-  `;
-  if (profile.length === 0) {
-    throw new Error("Perfil de compensación no encontrado");
+  const profile = await db.compensationProfile.findUnique({
+    where: { id: profileId },
+    select: { id: true },
+  });
+  if (!profile) {
+    throw new DomainError("NOT_FOUND", "Perfil de compensación no encontrado");
   }
 
+  // kept raw: INSERT … ON CONFLICT (profile_id, period) DO UPDATE upsert
+  // (bucket-D) — preserved as raw per migration policy.
   const rows = await db.$queryRaw<
     Array<{ baseAmount: number; id: number; isLocked: boolean; period: string; profileId: number }>
   >`
@@ -2268,32 +2343,26 @@ export async function listCompensationPeriodLedger(
   assertPeriodOrThrow(fromPeriod);
   assertPeriodOrThrow(toPeriod);
   if (fromPeriod > toPeriod) {
-    throw new Error("Rango de periodos inválido");
+    throw new DomainError("BAD_REQUEST", "Rango de periodos inválido");
   }
 
   const [budgets, allocations] = await Promise.all([
-    db.$queryRaw<Array<{ baseAmount: number; isLocked: boolean; period: string }>>`
-      SELECT
-        period,
-        base_amount AS "baseAmount",
-        is_locked AS "isLocked"
-      FROM compensation_period_budgets
-      WHERE profile_id = ${profileId}
-        AND period >= ${fromPeriod}
-        AND period <= ${toPeriod}
-      ORDER BY period ASC
-    `,
-    db.$queryRaw<Array<{ allocationType: string; amount: number; period: string }>>`
-      SELECT
-        period,
-        allocation_type AS "allocationType",
-        amount
-      FROM financial_transaction_allocations
-      WHERE profile_id = ${profileId}
-        AND period >= ${fromPeriod}
-        AND period <= ${toPeriod}
-      ORDER BY period ASC
-    `,
+    db.compensationPeriodBudget.findMany({
+      where: {
+        profileId,
+        period: { gte: fromPeriod, lte: toPeriod },
+      },
+      select: { baseAmount: true, isLocked: true, period: true },
+      orderBy: { period: "asc" },
+    }),
+    db.financialTransactionAllocation.findMany({
+      where: {
+        profileId,
+        period: { gte: fromPeriod, lte: toPeriod },
+      },
+      select: { allocationType: true, amount: true, period: true },
+      orderBy: { period: "asc" },
+    }),
   ]);
 
   const periods: string[] = [];

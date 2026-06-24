@@ -68,7 +68,11 @@ export function useAuth() {
 
     if (payload.status === "mfa_required") {
       logger.info("[auth] login:mfa_required", { userId: payload.userId });
-      return { status: "mfa_required", userId: payload.userId ?? 0 };
+      return {
+        status: "mfa_required",
+        userId: payload.userId ?? 0,
+        mfaToken: payload.mfaToken ?? "",
+      };
     }
 
     if (payload.status === "ok" && payload.user) {
@@ -80,9 +84,11 @@ export function useAuth() {
     throw new Error("Respuesta inesperada del servidor");
   };
 
-  const loginWithMfa = async (userId: number, token: string) => {
-    logger.info("[auth] mfa:start", { userId });
-    const payload = LoginMfaResponseSchema.parse(await authORPCClient.loginMfa({ token, userId }));
+  const loginWithMfa = async (mfaToken: string, token: string) => {
+    logger.info("[auth] mfa:start");
+    const payload = LoginMfaResponseSchema.parse(
+      await authORPCClient.loginMfa({ token, mfaToken })
+    );
 
     if (payload.status !== "ok" || !payload.user) {
       throw new Error(payload.message ?? "Código MFA inválido");
@@ -113,6 +119,39 @@ export function useAuth() {
     logger.info("[auth] logout:start");
     try {
       setImpersonatedRole(null);
+      // Unsubscribe the browser-side PushSubscription FIRST so the
+      // device stops being a valid push target before we even hit
+      // the server. Backend logout wipes the corresponding row, but
+      // this also detaches the underlying APNs/FCM channel — Apple
+      // otherwise keeps the endpoint live for ~30 days.
+      try {
+        if ("serviceWorker" in navigator) {
+          const reg = await navigator.serviceWorker.getRegistration();
+          const sub = await (
+            reg as ServiceWorkerRegistration & { pushManager?: PushManager }
+          )?.pushManager?.getSubscription();
+          if (sub) await sub.unsubscribe();
+        }
+      } catch (err) {
+        logger.error("[auth] logout:push-unsubscribe-error", err);
+      }
+      // Purge caches that may hold PHI from the previous session (WA inbox
+      // media in static-cache, files in the share-target cache). Cache
+      // Storage ignores the API's Cache-Control headers, so these must be
+      // cleared explicitly — otherwise a patient's clinical photos survive
+      // logout on a shared device.
+      try {
+        if ("caches" in globalThis) {
+          const names = await caches.keys();
+          await Promise.all(
+            names
+              .filter((n) => n === "static-cache" || n.startsWith("share-target"))
+              .map((n) => caches.delete(n))
+          );
+        }
+      } catch (err) {
+        logger.error("[auth] logout:cache-purge-error", err);
+      }
       StatusResponseSchema.parse(await authORPCClient.logout({}));
     } catch (error) {
       logger.error("[auth] logout:error", toAuthApiError(error));
@@ -191,7 +230,7 @@ export type AuthContextType = {
   impersonatedRole: Role | null;
   initializing: boolean;
   login: (email: string, password: string) => Promise<LoginResult>;
-  loginWithMfa: (userId: number, token: string) => Promise<void>;
+  loginWithMfa: (mfaToken: string, token: string) => Promise<void>;
   loginWithPasskey: (authResponse: unknown, challenge: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshSession: () => Promise<void>;

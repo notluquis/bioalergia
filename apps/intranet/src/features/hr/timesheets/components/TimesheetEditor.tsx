@@ -1,13 +1,12 @@
 import { Alert, Button } from "@heroui/react";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import dayjs from "dayjs";
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useConfirmDialog } from "@/context/ConfirmDialogContext";
 import { useToast } from "@/context/ToastContext";
 import {
   bulkUpsertTimesheets,
   deleteTimesheet,
-  prepareTimesheetEmailPayload,
+  sendTimesheetEmailViaProvider,
 } from "@/features/hr/timesheets/api";
 import type { PrepareStatus } from "@/features/hr/timesheets/components/EmailPreviewModal";
 import { EmailPreviewModal } from "@/features/hr/timesheets/components/EmailPreviewModal";
@@ -27,14 +26,11 @@ import {
   isValidTimeString,
   parseDuration,
 } from "@/features/hr/timesheets/utils";
+import { chileDay, today } from "@/lib/dates";
 import { timesheetKeys, timesheetQueries } from "@/features/hr/timesheets/queries";
 import type { Employee } from "../../employees/types";
 
 const MONTH_STRING_REGEX = /^\d{4}-\d{2}$/;
-const DEFAULT_LOCAL_AGENT_URL = getDefaultLocalAgentUrl();
-const LOCAL_AGENT_TOKEN_KEY = "bioalergia_local_mail_agent_token";
-const LOCAL_AGENT_URL_KEY = "bioalergia_local_mail_agent_url";
-const TRAILING_SLASHES_REGEX = /\/+$/;
 
 const TimesheetExportPDF = lazy(() =>
   import("@/features/hr/timesheets/components/TimesheetExportPDF").then((m) => ({
@@ -103,7 +99,7 @@ function TimesheetEditorInner({
   summaryRow,
 }: TimesheetEditorProps & { initialRows: BulkRow[] }) {
   const queryClient = useQueryClient();
-  const { success: toastSuccess } = useToast();
+  const { success: toastSuccess, error: toastError } = useToast();
   const confirm = useConfirmDialog();
   const detailQueryKey = timesheetKeys.detail(employeeId, month);
   const summaryQueryKey = timesheetKeys.summary(month);
@@ -177,7 +173,7 @@ function TimesheetEditorInner({
 
   // Email Mutation
   const emailMutation = useMutation({
-    mutationFn: prepareTimesheetEmailPayload,
+    mutationFn: sendTimesheetEmailViaProvider,
     onError: (err) => {
       const message = err instanceof Error ? err.message : "Error al preparar el email";
       setErrorLocal(message);
@@ -200,6 +196,7 @@ function TimesheetEditorInner({
     setEmailPrepareStatus,
     setErrorLocal,
     summaryRow,
+    toastError,
     toastSuccess,
   });
 
@@ -265,8 +262,12 @@ function TimesheetEditorInner({
         initialRows={initialRows}
         modifiedCount={modifiedCount}
         monthLabel={monthLabel}
-        onBulkSave={handleBulkSave}
-        onRemoveEntry={handleRemoveEntry}
+        onBulkSave={(...args) => {
+          void handleBulkSave(...args);
+        }}
+        onRemoveEntry={(...args) => {
+          void handleRemoveEntry(...args);
+        }}
         onResetRow={handleResetRow}
         onRowChange={handleRowChange}
         onTimeBlur={handleTimeBlur}
@@ -284,7 +285,9 @@ function TimesheetEditorInner({
           setEmailModalOpen(false);
           setEmailPrepareStatus(null);
         }}
-        onPrepare={handlePrepareEmail}
+        onPrepare={(...args) => {
+          void handlePrepareEmail(...args);
+        }}
         selectedEmployee={selectedEmployee}
         summaryRow={summaryRow}
       />
@@ -431,7 +434,7 @@ function serializeBulkRows(rows: BulkRow[]) {
   return JSON.stringify(
     rows.map((row) => ({
       comment: row.comment,
-      date: dayjs(row.date).format("YYYY-MM-DD"),
+      date: chileDay(row.date),
       entrada: row.entrada,
       entryId: row.entryId,
       overtime: row.overtime,
@@ -467,12 +470,13 @@ function createHandlePrepareEmail({
   setEmailPrepareStatus,
   setErrorLocal,
   summaryRow,
+  toastError,
   toastSuccess,
 }: {
   emailHasError: boolean;
   emailMutateAsync: (
-    args: Parameters<typeof prepareTimesheetEmailPayload>[0]
-  ) => Promise<Awaited<ReturnType<typeof prepareTimesheetEmailPayload>>>;
+    args: Parameters<typeof sendTimesheetEmailViaProvider>[0]
+  ) => Promise<Awaited<ReturnType<typeof sendTimesheetEmailViaProvider>>>;
   generatePdfBase64: () => Promise<null | string>;
   month: string;
   monthLabel: string;
@@ -480,6 +484,7 @@ function createHandlePrepareEmail({
   setEmailPrepareStatus: (value: PrepareStatus) => void;
   setErrorLocal: (value: null | string) => void;
   summaryRow: null | TimesheetSummaryRow;
+  toastError: (message: unknown) => void;
   toastSuccess: (message: string) => void;
 }) {
   return async () => {
@@ -505,11 +510,15 @@ function createHandlePrepareEmail({
       }
       toastSuccess("Email enviado correctamente");
     } catch (error_) {
+      const message = error_ instanceof Error ? error_.message : "Error al preparar el email";
+      setEmailPrepareStatus(null);
+      // Inline Alert solo si la mutation no marcó error ya (evita duplicado);
+      // el toast SIEMPRE se muestra para que el fallo no pase desapercibido
+      // (antes el éxito era toast y el error solo Alert inline → "no salía nada").
       if (!emailHasError) {
-        const message = error_ instanceof Error ? error_.message : "Error al preparar el email";
         setErrorLocal(message);
-        setEmailPrepareStatus(null);
       }
+      toastError(message);
     }
   };
 }
@@ -524,8 +533,8 @@ async function runPrepareEmail({
   summaryRow,
 }: {
   emailMutateAsync: (
-    args: Parameters<typeof prepareTimesheetEmailPayload>[0]
-  ) => Promise<Awaited<ReturnType<typeof prepareTimesheetEmailPayload>>>;
+    args: Parameters<typeof sendTimesheetEmailViaProvider>[0]
+  ) => Promise<Awaited<ReturnType<typeof sendTimesheetEmailViaProvider>>>;
   generatePdfBase64: () => Promise<null | string>;
   month: string;
   monthLabel: string;
@@ -538,7 +547,7 @@ async function runPrepareEmail({
     throw new Error("No se pudo generar el PDF");
   }
 
-  setEmailPrepareStatus("preparing-payload");
+  setEmailPrepareStatus("sending");
 
   const payload = buildPrepareEmailPayload({
     month,
@@ -548,10 +557,11 @@ async function runPrepareEmail({
     summaryRow,
   });
 
-  const data = await emailMutateAsync(payload);
-  ensurePrepareEmailSuccess(data);
-  setEmailPrepareStatus("sending");
-  return sendLocalAgentEmail(data.payload);
+  const result = await emailMutateAsync(payload);
+  if (!result.sent) {
+    throw new Error("No se pudo enviar el correo");
+  }
+  return null;
 }
 
 function buildPrepareEmailPayload({
@@ -590,143 +600,6 @@ function buildEmailSummary(summaryRow: TimesheetSummaryRow) {
     subtotal: summaryRow.subtotal,
     workedMinutes: summaryRow.workedMinutes,
   };
-}
-
-function ensurePrepareEmailSuccess(data: Awaited<ReturnType<typeof prepareTimesheetEmailPayload>>) {
-  if (data.status !== "ok") {
-    throw new Error(data.message || "Error al preparar el email");
-  }
-}
-
-async function sendLocalAgentEmail(payload: {
-  to: string;
-  from: string;
-  subject: string;
-  html: string;
-  text?: string;
-  attachments: Array<{ filename: string; contentBase64: string; contentType: string }>;
-}): Promise<null | string> {
-  const token = getLocalAgentToken();
-  if (!token) {
-    throw new Error("Token del agente local no configurado");
-  }
-
-  const agentUrl = getLocalAgentUrl();
-  let response: Response;
-  try {
-    response = await fetch(`${normalizeAgentUrl(agentUrl)}/send`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Local-Agent-Token": token,
-      },
-      body: JSON.stringify(payload),
-    });
-  } catch (error) {
-    if (error instanceof TypeError) {
-      throw new Error(
-        "No se pudo conectar con el agente local. Revisa URL, HTTPS/certificado y que esté corriendo."
-      );
-    }
-    throw error;
-  }
-
-  if (!response.ok) {
-    const message = await buildLocalAgentErrorMessage(response, "Error al enviar el email");
-    throw new Error(message);
-  }
-
-  const contentType = response.headers.get("content-type") ?? "";
-  if (!contentType.includes("application/json")) {
-    return null;
-  }
-
-  try {
-    const data = (await response.json()) as {
-      sentFolderPath?: null | string;
-      sentFolderSaved?: boolean;
-    };
-    if (data.sentFolderSaved === false) {
-      return "Email enviado, pero no se pudo guardar la copia en Sent (IMAP).";
-    }
-    if (data.sentFolderSaved && data.sentFolderPath) {
-      return null;
-    }
-  } catch {
-    return null;
-  }
-
-  return null;
-}
-
-function getLocalAgentToken() {
-  const storedToken = localStorage.getItem(LOCAL_AGENT_TOKEN_KEY);
-  if (storedToken) {
-    return storedToken;
-  }
-  return null;
-}
-
-function getLocalAgentUrl() {
-  const storedUrl = localStorage.getItem(LOCAL_AGENT_URL_KEY);
-  if (storedUrl) {
-    return storedUrl;
-  }
-  return DEFAULT_LOCAL_AGENT_URL;
-}
-
-function normalizeAgentUrl(value: string) {
-  return value.trim().replace(TRAILING_SLASHES_REGEX, "");
-}
-
-function getDefaultLocalAgentUrl() {
-  if (import.meta.env.VITE_LOCAL_MAIL_AGENT_URL) {
-    return import.meta.env.VITE_LOCAL_MAIL_AGENT_URL;
-  }
-  if (typeof window !== "undefined" && window.location.protocol === "http:") {
-    return "http://127.0.0.1:3333";
-  }
-  return "https://127.0.0.1:3333";
-}
-
-async function buildLocalAgentErrorMessage(response: Response, fallbackMessage: string) {
-  const baseMessage = await readLocalAgentErrorMessage(response, fallbackMessage);
-
-  if (response.status === 401) {
-    return "Token inválido o no autorizado";
-  }
-  if (response.status === 413) {
-    return "El adjunto supera el límite de 30 MB";
-  }
-  if (response.status === 502) {
-    return `SMTP rechazó el envío: ${baseMessage}`;
-  }
-  if (response.status === 500) {
-    return `Error interno del agente local: ${baseMessage}`;
-  }
-
-  return baseMessage;
-}
-
-async function readLocalAgentErrorMessage(response: Response, fallbackMessage: string) {
-  const contentType = response.headers.get("content-type") ?? "";
-
-  if (!contentType.includes("application/json")) {
-    return fallbackMessage;
-  }
-
-  try {
-    const data = (await response.json()) as { code?: string; message?: string };
-    if (!data?.message) {
-      return fallbackMessage;
-    }
-    if (data.code) {
-      return `${data.message} (${data.code})`;
-    }
-    return data.message;
-  } catch {
-    return fallbackMessage;
-  }
 }
 
 function createHandleRowChange(
@@ -794,7 +667,7 @@ function buildImmediateSaveEntry(row: BulkRow): null | TimesheetUpsertEntry {
     end_time: row.salida || null,
     overtime_minutes: overtime,
     start_time: row.entrada || null,
-    work_date: dayjs(row.date).format("YYYY-MM-DD"),
+    work_date: chileDay(row.date),
   };
 }
 
@@ -915,7 +788,7 @@ function processBulkRow(
       end_time: salida || null,
       overtime_minutes: overtime,
       start_time: entrada || null,
-      work_date: dayjs(row.date).format("YYYY-MM-DD"),
+      work_date: chileDay(row.date),
     },
   };
 }
@@ -990,16 +863,25 @@ function createHandleBulkSave({
   };
 }
 
-// Utility to ensure month is always YYYY-MM
+// Utility to ensure month is always YYYY-MM. Accepts the same input shapes the
+// old dayjs multi-format parser did: YYYY-MM, YYYY/MM, MM/YYYY, YYYY-MM-DD, DD/MM/YYYY.
 function formatMonthString(m: string): string {
   if (MONTH_STRING_REGEX.test(m)) {
     return m;
   }
-  const d = dayjs(m, ["YYYY-MM", "YYYY/MM", "MM/YYYY", "YYYY-MM-DD", "DD/MM/YYYY"]);
-  if (d.isValid()) {
-    return d.format("YYYY-MM");
+  const ymSep = m.match(/^(\d{4})[/-](\d{2})(?:[/-]\d{2})?$/); // YYYY-MM, YYYY/MM, YYYY-MM-DD
+  if (ymSep) {
+    return `${ymSep[1]}-${ymSep[2]}`;
   }
-  return dayjs().format("YYYY-MM");
+  const mY = m.match(/^(\d{2})\/(\d{4})$/); // MM/YYYY
+  if (mY) {
+    return `${mY[2]}-${mY[1]}`;
+  }
+  const dmY = m.match(/^\d{2}\/(\d{2})\/(\d{4})$/); // DD/MM/YYYY
+  if (dmY) {
+    return `${dmY[2]}-${dmY[1]}`;
+  }
+  return today().slice(0, 7);
 }
 
 function validateBulkRow(row: BulkRow): string | null {

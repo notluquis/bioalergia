@@ -35,12 +35,15 @@ async function getKey(): Promise<Buffer> {
   return KEY;
 }
 
-export async function signToken(payload: Record<string, unknown>, expiresIn: string = "2d") {
+export async function signToken(
+  payload: Record<string, unknown>,
+  expiresIn: string = "2d"
+): Promise<string> {
   const key = await getKey();
   return V3.encrypt(payload, key, { expiresIn });
 }
 
-export async function verifyToken(token: string) {
+export async function verifyToken(token: string): Promise<Record<string, unknown>> {
   try {
     const key = await getKey();
     const payload = await V3.decrypt(token, key);

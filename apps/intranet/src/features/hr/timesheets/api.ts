@@ -1,8 +1,13 @@
 import { z } from "zod";
-import { timesheetEntrySchema } from "@finanzas/orpc-contracts/timesheets";
+import type { timesheetEntrySchema } from "@finanzas/orpc-contracts/timesheets";
 import { apiClient } from "@/lib/api-client";
 import { zDateString } from "@/lib/api-validate";
 import { timesheetsORPCClient, toTimesheetsApiError } from "./orpc";
+import {
+  TimesheetEntrySchema,
+  normalizeTimesheetEntries,
+  normalizeTimesheetEntry as normalizeTimesheetEntryShared,
+} from "./schemas";
 import type {
   TimesheetEntry,
   TimesheetPayload,
@@ -22,19 +27,7 @@ const StatusResponseSchema = z.object({
   status: z.string(),
 });
 
-const TimesheetEntrySchema = z.looseObject({
-  comment: z.string().nullable(),
-  employee_id: z.number(),
-  end_time: z.string().nullable(),
-  id: z.number(),
-  overtime_minutes: z.number(),
-  start_time: z.string().nullable(),
-  work_date: zDateString,
-  worked_minutes: z.number(),
-});
-
 type TimesheetEntryTransport = z.infer<typeof timesheetEntrySchema>;
-type TimesheetEntriesTransport = TimesheetEntryTransport[];
 
 const TimesheetDetailResponseSchema = z.object({
   entries: z.array(TimesheetEntrySchema),
@@ -135,16 +128,7 @@ const TimesheetEntryResponseSchema = z.object({
 });
 
 function normalizeTimesheetEntry(entry: TimesheetEntryTransport): TimesheetEntry {
-  const workDate = entry.work_date;
-  return {
-    ...entry,
-    work_date:
-      workDate instanceof Date ? workDate.toISOString().slice(0, 10) : (workDate as string),
-  } as TimesheetEntry;
-}
-
-function normalizeTimesheetEntries(entries: TimesheetEntriesTransport) {
-  return entries.map((entry) => normalizeTimesheetEntry(entry));
+  return normalizeTimesheetEntryShared(entry) as TimesheetEntry;
 }
 
 function serializeTimesheetPayload(payload: TimesheetPayload) {
@@ -299,6 +283,35 @@ export async function prepareTimesheetEmailPayload(payload: {
   }
 
   return data;
+}
+
+// Send the honorarios email directly via the provider (Resend) with the PDF
+// attached — no local mail agent needed. Same payload shape as prepare.
+export async function sendTimesheetEmailViaProvider(payload: {
+  employeeEmail: string;
+  employeeId: number;
+  employeeName: string;
+  month: string;
+  monthLabel: string;
+  pdfBase64: string;
+  summary: {
+    net: number;
+    overtimeMinutes: number;
+    payDate: string;
+    retention: number;
+    retention_rate?: null | number;
+    retentionRate?: null | number;
+    role: string;
+    subtotal: number;
+    workedMinutes: number;
+  };
+}): Promise<{ sent: boolean; messageId: null | string; to: string }> {
+  try {
+    const data = await timesheetsORPCClient.sendEmail(payload);
+    return { sent: data.sent, messageId: data.messageId, to: data.to };
+  } catch (error) {
+    throw toTimesheetsApiError(error);
+  }
 }
 
 export async function fetchTimesheetEmailPreview(payload: {

@@ -6,6 +6,11 @@ import {
   MercadoPagoService,
   MP_WEBHOOK_PASSWORD,
 } from "../services/mercadopago/index.ts";
+import {
+  createMpSyncLogEntry,
+  finalizeMpSyncLogEntry,
+  logMpImportAuditEvent,
+} from "../services/mercadopago-sync.ts";
 
 export const mercadopagoReportWebhookRoutes = new Hono();
 
@@ -102,7 +107,7 @@ async function verifySignature(payload: ReportWebhookPayload, secret: string): P
 
 async function processReport(payload: ReportWebhookPayload) {
   const validFiles = (payload.files ?? []).filter(
-    (f): f is { name: string; url: string; type?: string } => Boolean(f.name && f.url)
+    (f): f is { name: string; url?: string; type?: string } => Boolean(f.name)
   );
 
   if (validFiles.length === 0) {
@@ -125,8 +130,62 @@ async function processReport(payload: ReportWebhookPayload) {
       });
       continue;
     }
+    let logId: bigint | null = null;
     try {
-      const stats = await MercadoPagoService.processReport(reportType, { url: file.url });
+      const syncLogId = await createMpSyncLogEntry({
+        triggerLabel: `${reportType}:${file.name}`,
+        triggerSource: "mp:webhook",
+      });
+      logId = syncLogId;
+      const stats = await MercadoPagoService.processReport(reportType, {
+        fileName: file.name,
+        syncLogId,
+      });
+      await finalizeMpSyncLogEntry(syncLogId, {
+        changeDetails: {
+          fileName: file.name,
+          importStats: {
+            duplicateRows: stats.duplicateRows,
+            errorCount: stats.errors?.length ?? 0,
+            fieldChangeCount: stats.fieldChangeCount,
+            insertedRows: stats.insertedRows,
+            skippedRows: stats.skippedRows,
+            totalRows: stats.totalRows,
+            unchangedRows: stats.unchangedRows,
+            updatedRows: stats.updatedRows,
+            validRows: stats.validRows,
+          },
+          importStatsByType: {
+            [reportType]: {
+              duplicateRows: stats.duplicateRows,
+              errorCount: stats.errors?.length ?? 0,
+              fieldChangeCount: stats.fieldChangeCount,
+              insertedRows: stats.insertedRows,
+              skippedRows: stats.skippedRows,
+              totalRows: stats.totalRows,
+              unchangedRows: stats.unchangedRows,
+              updatedRows: stats.updatedRows,
+              validRows: stats.validRows,
+            },
+          },
+          reportType,
+          reportTypes: [reportType],
+          transactionId: payload.transaction_id ?? null,
+        },
+        excluded: stats.duplicateRows,
+        inserted: stats.insertedRows,
+        skipped: stats.skippedRows,
+        status: "SUCCESS",
+        updated: stats.updatedRows,
+      });
+      await logMpImportAuditEvent({
+        changeCount: stats.fieldChangeCount,
+        fileName: file.name,
+        reportType,
+        stats,
+        syncLogId,
+        triggerSource: "mp:webhook",
+      });
       logEvent("mercadopago.report_webhook.processed", {
         transactionId: payload.transaction_id ?? null,
         reportType,
@@ -134,6 +193,17 @@ async function processReport(payload: ReportWebhookPayload) {
         stats,
       });
     } catch (err) {
+      if (logId != null) {
+        await finalizeMpSyncLogEntry(logId, {
+          changeDetails: {
+            fileName: file.name,
+            reportType,
+            transactionId: payload.transaction_id ?? null,
+          },
+          errorMessage: err instanceof Error ? err.message : String(err),
+          status: "ERROR",
+        });
+      }
       logError("mercadopago.report_webhook.file_failed", err, {
         transactionId: payload.transaction_id ?? null,
         fileName: file.name,

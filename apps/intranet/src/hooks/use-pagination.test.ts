@@ -87,4 +87,22 @@ describe("use-pagination", () => {
     const { result: result2 } = renderHook(() => usePagination({ initialPage: 1 }));
     expect(result2.current.canGoPrev()).toBe(false);
   });
+
+  it("exposes default pageSizeOptions when none supplied (line 17 branch)", () => {
+    const { result } = renderHook(() => usePagination());
+    expect(result.current.pageSizeOptions).toStrictEqual([10, 25, 50, 100]);
+  });
+
+  it("accepts custom pageSizeOptions", () => {
+    const { result } = renderHook(() => usePagination({ pageSizeOptions: [5, 15] }));
+    expect(result.current.pageSizeOptions).toStrictEqual([5, 15]);
+  });
+
+  it("setPagination replaces full state directly", () => {
+    const { result } = renderHook(() => usePagination());
+    act(() => {
+      result.current.setPagination({ page: 7, pageSize: 30 });
+    });
+    expect(result.current.pagination).toStrictEqual({ page: 7, pageSize: 30 });
+  });
 });

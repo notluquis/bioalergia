@@ -1,5 +1,5 @@
 import { type CounterpartCategory, db } from "@finanzas/db";
-import type { CounterpartAccountUpdateArgs } from "@finanzas/db/input";
+import { DomainError } from "../lib/errors.ts";
 import {
   type assignRutToPayoutsResponseSchema,
   type counterpartAccountSchema,
@@ -7,11 +7,22 @@ import {
   type counterpartSuggestionSchema,
   type counterpartSummarySchema,
   type counterpartsSyncResponseSchema,
+  type payoutAccountMovementSchema,
   type unassignedPayoutAccountSchema,
 } from "@finanzas/orpc-contracts/counterparts";
 import type { z } from "zod";
 
-type CounterpartAccountUpdateInput = NonNullable<CounterpartAccountUpdateArgs["data"]>;
+// Forma del payload del contrato oRPC (lo que realmente llega del handler).
+// El UpdateInput interno de ZenStack v3.7 es un XOR que no se puede re-narrow
+// desde este shape, así que el `data` se castea en el único punto db.update.
+type CounterpartAccountUpdateInput = {
+  accountNumber?: string;
+  accountType?: null | string;
+  bankName?: null | string;
+};
+type CounterpartAccountOrmUpdateData = NonNullable<
+  Parameters<typeof db.counterpartAccount.update>[0]
+>["data"];
 type CounterpartDto = z.output<typeof counterpartSchema>;
 type CounterpartAccountDto = z.output<typeof counterpartAccountSchema>;
 type CounterpartSuggestionDto = z.output<typeof counterpartSuggestionSchema>;
@@ -484,6 +495,101 @@ export async function listUnassignedPayoutAccounts(params: {
   };
 }
 
+type PayoutAccountMovement = z.output<typeof payoutAccountMovementSchema>;
+
+const decimalToNumber = (amount: unknown): number => {
+  if (amount === null || amount === undefined) {
+    return 0;
+  }
+  return Number(String(amount));
+};
+
+export async function listPayoutAccountMovements(params: {
+  account: string;
+  page: number;
+  pageSize: number;
+}) {
+  const normalizedAccount = normalizeAccountNumber(params.account);
+  const safePageSize = Math.max(params.pageSize, 1);
+  const safePage = Math.max(params.page, 1);
+
+  if (!normalizedAccount) {
+    return {
+      page: safePage,
+      pageSize: safePageSize,
+      rows: [] as PayoutAccountMovement[],
+      total: 0,
+    };
+  }
+
+  const releaseRows = await db.releaseTransaction.findMany({
+    select: {
+      date: true,
+      description: true,
+      grossAmount: true,
+      payoutBankAccountNumber: true,
+      recordType: true,
+      sourceId: true,
+    },
+    where: {
+      payoutBankAccountNumber: buildPayoutBankAccountWhere(params.account),
+    },
+  });
+
+  // buildPayoutBankAccountWhere is a fuzzy `contains` prefilter; the exact match
+  // is the normalized equality (uppercase + strip leading zeros), mirroring
+  // listUnassignedPayoutAccounts.
+  const matchedReleases = releaseRows.filter(
+    (row) => normalizeAccountNumber(row.payoutBankAccountNumber ?? "") === normalizedAccount
+  );
+
+  const sourceIds = matchedReleases.map((row) => row.sourceId);
+
+  const settlementRows =
+    sourceIds.length > 0
+      ? await db.settlementTransaction.findMany({
+          select: {
+            sourceId: true,
+            transactionAmount: true,
+            transactionDate: true,
+            transactionType: true,
+          },
+          where: { sourceId: { in: sourceIds } },
+        })
+      : [];
+
+  const movements: PayoutAccountMovement[] = [
+    ...matchedReleases.map((row) => ({
+      amount: decimalToNumber(row.grossAmount),
+      date: row.date,
+      description: row.description,
+      source: "release" as const,
+      sourceId: row.sourceId,
+      type: row.recordType,
+    })),
+    ...settlementRows.map((row) => ({
+      amount: decimalToNumber(row.transactionAmount),
+      date: row.transactionDate,
+      description: null,
+      source: "settlement" as const,
+      sourceId: row.sourceId,
+      type: row.transactionType,
+    })),
+  ];
+
+  movements.sort((a, b) => {
+    const aTime = a.date ? a.date.getTime() : Number.NEGATIVE_INFINITY;
+    const bTime = b.date ? b.date.getTime() : Number.NEGATIVE_INFINITY;
+    return bTime - aTime;
+  });
+
+  const total = movements.length;
+  const start = (safePage - 1) * safePageSize;
+  const rows = movements.slice(start, start + safePageSize);
+
+  return { page: safePage, pageSize: safePageSize, rows, total };
+}
+
 export async function getCounterpartSuggestions(query: string, limit: number) {
   const trimmedQuery = query.trim();
   if (!trimmedQuery) {
@@ -503,9 +609,9 @@ export async function getCounterpartSuggestions(query: string, limit: number) {
     take: Math.max(limit * 10, 100),
     where: {
       OR: [
-        { bankAccountHolder: { contains: trimmedQuery, mode: "insensitive" } },
-        { bankAccountNumber: { contains: trimmedQuery, mode: "insensitive" } },
-        { identificationNumber: { contains: trimmedQuery, mode: "insensitive" } },
+        { bankAccountHolder: { contains: trimmedQuery, mode: "insensitive" as const } },
+        { bankAccountNumber: { contains: trimmedQuery, mode: "insensitive" as const } },
+        { identificationNumber: { contains: trimmedQuery, mode: "insensitive" as const } },
       ],
     },
   });
@@ -591,7 +697,7 @@ export async function getCounterpartById(id: number) {
   });
 
   if (!counterpart) {
-    throw new Error(`Counterpart with ID ${id} not found`);
+    throw new DomainError("NOT_FOUND", `Counterpart with ID ${id} not found`);
   }
 
   return {
@@ -611,7 +717,7 @@ export async function getCounterpartByRut(identificationNumber: string) {
   });
 
   if (!counterpart) {
-    throw new Error(`Counterpart with RUT ${identificationNumber} not found`);
+    throw new DomainError("NOT_FOUND", `Counterpart with RUT ${identificationNumber} not found`);
   }
 
   return {
@@ -629,7 +735,7 @@ export async function createCounterpart(data: CounterpartPayload) {
   });
 
   if (existing) {
-    throw new Error(`Counterpart with RUT ${rut} already exists`);
+    throw new DomainError("CONFLICT", `Counterpart with RUT ${rut} already exists`);
   }
 
   const created = await db.counterpart.create({
@@ -650,7 +756,7 @@ export async function createCounterpart(data: CounterpartPayload) {
 export async function updateCounterpart(id: number, data: CounterpartUpdatePayload) {
   const counterpart = await db.counterpart.findUnique({ where: { id } });
   if (!counterpart) {
-    throw new Error("Counterpart not found");
+    throw new DomainError("NOT_FOUND", "Counterpart not found");
   }
 
   const updateData: Partial<CounterpartPayload> = {};
@@ -753,14 +859,14 @@ export async function updateCounterpartAccount(
     select: { counterpartId: true, id: true },
   });
   if (!existingAccount) {
-    throw new Error("Counterpart account not found");
+    throw new DomainError("NOT_FOUND", "Counterpart account not found");
   }
 
   const updateData: CounterpartAccountUpdateInput = { ...payload };
   if (payload.accountNumber !== undefined) {
     const normalizedAccount = normalizeAccountNumber(payload.accountNumber);
     if (!normalizedAccount) {
-      throw new Error("Número de cuenta inválido");
+      throw new DomainError("BAD_REQUEST", "Número de cuenta inválido");
     }
 
     const conflicting = await db.counterpartAccount.findFirst({
@@ -796,7 +902,8 @@ export async function updateCounterpartAccount(
   return mapCounterpartAccount(
     await db.counterpartAccount.update({
       where: { id: accountId },
-      data: updateData,
+      // Cast en el boundary ORM (XOR ZenStack v3.7 no re-narrow desde el shape del contrato).
+      data: updateData as CounterpartAccountOrmUpdateData,
     })
   );
 }
@@ -804,14 +911,14 @@ export async function updateCounterpartAccount(
 export async function attachRutToCounterpart(counterpartId: number, rutInput: string) {
   const rut = normalizeRut(rutInput);
   if (!rut) {
-    throw new Error("RUT inválido");
+    throw new DomainError("BAD_REQUEST", "RUT inválido");
   }
 
   const counterpart = await db.counterpart.findUnique({
     where: { id: counterpartId },
   });
   if (!counterpart) {
-    throw new Error("Counterpart not found");
+    throw new DomainError("NOT_FOUND", "Counterpart not found");
   }
 
   const existingByRut = await db.counterpart.findUnique({
@@ -819,7 +926,10 @@ export async function attachRutToCounterpart(counterpartId: number, rutInput: st
   });
 
   if (existingByRut && existingByRut.id !== counterpartId) {
-    throw new Error(`El RUT ${rut} ya está vinculado a otra contraparte (ID ${existingByRut.id})`);
+    throw new DomainError(
+      "CONFLICT",
+      `El RUT ${rut} ya está vinculado a otra contraparte (ID ${existingByRut.id})`
+    );
   }
 
   if (counterpart.identificationNumber !== rut) {
@@ -862,7 +972,7 @@ export async function assignRutToPayoutAccounts(params: {
 }): Promise<AssignRutToPayoutsDto> {
   const rut = normalizeRut(params.rut);
   if (!rut) {
-    throw new Error("RUT inválido");
+    throw new DomainError("BAD_REQUEST", "RUT inválido");
   }
   const uniqueAccounts = [
     ...new Set(params.accountNumbers.map(normalizeAccountNumber).filter(Boolean)),
@@ -940,7 +1050,7 @@ export async function getCounterpartSummary(counterpartId: number): Promise<Coun
   });
 
   if (!counterpart) {
-    throw new Error(`Counterpart with ID ${counterpartId} not found`);
+    throw new DomainError("NOT_FOUND", `Counterpart with ID ${counterpartId} not found`);
   }
 
   const identificationNumber = counterpart.identificationNumber;

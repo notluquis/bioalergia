@@ -17,7 +17,7 @@ import Papa from "papaparse";
 import { useState } from "react";
 
 import { DataTable } from "@/components/data-table/DataTable";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/features/auth/hooks/use-auth";
 import { useToast } from "@/context/ToastContext";
 import { DoctoraliaCalendarJsonPanel } from "@/features/doctoralia/components/DoctoraliaCalendarJsonPanel";
 import type { AuthContextType } from "@/features/auth/hooks/use-auth";
@@ -34,15 +34,28 @@ import { cn } from "@/lib/utils";
 
 // Types
 interface TableOption {
-  fields: { name: string; required: boolean; type: string }[];
+  fields: FieldDefinition[];
   label: string;
   value: string;
 }
 
 interface FieldDefinition {
+  /**
+   * camelCase DB field name (matches the contract input schema).
+   */
   name: string;
   required: boolean;
   type: string;
+  /**
+   * Extra CSV header aliases that should auto-map to this field when
+   * the field-name → header-alias fuzzy match fails. Example: MercadoPago
+   * exports the column `Motivo (payout_desc)` and our field is
+   * `payoutDescription` — they don't match after `normalizeKey` because
+   * `payout_desc` collapses to `payoutdesc` while `payoutDescription`
+   * collapses to `payoutdescription`. List the upstream short name here
+   * (`payout_desc`) so the auto-mapper finds it.
+   */
+  aliases?: readonly string[];
 }
 
 interface UploadedFile {
@@ -211,11 +224,21 @@ const isValidColumnMapping = (
   );
 };
 
-const matchHeaderForField = (fieldName: string, headers: string[]) => {
-  const normalizedField = normalizeKey(fieldName);
+const matchHeaderForField = (field: FieldDefinition, headers: string[]) => {
+  // Build the set of normalized keys we're willing to call a match: the
+  // field's own name + every alias declared on the FieldDefinition. This
+  // is how upstream column names with truncated words (e.g. MP's
+  // `payout_desc` vs our `payoutDescription`) hook up — the auto-mapper
+  // can't fuzzy-match across word boundaries.
+  const targets = new Set<string>([normalizeKey(field.name)]);
+  if (field.aliases) {
+    for (const alias of field.aliases) {
+      targets.add(normalizeKey(alias));
+    }
+  }
   for (const header of headers) {
-    const aliases = extractHeaderAliases(header);
-    if (aliases.some((alias) => normalizeKey(alias) === normalizedField)) {
+    const headerAliases = extractHeaderAliases(header);
+    if (headerAliases.some((alias) => targets.has(normalizeKey(alias)))) {
       return header;
     }
   }
@@ -228,7 +251,7 @@ const mapFieldsUsingExistingLogic = (
 ): Record<string, string> => {
   const mapping: Record<string, string> = {};
   for (const field of fields) {
-    const matched = matchHeaderForField(field.name, headers);
+    const matched = matchHeaderForField(field, headers);
     if (matched) {
       mapping[field.name] = matched;
     }
@@ -348,22 +371,27 @@ const TABLE_OPTIONS: TableOption[] = [
     value: "daily_balances",
   },
   {
+    // Aliases = headers del export de Google Sheets "BALANCE DIARIO".
+    // SUBTOTAL/TOTAL del sheet son autocalculados → sin field, se descartan.
     fields: [
-      { name: "balanceDate", required: true, type: "date" },
+      { aliases: ["fecha"], name: "balanceDate", required: true, type: "date" },
       { name: "ingresoTarjetas", required: false, type: "number" },
       { name: "ingresoTransferencias", required: false, type: "number" },
       { name: "ingresoEfectivo", required: false, type: "number" },
       { name: "gastosDiarios", required: false, type: "number" },
-      { name: "otrosAbonos", required: false, type: "number" },
-      { name: "consultasMonto", required: false, type: "number" },
-      { name: "controlesMonto", required: false, type: "number" },
-      { name: "testsMonto", required: false, type: "number" },
-      { name: "vacunasMonto", required: false, type: "number" },
-      { name: "licenciasMonto", required: false, type: "number" },
-      { name: "roxairMonto", required: false, type: "number" },
+      { aliases: ["otros/abonos", "otros"], name: "otrosAbonos", required: false, type: "number" },
+      { aliases: ["consultas"], name: "consultasMonto", required: false, type: "number" },
+      { aliases: ["controles"], name: "controlesMonto", required: false, type: "number" },
+      { aliases: ["test", "tests"], name: "testsMonto", required: false, type: "number" },
+      { aliases: ["vacunas"], name: "vacunasMonto", required: false, type: "number" },
+      { aliases: ["licencias"], name: "licenciasMonto", required: false, type: "number" },
+      {
+        aliases: ["roxair/bactek", "roxair"],
+        name: "roxairMonto",
+        required: false,
+        type: "number",
+      },
       { name: "comentarios", required: false, type: "string" },
-      { name: "status", required: false, type: "enum" },
-      { name: "changeReason", required: false, type: "string" },
     ],
 
     label: "Saldos Producción",
@@ -378,7 +406,14 @@ const TABLE_OPTIONS: TableOption[] = [
       { name: "amount", required: false, type: "number" },
       { name: "fee", required: false, type: "number" },
       { name: "activityUrl", required: false, type: "string" },
-      { name: "payoutDescription", required: false, type: "string" },
+      // MercadoPago exports as `Motivo (payout_desc)` — short alias
+      // doesn't fuzzy-match `payoutDescription`. Whitelist explicitly.
+      {
+        aliases: ["payout_desc", "motivo"],
+        name: "payoutDescription",
+        required: false,
+        type: "string",
+      },
       { name: "bankAccountHolder", required: false, type: "string" },
       { name: "identificationType", required: false, type: "string" },
       { name: "identificationNumber", required: false, type: "string" },
@@ -561,7 +596,7 @@ function AccessDeniedAlert() {
   return (
     <Alert status="warning">
       <Alert.Indicator>
-        <Lock className="h-4 w-4" />
+        <Lock className="size-4" />
       </Alert.Indicator>
       <Alert.Content>
         <Alert.Description>
@@ -592,7 +627,7 @@ function TableSelectionCard({
     <Card>
       <Card.Header>
         <Card.Title className="flex items-center gap-2">
-          <FileUp className="h-5 w-5 text-primary" />
+          <FileUp className="text-primary size-5" />
           1. Seleccionar destino
         </Card.Title>
         <Card.Description>Elige la tabla donde deseas importar los datos.</Card.Description>
@@ -858,7 +893,7 @@ function ImportSummaryCard({
         {(previewData.errors?.length ?? 0) > 0 && (
           <Alert className="mb-0" status="warning">
             <Alert.Indicator>
-              <AlertCircle className="h-4 w-4" />
+              <AlertCircle className="size-4" />
             </Alert.Indicator>
             <Alert.Content>
               <Alert.Description>
@@ -986,7 +1021,7 @@ function UpdateSelectionCard({
                 size="sm"
                 variant="outline"
               >
-                {isLoadingDetails ? <Loader2 className="mr-2 h-4 w-4 " /> : null}
+                {isLoadingDetails ? <Loader2 className="mr-2 size-4 " /> : null}
                 Recargar detalle
               </Button>
             )}
@@ -1057,7 +1092,7 @@ function UpdateDetailLoaderCard({
           <Chip.Label>{pendingUpdates} filas detectadas para actualizar</Chip.Label>
         </Chip>
         <Button isDisabled={isLoading} onPress={onLoad} variant="secondary">
-          {isLoading ? <Loader2 className="mr-2 h-4 w-4 " /> : null}
+          {isLoading ? <Loader2 className="mr-2 size-4 " /> : null}
           Cargar detalle de actualizaciones
         </Button>
       </Card.Content>
@@ -1076,7 +1111,7 @@ function ImportModeCard({
     <Card>
       <Card.Header>
         <Card.Title className="flex items-center gap-2">
-          <CheckCircle className="h-5 w-5 text-primary" />
+          <CheckCircle className="text-primary size-5" />
           Modo de importación
         </Card.Title>
         <Card.Description>
@@ -1222,48 +1257,66 @@ function buildMappingColumns({
       header: "Tipo",
     },
     {
-      cell: ({ row }) => (
-        <Select
-          className="w-full min-w-35"
-          onChange={(val) => {
-            onMappingChanged();
-            setUploadedFiles((prev) =>
-              prev.map((file, idx) => {
-                if (idx === 0) {
-                  // Update first file's mapping
-                  return {
-                    ...file,
-                    columnMapping: {
-                      ...file.columnMapping,
-                      [row.original.name]: val === UNMAPPED_COLUMN_KEY ? "" : (val as string),
-                    },
-                  };
-                }
-                return file;
-              })
-            );
-          }}
-          value={firstFile.columnMapping[row.original.name] || UNMAPPED_COLUMN_KEY}
-        >
-          <Label>Columna CSV</Label>
-          <Select.Trigger>
-            <Select.Value />
-            <Select.Indicator />
-          </Select.Trigger>
-          <Select.Popover>
-            <ListBox>
-              <ListBox.Item id={UNMAPPED_COLUMN_KEY} key={UNMAPPED_COLUMN_KEY}>
-                -- Ignorar / Sin mapear --
-              </ListBox.Item>
-              {firstFile.csvHeaders.map((header) => (
-                <ListBox.Item id={header} key={header}>
-                  {header}
+      cell: ({ row }) => {
+        // Headers ya asignados a OTRO campo desaparecen de esta lista —
+        // evita doble mapeo y la lista se achica a medida que avanzas.
+        // El header del propio campo se conserva para poder verlo/cambiarlo.
+        const usedByOtherFields = new Set(
+          Object.entries(firstFile.columnMapping)
+            .filter(([fieldName, header]) => fieldName !== row.original.name && header)
+            .map(([, header]) => header)
+        );
+        const availableHeaders = firstFile.csvHeaders.filter(
+          (header) => !usedByOtherFields.has(header)
+        );
+        return (
+          <Select
+            className="w-full min-w-35"
+            // HeroUI v3 Select is controlled via `value` + `onChange` (Key | Key[]).
+            // For single-select we get a string Key back; map back to "" (unmapped
+            // sentinel) when the user picks the explicit ignore item. Guard against
+            // `null` (HeroUI emits it on programmatic clear) so we don't poison the
+            // mapping with non-string values.
+            onChange={(val) => {
+              onMappingChanged();
+              const nextValue = val === null || val === UNMAPPED_COLUMN_KEY ? "" : String(val);
+              setUploadedFiles((prev) =>
+                prev.map((file, idx) =>
+                  idx === 0
+                    ? {
+                        ...file,
+                        columnMapping: {
+                          ...file.columnMapping,
+                          [row.original.name]: nextValue,
+                        },
+                      }
+                    : file
+                )
+              );
+            }}
+            placeholder="Sin mapear"
+            value={firstFile.columnMapping[row.original.name] || UNMAPPED_COLUMN_KEY}
+          >
+            <Label>Columna CSV</Label>
+            <Select.Trigger>
+              <Select.Value />
+              <Select.Indicator />
+            </Select.Trigger>
+            <Select.Popover>
+              <ListBox>
+                <ListBox.Item id={UNMAPPED_COLUMN_KEY} key={UNMAPPED_COLUMN_KEY}>
+                  -- Ignorar / Sin mapear --
                 </ListBox.Item>
-              ))}
-            </ListBox>
-          </Select.Popover>
-        </Select>
-      ),
+                {availableHeaders.map((header) => (
+                  <ListBox.Item id={header} key={header}>
+                    {header}
+                  </ListBox.Item>
+                ))}
+              </ListBox>
+            </Select.Popover>
+          </Select>
+        );
+      },
 
       header: "Columna CSV",
       id: "mapping",
@@ -1730,7 +1783,9 @@ export function CSVUploadPage() {
       {!isDoctoraliaCalendar && (
         <FileUploadSection
           disabled={isProcessing}
-          onFileChange={handleFileChange}
+          onFileChange={(...args) => {
+            void handleFileChange(...args);
+          }}
           selectedTable={selectedTable}
         />
       )}
@@ -1760,7 +1815,9 @@ export function CSVUploadPage() {
         !hasLoadedUpdateDetails && (
           <UpdateDetailLoaderCard
             isLoading={isLoadingUpdateDetails}
-            onLoad={handleLoadUpdateDetails}
+            onLoad={(...args) => {
+              void handleLoadUpdateDetails(...args);
+            }}
             pendingUpdates={batchPreviewData?.toUpdate ?? 0}
           />
         )}
@@ -1771,7 +1828,9 @@ export function CSVUploadPage() {
         updateCandidateRows.length > 0 && (
           <UpdateSelectionCard
             isLoadingDetails={isLoadingUpdateDetails}
-            onLoadDetails={handleLoadUpdateDetails}
+            onLoadDetails={(...args) => {
+              void handleLoadUpdateDetails(...args);
+            }}
             onSelectionChange={setUpdateRowSelection}
             rowSelection={updateRowSelection}
             rows={updateCandidateRows}
@@ -1790,8 +1849,12 @@ export function CSVUploadPage() {
           hasPreviewData={hasPreviewData}
           isProcessing={isProcessing}
           isValidMapping={isValidMapping}
-          onImport={handleImport}
-          onPreview={handlePreview}
+          onImport={(...args) => {
+            void handleImport(...args);
+          }}
+          onPreview={(...args) => {
+            void handlePreview(...args);
+          }}
           pendingImportCount={pendingImportCount}
           processingLabel={processingLabel}
           uploadedFilesCount={uploadedFiles.length}
@@ -1825,9 +1888,9 @@ function ImportActionsBar(props: {
           variant="secondary"
         >
           {props.isProcessing ? (
-            <Loader2 className="mr-2 h-4 w-4 " />
+            <Loader2 className="mr-2 size-4 " />
           ) : (
-            <FileUp className="mr-2 h-4 w-4" />
+            <FileUp className="mr-2 size-4" />
           )}
           {props.hasPreviewData ? "Recalcular vista previa" : "Generar vista previa"}
         </Button>
@@ -1844,9 +1907,9 @@ function ImportActionsBar(props: {
           onPress={props.onImport}
         >
           {props.isProcessing ? (
-            <Loader2 className="mr-2 h-4 w-4 " />
+            <Loader2 className="mr-2 size-4 " />
           ) : (
-            <CheckCircle className="mr-2 h-4 w-4" />
+            <CheckCircle className="mr-2 size-4" />
           )}
           Confirmar Importación ({props.pendingImportCount})
         </Button>

@@ -1,6 +1,6 @@
+import { formatChile } from "@/lib/dates";
 import { Button, Chip } from "@heroui/react";
 import { useNavigate } from "@tanstack/react-router";
-import dayjs from "dayjs";
 
 import type { Transaction } from "@/features/finance/types";
 
@@ -27,7 +27,9 @@ export function RecentMovementsWidget({ rows }: { rows: Transaction[] }) {
           <p className="text-default-500 text-xs">Últimos 5 registros sincronizados</p>
         </div>
         <Button
-          onPress={() => navigate({ to: "/finanzas/statistics" })}
+          onPress={() => {
+            void navigate({ to: "/finanzas/dashboard", search: { tab: "estadisticas" } });
+          }}
           size="sm"
           type="button"
           variant="secondary"
@@ -46,14 +48,14 @@ export function RecentMovementsWidget({ rows }: { rows: Transaction[] }) {
                 key={row.id}
               >
                 <div className="min-w-0">
-                  <Chip size="sm" variant="tertiary">
+                  <Chip color={amount >= 0 ? "success" : "danger"} size="sm" variant="soft">
                     {row.transactionType || "movimiento"}
                   </Chip>
                   <p className="mt-2 line-clamp-2 font-medium text-foreground text-sm">
                     {row.description ?? row.sourceId ?? "(sin descripción)"}
                   </p>
                   <p className="text-default-500 text-xs uppercase tracking-wide">
-                    {dayjs(row.transactionDate).tz().format("DD MMM YYYY HH:mm")}
+                    {formatChile(row.transactionDate, "DD MMM YYYY HH:mm")}
                   </p>
                 </div>
                 <span

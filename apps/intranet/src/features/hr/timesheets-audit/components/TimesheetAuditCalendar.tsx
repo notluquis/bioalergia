@@ -4,13 +4,13 @@
  * Optimized for production with proper type safety and performance
  */
 
+import { formatChile } from "@/lib/dates";
 import type { CalendarApi, EventContentArg } from "@fullcalendar/core";
 import esLocale from "@fullcalendar/core/locales/es";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import { Skeleton, Tooltip } from "@heroui/react";
-import dayjs from "dayjs";
 import { useEffect, useRef, useState } from "react";
 
 import type { CalendarEventData, TimesheetEntryWithEmployee } from "../types";
@@ -223,8 +223,8 @@ export function TimesheetAuditCalendar({
     }
     return entries.filter((entry) =>
       visibleDateRanges.some((range) => {
-        const startKey = dayjs(range.start).format("YYYY-MM-DD");
-        const endKey = dayjs(range.end).format("YYYY-MM-DD");
+        const startKey = formatChile(range.start, "YYYY-MM-DD");
+        const endKey = formatChile(range.end, "YYYY-MM-DD");
         return entry.work_date >= startKey && entry.work_date <= endKey;
       })
     );
@@ -371,11 +371,11 @@ export function TimesheetAuditCalendar({
       {/* Legend */}
       <div className="mt-6 grid grid-cols-1 gap-3 text-default-600 text-sm sm:grid-cols-2">
         <div className="flex items-center gap-3">
-          <div className="h-4 w-4 rounded bg-success" />
+          <div className="rounded bg-success size-4" />
           <span>Sin solapamiento</span>
         </div>
         <div className="flex items-center gap-3">
-          <div className="h-4 w-4 rounded bg-danger" />
+          <div className="rounded bg-danger size-4" />
           <span>Con solapamiento detectado</span>
         </div>
       </div>

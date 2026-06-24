@@ -1,5 +1,12 @@
 import { logWarn } from "../../../lib/logger.ts";
-import { GRAPH_BASE, getAccountForPhoneNumber, graphGet, graphPost, loadAccount } from "./_http.ts";
+import {
+  GRAPH_BASE,
+  getAccountForPhoneNumber,
+  graphGet,
+  graphPost,
+  loadAccount,
+  requireSystemUserToken,
+} from "./_http.ts";
 
 export type WaMediaUploadResult = { id: string };
 
@@ -15,7 +22,7 @@ export async function uploadMedia(
 ): Promise<{ id: string }> {
   const phone = await getAccountForPhoneNumber(phoneNumberId);
   const v = phone.account.graphApiVersion;
-  const token = phone.account.systemUserToken!;
+  const token = requireSystemUserToken(phone);
   const form = new FormData();
   form.append("messaging_product", "whatsapp");
   form.append("type", mimeType);
@@ -43,7 +50,7 @@ export async function markMessageRead(
 ) {
   const phone = await getAccountForPhoneNumber(phoneNumberId);
   const v = phone.account.graphApiVersion;
-  const token = phone.account.systemUserToken!;
+  const token = requireSystemUserToken(phone);
   const body: Record<string, unknown> = {
     messaging_product: "whatsapp",
     status: "read",
@@ -63,7 +70,7 @@ export async function markMessageRead(
 export async function markMessageDelivered(phoneNumberId: number, metaMessageId: string) {
   const phone = await getAccountForPhoneNumber(phoneNumberId);
   const v = phone.account.graphApiVersion;
-  const token = phone.account.systemUserToken!;
+  const token = requireSystemUserToken(phone);
   return graphPost(
     `/${phone.phoneNumberId}/messages`,
     {
@@ -88,6 +95,39 @@ export async function downloadMediaUrl(mediaId: string, accountId: number) {
   return meta;
 }
 
+/**
+ * Download the actual media BYTES from Meta (two-step: GET /{mediaId} → temp
+ * url, then fetch that url with the system user token). Returns the bytes +
+ * mime type + Meta's own sha256 (hex). Used to persist a durable copy in R2,
+ * because Meta media ids expire ~30 days.
+ */
+export async function downloadMediaBytes(
+  mediaId: string,
+  accountId: number
+): Promise<{ bytes: Uint8Array; mimeType: string; sha256: string }> {
+  const account = await loadAccount(accountId);
+  if (!account?.systemUserToken) throw new Error("Account sin token");
+  const meta = await graphGet<{
+    url: string;
+    mime_type: string;
+    sha256: string;
+    file_size: number;
+  }>(`/${mediaId}`, account.systemUserToken, account.graphApiVersion);
+  const res = await fetch(meta.url, {
+    headers: { Authorization: `Bearer ${account.systemUserToken}` },
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    logWarn("[wa-cloud.graph] media bytes download failed", {
+      status: res.status,
+      body: body.slice(0, 300),
+    });
+    throw new Error(`Graph media download ${res.status}`);
+  }
+  const buf = new Uint8Array(await res.arrayBuffer());
+  return { bytes: buf, mimeType: meta.mime_type, sha256: meta.sha256 };
+}
+
 export async function uploadProfilePictureHandle(
   phoneNumberId: number,
   file: Blob,
@@ -95,7 +135,7 @@ export async function uploadProfilePictureHandle(
 ): Promise<string> {
   const phone = await getAccountForPhoneNumber(phoneNumberId);
   const v = phone.account.graphApiVersion;
-  const token = phone.account.systemUserToken!;
+  const token = requireSystemUserToken(phone);
   const appId = phone.account.appId;
   if (!appId) throw new Error("Account sin appId — configura en Settings antes de subir foto");
 

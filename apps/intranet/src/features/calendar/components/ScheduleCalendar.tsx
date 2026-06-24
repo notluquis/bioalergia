@@ -55,7 +55,7 @@ export function ScheduleCalendar({
         <div className="slide-in-from-bottom-2 relative scroll-mt-4" ref={detailPanelRef}>
           <Button
             aria-label="Cerrar"
-            className="absolute -top-2 -right-2 z-10 h-7 w-7 min-w-0 rounded-full border border-default-200 bg-content1 text-foreground-500 shadow-sm hover:bg-default-100 hover:text-foreground"
+            className="absolute -top-2 -right-2 z-10 min-w-0 rounded-full border border-default-200 bg-content1 text-foreground-500 shadow-sm hover:bg-default-100 hover:text-foreground size-7"
             isIconOnly
             onPress={() => {
               setSelectedEvent(null);

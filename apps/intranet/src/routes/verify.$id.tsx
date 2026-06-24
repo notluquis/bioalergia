@@ -1,7 +1,7 @@
+import { formatChile } from "@/lib/dates";
 import { Description, Skeleton } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import dayjs from "dayjs";
 import { z } from "zod";
 import { certificatesORPCClient, toCertificatesApiError } from "@/features/certificates/orpc";
 
@@ -109,8 +109,8 @@ function VerifyCertificatePage() {
               <span className="font-medium text-lg">{data.restDays} días</span>
               {data.restStartDate && data.restEndDate && (
                 <Description className="mt-1 text-foreground/60 text-sm">
-                  Desde {dayjs(data.restStartDate).format("DD/MM/YYYY")} hasta{" "}
-                  {dayjs(data.restEndDate).format("DD/MM/YYYY")}
+                  Desde {formatChile(data.restStartDate, "DD/MM/YYYY")} hasta{" "}
+                  {formatChile(data.restEndDate, "DD/MM/YYYY")}
                 </Description>
               )}
             </div>
@@ -137,7 +137,7 @@ function VerifyCertificatePage() {
             <span className="mb-1 block font-semibold text-foreground/70 text-sm uppercase tracking-wide">
               Fecha de emisión
             </span>
-            <span className="text-lg">{dayjs(data.issuedAt).format("DD [de] MMMM [de] YYYY")}</span>
+            <span className="text-lg">{formatChile(data.issuedAt, "DD [de] MMMM [de] YYYY")}</span>
           </div>
         </div>
 

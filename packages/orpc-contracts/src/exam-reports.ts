@@ -1,0 +1,462 @@
+import { oc } from "@orpc/contract";
+import { z } from "zod";
+
+/**
+ * Skin-test exam reports — generic structured medical reports printable
+ * as PDF. Five exam types share the same polymorphic shape:
+ *   PATCH                  — Test de Parche (lecturas 48h y 96h)
+ *   MULTITEST_PANELS       — Multitest Panel 1, 2, 3 y Acaros
+ *   FOOD_PANEL             — Panel Alimentario I
+ *   AEROALLERGENS_I/II     — Aeroalergenos (Acaros, Epitelios, Polenes…)
+ *
+ * Each report carries one or more *sections* (e.g. "Primera lectura
+ * 48 horas", "PANEL 1", "POLENES > ARBOLES"); each section carries
+ * one or more *reactions* — an allergen + the operator's clinical
+ * reading (NEGATIVA/DEBIL/MODERADA/FUERTE) + optional papule mm.
+ *
+ * Footer info (clinic name, address, phones, doctor signature) lives
+ * in `clinicSettings` and conclusion phrases live in
+ * `conclusionTemplates` so the PDF never has hardcoded strings.
+ */
+
+// ── Enums (mirror the Prisma enums in schema.zmodel) ─────────────────
+export const examTypeSchema = z.enum([
+  "PATCH",
+  "MULTITEST_PANELS",
+  "FOOD_PANEL",
+  "AEROALLERGENS_I",
+  "AEROALLERGENS_II",
+]);
+export type ExamType = z.infer<typeof examTypeSchema>;
+
+export const skinReactionSchema = z.enum(["NEGATIVA", "DEBIL", "MODERADA", "FUERTE"]);
+export type SkinReaction = z.infer<typeof skinReactionSchema>;
+
+// ── Shared schemas ───────────────────────────────────────────────────
+
+export const reactionInputSchema = z.object({
+  allergenId: z.string().min(1),
+  reaction: skinReactionSchema,
+  papuleMm: z.number().nonnegative().nullable().optional(),
+  notes: z.string().nullable().optional(),
+  position: z.number().int().nonnegative().optional(),
+});
+
+export const sectionInputSchema = z.object({
+  sectionKey: z.string().min(1),
+  label: z.string().min(1),
+  position: z.number().int().nonnegative().optional(),
+  reactions: z.array(reactionInputSchema).default([]),
+});
+
+const allergenLiteSchema = z.object({
+  id: z.string(),
+  commonName: z.string(),
+  scientificName: z.string().nullable(),
+  category: z.string(),
+  pollenType: z.string().nullable(),
+  // Free-form tags from ClinicalAllergen.tags — surfaced so the PDF
+  // generator can auto-fire the cross-reactivity disclaimer when any
+  // tag matches PR-10 / profilin / tropomyosin / LTP. Default `[]`
+  // keeps older API builds backwards-compatible.
+  tags: z.array(z.string()).default([]),
+});
+
+const reactionOutputSchema = z.object({
+  id: z.number().int(),
+  allergenId: z.string(),
+  reaction: skinReactionSchema,
+  papuleMm: z.number().nullable(),
+  notes: z.string().nullable(),
+  position: z.number().int(),
+  allergen: allergenLiteSchema,
+});
+
+const sectionOutputSchema = z.object({
+  id: z.number().int(),
+  sectionKey: z.string(),
+  label: z.string(),
+  position: z.number().int(),
+  reactions: z.array(reactionOutputSchema),
+});
+
+export const examReportListItemSchema = z.object({
+  id: z.number().int(),
+  patientId: z.number().int(),
+  examType: examTypeSchema,
+  conclusionText: z.string(),
+  doctorName: z.string(),
+  doctorSpecialty: z.string(),
+  generatedAt: z.iso.datetime().nullable(),
+  createdAt: z.iso.datetime(),
+  updatedAt: z.iso.datetime(),
+  patient: z.object({
+    id: z.number().int(),
+    person: z.object({
+      names: z.string(),
+      fatherName: z.string().nullable(),
+      motherName: z.string().nullable(),
+      rut: z.string().nullable(),
+    }),
+  }),
+});
+
+export const examReportDetailSchema = examReportListItemSchema.extend({
+  conclusionTemplateId: z.number().int().nullable(),
+  reagents: z.string().nullable(),
+  technique: z.string().nullable(),
+  notes: z.string().nullable(),
+  doctorRut: z.string().nullable(),
+  // Persisted controls (mm pápula). Nullable because columns were added
+  // additively — old reports return `null` for both.
+  histamineMm: z.number().nullable(),
+  salineMm: z.number().nullable(),
+  createdById: z.number().int().nullable(),
+  patient: z.object({
+    id: z.number().int(),
+    birthDate: z.iso.date().nullable(),
+    person: z.object({
+      names: z.string(),
+      fatherName: z.string().nullable(),
+      motherName: z.string().nullable(),
+      rut: z.string().nullable(),
+      email: z.string().nullable(),
+      phone: z.string().nullable(),
+    }),
+  }),
+  sections: z.array(sectionOutputSchema),
+});
+
+export const examReportCreateInputSchema = z.object({
+  patientId: z.number().int().positive(),
+  examType: examTypeSchema,
+  conclusionText: z.string().min(1),
+  conclusionTemplateId: z.number().int().nullable().optional(),
+  reagents: z.string().nullable().optional(),
+  technique: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
+  // Optional doctor overrides — fall back to ClinicSettings.doctor* on the server.
+  doctorName: z.string().optional(),
+  doctorSpecialty: z.string().optional(),
+  doctorRut: z.string().nullable().optional(),
+  // Operator-confirmed control mm values; either prefilled from the
+  // most recent XLSX skin-test snapshot or typed manually. Both
+  // optional — wizard may submit either, both, or neither.
+  histamineMm: z.number().nonnegative().nullable().optional(),
+  salineMm: z.number().nonnegative().nullable().optional(),
+  sections: z.array(sectionInputSchema).min(1),
+});
+
+export const examReportUpdateInputSchema = examReportCreateInputSchema.partial().extend({
+  id: z.number().int().positive(),
+});
+
+// ── ConclusionTemplate (admin-managed) ───────────────────────────────
+
+export const conclusionTemplateSchema = z.object({
+  id: z.number().int(),
+  text: z.string(),
+  examType: examTypeSchema.nullable(),
+  isDefault: z.boolean(),
+  isActive: z.boolean(),
+  position: z.number().int(),
+  createdAt: z.iso.datetime(),
+  updatedAt: z.iso.datetime(),
+});
+
+export const conclusionTemplateCreateInputSchema = z.object({
+  text: z.string().min(1),
+  examType: examTypeSchema.nullable().optional(),
+  isDefault: z.boolean().optional(),
+  isActive: z.boolean().optional(),
+  position: z.number().int().nonnegative().optional(),
+});
+
+// Update accepts any subset — the toggle UI patches only `isDefault`
+// or `isActive` without re-sending `text`.
+export const conclusionTemplateUpdateInputSchema = conclusionTemplateCreateInputSchema
+  .partial()
+  .extend({ id: z.number().int().positive() });
+
+// ── ClinicSettings (singleton) ───────────────────────────────────────
+
+export const clinicSettingsSchema = z.object({
+  id: z.number().int(),
+  name: z.string(),
+  address: z.string(),
+  phoneWhatsapp: z.string(),
+  phoneLandline: z.string(),
+  email: z.string(),
+  website: z.string(),
+  websiteSecondary: z.string(),
+  defaultReagents: z.string(),
+  defaultTechnique: z.string(),
+  doctorName: z.string(),
+  doctorSpecialty: z.string(),
+  doctorRut: z.string().nullable(),
+  signatureUrl: z.string().nullable(),
+  logoUrl: z.string().nullable(),
+  secondaryLogoUrl: z.string().nullable(),
+  papuleThresholdMm: z.number(),
+  // Prestador Superintendencia de Salud N — printed under doctor's
+  // signature block on every exam-report PDF.
+  superintendenciaNumber: z.string().nullable(),
+  updatedAt: z.iso.datetime(),
+});
+
+export const clinicSettingsUpdateInputSchema = clinicSettingsSchema
+  .omit({ id: true, updatedAt: true })
+  .partial();
+
+// Presign R2 para subir logos/firma de la clínica (PNG/JPEG — embebibles en PDF).
+export const clinicAssetKindSchema = z.enum(["logo", "secondary-logo", "signature"]);
+export type ClinicAssetKind = z.infer<typeof clinicAssetKindSchema>;
+export const presignClinicAssetInputSchema = z.object({
+  kind: clinicAssetKindSchema,
+  filename: z.string().min(1),
+  contentType: z.enum(["image/png", "image/jpeg"]),
+});
+export const presignClinicAssetResponseSchema = z.object({
+  url: z.string(),
+  cdnUrl: z.string(),
+  r2Key: z.string(),
+});
+
+// ── Allergen catalog (read-only, filtered) ───────────────────────────
+
+export const allergenListInputSchema = z
+  .object({
+    search: z.string().optional(),
+    categories: z.array(z.string()).optional(),
+    limit: z.number().int().positive().max(500).optional(),
+  })
+  .partial();
+
+export const allergenListOutputSchema = z.object({
+  allergens: z.array(allergenLiteSchema),
+  // Distinct categories present in the dataset — useful for the picker
+  // groupings ("Polenes > Arboles", "Acaros", "Epitelios", etc).
+  categories: z.array(z.string()),
+});
+
+// ── Allergen tags admin (CRU on ClinicalAllergen.tags) ───────────────
+//
+// Surfaces the same ClinicalAllergen rows as `listAllergens` PLUS an
+// `isActive` flag (so the admin panel can show greyed-out inactive
+// rows). `updateAllergenTags` mutates the `tags` string[] only —
+// schema migrations already created the column. EAACI canonical
+// families are exposed via `ALLERGEN_TAG_SUGGESTIONS` on the client
+// so the combobox can hint without forcing — the server accepts any
+// kebab-case-or-lowercase string to keep the admin workflow flexible.
+
+export const allergenAdminRowSchema = allergenLiteSchema.extend({
+  isActive: z.boolean(),
+});
+
+export const listAllergensWithTagsInputSchema = z
+  .object({
+    search: z.string().optional(),
+    limit: z.number().int().positive().max(500).optional(),
+    offset: z.number().int().nonnegative().optional(),
+    // When true, hide rows whose `tags` array is empty — useful to
+    // focus on the ~120 already-classified families after the EAACI
+    // backfill migration.
+    onlyTagged: z.boolean().optional(),
+  })
+  .partial();
+
+export const listAllergensWithTagsOutputSchema = z.object({
+  items: z.array(allergenAdminRowSchema),
+  total: z.number().int().nonnegative(),
+});
+
+// One tag = lowercase kebab-case, non-empty, ≤40 chars. Server-side
+// validation rejects accidental capitals or whitespace tokens; the UI
+// normalises before submit. Empty array allowed (clears all tags).
+const allergenTagSchema = z
+  .string()
+  .min(1)
+  .max(40)
+  .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/u, "tag must be lowercase kebab-case");
+
+export const updateAllergenTagsInputSchema = z.object({
+  id: z.string().min(1),
+  tags: z.array(allergenTagSchema).max(20),
+});
+
+// ── Latest skin-test controls (XLSX source-of-truth for wizard) ──────
+//
+// Lets the wizard prefill the histamine + saline control mm fields
+// from the most recent imported XLSX skin-test for the patient (joined
+// via Patient → ClinicalSeries[] → ClinicalSkinTest[] →
+// ClinicalSkinTestResult[controlType]). Returns nulls when no snapshot
+// exists yet; the wizard falls back to manual entry.
+export const latestPatientControlsInputSchema = z.object({
+  patientId: z.number().int().positive(),
+});
+
+export const latestPatientControlsOutputSchema = z.object({
+  histamineMm: z.number().nullable(),
+  salineMm: z.number().nullable(),
+  /** ISO date of the source skin-test (YYYY-MM-DD), null if no snapshot. */
+  testDate: z.iso.date().nullable(),
+  /** Source skin-test id so the UI can link/debug. */
+  skinTestId: z.string().nullable(),
+});
+
+// ── Contract ─────────────────────────────────────────────────────────
+
+/**
+ * Canonical EAACI cross-reactivity family tags. The 2026-05-18
+ * backfill migration applied these to ~120 ClinicalAllergen rows;
+ * the admin combobox surfaces them as suggestions while still
+ * allowing arbitrary kebab-case strings for future families.
+ */
+export const ALLERGEN_TAG_SUGGESTIONS = [
+  "pr-10",
+  "profilin",
+  "tropomyosin",
+  "ltp",
+  "serum-albumin",
+  "parvalbumin",
+  "lipocalin",
+] as const;
+export type AllergenTagSuggestion = (typeof ALLERGEN_TAG_SUGGESTIONS)[number];
+
+// ── Named schemas referenced by the contract (server router imports
+// these directly via `.input()`/`.output()` — no `["~orpc"]` accessor).
+export const examReportIdInputSchema = z.object({ id: z.number().int().positive() });
+
+export const examReportListInputSchema = z
+  .object({
+    patientId: z.number().int().positive().optional(),
+    examType: examTypeSchema.optional(),
+    search: z.string().optional(),
+    // ISO date (YYYY-MM-DD) inclusive bounds on createdAt. UI binds
+    // these to a DateRangePicker; server interprets `to` as the
+    // end-of-day to keep the range inclusive.
+    from: z.iso.date().optional(),
+    to: z.iso.date().optional(),
+    limit: z.number().int().positive().max(500).optional(),
+    offset: z.number().int().nonnegative().optional(),
+  })
+  .partial();
+
+export const examReportListResponseSchema = z.object({
+  items: z.array(examReportListItemSchema),
+  total: z.number().int(),
+});
+
+export const examReportOkResponseSchema = z.object({ ok: z.literal(true) });
+
+export const markGeneratedResponseSchema = z.object({ generatedAt: z.iso.datetime() });
+
+export const listTemplatesInputSchema = z
+  .object({ examType: examTypeSchema.nullable().optional() })
+  .partial();
+
+export const examReportListTemplatesResponseSchema = z.object({
+  templates: z.array(conclusionTemplateSchema),
+});
+
+export const emptyInputSchema = z.object({});
+
+export const examReportsContract = {
+  list: oc
+    .route({ method: "GET", path: "/" })
+    .input(examReportListInputSchema)
+    .output(examReportListResponseSchema),
+
+  get: oc
+    .route({ method: "GET", path: "/{id}" })
+    .input(examReportIdInputSchema)
+    .output(examReportDetailSchema),
+
+  create: oc
+    .route({ method: "POST", path: "/" })
+    .input(examReportCreateInputSchema)
+    .output(examReportDetailSchema),
+
+  update: oc
+    .route({ method: "POST", path: "/{id}/update" })
+    .input(examReportUpdateInputSchema)
+    .output(examReportDetailSchema),
+
+  delete: oc
+    .route({ method: "DELETE", path: "/{id}" })
+    .input(examReportIdInputSchema)
+    .output(examReportOkResponseSchema),
+
+  markGenerated: oc
+    .route({ method: "POST", path: "/{id}/mark-generated" })
+    .input(examReportIdInputSchema)
+    .output(markGeneratedResponseSchema),
+
+  // ConclusionTemplate CRUD (admin)
+  listTemplates: oc
+    .route({ method: "GET", path: "/templates" })
+    .input(listTemplatesInputSchema)
+    .output(examReportListTemplatesResponseSchema),
+
+  createTemplate: oc
+    .route({ method: "POST", path: "/templates" })
+    .input(conclusionTemplateCreateInputSchema)
+    .output(conclusionTemplateSchema),
+
+  updateTemplate: oc
+    .route({ method: "POST", path: "/templates/{id}/update" })
+    .input(conclusionTemplateUpdateInputSchema)
+    .output(conclusionTemplateSchema),
+
+  deleteTemplate: oc
+    .route({ method: "DELETE", path: "/templates/{id}" })
+    .input(examReportIdInputSchema)
+    .output(examReportOkResponseSchema),
+
+  // ClinicSettings (singleton)
+  getClinicSettings: oc
+    .route({ method: "GET", path: "/clinic-settings" })
+    .input(emptyInputSchema)
+    .output(clinicSettingsSchema),
+
+  updateClinicSettings: oc
+    .route({ method: "POST", path: "/clinic-settings/update" })
+    .input(clinicSettingsUpdateInputSchema)
+    .output(clinicSettingsSchema),
+
+  presignClinicAsset: oc
+    .route({ method: "POST", path: "/clinic-settings/presign-asset" })
+    .input(presignClinicAssetInputSchema)
+    .output(presignClinicAssetResponseSchema),
+
+  // Allergen catalog (read-only — wraps the existing ClinicalAllergen
+  // table so the wizard's picker has a single endpoint without
+  // duplicating clinical-skin-tests' contract surface).
+  listAllergens: oc
+    .route({ method: "GET", path: "/allergens" })
+    .input(allergenListInputSchema)
+    .output(allergenListOutputSchema),
+
+  // Admin: list every allergen + current tags[] for the tag-editor UI.
+  // Paginated/searchable. Separate from `listAllergens` because that
+  // endpoint is shaped for the wizard picker (no `total`, no inactive).
+  listAllergensWithTags: oc
+    .route({ method: "GET", path: "/allergens/admin" })
+    .input(listAllergensWithTagsInputSchema)
+    .output(listAllergensWithTagsOutputSchema),
+
+  // Admin: replace the entire `tags` array on one ClinicalAllergen.
+  // Returns the updated row so the client can patch the cache without
+  // refetching the whole list.
+  updateAllergenTags: oc
+    .route({ method: "POST", path: "/allergens/{id}/tags" })
+    .input(updateAllergenTagsInputSchema)
+    .output(allergenAdminRowSchema),
+
+  latestPatientControls: oc
+    .route({ method: "GET", path: "/patients/{patientId}/latest-controls" })
+    .input(latestPatientControlsInputSchema)
+    .output(latestPatientControlsOutputSchema),
+};
+
+export type ExamReportsContract = typeof examReportsContract;

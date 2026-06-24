@@ -1,6 +1,6 @@
+import { formatChile } from "@/lib/dates";
 import { Alert, Button, Card, Chip, Description, Spinner, Surface } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import dayjs from "dayjs";
 import { Bug, Play, RotateCcw } from "lucide-react";
 
 import { useToast } from "@/context/ToastContext";
@@ -50,7 +50,7 @@ export function DoctoraliaScraperRunControlPanel() {
     <Card>
       <Card.Header className="flex flex-col items-start gap-1">
         <h2 className="flex items-center gap-2 font-semibold text-base">
-          <Bug className="h-4 w-4" /> Override de horario
+          <Bug className="size-4" /> Override de horario
         </h2>
         <Card.Description className="text-default-500 text-xs">
           Úsalo para un Run manual en Railway o para la próxima corrida automática cuando quieras
@@ -72,7 +72,7 @@ export function DoctoraliaScraperRunControlPanel() {
               </Chip>
               {status.expiresAt ? (
                 <Chip size="sm" variant="soft">
-                  Expira {dayjs(status.expiresAt).tz().format("DD/MM HH:mm")}
+                  Expira {formatChile(status.expiresAt, "DD/MM HH:mm")}
                 </Chip>
               ) : null}
             </div>
@@ -83,9 +83,7 @@ export function DoctoraliaScraperRunControlPanel() {
                   Solicitado
                 </Description>
                 <p className="mt-1 font-medium text-sm">
-                  {status.requestedAt
-                    ? dayjs(status.requestedAt).tz().format("DD/MM/YYYY HH:mm")
-                    : "—"}
+                  {status.requestedAt ? formatChile(status.requestedAt, "DD/MM/YYYY HH:mm") : "—"}
                 </p>
               </Surface>
               <Surface className="rounded-2xl border border-default-200 px-4 py-3">
@@ -116,7 +114,7 @@ export function DoctoraliaScraperRunControlPanel() {
           isPending={clearMutation.isPending}
           onPress={() => clearMutation.mutate()}
         >
-          <RotateCcw className="h-4 w-4" />
+          <RotateCcw className="size-4" />
           Limpiar override
         </Button>
         <Button
@@ -124,7 +122,7 @@ export function DoctoraliaScraperRunControlPanel() {
           isPending={activateMutation.isPending}
           onPress={() => activateMutation.mutate()}
         >
-          <Play className="h-4 w-4" />
+          <Play className="size-4" />
           Forzar próxima corrida
         </Button>
       </Card.Footer>

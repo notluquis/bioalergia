@@ -3,55 +3,43 @@ import { logError, logEvent } from "../../lib/logger.ts";
 import { sendTemplateMessage } from "./graph-client.ts";
 import { normalizeToE164 } from "./phone.ts";
 
-const POLL_MS = 5_000;
-
-let timer: ReturnType<typeof setInterval> | null = null;
-let running = false;
-
-export function startBroadcastRunner() {
-  if (timer) return;
-  timer = setInterval(() => {
-    if (running) return;
-    running = true;
-    runOnce()
-      .catch((err) => logError("[wa-cloud.broadcast.tick]", err))
-      .finally(() => {
-        running = false;
-      });
-  }, POLL_MS);
-  logEvent("wa-cloud.broadcast.started", { intervalMs: POLL_MS });
+export function waBroadcastJobKey(broadcastId: number): string {
+  return `wa_broadcast_${broadcastId}`;
 }
 
-export function stopBroadcastRunner() {
-  if (!timer) return;
-  clearInterval(timer);
-  timer = null;
-}
+export type BroadcastBatchResult = {
+  /** PENDING recipients still queued after this batch (0 = finished). */
+  remaining: number;
+  /** Broadcast status after the batch (DONE/FAILED/SENDING/CANCELLED/…). */
+  status: string;
+};
 
-async function pickBroadcast() {
-  const now = new Date();
-  const sending = await db.waBroadcast.findFirst({
-    where: { status: "SENDING" },
-    orderBy: { startedAt: "asc" },
-  });
-  if (sending) return sending;
-  const queued = await db.waBroadcast.findFirst({
-    where: {
-      status: "QUEUED",
-      OR: [{ scheduledAt: null }, { scheduledAt: { lte: now } }],
-    },
-    orderBy: { scheduledAt: "asc" },
-  });
-  if (!queued) return null;
-  return db.waBroadcast.update({
-    where: { id: queued.id },
-    data: { status: "SENDING", startedAt: queued.startedAt ?? now },
-  });
-}
+// Send the next burst of a single broadcast and report progress. Driven by the
+// `send_wa_broadcast_tick` graphile-worker task, which re-enqueues itself until
+// `remaining === 0` or the broadcast leaves SENDING (cancelled/failed). Replaces
+// the old in-process setInterval poller (zero polling — see CLAUDE.local.md).
+export async function sendBroadcastNextBatch(broadcastId: number): Promise<BroadcastBatchResult> {
+  const current = await db.waBroadcast.findUnique({ where: { id: broadcastId } });
+  if (!current) return { remaining: 0, status: "missing" };
 
-export async function runOnce() {
-  const bc = await pickBroadcast();
-  if (!bc) return;
+  // Only QUEUED (due) or already-SENDING broadcasts advance. CANCELLED/DONE/
+  // FAILED/DRAFT break the chain.
+  if (current.status === "QUEUED") {
+    if (current.scheduledAt && current.scheduledAt.getTime() > Date.now()) {
+      // Not due yet — leave QUEUED; the task re-enqueues at scheduledAt.
+      return { remaining: current.totalRecipients, status: "QUEUED" };
+    }
+  } else if (current.status !== "SENDING") {
+    return { remaining: 0, status: current.status };
+  }
+
+  const bc =
+    current.status === "SENDING"
+      ? current
+      : await db.waBroadcast.update({
+          where: { id: current.id },
+          data: { status: "SENDING", startedAt: current.startedAt ?? new Date() },
+        });
 
   // Quality gate: pause sending if Meta has flagged the phone number RED.
   // Continuing would worsen quality + risk a ban. Operator must investigate
@@ -83,7 +71,7 @@ export async function runOnce() {
       },
     });
     logEvent("wa-cloud.broadcast.paused-red", { id: bc.id });
-    return;
+    return { remaining: 0, status: "FAILED" };
   }
 
   // Process up to rateLimitPerSecond * 5s = burst per tick.
@@ -96,11 +84,12 @@ export async function runOnce() {
 
   if (recipients.length === 0) {
     // Done — finalize counts.
-    const final = await db.waBroadcastRecipient.groupBy({
+    type GroupRow = { status: string; _count: { _all: number } };
+    const final = (await db.waBroadcastRecipient.groupBy({
       by: ["status"],
       where: { broadcastId: bc.id },
       _count: { _all: true },
-    });
+    })) as GroupRow[];
     const sent = final.find((g) => g.status === "SENT")?._count._all ?? 0;
     const failed = final.find((g) => g.status === "FAILED")?._count._all ?? 0;
     await db.waBroadcast.update({
@@ -113,7 +102,7 @@ export async function runOnce() {
       },
     });
     logEvent("wa-cloud.broadcast.done", { id: bc.id, sent, failed });
-    return;
+    return { remaining: 0, status: "DONE" };
   }
 
   const intervalMs = Math.max(50, Math.floor(1000 / bc.rateLimitPerSecond));
@@ -269,4 +258,10 @@ export async function runOnce() {
     // Rate limit pacing.
     await new Promise<void>((resolve) => setTimeout(resolve, intervalMs));
   }
+
+  // Batch done but recipients likely remain — report so the task re-enqueues.
+  const remaining = await db.waBroadcastRecipient.count({
+    where: { broadcastId: bc.id, status: "PENDING" },
+  });
+  return { remaining, status: "SENDING" };
 }

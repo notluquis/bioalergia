@@ -1,4 +1,5 @@
 import { createMiddleware } from "hono/factory";
+import type { MiddlewareHandler } from "hono";
 
 /**
  * Middleware to set Cache-Control headers.
@@ -7,7 +8,10 @@ import { createMiddleware } from "hono/factory";
  * @param seconds - Duration in seconds for max-age
  * @param directive - Cache directive (default: 'private')
  */
-export const cacheControl = (seconds: number, directive: "private" | "public" = "private") => {
+export const cacheControl = (
+  seconds: number,
+  directive: "private" | "public" = "private"
+): MiddlewareHandler => {
   return createMiddleware(async (c, next) => {
     await next();
 

@@ -1,9 +1,15 @@
 name: chromatic
 
+# Least-privilege GITHUB_TOKEN: only checkout + Chromatic (auth'd via
+# CHROMATIC_PROJECT_TOKEN, not GITHUB_TOKEN). Read-only by default.
+permissions:
+  contents: read
+
 on:
   push:
     branches:
       - main
+      - forthcoming-ocelot
     paths:
       - "apps/intranet/**"
       - "apps/site/**"
@@ -17,6 +23,7 @@ on:
   pull_request:
     branches:
       - main
+      - forthcoming-ocelot
     paths:
       - "apps/intranet/**"
       - "apps/site/**"
@@ -27,6 +34,10 @@ on:
       - "pnpm-lock.yaml"
       - "pnpm-workspace.yaml"
       - ".github/workflows/chromatic.yml"
+
+concurrency:
+  group: chromatic-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   changes:
@@ -73,6 +84,16 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+        with:
+          # Chromatic needs full git history to compute baselines vs the
+          # ancestor commit. Default fetch-depth=1 fails with
+          # "Found only one commit / Failed to retrieve git information".
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          run_install: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -80,13 +101,23 @@ jobs:
           node-version: 26
           cache: pnpm
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v6
-        with:
-          run_install: false
+      # Turbo remote cache ($0, GitHub Actions Cache backend) so the workspace
+      # dep build below HITs the cache instead of cold-compiling each Chromatic
+      # run. SHA-pinned 3rd-party action. (The storybook build the Chromatic CLI
+      # runs internally is NOT a turbo task, so it isn't cached here.)
+      - name: Turbo remote cache
+        uses: rharkor/caching-for-turbo@75f8ebf4a43d2c60b23bc2a27082cfea94ffdad9 # v2.5.0
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      # build-storybook compiles `*.stories.tsx` which import from
+      # @finanzas/orpc-contracts/* + @finanzas/db. These workspace
+      # packages publish from `dist/` (see their package.json `exports`)
+      # so we must build them first or rolldown can't resolve the
+      # subpath imports. Mirrors the pattern in quality.yml.
+      - name: Build workspace dependencies
+        run: pnpm turbo run build --filter=@finanzas/orpc-contracts --filter=@finanzas/orpc-client --filter=@finanzas/db
 
       - name: Run Chromatic (intranet)
         run: pnpm -C apps/intranet chromatic
@@ -100,17 +131,22 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+        with:
+          # Chromatic needs full git history to compute baselines vs the
+          # ancestor commit. Default fetch-depth=1 fails with
+          # "Found only one commit / Failed to retrieve git information".
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          run_install: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
           node-version: 26
           cache: pnpm
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v6
-        with:
-          run_install: false
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile

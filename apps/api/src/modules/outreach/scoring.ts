@@ -13,7 +13,7 @@ export async function computeScore(rbd: string): Promise<number> {
   if (prospect.emailMineduc || prospect.emailsAdicionales.length > 0) score += 30;
   if (prospect.telefonoMineduc || prospect.telefonosAdicionales.length > 0) score += 15;
   if (prospect.linkedinUrl) score += 10;
-  if (prospect.contactos.some((c) => RRHH_TITLE_RX.test(c.cargo))) score += 25;
+  if (prospect.contactos.some((c: { cargo: string }) => RRHH_TITLE_RX.test(c.cargo))) score += 25;
   if ((prospect.totalReviews ?? 0) > 100) score += 10;
   if ((prospect.totalReviews ?? 0) > 500) score += 10;
   return Math.min(100, score);

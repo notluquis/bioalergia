@@ -30,9 +30,9 @@ export function useWakeLock() {
       }
     };
 
-    const handleVisibilityChange = async () => {
+    const handleVisibilityChange = () => {
       if (wakeLockRef.current !== null && document.visibilityState === "visible") {
-        await requestWakeLock();
+        void requestWakeLock();
       }
     };
 

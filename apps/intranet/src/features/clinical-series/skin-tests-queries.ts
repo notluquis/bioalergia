@@ -1,11 +1,10 @@
+// oxlint-disable typescript/no-non-null-assertion -- TODO(strict-null): refactor each `!` to invariant() or explicit guard. Tracked in repo-wide non-null cleanup.
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { compactORPCInput } from "@/lib/orpc-input";
 import { clinicalSeriesKeys } from "./queries";
 import { clinicalSkinTestsORPCClient, toClinicalSkinTestsApiError } from "./skin-tests-orpc";
 import {
   ClinicalDocumentImportSchema,
-  OneDriveFolderFileSchema,
-  OneDriveFolderItemSchema,
   SkinTestAnalyticsSchema,
   SkinTestDetailSchema,
   SkinTestImportSchema,
@@ -38,39 +37,16 @@ export interface SkinTestAnalyticsFilters {
 export const skinTestImportKeys = {
   all: ["clinical-skin-tests"] as const,
   activeJob: () => [...skinTestImportKeys.all, "active-job"] as const,
+  staleCount: () => [...skinTestImportKeys.all, "stale-count"] as const,
   analytics: (filters?: SkinTestAnalyticsFilters) =>
     [...skinTestImportKeys.all, "analytics", filters] as const,
   importsBase: () => [...skinTestImportKeys.all, "imports"] as const,
   imports: (filters?: SkinTestImportFilters) =>
     [...skinTestImportKeys.all, "imports", filters] as const,
-  oneDriveFolders: (accountId: string, driveId?: null | string, itemId?: null | string) =>
-    [
-      ...skinTestImportKeys.all,
-      "onedrive-folders",
-      accountId,
-      driveId ?? "root",
-      itemId ?? "root",
-    ] as const,
-  oneDriveFolderPreview: (accountId: string, driveId?: null | string, itemId?: null | string) =>
-    [
-      ...skinTestImportKeys.all,
-      "onedrive-folder-preview",
-      accountId,
-      driveId ?? "root",
-      itemId ?? "root",
-    ] as const,
-  oneDriveStatus: () => [...skinTestImportKeys.all, "onedrive-status"] as const,
   seriesDocuments: (seriesId: number) =>
     [...skinTestImportKeys.all, "series", seriesId, "documents"] as const,
   seriesTests: (seriesId: number) => [...skinTestImportKeys.all, "series", seriesId] as const,
 };
-
-export function useOneDriveSkinTestStatus() {
-  return useQuery({
-    queryFn: async () => clinicalSkinTestsORPCClient.getOneDriveStatus({}),
-    queryKey: skinTestImportKeys.oneDriveStatus(),
-  });
-}
 
 export function useActiveClinicalSkinTestJob(options?: { enabled?: boolean }) {
   return useQuery({
@@ -85,25 +61,6 @@ export function useActiveClinicalSkinTestJob(options?: { enabled?: boolean }) {
       const status = query.state.data?.job?.status;
       if (!status) return false;
       return ["completed", "failed", "cancelled"].includes(status) ? false : 5000;
-    },
-  });
-}
-
-export function useGetOneDriveAuthUrl(redirectUri: string) {
-  return useQuery({
-    enabled: false, // only run on demand
-    queryFn: async () => clinicalSkinTestsORPCClient.getOneDriveAuthUrl({ redirectUri }),
-    queryKey: ["onedrive-auth-url", redirectUri],
-  });
-}
-
-export function useConnectOneDrive() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (params: { code: string; redirectUri: string }) =>
-      clinicalSkinTestsORPCClient.connectOneDrive(params),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: skinTestImportKeys.oneDriveStatus() });
     },
   });
 }
@@ -179,69 +136,6 @@ export function useSyncSkinTestImports() {
     }) => await clinicalSkinTestsORPCClient.sync(compactORPCInput(params) ?? {}),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: skinTestImportKeys.activeJob() });
-    },
-  });
-}
-
-export function useConfigureOneDriveFolder() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (params: {
-      accountId: string;
-      driveId?: null | string;
-      folderPath?: string;
-      itemId?: null | string;
-      name?: null | string;
-    }) => await clinicalSkinTestsORPCClient.configureOneDriveFolder(params),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: skinTestImportKeys.oneDriveStatus() });
-    },
-  });
-}
-
-export function useOneDriveFolderChildren(params: {
-  accountId: string;
-  driveId?: null | string;
-  enabled?: boolean;
-  itemId?: null | string;
-}) {
-  return useQuery({
-    enabled: params.enabled ?? true,
-    queryFn: async () => {
-      const result = await clinicalSkinTestsORPCClient.listOneDriveFolderChildren({
-        accountId: params.accountId,
-        driveId: params.driveId,
-        itemId: params.itemId,
-      });
-      const raw = result as unknown as typeof result & { files?: unknown[] };
-      return {
-        ...result,
-        files: OneDriveFolderFileSchema.array().parse(raw.files ?? []),
-        folders: OneDriveFolderItemSchema.array().parse(result.folders),
-      };
-    },
-    queryKey: skinTestImportKeys.oneDriveFolders(params.accountId, params.driveId, params.itemId),
-  });
-}
-
-export function useRenewOneDriveSubscription() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (accountId: string) =>
-      await clinicalSkinTestsORPCClient.renewOneDriveSubscription({ accountId }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: skinTestImportKeys.oneDriveStatus() });
-    },
-  });
-}
-
-export function useDisconnectOneDrive() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (accountId: string) =>
-      await clinicalSkinTestsORPCClient.disconnectOneDrive({ accountId }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: skinTestImportKeys.oneDriveStatus() });
     },
   });
 }
@@ -322,6 +216,30 @@ export function useReclassifyClinicalXlsxLibrary() {
   });
 }
 
+// Count of imports whose metadata drifted from OneDrive (rename/de-qualification
+// orphans) — labels the targeted reconcile button.
+export function useStaleSkinTestImportsCount() {
+  return useQuery({
+    queryFn: async () => await clinicalSkinTestsORPCClient.staleImportsCount({}),
+    queryKey: skinTestImportKeys.staleCount(),
+    refetchOnWindowFocus: false,
+  });
+}
+
+// Targeted heal: reconcile ONLY the desynced imports. Requeued (still-importable)
+// rows can then be re-parsed with the existing reprocess-pending button.
+export function useReconcileStaleSkinTestImports() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => await clinicalSkinTestsORPCClient.reconcileStaleImports({}),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: skinTestImportKeys.activeJob() });
+      void queryClient.invalidateQueries({ queryKey: skinTestImportKeys.staleCount() });
+      void queryClient.invalidateQueries({ queryKey: skinTestImportKeys.importsBase() });
+    },
+  });
+}
+
 export function useArchiveSkinTestWorkbookSnapshots() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -381,30 +299,5 @@ export function useCancelClinicalSkinTestJob() {
         queryClient.invalidateQueries({ queryKey: skinTestImportKeys.importsBase() }),
       ]);
     },
-  });
-}
-
-export function useOneDriveFolderPreview(params: {
-  accountId: string;
-  driveId?: null | string;
-  enabled?: boolean;
-  itemId?: null | string;
-}) {
-  return useQuery({
-    // Only fetch when a specific folder is selected (not root — too expensive without a target)
-    enabled: (params.enabled ?? true) && !!(params.driveId && params.itemId),
-    queryFn: async () =>
-      await clinicalSkinTestsORPCClient.folderPreview({
-        accountId: params.accountId,
-        driveId: params.driveId,
-        itemId: params.itemId,
-      }),
-    queryKey: skinTestImportKeys.oneDriveFolderPreview(
-      params.accountId,
-      params.driveId,
-      params.itemId
-    ),
-    // Recursive delta scan is expensive — cache for 30s to avoid re-scanning on each breadcrumb click
-    staleTime: 30_000,
   });
 }

@@ -1,19 +1,19 @@
 import { Button, Checkbox, Popover, Tooltip } from "@heroui/react";
-import dayjs from "dayjs";
+import type JsPDF from "jspdf";
+import type * as JsPdfModule from "jspdf";
 import type { CellHookData } from "jspdf-autotable";
+import type * as JsPdfAutotableModule from "jspdf-autotable";
 import { useRef, useState } from "react";
-import { useSettings } from "@/context/SettingsContext";
+import { useSettings } from "@/features/settings/hooks/use-settings";
 import type { Employee } from "@/features/hr/employees/types";
 import { apiClient } from "@/lib/api-client";
+import { chileDay, formatChile, monthLabelToISO, weekday } from "@/lib/dates";
 import { fmtCLP } from "@/lib/format";
 import { toast } from "@/lib/toast-interceptor";
 import { formatRetentionPercent } from "~/shared/retention";
 
 import type { BulkRow, TimesheetSummaryRow } from "../types";
 
-import "dayjs/locale/es";
-
-const MONTH_LABEL_REGEX = /^(\d{4})-(\d{2})$/;
 const URL_REGEX = /^https?:\/\//i;
 const TIME_HH_MM_REGEX = /^\d{1,2}:\d{2}$/;
 
@@ -40,12 +40,12 @@ const COLUMN_LABELS: Record<TimesheetColumnKey, string> = {
   worked: "Tiempo facturable",
 };
 
-type AutoTableFactory = typeof import("jspdf-autotable");
+type AutoTableFactory = typeof JsPdfAutotableModule;
 interface DetailTableProps {
   autoTable: AutoTableFactory["default"];
   bulkRows: BulkRow[];
   defaultCols: readonly TimesheetColumnKey[];
-  doc: import("jspdf").default;
+  doc: JsPDF;
   labels: Record<TimesheetColumnKey, string>;
   margin: number;
   pageWidth: number;
@@ -53,18 +53,18 @@ interface DetailTableProps {
   startY: number;
 }
 
-type JsPdfFactory = typeof import("jspdf");
+type JsPdfFactory = typeof JsPdfModule;
 
 interface SummaryTableProps {
   autoTable: AutoTableFactory["default"];
-  doc: import("jspdf").default;
+  doc: JsPDF;
   infoStartY: number;
   margin: number;
   pageWidth: number;
   summary: null | TimesheetSummaryRow;
 }
 
-function getSafePageWidth(doc: import("jspdf").default): number {
+function getSafePageWidth(doc: JsPDF): number {
   interface JsPdfPageSize {
     getWidth?: () => number;
     width?: number;
@@ -93,7 +93,7 @@ function openPdfPreviewOrAlert(dataUri: string) {
 }
 
 function finalizePdfExport(params: {
-  doc: import("jspdf").default;
+  doc: JsPDF;
   employee: Employee;
   monthLabel: string;
   preview: boolean;
@@ -190,7 +190,13 @@ export function TimesheetExportPDF({
   return (
     <div className="flex items-center gap-2">
       <div className="relative inline-flex items-center gap-2">
-        <Button onPress={() => handleExport(true)} type="button" variant="secondary">
+        <Button
+          onPress={() => {
+            void handleExport(true);
+          }}
+          type="button"
+          variant="secondary"
+        >
           Exportar PDF
         </Button>
         <Popover isOpen={showOptions} onOpenChange={setShowOptions}>
@@ -198,7 +204,7 @@ export function TimesheetExportPDF({
             <Tooltip>
               <Tooltip.Trigger>
                 <Button
-                  className="inline-flex h-9 w-9 items-center justify-center"
+                  className="inline-flex items-center justify-center size-9"
                   size="sm"
                   type="button"
                   variant="secondary"
@@ -251,7 +257,9 @@ export function TimesheetExportPDF({
                 </Button>
                 <Button
                   className="text-primary text-xs"
-                  onPress={() => handleExport(true)}
+                  onPress={() => {
+                    void handleExport(true);
+                  }}
                   size="sm"
                   variant="outline"
                 >
@@ -259,7 +267,9 @@ export function TimesheetExportPDF({
                 </Button>
                 <Button
                   className="text-primary text-xs"
-                  onPress={() => handleExport(false)}
+                  onPress={() => {
+                    void handleExport(false);
+                  }}
                   size="sm"
                   variant="outline"
                 >
@@ -295,7 +305,7 @@ interface HeaderResult {
 }
 
 async function addPdfHeader(
-  doc: import("jspdf").default,
+  doc: JsPDF,
   settings: { logoUrl?: string; orgName?: string; orgAddress?: string; orgPhone?: string },
   logoUrl: string,
   pageWidth: number,
@@ -345,7 +355,7 @@ async function addPdfHeader(
 }
 
 function addPrestadorInfo(
-  doc: import("jspdf").default,
+  doc: JsPDF,
   employee: Employee | null,
   monthLabel: string,
   summary: null | TimesheetSummaryRow,
@@ -353,20 +363,10 @@ function addPrestadorInfo(
   margin: number,
   infoStartY: number
 ): void {
-  dayjs.locale("es");
-  let periodEs = monthLabel;
-  const monthMatch = MONTH_LABEL_REGEX.exec(monthLabel);
-  if (monthMatch) {
-    periodEs = dayjs(`${monthMatch[1]}-${monthMatch[2]}-01`).locale("es").format("MMMM YYYY");
-  } else if (dayjs(monthLabel, "MMMM YYYY", "en").isValid()) {
-    periodEs = dayjs(monthLabel, "MMMM YYYY", "en").locale("es").format("MMMM YYYY");
-  } else if (dayjs(monthLabel, "MMMM YYYY", "es").isValid()) {
-    periodEs = dayjs(monthLabel, "MMMM YYYY", "es").locale("es").format("MMMM YYYY");
-  }
+  const iso = monthLabelToISO(monthLabel);
+  let periodEs = iso ? formatChile(iso, "MMMM YYYY") : monthLabel;
   periodEs = periodEs.charAt(0).toUpperCase() + periodEs.slice(1);
-  const payDateFormatted = summary?.payDate
-    ? dayjs(summary.payDate, "YYYY-MM-DD").format("DD-MM-YYYY")
-    : null;
+  const payDateFormatted = summary?.payDate ? formatChile(summary.payDate, "DD-MM-YYYY") : null;
 
   doc.setFontSize(10);
   doc.text(`Prestador: ${employee?.full_name || "-"}`, margin, infoStartY);
@@ -383,7 +383,7 @@ function addPrestadorInfo(
   doc.setFont("helvetica", "normal");
 }
 
-function addLegalNote(doc: import("jspdf").default, pageWidth: number, margin: number): void {
+function addLegalNote(doc: JsPDF, pageWidth: number, margin: number): void {
   const finalTableRef = doc as unknown as { lastAutoTable?: { finalY: number } };
   const noteY = finalTableRef.lastAutoTable ? finalTableRef.lastAutoTable.finalY + 10 : 120;
   doc.setFontSize(8);
@@ -439,7 +439,7 @@ function drawDetailTable({
     colKeys.map((key): string => {
       switch (key) {
         case "date": {
-          return dayjs(row.date).isValid() ? dayjs(row.date).format("DD-MM-YYYY") : "-";
+          return row.date ? formatChile(row.date, "DD-MM-YYYY") : "-";
         }
         case "entrada": {
           return row.entrada || "-";
@@ -491,7 +491,7 @@ function drawDetailTable({
       if (data.section === "body") {
         const rowIndex = data.row.index;
         const rawDate = workedRows[rowIndex]?.date;
-        const isSunday = rawDate && dayjs(rawDate).day() === 0;
+        const isSunday = rawDate && weekday(chileDay(rawDate)) === 0;
         if (isSunday) {
           data.cell.styles.fillColor = [245, 245, 245];
         }

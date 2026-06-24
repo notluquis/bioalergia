@@ -3,24 +3,24 @@
 # ==========================================================================
 # Stage 1: Prune monorepo for site
 # ==========================================================================
-FROM node:slim AS pruner
+FROM node:26-slim AS pruner
 WORKDIR /app
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 ENV HUSKY=0
 COPY . .
-RUN npm install -g pnpm@10.32.1
+RUN npm install -g pnpm@11.1.1
 RUN TURBO_TELEMETRY_DISABLED=1 pnpm dlx turbo@2.9.1 prune @finanzas/site --docker
 
 # ==========================================================================
 # Stage 2: Base deps
 # ==========================================================================
-FROM node:slim AS base
+FROM node:26-slim AS base
 WORKDIR /app
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 ENV HUSKY=0
-RUN npm install -g pnpm@10.32.1
+RUN npm install -g pnpm@11.1.1
 
 COPY --from=pruner /app/out/json/ .
 COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
@@ -34,11 +34,15 @@ RUN --mount=type=cache,id=s/15a5a9cb-b1d7-4fa9-8082-b013705c6f0f-/pnpm/store,tar
 FROM base AS build
 ARG VITE_PUBLIC_POSTHOG_KEY
 ARG VITE_PUBLIC_POSTHOG_HOST
+ARG VITE_MERCADOPAGO_PUBLIC_KEY
+ARG VITE_STOREFRONT_URL
 COPY --from=pruner /app/out/full/ .
 ENV CI=true
 ENV TURBO_TELEMETRY_DISABLED=1
 ENV VITE_PUBLIC_POSTHOG_KEY=${VITE_PUBLIC_POSTHOG_KEY}
 ENV VITE_PUBLIC_POSTHOG_HOST=${VITE_PUBLIC_POSTHOG_HOST}
+ENV VITE_MERCADOPAGO_PUBLIC_KEY=${VITE_MERCADOPAGO_PUBLIC_KEY}
+ENV VITE_STOREFRONT_URL=${VITE_STOREFRONT_URL}
 RUN --mount=type=cache,id=s/15a5a9cb-b1d7-4fa9-8082-b013705c6f0f-/app/.turbo/cache,target=/app/.turbo/cache \
     pnpm -w turbo run build --filter=@finanzas/site
 

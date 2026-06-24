@@ -3,8 +3,6 @@
  * Separated for code splitting
  */
 
-import dayjs from "dayjs";
-import customParseFormat from "dayjs/plugin/customParseFormat";
 import {
   Bar,
   BarChart,
@@ -16,14 +14,10 @@ import {
   YAxis,
 } from "recharts";
 
+import { formatChile } from "@/lib/dates";
 import { fmtCLP } from "@/lib/format";
 
 import type { MonthlyFlowData } from "../types";
-
-import "dayjs/locale/es";
-
-dayjs.extend(customParseFormat);
-dayjs.locale("es");
 
 interface MonthlyFlowChartInnerProps {
   data: MonthlyFlowData[];
@@ -31,11 +25,11 @@ interface MonthlyFlowChartInnerProps {
 export function MonthlyFlowChartInner({ data }: MonthlyFlowChartInnerProps) {
   const chartData = data.map((item) => {
     // item.month viene como "YYYY-MM" (e.g., "2025-01")
-    const monthDate = dayjs(`${item.month}-01`, "YYYY-MM-DD");
+    const iso = `${item.month}-01`;
     return {
       Egresos: item.out,
       Ingresos: item.in,
-      month: monthDate.isValid() ? monthDate.format("MMM YY") : item.month,
+      month: /^\d{4}-\d{2}-\d{2}$/.test(iso) ? formatChile(iso, "MMM YY") : item.month,
       Neto: item.net,
     };
   });

@@ -9,24 +9,31 @@ import {
   loanPublicIdSchema,
   loanRegenerateSchedulesInputSchema,
   loanScheduleIdSchema,
+  loanSchedulePaymentCandidatesInputSchema,
+  loanSchedulePaymentCandidatesResponseSchema,
   loanScheduleResponseSchema,
+  loanScheduleUpdateInputSchema,
+  loanStructuredCreateInputSchema,
   loanUpdateInputSchema,
 } from "@finanzas/orpc-contracts/loans";
 import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
-import { getSessionUser, hasPermission } from "../auth.ts";
+import { getSessionUser, hasPermission } from "../lib/auth.ts";
 import { logError } from "../lib/logger.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
 import {
   createLoan,
+  createStructuredLoan,
   deleteLoan,
   getLoanDetail,
+  listLoanPaymentCandidates,
   listLoans,
   regenerateLoanSchedules,
   registerLoanPayment,
   unlinkLoanPayment,
   updateLoan,
+  updateLoanSchedule,
 } from "../services/loans.ts";
 import { SuperJSONRPCHandler } from "./superjson.ts";
 
@@ -94,6 +101,20 @@ const loansORPCRouterBase = {
       return { ...created, status: "ok" as const };
     }),
 
+  createStructured: createLoans
+    .route({
+      method: "POST",
+      path: "/structured",
+      summary: "Create a structured loan from funding sources",
+      tags: ["Loans"],
+    })
+    .input(loanStructuredCreateInputSchema)
+    .output(loanDetailResponseSchema)
+    .handler(async ({ input }) => {
+      const created = await createStructuredLoan(input);
+      return { ...created, status: "ok" as const };
+    }),
+
   delete: deleteLoans
     .route({ method: "DELETE", path: "/{publicId}", summary: "Delete a loan", tags: ["Loans"] })
     .input(loanPublicIdSchema)
@@ -117,6 +138,20 @@ const loansORPCRouterBase = {
     .output(loanListResponseSchema)
     .handler(async () => ({
       loans: await listLoans(),
+      status: "ok" as const,
+    })),
+
+  paymentCandidates: readLoans
+    .route({
+      method: "GET",
+      path: "/schedules/{id}/payment-candidates",
+      summary: "List candidate transactions for a loan schedule payment",
+      tags: ["Loans"],
+    })
+    .input(loanSchedulePaymentCandidatesInputSchema)
+    .output(loanSchedulePaymentCandidatesResponseSchema)
+    .handler(async ({ input }) => ({
+      candidates: await listLoanPaymentCandidates(input.id, input),
       status: "ok" as const,
     })),
 
@@ -159,6 +194,20 @@ const loansORPCRouterBase = {
     .output(loanScheduleResponseSchema)
     .handler(async ({ input }) => ({
       schedule: await unlinkLoanPayment(input.id),
+      status: "ok" as const,
+    })),
+
+  updateSchedule: updateLoans
+    .route({
+      method: "PUT",
+      path: "/schedules/{id}",
+      summary: "Update a loan schedule installment",
+      tags: ["Loans"],
+    })
+    .input(loanScheduleIdSchema.extend({ payload: loanScheduleUpdateInputSchema }))
+    .output(loanScheduleResponseSchema)
+    .handler(async ({ input }) => ({
+      schedule: await updateLoanSchedule(input.id, input.payload),
       status: "ok" as const,
     })),
 

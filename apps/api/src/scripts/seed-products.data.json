@@ -1,0 +1,308 @@
+{
+  "$comment": "Seed inicial del catálogo ecommerce. Editar libremente sin tocar código. El script seed-products.ts hace upsert por SKU (idempotente). Precios en CLP IVA-incluido.",
+  "categories": [
+    { "slug": "zona-del-panal", "name": "Zona del pañal" },
+    { "slug": "hidratacion-corporal", "name": "Hidratación corporal" },
+    { "slug": "higiene-bebe", "name": "Higiene bebé" },
+    { "slug": "cuidado-nasal", "name": "Cuidado nasal" },
+    { "slug": "cuidado-manos", "name": "Cuidado de manos" },
+    { "slug": "control-ambiental", "name": "Control ambiental" },
+    { "slug": "fundas-antiacaros", "name": "Fundas antiácaros" },
+    { "slug": "purificadores-aire", "name": "Purificadores de aire" },
+    { "slug": "salud-respiratoria", "name": "Salud respiratoria" },
+    { "slug": "repelentes", "name": "Repelentes" },
+    { "slug": "anti-niquel", "name": "Anti-níquel" }
+  ],
+  "$comment_drafts": "Los productos con SKU 'ALG-*' son PLANTILLAS en estado DRAFT (ocultos en la tienda, que filtra status=ACTIVE). Antes de publicarlos: reemplazar SKU por el real, fijar price_clp (CLP IVA-incluido), available_qty, brand, y cambiar status a 'ACTIVE'.",
+  "products": [
+    {
+      "sku": "296361",
+      "name": "Bepanthol Ungüento Contra Coceduras Para Bebés 50 g",
+      "brand": "Bayer",
+      "price_clp": 6990,
+      "available_qty": 5,
+      "category_slug": "zona-del-panal",
+      "status": "ACTIVE"
+    },
+    {
+      "sku": "555169",
+      "name": "Hipoglós NF Pomada 20 g",
+      "brand": "Hipoglós NF",
+      "price_clp": 5990,
+      "available_qty": 5,
+      "category_slug": "zona-del-panal",
+      "status": "ACTIVE"
+    },
+    {
+      "sku": "391006",
+      "name": "ISDIN Baby Naturals Loción Corporal 400 ml",
+      "brand": "ISDIN",
+      "price_clp": 17990,
+      "available_qty": 2,
+      "category_slug": "hidratacion-corporal",
+      "status": "ACTIVE"
+    },
+    {
+      "sku": "264861",
+      "name": "NeilMed Sinu Rinse Kit 10 sobres + frasco",
+      "brand": "NeilMed",
+      "price_clp": 17990,
+      "available_qty": 5,
+      "category_slug": "cuidado-nasal",
+      "status": "ACTIVE"
+    },
+    {
+      "sku": "391004",
+      "name": "ISDIN Baby Naturals Gel Shampoo 400 ml",
+      "brand": "ISDIN",
+      "price_clp": 14990,
+      "available_qty": 2,
+      "category_slug": "higiene-bebe",
+      "status": "ACTIVE"
+    },
+    {
+      "sku": "391010",
+      "name": "ISDIN Baby Naturals Zn40 Pomada del Pañal 100 ml",
+      "brand": "ISDIN",
+      "price_clp": 12990,
+      "available_qty": 5,
+      "category_slug": "zona-del-panal",
+      "status": "ACTIVE"
+    },
+    {
+      "sku": "391008",
+      "name": "ISDIN Baby Naturals Zn40 Pomada del Pañal 50 ml",
+      "brand": "ISDIN",
+      "price_clp": 9990,
+      "available_qty": 5,
+      "category_slug": "zona-del-panal",
+      "status": "ACTIVE"
+    },
+    {
+      "sku": "274231",
+      "name": "Cetaphil Espuma Limpiadora PRO AD Bebés 250 ml",
+      "brand": "Cetaphil",
+      "price_clp": 14990,
+      "available_qty": 2,
+      "category_slug": "higiene-bebe",
+      "status": "ACTIVE"
+    },
+    {
+      "sku": "268113",
+      "name": "NeilMed Sinus Rinse Solución Nasal Sobres x50",
+      "brand": "NeilMed",
+      "price_clp": 17990,
+      "available_qty": 2,
+      "category_slug": "cuidado-nasal",
+      "status": "ACTIVE"
+    },
+    {
+      "sku": "297382",
+      "name": "Dermocream Urea 10% 400 ml",
+      "brand": "Dermocream",
+      "price_clp": 5990,
+      "available_qty": 5,
+      "category_slug": "hidratacion-corporal",
+      "status": "ACTIVE"
+    },
+    {
+      "sku": "549430",
+      "name": "Ceramide Loción Corporal Hidratante 400 ml",
+      "brand": "Ceramide",
+      "price_clp": 8990,
+      "available_qty": 5,
+      "category_slug": "hidratacion-corporal",
+      "status": "ACTIVE"
+    },
+    {
+      "sku": "557354",
+      "name": "Lubriderm Clinical Therapy 400 ml",
+      "brand": "Lubriderm",
+      "price_clp": 11990,
+      "available_qty": 5,
+      "category_slug": "hidratacion-corporal",
+      "status": "ACTIVE"
+    },
+    {
+      "sku": "291936",
+      "name": "CeraVe Crema Hidratante 454 g",
+      "brand": "CeraVe",
+      "price_clp": 15990,
+      "available_qty": 2,
+      "category_slug": "hidratacion-corporal",
+      "status": "ACTIVE"
+    },
+    {
+      "sku": "299254",
+      "name": "CeraVe Crema Reparadora Manos 50 ml",
+      "brand": "CeraVe",
+      "price_clp": 6990,
+      "available_qty": 2,
+      "category_slug": "cuidado-manos",
+      "status": "ACTIVE"
+    },
+
+    {
+      "sku": "ALG-001",
+      "name": "Funda antiácaros para colchón 1 plaza",
+      "brand": "",
+      "price_clp": 0,
+      "available_qty": 0,
+      "category_slug": "fundas-antiacaros",
+      "status": "DRAFT"
+    },
+    {
+      "sku": "ALG-002",
+      "name": "Funda antiácaros para colchón 2 plazas",
+      "brand": "",
+      "price_clp": 0,
+      "available_qty": 0,
+      "category_slug": "fundas-antiacaros",
+      "status": "DRAFT"
+    },
+    {
+      "sku": "ALG-003",
+      "name": "Funda antiácaros para almohada",
+      "brand": "",
+      "price_clp": 0,
+      "available_qty": 0,
+      "category_slug": "fundas-antiacaros",
+      "status": "DRAFT"
+    },
+    {
+      "sku": "ALG-004",
+      "name": "Funda antiácaros para plumón 2 plazas",
+      "brand": "",
+      "price_clp": 0,
+      "available_qty": 0,
+      "category_slug": "fundas-antiacaros",
+      "status": "DRAFT"
+    },
+    {
+      "sku": "ALG-010",
+      "name": "Spray antialérgico para textiles y superficies",
+      "brand": "",
+      "price_clp": 0,
+      "available_qty": 0,
+      "category_slug": "control-ambiental",
+      "status": "DRAFT"
+    },
+    {
+      "sku": "ALG-011",
+      "name": "Detergente antialérgico concentrado",
+      "brand": "",
+      "price_clp": 0,
+      "available_qty": 0,
+      "category_slug": "control-ambiental",
+      "status": "DRAFT"
+    },
+    {
+      "sku": "ALG-012",
+      "name": "Aditivo antiácaros para lavadora",
+      "brand": "",
+      "price_clp": 0,
+      "available_qty": 0,
+      "category_slug": "control-ambiental",
+      "status": "DRAFT"
+    },
+    {
+      "sku": "ALG-020",
+      "name": "Solución de irrigación nasal — repuesto 60 sobres",
+      "brand": "",
+      "price_clp": 0,
+      "available_qty": 0,
+      "category_slug": "cuidado-nasal",
+      "status": "DRAFT"
+    },
+    {
+      "sku": "ALG-021",
+      "name": "Spray nasal de solución salina",
+      "brand": "",
+      "price_clp": 0,
+      "available_qty": 0,
+      "category_slug": "cuidado-nasal",
+      "status": "DRAFT"
+    },
+    {
+      "sku": "ALG-022",
+      "name": "Aspirador nasal",
+      "brand": "",
+      "price_clp": 0,
+      "available_qty": 0,
+      "category_slug": "cuidado-nasal",
+      "status": "DRAFT"
+    },
+    {
+      "sku": "ALG-030",
+      "name": "Purificador de aire con filtro HEPA",
+      "brand": "",
+      "price_clp": 0,
+      "available_qty": 0,
+      "category_slug": "purificadores-aire",
+      "status": "DRAFT"
+    },
+    {
+      "sku": "ALG-031",
+      "name": "Filtro HEPA de repuesto",
+      "brand": "",
+      "price_clp": 0,
+      "available_qty": 0,
+      "category_slug": "purificadores-aire",
+      "status": "DRAFT"
+    },
+    {
+      "sku": "ALG-040",
+      "name": "Espaciador (aerocámara) para inhalador",
+      "brand": "",
+      "price_clp": 0,
+      "available_qty": 0,
+      "category_slug": "salud-respiratoria",
+      "status": "DRAFT"
+    },
+    {
+      "sku": "ALG-041",
+      "name": "Medidor de flujo espiratorio (peak flow)",
+      "brand": "",
+      "price_clp": 0,
+      "available_qty": 0,
+      "category_slug": "salud-respiratoria",
+      "status": "DRAFT"
+    },
+    {
+      "sku": "ALG-050",
+      "name": "Parche alivia-picaduras",
+      "brand": "",
+      "price_clp": 0,
+      "available_qty": 0,
+      "category_slug": "repelentes",
+      "status": "DRAFT"
+    },
+    {
+      "sku": "ALG-051",
+      "name": "Pulsera repelente de mosquitos",
+      "brand": "",
+      "price_clp": 0,
+      "available_qty": 0,
+      "category_slug": "repelentes",
+      "status": "DRAFT"
+    },
+    {
+      "sku": "ALG-060",
+      "name": "Detector de níquel",
+      "brand": "",
+      "price_clp": 0,
+      "available_qty": 0,
+      "category_slug": "anti-niquel",
+      "status": "DRAFT"
+    },
+    {
+      "sku": "ALG-061",
+      "name": "Protector anti-níquel",
+      "brand": "",
+      "price_clp": 0,
+      "available_qty": 0,
+      "category_slug": "anti-niquel",
+      "status": "DRAFT"
+    }
+  ]
+}

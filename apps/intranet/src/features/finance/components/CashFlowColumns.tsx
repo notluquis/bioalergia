@@ -1,6 +1,6 @@
+import { formatChile } from "@/lib/dates";
 import { Button, Checkbox, Chip, ListBox, Select } from "@heroui/react";
 import type { ColumnDef } from "@tanstack/react-table";
-import dayjs from "dayjs";
 import { ArrowRightLeft, ArrowUpDown, Pencil } from "lucide-react";
 import type { ReactNode } from "react";
 import { isNonAccountableCategory } from "../utils/non-accountable-category";
@@ -26,6 +26,7 @@ export type CashFlowTransaction = {
   counterpart?: CounterpartOption | null;
   counterpartAccountNumber?: null | string;
   counterpartId?: null | number;
+  counterpartLinkedAccountNumber?: null | string;
   createdAt?: Date;
   date: Date;
   description: string;
@@ -45,6 +46,11 @@ export type CashFlowTransaction = {
   sourceId?: null | string;
   type: "INCOME" | "EXPENSE";
   updatedAt?: Date;
+  withdrawBankAccountHolder?: null | string;
+  withdrawBankAccountNumber?: null | string;
+  withdrawBankAccountType?: null | string;
+  withdrawBankName?: null | string;
+  withdrawIdentificationNumber?: null | string;
 };
 
 const formatCurrency = (amount: number) => {
@@ -137,6 +143,27 @@ const COMMENT_REF_PREFIX_REGEX = /^ref:\s*/i;
 const normalizeCommentDetail = (rawValue: null | string | undefined) =>
   (rawValue ?? "").replace(COMMENT_REF_PREFIX_REGEX, "").trim();
 
+const hasWithdrawDetails = (row: CashFlowTransaction) =>
+  Boolean(
+    row.withdrawBankAccountHolder?.trim() ||
+    row.withdrawBankAccountNumber?.trim() ||
+    row.withdrawBankName?.trim()
+  );
+
+const mapAccountTypeLabel = (rawType: null | string | undefined) => {
+  const type = normalizeComparable(rawType);
+  if (type === "checking_account") return "Cuenta corriente";
+  if (type === "view_account") return "Cuenta vista";
+  return rawType?.trim() ?? "";
+};
+
+const maskAccountNumber = (rawValue: null | string | undefined) => {
+  const value = rawValue?.trim() ?? "";
+  if (!value) return "";
+  const visible = value.slice(-4);
+  return value.length <= 4 ? value : `****${visible}`;
+};
+
 const dedupeDetails = (values: string[]) => {
   const result: string[] = [];
   const seen = new Set<string>();
@@ -152,6 +179,38 @@ const dedupeDetails = (values: string[]) => {
 
   return result;
 };
+
+const buildAccountLine = (params: {
+  accountNumber: null | string | undefined;
+  accountType?: null | string;
+  bankName?: null | string;
+}) =>
+  dedupeDetails([
+    params.bankName?.trim() ?? "",
+    mapAccountTypeLabel(params.accountType),
+    maskAccountNumber(params.accountNumber),
+  ]).join(" · ");
+
+export function shouldShowOfficialWithdrawDetails(params: {
+  manualAccountLine: string;
+  manualIdentificationNumber: null | string | undefined;
+  manualName: string;
+  officialIdentificationNumber: null | string | undefined;
+  officialName: string;
+  withdrawAccountLine: string;
+}) {
+  const manualNameKey = normalizeComparable(params.manualName);
+  const officialNameKey = normalizeComparable(params.officialName);
+  const manualIdentificationNumberKey = normalizeComparable(params.manualIdentificationNumber);
+  const officialIdentificationNumberKey = normalizeComparable(params.officialIdentificationNumber);
+
+  return (
+    Boolean(officialNameKey || officialIdentificationNumberKey || params.withdrawAccountLine) &&
+    (officialNameKey !== manualNameKey ||
+      officialIdentificationNumberKey !== manualIdentificationNumberKey ||
+      params.withdrawAccountLine !== params.manualAccountLine)
+  );
+}
 
 export const columns: ColumnDef<CashFlowTransaction>[] = [
   {
@@ -190,11 +249,11 @@ export const columns: ColumnDef<CashFlowTransaction>[] = [
           className="-ml-3 h-8 data-[state=open]:bg-accent"
         >
           Fecha
-          <ArrowUpDown className="ml-2 h-4 w-4" />
+          <ArrowUpDown className="ml-2 size-4" />
         </Button>
       );
     },
-    cell: ({ row }) => dayjs(row.getValue("date")).tz().format("DD-MM-YY HH:mm"),
+    cell: ({ row }) => formatChile(row.getValue("date"), "DD-MM-YY HH:mm"),
   },
   {
     accessorKey: "sourceId",
@@ -230,6 +289,7 @@ export const columns: ColumnDef<CashFlowTransaction>[] = [
     header: "Detalles",
     cell: ({ row }) => {
       const detailLines = dedupeDetails([
+        hasWithdrawDetails(row.original) ? "Retiro" : "",
         normalizeSaleDetail(row.original.releaseSaleDetail),
         normalizeSaleDetail(row.original.settlementSaleDetail),
         normalizeCommentDetail(row.original.comment),
@@ -267,31 +327,83 @@ export const columns: ColumnDef<CashFlowTransaction>[] = [
     maxSize: 320,
     minSize: 180,
     size: 240,
-    cell: ({ row }) =>
-      row.original.counterpart ? (
-        <div className="flex max-w-70 min-w-0 flex-col">
-          <span
-            className="block truncate text-small"
-            title={row.original.counterpart.bankAccountHolder}
-          >
-            {row.original.counterpart.bankAccountHolder}
-          </span>
-          <span
-            className="block truncate text-tiny text-default-400"
-            title={row.original.counterpart.identificationNumber}
-          >
-            {row.original.counterpart.identificationNumber}
-          </span>
-          <span
-            className="block truncate text-tiny text-default-400"
-            title={row.original.counterpartAccountNumber ?? "-"}
-          >
-            {row.original.counterpartAccountNumber ?? "-"}
-          </span>
-        </div>
-      ) : (
-        <span className="text-default-400">-</span>
-      ),
+    cell: ({ row }) => {
+      const transaction = row.original;
+      const manualAccountLine = buildAccountLine({
+        accountNumber:
+          transaction.counterpartLinkedAccountNumber ?? transaction.counterpartAccountNumber,
+      });
+      const withdrawAccountLine = buildAccountLine({
+        accountNumber: transaction.withdrawBankAccountNumber,
+        accountType: transaction.withdrawBankAccountType,
+        bankName: transaction.withdrawBankName,
+      });
+      const manualName = transaction.counterpart?.bankAccountHolder?.trim() ?? "";
+      const officialName = transaction.withdrawBankAccountHolder?.trim() ?? "";
+      const showOfficialWithdraw = shouldShowOfficialWithdrawDetails({
+        manualAccountLine,
+        manualIdentificationNumber: transaction.counterpart?.identificationNumber,
+        manualName,
+        officialIdentificationNumber: transaction.withdrawIdentificationNumber,
+        officialName,
+        withdrawAccountLine,
+      });
+
+      if (transaction.counterpart || showOfficialWithdraw) {
+        return (
+          <div className="flex max-w-70 min-w-0 flex-col">
+            {transaction.counterpart ? (
+              <>
+                <span
+                  className="block truncate text-small"
+                  title={transaction.counterpart.bankAccountHolder}
+                >
+                  {transaction.counterpart.bankAccountHolder}
+                </span>
+                <span
+                  className="block truncate text-tiny text-default-400"
+                  title={transaction.counterpart.identificationNumber}
+                >
+                  {transaction.counterpart.identificationNumber}
+                </span>
+                <span
+                  className="block truncate text-tiny text-default-400"
+                  title={manualAccountLine}
+                >
+                  {manualAccountLine || "-"}
+                </span>
+              </>
+            ) : null}
+            {showOfficialWithdraw ? (
+              <div
+                className={transaction.counterpart ? "mt-1 border-default-200 border-t pt-1" : ""}
+              >
+                <span
+                  className="block truncate text-tiny font-medium text-default-500"
+                  title={officialName || "Retiro"}
+                >
+                  Retiro: {officialName || "sin titular"}
+                </span>
+                <span
+                  className="block truncate text-tiny text-default-400"
+                  title={transaction.withdrawIdentificationNumber ?? ""}
+                >
+                  {transaction.withdrawIdentificationNumber ?? "-"}
+                </span>
+                <span
+                  className="block truncate text-tiny text-default-400"
+                  title={withdrawAccountLine}
+                >
+                  {withdrawAccountLine || "-"}
+                </span>
+              </div>
+            ) : null}
+          </div>
+        );
+      }
+
+      return <span className="text-default-400">-</span>;
+    },
   },
   {
     accessorKey: "type",
@@ -374,7 +486,7 @@ export const columns: ColumnDef<CashFlowTransaction>[] = [
         return cat ? (
           <Chip size="sm" variant="secondary">
             <span
-              className="inline-block w-2 h-2 rounded-full shrink-0"
+              className="inline-block rounded-full shrink-0 size-2"
               style={{ backgroundColor: cat.color ?? "#ccc" }}
             />
             <Chip.Label>
@@ -418,7 +530,7 @@ export const columns: ColumnDef<CashFlowTransaction>[] = [
                 <ListBox.Item id={String(category.id)} key={category.id} textValue={category.name}>
                   <div className="flex items-center gap-2">
                     <span
-                      className="inline-block h-2 w-2 rounded-full shrink-0"
+                      className="inline-block rounded-full shrink-0 size-2"
                       style={{ backgroundColor: category.color ?? "#ccc" }}
                     />
                     <span>{category.name}</span>
@@ -461,23 +573,23 @@ export const columns: ColumnDef<CashFlowTransaction>[] = [
         <div className="flex justify-center gap-1">
           <Button
             aria-label="Reasignar periodo"
-            className="h-7 w-7 min-w-7 p-0"
+            className="min-w-7 p-0 size-7"
             isIconOnly
             size="sm"
             variant="outline"
             onPress={() => table.options.meta?.onReallocate?.(row.original)}
           >
-            <ArrowRightLeft className="h-3.5 w-3.5" />
+            <ArrowRightLeft className="size-3.5" />
           </Button>
           <Button
             aria-label="Editar movimiento"
-            className="h-7 w-7 min-w-7 p-0"
+            className="min-w-7 p-0 size-7"
             isIconOnly
             size="sm"
             variant="outline"
             onPress={() => table.options.meta?.onEdit?.(row.original)}
           >
-            <Pencil className="h-3.5 w-3.5" />
+            <Pencil className="size-3.5" />
           </Button>
         </div>
       );

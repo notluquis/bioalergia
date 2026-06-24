@@ -2,238 +2,489 @@
   "name": "@finanzas/orpc-contracts",
   "version": "0.0.1",
   "files": [
-    "dist"
+    "dist",
+    "src"
   ],
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
+      "development": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "default": "./dist/index.js"
     },
+    "./account": {
+      "development": "./src/account.ts",
+      "types": "./dist/account.d.ts",
+      "import": "./dist/account.js",
+      "default": "./dist/account.js"
+    },
+    "./social": {
+      "development": "./src/social.ts",
+      "types": "./dist/social.d.ts",
+      "import": "./dist/social.js",
+      "default": "./dist/social.js"
+    },
     "./addresses": {
+      "development": "./src/addresses.ts",
       "types": "./dist/addresses.d.ts",
       "import": "./dist/addresses.js",
       "default": "./dist/addresses.js"
     },
+    "./site-auth": {
+      "development": "./src/site-auth.ts",
+      "types": "./dist/site-auth.d.ts",
+      "import": "./dist/site-auth.js",
+      "default": "./dist/site-auth.js"
+    },
     "./attendance": {
+      "development": "./src/attendance.ts",
       "types": "./dist/attendance.d.ts",
       "import": "./dist/attendance.js",
       "default": "./dist/attendance.js"
     },
     "./auth": {
+      "development": "./src/auth.ts",
       "types": "./dist/auth.d.ts",
       "import": "./dist/auth.js",
       "default": "./dist/auth.js"
     },
     "./balances": {
+      "development": "./src/balances.ts",
       "types": "./dist/balances.d.ts",
       "import": "./dist/balances.js",
       "default": "./dist/balances.js"
     },
     "./backups": {
+      "development": "./src/backups.ts",
       "types": "./dist/backups.d.ts",
       "import": "./dist/backups.js",
       "default": "./dist/backups.js"
     },
     "./calendar": {
+      "development": "./src/calendar.ts",
       "types": "./dist/calendar.d.ts",
       "import": "./dist/calendar.js",
       "default": "./dist/calendar.js"
     },
+    "./cart": {
+      "development": "./src/cart.ts",
+      "types": "./dist/cart.d.ts",
+      "import": "./dist/cart.js",
+      "default": "./dist/cart.js"
+    },
+    "./catalog": {
+      "development": "./src/catalog.ts",
+      "types": "./dist/catalog.d.ts",
+      "import": "./dist/catalog.js",
+      "default": "./dist/catalog.js"
+    },
+    "./site-content": {
+      "development": "./src/site-content.ts",
+      "types": "./dist/site-content.d.ts",
+      "import": "./dist/site-content.js",
+      "default": "./dist/site-content.js"
+    },
     "./certificates": {
+      "development": "./src/certificates.ts",
       "types": "./dist/certificates.d.ts",
       "import": "./dist/certificates.js",
       "default": "./dist/certificates.js"
     },
+    "./checkout": {
+      "development": "./src/checkout.ts",
+      "types": "./dist/checkout.d.ts",
+      "import": "./dist/checkout.js",
+      "default": "./dist/checkout.js"
+    },
     "./clinical-series": {
+      "development": "./src/clinical-series.ts",
       "types": "./dist/clinical-series.d.ts",
       "import": "./dist/clinical-series.js",
       "default": "./dist/clinical-series.js"
     },
     "./clinical-records": {
+      "development": "./src/clinical-records.ts",
       "types": "./dist/clinical-records.d.ts",
       "import": "./dist/clinical-records.js",
       "default": "./dist/clinical-records.js"
     },
     "./clinical-skin-tests": {
+      "development": "./src/clinical-skin-tests.ts",
       "types": "./dist/clinical-skin-tests.d.ts",
       "import": "./dist/clinical-skin-tests.js",
       "default": "./dist/clinical-skin-tests.js"
     },
+    "./onedrive": {
+      "development": "./src/onedrive.ts",
+      "types": "./dist/onedrive.d.ts",
+      "import": "./dist/onedrive.js",
+      "default": "./dist/onedrive.js"
+    },
     "./counterparts": {
+      "development": "./src/counterparts.ts",
       "types": "./dist/counterparts.d.ts",
       "import": "./dist/counterparts.js",
       "default": "./dist/counterparts.js"
     },
     "./csv-upload": {
+      "development": "./src/csv-upload.ts",
       "types": "./dist/csv-upload.d.ts",
       "import": "./dist/csv-upload.js",
       "default": "./dist/csv-upload.js"
     },
     "./doctoralia": {
+      "development": "./src/doctoralia.ts",
       "types": "./dist/doctoralia.d.ts",
       "import": "./dist/doctoralia.js",
       "default": "./dist/doctoralia.js"
     },
     "./dte": {
+      "development": "./src/dte.ts",
       "types": "./dist/dte.d.ts",
       "import": "./dist/dte.js",
       "default": "./dist/dte.js"
     },
     "./dte-event-links": {
+      "development": "./src/dte-event-links.ts",
       "types": "./dist/dte-event-links.d.ts",
       "import": "./dist/dte-event-links.js",
       "default": "./dist/dte-event-links.js"
     },
     "./dte-analytics": {
+      "development": "./src/dte-analytics.ts",
       "types": "./dist/dte-analytics.d.ts",
       "import": "./dist/dte-analytics.js",
       "default": "./dist/dte-analytics.js"
     },
+    "./exam-reports": {
+      "development": "./src/exam-reports.ts",
+      "types": "./dist/exam-reports.d.ts",
+      "import": "./dist/exam-reports.js",
+      "default": "./dist/exam-reports.js"
+    },
+    "./email": {
+      "development": "./src/email.ts",
+      "types": "./dist/email.d.ts",
+      "import": "./dist/email.js",
+      "default": "./dist/email.js"
+    },
     "./employees": {
+      "development": "./src/employees.ts",
       "types": "./dist/employees.d.ts",
       "import": "./dist/employees.js",
       "default": "./dist/employees.js"
     },
     "./expenses": {
+      "development": "./src/expenses.ts",
       "types": "./dist/expenses.d.ts",
       "import": "./dist/expenses.js",
       "default": "./dist/expenses.js"
     },
     "./finance": {
+      "development": "./src/finance.ts",
       "types": "./dist/finance.d.ts",
       "import": "./dist/finance.js",
       "default": "./dist/finance.js"
     },
     "./haulmer": {
+      "development": "./src/haulmer.ts",
       "types": "./dist/haulmer.d.ts",
       "import": "./dist/haulmer.js",
       "default": "./dist/haulmer.js"
     },
+    "./haulmer-dte": {
+      "development": "./src/haulmer-dte.ts",
+      "types": "./dist/haulmer-dte.d.ts",
+      "import": "./dist/haulmer-dte.js",
+      "default": "./dist/haulmer-dte.js"
+    },
+    "./images": {
+      "development": "./src/images.ts",
+      "types": "./dist/images.d.ts",
+      "import": "./dist/images.js",
+      "default": "./dist/images.js"
+    },
+    "./immunotherapy": {
+      "development": "./src/immunotherapy.ts",
+      "types": "./dist/immunotherapy.d.ts",
+      "import": "./dist/immunotherapy.js",
+      "default": "./dist/immunotherapy.js"
+    },
     "./inventory": {
+      "development": "./src/inventory.ts",
       "types": "./dist/inventory.d.ts",
       "import": "./dist/inventory.js",
       "default": "./dist/inventory.js"
     },
     "./integrations": {
+      "development": "./src/integrations.ts",
       "types": "./dist/integrations.d.ts",
       "import": "./dist/integrations.js",
       "default": "./dist/integrations.js"
     },
     "./loans": {
+      "development": "./src/loans.ts",
       "types": "./dist/loans.d.ts",
       "import": "./dist/loans.js",
       "default": "./dist/loans.js"
     },
+    "./provider-credentials": {
+      "development": "./src/provider-credentials.ts",
+      "types": "./dist/provider-credentials.d.ts",
+      "import": "./dist/provider-credentials.js",
+      "default": "./dist/provider-credentials.js"
+    },
+    "./ml": {
+      "development": "./src/ml.ts",
+      "types": "./dist/ml.d.ts",
+      "import": "./dist/ml.js",
+      "default": "./dist/ml.js"
+    },
     "./mercadopago": {
+      "development": "./src/mercadopago.ts",
       "types": "./dist/mercadopago.d.ts",
       "import": "./dist/mercadopago.js",
       "default": "./dist/mercadopago.js"
     },
     "./notifications": {
+      "development": "./src/notifications.ts",
       "types": "./dist/notifications.d.ts",
       "import": "./dist/notifications.js",
       "default": "./dist/notifications.js"
     },
     "./outreach": {
+      "development": "./src/outreach.ts",
       "types": "./dist/outreach.d.ts",
       "import": "./dist/outreach.js",
       "default": "./dist/outreach.js"
     },
     "./patients": {
+      "development": "./src/patients.ts",
       "types": "./dist/patients.d.ts",
       "import": "./dist/patients.js",
       "default": "./dist/patients.js"
     },
     "./patient-campaigns": {
+      "development": "./src/patient-campaigns.ts",
       "types": "./dist/patient-campaigns.d.ts",
       "import": "./dist/patient-campaigns.js",
       "default": "./dist/patient-campaigns.js"
     },
     "./people": {
+      "development": "./src/people.ts",
       "types": "./dist/people.d.ts",
       "import": "./dist/people.js",
       "default": "./dist/people.js"
     },
     "./personal-finance": {
+      "development": "./src/personal-finance.ts",
       "types": "./dist/personal-finance.d.ts",
       "import": "./dist/personal-finance.js",
       "default": "./dist/personal-finance.js"
     },
+    "./job-radar": {
+      "development": "./src/job-radar.ts",
+      "types": "./dist/job-radar.d.ts",
+      "import": "./dist/job-radar.js",
+      "default": "./dist/job-radar.js"
+    },
+    "./medications": {
+      "development": "./src/medications.ts",
+      "types": "./dist/medications.d.ts",
+      "import": "./dist/medications.js",
+      "default": "./dist/medications.js"
+    },
+    "./verification": {
+      "development": "./src/verification.ts",
+      "types": "./dist/verification.d.ts",
+      "import": "./dist/verification.js",
+      "default": "./dist/verification.js"
+    },
     "./production-balances": {
+      "development": "./src/production-balances.ts",
       "types": "./dist/production-balances.d.ts",
       "import": "./dist/production-balances.js",
       "default": "./dist/production-balances.js"
     },
     "./release-transactions": {
+      "development": "./src/release-transactions.ts",
       "types": "./dist/release-transactions.d.ts",
       "import": "./dist/release-transactions.js",
       "default": "./dist/release-transactions.js"
     },
     "./services": {
+      "development": "./src/services.ts",
       "types": "./dist/services.d.ts",
       "import": "./dist/services.js",
       "default": "./dist/services.js"
     },
     "./settings": {
+      "development": "./src/settings.ts",
       "types": "./dist/settings.d.ts",
       "import": "./dist/settings.js",
       "default": "./dist/settings.js"
     },
+    "./price-list": {
+      "development": "./src/price-list.ts",
+      "types": "./dist/price-list.d.ts",
+      "import": "./dist/price-list.js",
+      "default": "./dist/price-list.js"
+    },
+    "./data-rights": {
+      "development": "./src/data-rights.ts",
+      "types": "./dist/data-rights.d.ts",
+      "import": "./dist/data-rights.js",
+      "default": "./dist/data-rights.js"
+    },
+    "./breach-incidents": {
+      "development": "./src/breach-incidents.ts",
+      "types": "./dist/breach-incidents.d.ts",
+      "import": "./dist/breach-incidents.js",
+      "default": "./dist/breach-incidents.js"
+    },
+    "./complaints": {
+      "development": "./src/complaints.ts",
+      "types": "./dist/complaints.d.ts",
+      "import": "./dist/complaints.js",
+      "default": "./dist/complaints.js"
+    },
+    "./security-alerts": {
+      "development": "./src/security-alerts.ts",
+      "types": "./dist/security-alerts.d.ts",
+      "import": "./dist/security-alerts.js",
+      "default": "./dist/security-alerts.js"
+    },
+    "./processing-activities": {
+      "development": "./src/processing-activities.ts",
+      "types": "./dist/processing-activities.d.ts",
+      "import": "./dist/processing-activities.js",
+      "default": "./dist/processing-activities.js"
+    },
+    "./consent": {
+      "development": "./src/consent.ts",
+      "types": "./dist/consent.d.ts",
+      "import": "./dist/consent.js",
+      "default": "./dist/consent.js"
+    },
+    "./clinical-consent": {
+      "development": "./src/clinical-consent.ts",
+      "types": "./dist/clinical-consent.d.ts",
+      "import": "./dist/clinical-consent.js",
+      "default": "./dist/clinical-consent.js"
+    },
+    "./quotes": {
+      "development": "./src/quotes.ts",
+      "types": "./dist/quotes.d.ts",
+      "import": "./dist/quotes.js",
+      "default": "./dist/quotes.js"
+    },
+    "./reactivos": {
+      "development": "./src/reactivos.ts",
+      "types": "./dist/reactivos.d.ts",
+      "import": "./dist/reactivos.js",
+      "default": "./dist/reactivos.js"
+    },
+    "./pollen": {
+      "development": "./src/pollen.ts",
+      "types": "./dist/pollen.d.ts",
+      "import": "./dist/pollen.js",
+      "default": "./dist/pollen.js"
+    },
+    "./product-documents": {
+      "development": "./src/product-documents.ts",
+      "types": "./dist/product-documents.d.ts",
+      "import": "./dist/product-documents.js",
+      "default": "./dist/product-documents.js"
+    },
+    "./occupational": {
+      "development": "./src/occupational.ts",
+      "types": "./dist/occupational.d.ts",
+      "import": "./dist/occupational.js",
+      "default": "./dist/occupational.js"
+    },
+    "./adherence": {
+      "development": "./src/adherence.ts",
+      "types": "./dist/adherence.d.ts",
+      "import": "./dist/adherence.js",
+      "default": "./dist/adherence.js"
+    },
+    "./allergy-diary": {
+      "development": "./src/allergy-diary.ts",
+      "types": "./dist/allergy-diary.d.ts",
+      "import": "./dist/allergy-diary.js",
+      "default": "./dist/allergy-diary.js"
+    },
+    "./clinical-allergens": {
+      "development": "./src/clinical-allergens.ts",
+      "types": "./dist/clinical-allergens.d.ts",
+      "import": "./dist/clinical-allergens.js",
+      "default": "./dist/clinical-allergens.js"
+    },
     "./roles": {
+      "development": "./src/roles.ts",
       "types": "./dist/roles.d.ts",
       "import": "./dist/roles.js",
       "default": "./dist/roles.js"
     },
     "./system": {
+      "development": "./src/system.ts",
       "types": "./dist/system.d.ts",
       "import": "./dist/system.js",
       "default": "./dist/system.js"
     },
     "./timesheets": {
+      "development": "./src/timesheets.ts",
       "types": "./dist/timesheets.d.ts",
       "import": "./dist/timesheets.js",
       "default": "./dist/timesheets.js"
     },
     "./supplies": {
+      "development": "./src/supplies.ts",
       "types": "./dist/supplies.d.ts",
       "import": "./dist/supplies.js",
       "default": "./dist/supplies.js"
     },
     "./settlement-transactions": {
+      "development": "./src/settlement-transactions.ts",
       "types": "./dist/settlement-transactions.d.ts",
       "import": "./dist/settlement-transactions.js",
       "default": "./dist/settlement-transactions.js"
     },
     "./transactions-insights": {
+      "development": "./src/transactions-insights.ts",
       "types": "./dist/transactions-insights.d.ts",
       "import": "./dist/transactions-insights.js",
       "default": "./dist/transactions-insights.js"
     },
     "./users": {
+      "development": "./src/users.ts",
       "types": "./dist/users.d.ts",
       "import": "./dist/users.js",
       "default": "./dist/users.js"
     },
     "./utility-bills": {
+      "development": "./src/utility-bills.ts",
       "types": "./dist/utility-bills.d.ts",
       "import": "./dist/utility-bills.js",
       "default": "./dist/utility-bills.js"
     },
     "./wa-cloud": {
+      "development": "./src/wa-cloud.ts",
       "types": "./dist/wa-cloud.d.ts",
       "import": "./dist/wa-cloud.js",
       "default": "./dist/wa-cloud.js"
     },
     "./whatsapp": {
+      "development": "./src/whatsapp.ts",
       "types": "./dist/whatsapp.d.ts",
       "import": "./dist/whatsapp.js",
       "default": "./dist/whatsapp.js"
     },
     "./shipments": {
+      "development": "./src/shipments.ts",
       "types": "./dist/shipments.d.ts",
       "import": "./dist/shipments.js",
       "default": "./dist/shipments.js"
@@ -246,14 +497,14 @@
     "lint:fix": "oxlint --fix && oxfmt --write .",
     "format": "oxfmt",
     "format:check": "oxfmt --check",
-    "type-check": "tsgo --noEmit"
+    "type-check": "tsgo --build"
   },
   "dependencies": {
-    "@orpc/contract": "^1.14.2",
+    "@orpc/contract": "^1.14.5",
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@types/node": "^25.7.0",
+    "@types/node": "^25.9.2",
     "typescript": "^6.0.3"
   },
   "engines": {

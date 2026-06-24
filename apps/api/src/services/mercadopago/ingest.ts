@@ -1,9 +1,16 @@
 import { createInterface } from "node:readline";
 import { Readable } from "node:stream";
+import type { ReadableStream } from "node:stream/web";
 import { db } from "@finanzas/db";
+import { sql } from "kysely";
 import { checkMpConfig, MP_ACCESS_TOKEN, redactMpUrl } from "./client.ts";
-import { isSettlementReport } from "./index.ts";
+import { isSettlementReport } from "./settlement-detector.ts";
 import { mapRowToReleaseTransaction, mapRowToSettlementTransaction } from "./mappers.ts";
+import {
+  insertMpImportChanges,
+  type MpImportChangeInput,
+  type MpReportType,
+} from "../mercadopago-sync.ts";
 
 // Batch size for insertions
 const BATCH_SIZE = 100;
@@ -63,7 +70,10 @@ export interface ImportStats {
   validRows: number;
   skippedRows: number;
   insertedRows: number;
+  updatedRows: number;
   duplicateRows: number;
+  fieldChangeCount: number;
+  unchangedRows: number;
   errors: string[];
   processedSourceIds: string[];
   sourceUnavailable?: boolean;
@@ -80,19 +90,30 @@ type MpJsonReportPayload = {
   };
 };
 
+type ProcessReportOptions = {
+  syncLogId?: bigint;
+};
+
 /**
  * Downloads and processes a CSV report from a URL.
  * Returns detailed statistics about the import.
  */
 
-export async function processReportUrl(url: string, reportType: string): Promise<ImportStats> {
+export async function processReportUrl(
+  url: string,
+  reportType: string,
+  options: ProcessReportOptions = {}
+): Promise<ImportStats> {
   const processedSourceIdSet = new Set<string>();
   const stats: ImportStats = {
     totalRows: 0,
     validRows: 0,
     skippedRows: 0,
     insertedRows: 0,
+    updatedRows: 0,
     duplicateRows: 0,
+    fieldChangeCount: 0,
+    unchangedRows: 0,
     errors: [],
     processedSourceIds: [],
     sourceUnavailable: false,
@@ -121,7 +142,6 @@ export async function processReportUrl(url: string, reportType: string): Promise
     const isFirstRow = { value: true };
     const batchState: BatchState = {
       batch: [],
-      batchValid: 0,
       flushPromise: Promise.resolve(),
     };
 
@@ -129,11 +149,13 @@ export async function processReportUrl(url: string, reportType: string): Promise
       if (batchState.batch.length === 0) {
         return;
       }
-      const inserted = await insertBatch(reportType, batchState.batch);
-      stats.insertedRows += inserted;
-      stats.duplicateRows += Math.max(batchState.batchValid - inserted, 0);
+      const result = await upsertBatch(reportType, batchState.batch, options);
+      stats.insertedRows += result.inserted;
+      stats.updatedRows += result.updated;
+      stats.unchangedRows += result.unchanged;
+      stats.duplicateRows += result.unchanged;
+      stats.fieldChangeCount += result.fieldChangeCount;
       batchState.batch = [];
-      batchState.batchValid = 0;
     };
 
     if (contentType.includes("application/json")) {
@@ -154,7 +176,7 @@ export async function processReportUrl(url: string, reportType: string): Promise
       }
 
       // Convert Web Stream to Node Stream
-      const nodeStream = Readable.fromWeb(body as import("stream/web").ReadableStream);
+      const nodeStream = Readable.fromWeb(body as ReadableStream);
 
       await processCsvStream(
         nodeStream,
@@ -239,9 +261,24 @@ type ReleaseInput = ReturnType<typeof mapRowToReleaseTransaction>;
 type SettlementInput = ReturnType<typeof mapRowToSettlementTransaction>;
 type ReportRowInput = ReleaseInput | SettlementInput;
 
+type UpsertBatchResult = {
+  fieldChangeCount: number;
+  inserted: number;
+  unchanged: number;
+  updated: number;
+};
+
+type UpsertReturnedRow = {
+  inserted: boolean;
+  sourceId: string;
+};
+
+type ExistingReportRow = Record<string, unknown> & {
+  sourceId: string;
+};
+
 type BatchState = {
   batch: ReportRowInput[];
-  batchValid: number;
   flushPromise: Promise<void>;
 };
 
@@ -376,7 +413,6 @@ const enqueueBatchRecord = async (
   reject: (reason?: unknown) => void
 ) => {
   batchState.batch.push(record);
-  batchState.batchValid += 1;
   stats.validRows += 1;
 
   if (batchState.batch.length < BATCH_SIZE) {
@@ -513,7 +549,6 @@ async function processMpJsonPayload(
       }
 
       batchState.batch.push(record);
-      batchState.batchValid += 1;
       stats.validRows += 1;
 
       if (batchState.batch.length >= BATCH_SIZE) {
@@ -531,22 +566,583 @@ async function processMpJsonPayload(
   console.log(`[MP Ingest] Finished processing JSON for ${reportType}. Stats:`, stats);
 }
 
-async function insertBatch(reportType: string, rows: ReportRowInput[]) {
+const RELEASE_UPDATE_COLUMNS = [
+  "identificationNumber",
+  "date",
+  "externalReference",
+  "recordType",
+  "description",
+  "netCreditAmount",
+  "netDebitAmount",
+  "grossAmount",
+  "sellerAmount",
+  "mpFeeAmount",
+  "financingFeeAmount",
+  "shippingFeeAmount",
+  "taxesAmount",
+  "couponAmount",
+  "effectiveCouponAmount",
+  "balanceAmount",
+  "taxAmountTelco",
+  "installments",
+  "paymentMethod",
+  "paymentMethodType",
+  "taxDetail",
+  "taxesDisaggregated",
+  "transactionApprovalDate",
+  "transactionIntentId",
+  "posId",
+  "posName",
+  "externalPosId",
+  "storeId",
+  "storeName",
+  "externalStoreId",
+  "currency",
+  "shippingId",
+  "shipmentMode",
+  "shippingOrderId",
+  "orderId",
+  "packId",
+  "poiId",
+  "itemId",
+  "metadata",
+  "cardInitialNumber",
+  "operationTags",
+  "lastFourDigits",
+  "franchise",
+  "issuerName",
+  "poiBankName",
+  "poiWalletName",
+  "businessUnit",
+  "subUnit",
+  "payoutBankAccountNumber",
+  "productSku",
+  "saleDetail",
+  "orderMp",
+  "purchaseId",
+  "isReleased",
+  "countryIssuer",
+  "merchantCategoryCode",
+  "cardEntryMode",
+  "authorizationCode",
+  "applicationId",
+  "segmentDetail",
+  "dateShort",
+  "transactionApprovalDateShort",
+] as const;
+
+const SETTLEMENT_UPDATE_COLUMNS = [
+  "identificationNumber",
+  "transactionDate",
+  "settlementDate",
+  "moneyReleaseDate",
+  "externalReference",
+  "userId",
+  "paymentMethodType",
+  "paymentMethod",
+  "site",
+  "transactionType",
+  "transactionAmount",
+  "transactionCurrency",
+  "sellerAmount",
+  "feeAmount",
+  "settlementNetAmount",
+  "settlementCurrency",
+  "realAmount",
+  "couponAmount",
+  "metadata",
+  "mkpFeeAmount",
+  "financingFeeAmount",
+  "shippingFeeAmount",
+  "taxesAmount",
+  "installments",
+  "taxDetail",
+  "taxesDisaggregated",
+  "description",
+  "cardInitialNumber",
+  "operationTags",
+  "businessUnit",
+  "subUnit",
+  "productSku",
+  "saleDetail",
+  "transactionIntentId",
+  "franchise",
+  "issuerName",
+  "lastFourDigits",
+  "orderMp",
+  "invoicingPeriod",
+  "payBankTransferId",
+  "isReleased",
+  "tipAmount",
+  "purchaseId",
+  "totalCouponAmount",
+  "posId",
+  "posName",
+  "externalPosId",
+  "storeId",
+  "storeName",
+  "externalStoreId",
+  "poiId",
+  "orderId",
+  "shippingId",
+  "shipmentMode",
+  "packId",
+  "shippingOrderId",
+  "poiWalletName",
+  "poiBankName",
+  "merchantCategoryCode",
+  "applicationId",
+  "segmentDetail",
+  "authorizationCode",
+  "cardEntryMode",
+  "authenticatedPayer",
+  "transactionDateShort",
+  "settlementDateShort",
+  "moneyReleaseDateShort",
+] as const;
+
+function dedupeRowsBySourceId<T extends ReportRowInput>(rows: T[]) {
+  const bySourceId = new Map<string, T>();
+  for (const row of rows) {
+    bySourceId.set(row.sourceId.trim(), row);
+  }
+  return Array.from(bySourceId.values());
+}
+
+function toDbColumnName(column: string) {
+  return column.replace(/[A-Z]/g, (char) => `_${char.toLowerCase()}`);
+}
+
+function excludedColumnRef(column: string) {
+  return `excluded.${toDbColumnName(column)}` as never;
+}
+
+// The raw $qb/kysely insert path doesn't go through ZenStack's value handling
+// (the normal db.model.create() path does), so JS values must be massaged to
+// match how node-postgres binds them, per target column type:
+//
+//   - Decimal: pg serializes objects without toPostgres() via JSON.stringify,
+//     and decimal.js Decimal.toJSON() returns the numeric string → binds as a
+//     QUOTED string ("-23090") → numeric column rejects it (22P02). Convert to
+//     a plain numeric string.
+//   - Plain object / array (Json/jsonb columns): pg renders a JS ARRAY as a
+//     Postgres ARRAY literal ({"{}"}), which is invalid JSON → jsonb rejects it
+//     (22P02 "invalid input syntax for type json"). Pre-serialize to a JSON
+//     string that pg parses straight into jsonb. (All object-typed columns on
+//     these rows are Json — there are no native String[]/array columns.)
+//   - Date binds natively; leave it.
+//
+// constructor.name check survives duplicate decimal.js module copies where
+// `instanceof` would fail.
+export function serializeRowForPg<T extends Record<string, unknown>>(row: T): T {
+  const out: Record<string, unknown> = {};
+  for (const key in row) {
+    const value = row[key];
+    if (value == null || typeof value !== "object") {
+      out[key] = value;
+    } else if ((value as { constructor?: { name?: string } }).constructor?.name === "Decimal") {
+      out[key] = String(value);
+    } else if (value instanceof Date) {
+      out[key] = value;
+    } else {
+      out[key] = JSON.stringify(value);
+    }
+  }
+  return out as T;
+}
+
+// In an ON CONFLICT DO UPDATE ... WHERE clause both the target table and the
+// `excluded` pseudo-relation are in scope, so an UNQUALIFIED column that exists
+// in both (e.g. identification_number) raises Postgres 42702 "column reference
+// is ambiguous". Qualify the existing-row side with the physical target table
+// name. Physical (snake_case) names match excludedColumnRef and bypass $qb's
+// model→column mapping the same way.
+function targetColumnRef(table: string, column: string) {
+  return `${table}.${toDbColumnName(column)}` as never;
+}
+
+function countUpsertResults(returnedRows: UpsertReturnedRow[], inputRows: number) {
+  const inserted = returnedRows.filter((row) => row.inserted).length;
+  const updated = returnedRows.length - inserted;
+  return {
+    inserted,
+    updated,
+    unchanged: Math.max(inputRows - returnedRows.length, 0),
+  };
+}
+
+async function upsertBatch(
+  reportType: string,
+  rows: ReportRowInput[],
+  options: ProcessReportOptions
+): Promise<UpsertBatchResult> {
   if (rows.length === 0) {
-    return 0;
+    return { fieldChangeCount: 0, inserted: 0, unchanged: 0, updated: 0 };
   }
 
   if (isSettlementReport(reportType)) {
-    const result = await db.settlementTransaction.createMany({
-      data: rows as SettlementInput[],
-      skipDuplicates: true,
-    });
-    return result.count;
+    return upsertSettlementBatch(rows as SettlementInput[], options);
   }
 
-  const result = await db.releaseTransaction.createMany({
-    data: rows as ReleaseInput[],
-    skipDuplicates: true,
+  return upsertReleaseBatch(rows as ReleaseInput[], options);
+}
+
+async function selectExistingReleaseRows(sourceIds: string[]) {
+  if (sourceIds.length === 0) {
+    return new Map<string, ExistingReportRow>();
+  }
+  const rows = (await db.$qb
+    .selectFrom("ReleaseTransaction")
+    .selectAll()
+    .where("sourceId", "in", sourceIds)
+    .execute()) as ExistingReportRow[];
+  return new Map(rows.map((row) => [row.sourceId, row]));
+}
+
+async function selectExistingSettlementRows(sourceIds: string[]) {
+  if (sourceIds.length === 0) {
+    return new Map<string, ExistingReportRow>();
+  }
+  const rows = (await db.$qb
+    .selectFrom("SettlementTransaction")
+    .selectAll()
+    .where("sourceId", "in", sourceIds)
+    .execute()) as ExistingReportRow[];
+  return new Map(rows.map((row) => [row.sourceId, row]));
+}
+
+function normalizeAuditValue(value: unknown): unknown {
+  if (value == null) {
+    return null;
+  }
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+  if (typeof value === "bigint") {
+    return value.toString();
+  }
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? String(value) : null;
+  }
+  if (typeof value !== "object") {
+    return value;
+  }
+  if (value.constructor?.name === "Decimal" && "toString" in value) {
+    return String(value);
+  }
+  if (Array.isArray(value)) {
+    return value.map((item) => normalizeAuditValue(item));
+  }
+
+  const normalized: Record<string, unknown> = {};
+  for (const key of Object.keys(value as Record<string, unknown>).sort()) {
+    normalized[key] = normalizeAuditValue((value as Record<string, unknown>)[key]);
+  }
+  return normalized;
+}
+
+function auditValuesEqual(a: unknown, b: unknown) {
+  return JSON.stringify(normalizeAuditValue(a)) === JSON.stringify(normalizeAuditValue(b));
+}
+
+function buildImportChanges(params: {
+  fields: readonly string[];
+  newRowsBySourceId: Map<string, ReportRowInput>;
+  oldRowsBySourceId: Map<string, ExistingReportRow>;
+  reportType: MpReportType;
+  syncLogId: bigint;
+  updatedSourceIds: Set<string>;
+}) {
+  const changes: MpImportChangeInput[] = [];
+  for (const sourceId of params.updatedSourceIds) {
+    const oldRow = params.oldRowsBySourceId.get(sourceId);
+    const newRow = params.newRowsBySourceId.get(sourceId);
+    if (!oldRow || !newRow) {
+      continue;
+    }
+    for (const fieldName of params.fields) {
+      const oldValue = normalizeAuditValue(oldRow[fieldName]);
+      const newValue = normalizeAuditValue((newRow as Record<string, unknown>)[fieldName]);
+      if (auditValuesEqual(oldValue, newValue)) {
+        continue;
+      }
+      changes.push({
+        fieldName,
+        newValue: newValue as never,
+        oldValue: oldValue as never,
+        reportType: params.reportType,
+        sourceId,
+        syncLogId: params.syncLogId,
+      });
+    }
+  }
+  return changes;
+}
+
+async function persistImportChanges(params: {
+  fields: readonly string[];
+  newRowsBySourceId: Map<string, ReportRowInput>;
+  oldRowsBySourceId: Map<string, ExistingReportRow>;
+  reportType: MpReportType;
+  syncLogId?: bigint;
+  updatedSourceIds: Set<string>;
+}) {
+  if (!params.syncLogId || params.updatedSourceIds.size === 0) {
+    return 0;
+  }
+
+  const changes = buildImportChanges({
+    fields: params.fields,
+    newRowsBySourceId: params.newRowsBySourceId,
+    oldRowsBySourceId: params.oldRowsBySourceId,
+    reportType: params.reportType,
+    syncLogId: params.syncLogId,
+    updatedSourceIds: params.updatedSourceIds,
   });
-  return result.count;
+  // The field-change audit is secondary — the report rows are already persisted
+  // by the time we get here. A failure writing the audit (e.g. the
+  // mercadopago_import_changes table not yet migrated in an environment) must
+  // NOT fail the whole ingest file.
+  try {
+    return await insertMpImportChanges(changes);
+  } catch (error) {
+    console.error(
+      `[MP Ingest] import-changes audit failed for ${params.reportType} (${changes.length} changes), continuing:`,
+      error instanceof Error ? error.message : error
+    );
+    return 0;
+  }
+}
+
+async function upsertReleaseBatch(
+  rows: ReleaseInput[],
+  options: ProcessReportOptions
+): Promise<UpsertBatchResult> {
+  const uniqueRows = dedupeRowsBySourceId(rows);
+  const newRowsBySourceId = new Map<string, ReportRowInput>(
+    uniqueRows.map((row) => [row.sourceId.trim(), row])
+  );
+  const oldRowsBySourceId = options.syncLogId
+    ? await selectExistingReleaseRows(Array.from(newRowsBySourceId.keys()))
+    : new Map<string, ExistingReportRow>();
+  const updatedAt = new Date().toISOString();
+  const returnedRows = await db.$qb
+    .insertInto("ReleaseTransaction")
+    .values(uniqueRows.map((row) => serializeRowForPg(row)) as never)
+    .onConflict((oc) =>
+      oc
+        .column("sourceId")
+        .doUpdateSet(({ ref }) => ({
+          identificationNumber: ref(excludedColumnRef("identificationNumber")),
+          date: ref(excludedColumnRef("date")),
+          externalReference: ref(excludedColumnRef("externalReference")),
+          recordType: ref(excludedColumnRef("recordType")),
+          description: ref(excludedColumnRef("description")),
+          netCreditAmount: ref(excludedColumnRef("netCreditAmount")),
+          netDebitAmount: ref(excludedColumnRef("netDebitAmount")),
+          grossAmount: ref(excludedColumnRef("grossAmount")),
+          sellerAmount: ref(excludedColumnRef("sellerAmount")),
+          mpFeeAmount: ref(excludedColumnRef("mpFeeAmount")),
+          financingFeeAmount: ref(excludedColumnRef("financingFeeAmount")),
+          shippingFeeAmount: ref(excludedColumnRef("shippingFeeAmount")),
+          taxesAmount: ref(excludedColumnRef("taxesAmount")),
+          couponAmount: ref(excludedColumnRef("couponAmount")),
+          effectiveCouponAmount: ref(excludedColumnRef("effectiveCouponAmount")),
+          balanceAmount: ref(excludedColumnRef("balanceAmount")),
+          taxAmountTelco: ref(excludedColumnRef("taxAmountTelco")),
+          installments: ref(excludedColumnRef("installments")),
+          paymentMethod: ref(excludedColumnRef("paymentMethod")),
+          paymentMethodType: ref(excludedColumnRef("paymentMethodType")),
+          taxDetail: ref(excludedColumnRef("taxDetail")),
+          taxesDisaggregated: ref(excludedColumnRef("taxesDisaggregated")),
+          transactionApprovalDate: ref(excludedColumnRef("transactionApprovalDate")),
+          transactionIntentId: ref(excludedColumnRef("transactionIntentId")),
+          posId: ref(excludedColumnRef("posId")),
+          posName: ref(excludedColumnRef("posName")),
+          externalPosId: ref(excludedColumnRef("externalPosId")),
+          storeId: ref(excludedColumnRef("storeId")),
+          storeName: ref(excludedColumnRef("storeName")),
+          externalStoreId: ref(excludedColumnRef("externalStoreId")),
+          currency: ref(excludedColumnRef("currency")),
+          shippingId: ref(excludedColumnRef("shippingId")),
+          shipmentMode: ref(excludedColumnRef("shipmentMode")),
+          shippingOrderId: ref(excludedColumnRef("shippingOrderId")),
+          orderId: ref(excludedColumnRef("orderId")),
+          packId: ref(excludedColumnRef("packId")),
+          poiId: ref(excludedColumnRef("poiId")),
+          itemId: ref(excludedColumnRef("itemId")),
+          metadata: ref(excludedColumnRef("metadata")),
+          cardInitialNumber: ref(excludedColumnRef("cardInitialNumber")),
+          operationTags: ref(excludedColumnRef("operationTags")),
+          lastFourDigits: ref(excludedColumnRef("lastFourDigits")),
+          franchise: ref(excludedColumnRef("franchise")),
+          issuerName: ref(excludedColumnRef("issuerName")),
+          poiBankName: ref(excludedColumnRef("poiBankName")),
+          poiWalletName: ref(excludedColumnRef("poiWalletName")),
+          businessUnit: ref(excludedColumnRef("businessUnit")),
+          subUnit: ref(excludedColumnRef("subUnit")),
+          payoutBankAccountNumber: ref(excludedColumnRef("payoutBankAccountNumber")),
+          productSku: ref(excludedColumnRef("productSku")),
+          saleDetail: ref(excludedColumnRef("saleDetail")),
+          orderMp: ref(excludedColumnRef("orderMp")),
+          purchaseId: ref(excludedColumnRef("purchaseId")),
+          isReleased: ref(excludedColumnRef("isReleased")),
+          countryIssuer: ref(excludedColumnRef("countryIssuer")),
+          merchantCategoryCode: ref(excludedColumnRef("merchantCategoryCode")),
+          cardEntryMode: ref(excludedColumnRef("cardEntryMode")),
+          authorizationCode: ref(excludedColumnRef("authorizationCode")),
+          applicationId: ref(excludedColumnRef("applicationId")),
+          segmentDetail: ref(excludedColumnRef("segmentDetail")),
+          dateShort: ref(excludedColumnRef("dateShort")),
+          transactionApprovalDateShort: ref(excludedColumnRef("transactionApprovalDateShort")),
+          updatedAt,
+        }))
+        .where((eb) =>
+          eb.or(
+            RELEASE_UPDATE_COLUMNS.map((column) =>
+              eb(
+                eb.ref(targetColumnRef("release_transactions", column)),
+                "is distinct from",
+                eb.ref(excludedColumnRef(column))
+              )
+            )
+          )
+        )
+    )
+    .returning(["sourceId"])
+    .returning(sql<boolean>`xmax = 0`.as("inserted"))
+    .execute();
+
+  const updatedSourceIds = new Set(
+    returnedRows.filter((row) => !row.inserted).map((row) => row.sourceId)
+  );
+  const fieldChangeCount = await persistImportChanges({
+    fields: RELEASE_UPDATE_COLUMNS,
+    newRowsBySourceId,
+    oldRowsBySourceId,
+    reportType: "release",
+    syncLogId: options.syncLogId,
+    updatedSourceIds,
+  });
+
+  return { ...countUpsertResults(returnedRows, rows.length), fieldChangeCount };
+}
+
+async function upsertSettlementBatch(
+  rows: SettlementInput[],
+  options: ProcessReportOptions
+): Promise<UpsertBatchResult> {
+  const uniqueRows = dedupeRowsBySourceId(rows);
+  const newRowsBySourceId = new Map<string, ReportRowInput>(
+    uniqueRows.map((row) => [row.sourceId.trim(), row])
+  );
+  const oldRowsBySourceId = options.syncLogId
+    ? await selectExistingSettlementRows(Array.from(newRowsBySourceId.keys()))
+    : new Map<string, ExistingReportRow>();
+  const updatedAt = new Date().toISOString();
+  const returnedRows = await db.$qb
+    .insertInto("SettlementTransaction")
+    .values(uniqueRows.map((row) => serializeRowForPg(row)) as never)
+    .onConflict((oc) =>
+      oc
+        .column("sourceId")
+        .doUpdateSet(({ ref }) => ({
+          identificationNumber: ref(excludedColumnRef("identificationNumber")),
+          transactionDate: ref(excludedColumnRef("transactionDate")),
+          settlementDate: ref(excludedColumnRef("settlementDate")),
+          moneyReleaseDate: ref(excludedColumnRef("moneyReleaseDate")),
+          externalReference: ref(excludedColumnRef("externalReference")),
+          userId: ref(excludedColumnRef("userId")),
+          paymentMethodType: ref(excludedColumnRef("paymentMethodType")),
+          paymentMethod: ref(excludedColumnRef("paymentMethod")),
+          site: ref(excludedColumnRef("site")),
+          transactionType: ref(excludedColumnRef("transactionType")),
+          transactionAmount: ref(excludedColumnRef("transactionAmount")),
+          transactionCurrency: ref(excludedColumnRef("transactionCurrency")),
+          sellerAmount: ref(excludedColumnRef("sellerAmount")),
+          feeAmount: ref(excludedColumnRef("feeAmount")),
+          settlementNetAmount: ref(excludedColumnRef("settlementNetAmount")),
+          settlementCurrency: ref(excludedColumnRef("settlementCurrency")),
+          realAmount: ref(excludedColumnRef("realAmount")),
+          couponAmount: ref(excludedColumnRef("couponAmount")),
+          metadata: ref(excludedColumnRef("metadata")),
+          mkpFeeAmount: ref(excludedColumnRef("mkpFeeAmount")),
+          financingFeeAmount: ref(excludedColumnRef("financingFeeAmount")),
+          shippingFeeAmount: ref(excludedColumnRef("shippingFeeAmount")),
+          taxesAmount: ref(excludedColumnRef("taxesAmount")),
+          installments: ref(excludedColumnRef("installments")),
+          taxDetail: ref(excludedColumnRef("taxDetail")),
+          taxesDisaggregated: ref(excludedColumnRef("taxesDisaggregated")),
+          description: ref(excludedColumnRef("description")),
+          cardInitialNumber: ref(excludedColumnRef("cardInitialNumber")),
+          operationTags: ref(excludedColumnRef("operationTags")),
+          businessUnit: ref(excludedColumnRef("businessUnit")),
+          subUnit: ref(excludedColumnRef("subUnit")),
+          productSku: ref(excludedColumnRef("productSku")),
+          saleDetail: ref(excludedColumnRef("saleDetail")),
+          transactionIntentId: ref(excludedColumnRef("transactionIntentId")),
+          franchise: ref(excludedColumnRef("franchise")),
+          issuerName: ref(excludedColumnRef("issuerName")),
+          lastFourDigits: ref(excludedColumnRef("lastFourDigits")),
+          orderMp: ref(excludedColumnRef("orderMp")),
+          invoicingPeriod: ref(excludedColumnRef("invoicingPeriod")),
+          payBankTransferId: ref(excludedColumnRef("payBankTransferId")),
+          isReleased: ref(excludedColumnRef("isReleased")),
+          tipAmount: ref(excludedColumnRef("tipAmount")),
+          purchaseId: ref(excludedColumnRef("purchaseId")),
+          totalCouponAmount: ref(excludedColumnRef("totalCouponAmount")),
+          posId: ref(excludedColumnRef("posId")),
+          posName: ref(excludedColumnRef("posName")),
+          externalPosId: ref(excludedColumnRef("externalPosId")),
+          storeId: ref(excludedColumnRef("storeId")),
+          storeName: ref(excludedColumnRef("storeName")),
+          externalStoreId: ref(excludedColumnRef("externalStoreId")),
+          poiId: ref(excludedColumnRef("poiId")),
+          orderId: ref(excludedColumnRef("orderId")),
+          shippingId: ref(excludedColumnRef("shippingId")),
+          shipmentMode: ref(excludedColumnRef("shipmentMode")),
+          packId: ref(excludedColumnRef("packId")),
+          shippingOrderId: ref(excludedColumnRef("shippingOrderId")),
+          poiWalletName: ref(excludedColumnRef("poiWalletName")),
+          poiBankName: ref(excludedColumnRef("poiBankName")),
+          merchantCategoryCode: ref(excludedColumnRef("merchantCategoryCode")),
+          applicationId: ref(excludedColumnRef("applicationId")),
+          segmentDetail: ref(excludedColumnRef("segmentDetail")),
+          authorizationCode: ref(excludedColumnRef("authorizationCode")),
+          cardEntryMode: ref(excludedColumnRef("cardEntryMode")),
+          authenticatedPayer: ref(excludedColumnRef("authenticatedPayer")),
+          transactionDateShort: ref(excludedColumnRef("transactionDateShort")),
+          settlementDateShort: ref(excludedColumnRef("settlementDateShort")),
+          moneyReleaseDateShort: ref(excludedColumnRef("moneyReleaseDateShort")),
+          updatedAt,
+        }))
+        .where((eb) =>
+          eb.or(
+            SETTLEMENT_UPDATE_COLUMNS.map((column) =>
+              eb(
+                eb.ref(targetColumnRef("settlement_transactions", column)),
+                "is distinct from",
+                eb.ref(excludedColumnRef(column))
+              )
+            )
+          )
+        )
+    )
+    .returning(["sourceId"])
+    .returning(sql<boolean>`xmax = 0`.as("inserted"))
+    .execute();
+
+  const updatedSourceIds = new Set(
+    returnedRows.filter((row) => !row.inserted).map((row) => row.sourceId)
+  );
+  const fieldChangeCount = await persistImportChanges({
+    fields: SETTLEMENT_UPDATE_COLUMNS,
+    newRowsBySourceId,
+    oldRowsBySourceId,
+    reportType: "settlement",
+    syncLogId: options.syncLogId,
+    updatedSourceIds,
+  });
+
+  return { ...countUpsertResults(returnedRows, rows.length), fieldChangeCount };
 }

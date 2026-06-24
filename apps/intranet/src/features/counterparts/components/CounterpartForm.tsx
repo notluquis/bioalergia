@@ -31,6 +31,7 @@ const counterpartFormSchema = z.object({
 
 interface CounterpartFormProps {
   counterpart?: Counterpart | null;
+  defaultCategory?: CounterpartCategory;
   error: null | string;
   loading?: boolean;
   onSave: (payload: CounterpartUpsertPayload) => Promise<void>;
@@ -41,6 +42,7 @@ type CounterpartFormValues = z.infer<typeof counterpartFormSchema>;
 
 export function CounterpartForm({
   counterpart,
+  defaultCategory = "SUPPLIER",
   error,
   loading = false,
   onSave,
@@ -48,7 +50,7 @@ export function CounterpartForm({
 }: Readonly<CounterpartFormProps>) {
   const form = useForm({
     defaultValues: {
-      category: "SUPPLIER" as CounterpartCategory,
+      category: defaultCategory,
       identificationNumber: "",
       bankAccountHolder: "",
       notes: "",
@@ -79,9 +81,10 @@ export function CounterpartForm({
     } else {
       form.reset({
         ...EMPTY_FORM,
+        category: defaultCategory,
       });
     }
-  }, [counterpart, form]);
+  }, [counterpart, defaultCategory, form]);
 
   const busy = loading || saving || form.state.isSubmitting;
 

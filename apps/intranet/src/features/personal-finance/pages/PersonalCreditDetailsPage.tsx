@@ -1,8 +1,8 @@
+import { formatChile } from "@/lib/dates";
 import { Button, Card, Chip, Skeleton } from "@heroui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
 import type { ColumnDef } from "@tanstack/react-table";
-import dayjs from "dayjs";
 import { ArrowLeftIcon } from "lucide-react";
 import { Suspense } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
@@ -23,7 +23,7 @@ const installmentColumns = (
   },
   {
     accessorKey: "dueDate",
-    cell: ({ row }) => dayjs(row.original.dueDate, "YYYY-MM-DD").format("DD/MM/YYYY"),
+    cell: ({ row }) => formatChile(row.original.dueDate, "DD/MM/YYYY"),
     header: "Vencimiento",
   },
   {
@@ -53,7 +53,7 @@ const installmentColumns = (
     cell: ({ row }) => (
       <div className="flex justify-end">
         {row.original.status !== "PAID" && (
-          <PayInstallmentModal creditId={creditId} installment={row.original} />
+          <PayInstallmentModal creditId={creditId} currency={currency} installment={row.original} />
         )}
       </div>
     ),

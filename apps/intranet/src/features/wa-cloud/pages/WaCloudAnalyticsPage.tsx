@@ -1,4 +1,5 @@
-import { Button, Card, Chip, EmptyState, Spinner } from "@heroui/react";
+import { Button, Card, Chip, EmptyState } from "@heroui/react";
+import { WaTableSkeleton } from "../components/shared/Skeletons";
 import { BarChart3, MessageSquareText, RefreshCw, TrendingUp } from "lucide-react";
 import { useMemo, useState } from "react";
 import { SelectInput } from "@/features/outreach/components/FormField";
@@ -101,7 +102,9 @@ export function WaCloudAnalyticsPage() {
             isIconOnly
             aria-label="Refrescar"
             isPending={analytics.isFetching}
-            onPress={() => analytics.refetch()}
+            onPress={() => {
+              void analytics.refetch();
+            }}
           >
             <RefreshCw size={14} />
           </Button>
@@ -137,9 +140,9 @@ export function WaCloudAnalyticsPage() {
           </Card.Content>
         </Card>
       ) : analytics.isLoading ? (
-        <div className="flex justify-center py-16">
-          <Spinner />
-        </div>
+        <Card>
+          <WaTableSkeleton rows={8} cols={6} />
+        </Card>
       ) : analytics.error ? (
         <Card>
           <Card.Content className="p-6 text-danger text-sm">

@@ -1,13 +1,14 @@
 import { Button, Card, Popover, Tooltip } from "@heroui/react";
 import clsx from "clsx";
-import dayjs, { type Dayjs } from "dayjs";
 import { useEffect, useMemo, useState } from "react";
 
+import { daysInMonth, formatChile, isoWeekday, today } from "@/lib/dates";
 import { fmtCLP } from "@/lib/format";
 
 export interface HeatmapMonthProps {
   maxValue: number;
-  month: Dayjs;
+  /** Month as "YYYY-MM". */
+  month: string;
   onDayClick?: (isoDate: string) => void;
   selectedDate?: string;
   statsByDate: Map<
@@ -70,7 +71,7 @@ const WEEKDAYS = ["Lu", "Ma", "Mi", "Ju", "Vi", "Sá", "Do"];
 interface DayCell {
   amountExpected: number;
   amountPaid: number;
-  date: Dayjs;
+  date: string; // "YYYY-MM-DD"
   dayNumber: number;
   intensity: 0 | 1 | 2 | 3 | 4;
   isoDate: string;
@@ -105,15 +106,10 @@ function HeatmapMonthComponent({
 
   // KEEP useMemo: Heavy Array generation with multiple map/format operations
   const dates = useMemo(() => {
-    const startOfMonth = month.startOf("month");
-    const endOfMonth = month.endOf("month");
-    const daysInMonth = endOfMonth.date();
+    const totalDays = daysInMonth(month);
 
-    // Adjust for Monday start using ISO 8601 (1=Mon, 7=Sun)
-    // Grid displays Mon-Sun (7 columns), so: Mon=0, Tue=1, Wed=2, Thu=3, Fri=4, Sat=5, Sun=6
-    const jsDay = startOfMonth.isoWeekday(); // 1=Mon, 2=Tue, ..., 7=Sun
-    // ISO weekday → grid column: Mon(1)→0, Tue(2)→1, Wed(3)→2, Thu(4)→3, Fri(5)→4, Sat(6)→5, Sun(7)→6
-    const startDayOfWeek = jsDay - 1;
+    // Monday-start grid (ISO 8601): Mon(1)→col 0 … Sun(7)→col 6.
+    const startDayOfWeek = isoWeekday(`${month}-01`) - 1;
 
     // Generate padding days for start grid alignment (7 columns)
     const paddingStart: PaddingCell[] = Array.from({ length: startDayOfWeek }).map((_, i) => ({
@@ -122,9 +118,9 @@ function HeatmapMonthComponent({
     }));
 
     // Generate actual days (Mon-Sun)
-    const days: DayCell[] = Array.from({ length: daysInMonth }).map((_, i) => {
-      const date = startOfMonth.add(i, "day");
-      const isoDate = date.format("YYYY-MM-DD");
+    const days: DayCell[] = Array.from({ length: totalDays }).map((_, i) => {
+      const isoDate = `${month}-${String(i + 1).padStart(2, "0")}`;
+      const date = isoDate;
       const stats = statsByDate.get(isoDate) ?? {
         amountExpected: 0,
         amountPaid: 0,
@@ -140,7 +136,7 @@ function HeatmapMonthComponent({
         type: "day" as const,
         ...stats,
         intensity: getIntensity(stats.total, maxValue),
-        isToday: date.isSame(dayjs(), "day"),
+        isToday: isoDate === today(),
       };
     });
 
@@ -149,7 +145,7 @@ function HeatmapMonthComponent({
 
   // KEEP useMemo: Aggregation over dates array with past/future split
   const monthTotals = useMemo(() => {
-    const today = dayjs();
+    const todayStr = today();
     let events = 0;
     let expected = 0;
     let paid = 0;
@@ -168,7 +164,7 @@ function HeatmapMonthComponent({
         }
 
         // Split by past/future relative to today
-        if (d.date.isBefore(today, "day")) {
+        if (d.date < todayStr) {
           expectedPast += d.amountExpected;
           paidPast += d.amountPaid;
         } else {
@@ -189,8 +185,12 @@ function HeatmapMonthComponent({
   return (
     <Card className="flex flex-col overflow-hidden rounded-2xl border border-default-200 shadow-sm">
       <div className="flex items-center justify-between border-default-200/50 border-b bg-content1/50 px-4 py-3 backdrop-blur-sm">
-        <h3 className="font-bold text-foreground text-sm capitalize">{month.format("MMMM")}</h3>
-        <span className="font-medium text-foreground-500 text-xs">{month.format("YYYY")}</span>
+        <h3 className="font-bold text-foreground text-sm capitalize">
+          {formatChile(`${month}-01`, "MMMM")}
+        </h3>
+        <span className="font-medium text-foreground-500 text-xs">
+          {formatChile(`${month}-01`, "YYYY")}
+        </span>
       </div>
 
       <div className="grid grid-cols-7 gap-1 p-4">
@@ -213,7 +213,7 @@ function HeatmapMonthComponent({
           const cellButton = (
             <Button
               className={clsx(
-                "relative flex aspect-square h-full min-h-0 w-full min-w-0 cursor-default flex-col items-center justify-center overflow-hidden rounded-md ",
+                "relative flex aspect-square min-h-0 min-w-0 cursor-default flex-col items-center justify-center overflow-hidden rounded-md size-full ",
                 // Default empty state
                 "bg-default-100/50 text-foreground-500",
                 // Intensity colors
@@ -256,7 +256,7 @@ function HeatmapMonthComponent({
           const cellDetails =
             cell.total > 0 ? (
               <div className="rounded-lg border border-default-200 bg-content1 p-3 text-foreground text-xs shadow-xl">
-                <p className="mb-1 font-bold">{cell.date.format("dddd DD MMMM")}</p>
+                <p className="mb-1 font-bold">{formatChile(cell.date, "dddd DD MMMM")}</p>
                 <div className="space-y-0.5">
                   <p>
                     {cell.total} evento{cell.total !== 1 && "s"}

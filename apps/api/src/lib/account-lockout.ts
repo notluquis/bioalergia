@@ -10,8 +10,8 @@ import { emitSecurityAlert } from "./security-alerts.ts";
 
 export const LOCKOUT_THRESHOLD_SHORT = 5;
 export const LOCKOUT_THRESHOLD_LONG = 10;
-export const LOCKOUT_DURATION_SHORT_MS = 15 * 60 * 1000;
-export const LOCKOUT_DURATION_LONG_MS = 60 * 60 * 1000;
+export const LOCKOUT_DURATION_SHORT_MS: number = 15 * 60 * 1000;
+export const LOCKOUT_DURATION_LONG_MS: number = 60 * 60 * 1000;
 
 export function isLockedNow(user: { lockedUntil: Date | null }): boolean {
   return user.lockedUntil ? user.lockedUntil.getTime() > Date.now() : false;

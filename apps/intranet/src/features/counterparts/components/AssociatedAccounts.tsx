@@ -1,7 +1,6 @@
 import { Alert, Button, Card, Input, Label, Modal, Surface, TextField } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
-import dayjs from "dayjs";
 import { Lock } from "lucide-react";
 import type { ChangeEvent } from "react";
 import { useEffect, useState } from "react";
@@ -13,6 +12,7 @@ import type { Transaction } from "@/features/finance/types";
 import { fmtCLP } from "@/lib/format";
 import { formatRut } from "@/lib/rut";
 import { addCounterpartAccount, attachCounterpartRut, fetchAccountSuggestions } from "../api";
+import { counterpartKeys } from "../queries";
 import type { Counterpart, CounterpartAccount, CounterpartAccountSuggestion } from "../types";
 import { getAccountGroupColumns, getQuickViewColumns } from "./AssociatedAccountsColumns";
 import {
@@ -161,7 +161,7 @@ const useQuickViewTransactions = (quickViewGroup: AccountGroup | null, activeRan
       }
 
       return [...dedup.values()].toSorted(
-        (a, b) => dayjs(b.transactionDate).valueOf() - dayjs(a.transactionDate).valueOf()
+        (a, b) => new Date(b.transactionDate).getTime() - new Date(a.transactionDate).getTime()
       );
     },
     queryKey: [
@@ -247,10 +247,10 @@ const useAssociatedAccountsModel = ({
     },
     onSuccess: (_data, variables) => {
       void queryClient.invalidateQueries({
-        queryKey: ["counterpart-detail", variables.id],
+        queryKey: counterpartKeys.details(variables.id),
       });
       void queryClient.invalidateQueries({
-        queryKey: ["counterpart-summary", variables.id],
+        queryKey: counterpartKeys.summaries(variables.id),
       });
       setAccountForm(ACCOUNT_FORM_DEFAULT);
       setSuggestionQuery("");
@@ -267,10 +267,10 @@ const useAssociatedAccountsModel = ({
     },
     onSuccess: (_, variables) => {
       void queryClient.invalidateQueries({
-        queryKey: ["counterpart-detail", variables.id],
+        queryKey: counterpartKeys.details(variables.id),
       });
       void queryClient.invalidateQueries({
-        queryKey: ["counterpart-summary", variables.id],
+        queryKey: counterpartKeys.summaries(variables.id),
       });
       setSuggestionQuery("");
       toastSuccess("RUT vinculado correctamente");
@@ -553,7 +553,7 @@ function ActiveCounterpartCard({
             size="sm"
             variant="outline"
           >
-            {!canUpdate && <Lock className="mr-2 h-3 w-3" />}
+            {!canUpdate && <Lock className="mr-2 size-3" />}
             Editar contraparte
           </Button>
         </div>

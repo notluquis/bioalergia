@@ -13,28 +13,29 @@ import {
 } from "@finanzas/orpc-contracts/personal-finance";
 import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
-import dayjs from "dayjs";
-import utc from "dayjs/plugin/utc.js";
 import { Decimal } from "decimal.js";
 import type { Context as HonoContext } from "hono";
-import { z } from "zod";
-import { createAuthContext, getSessionUser } from "../auth.ts";
+import type { z } from "zod";
+import { createAuthContext, getSessionUser } from "../lib/auth.ts";
 import { logError } from "../lib/logger.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
-import { getUFValue } from "../services/cmf-uf.ts";
+import {
+  backfillUfClp,
+  createCredit as createCreditService,
+  deleteCredit as deleteCreditService,
+  getCreditOrThrow,
+  listCredits as listCreditsService,
+  payInstallment as payInstallmentService,
+} from "../services/personal-finance.ts";
 import { SuperJSONRPCHandler } from "./superjson.ts";
 
 configureSuperjson();
-dayjs.extend(utc);
 
 type PersonalFinanceORPCContext = {
   hono: HonoContext;
 };
 
 const base = os.$context<PersonalFinanceORPCContext>();
-function parseDateOnlyUtc(value: string): Date {
-  return dayjs.utc(value, "YYYY-MM-DD", true).toDate();
-}
 
 function toNumberValue(value: unknown) {
   if (value == null) {
@@ -124,61 +125,7 @@ const personalFinanceORPCRouterBase = {
     .output(personalFinanceBackfillResponseSchema)
     .handler(async ({ context }) => {
       const db = await getAuthorizedDb(context.hono);
-      const creditsUF = await db.personalCredit.findMany({
-        where: { currency: "UF" },
-        include: {
-          installments: {
-            where: {
-              paidAt: { not: null },
-              status: "PAID",
-            },
-          },
-        },
-      });
-
-      const results: Array<{
-        creditId: number;
-        installmentNumber: number;
-        paidAmount: number;
-        paidAmountCLP: number;
-        paymentDate: string;
-        ufValue: number;
-      }> = [];
-
-      for (const credit of creditsUF) {
-        for (const installment of credit.installments || []) {
-          if (!installment.paidAt || !installment.paidAmount) {
-            continue;
-          }
-
-          try {
-            const paymentDate = dayjs(installment.paidAt).format("YYYY-MM-DD");
-            const ufValue = await getUFValue(paymentDate);
-            const paidAmountCLP = installment.paidAmount.times(ufValue);
-
-            await db.personalCreditInstallment.update({
-              where: { id: installment.id },
-              data: { paidAmountCLP },
-            });
-
-            results.push({
-              creditId: credit.id,
-              installmentNumber: installment.installmentNumber,
-              paidAmount: Number(installment.paidAmount),
-              paidAmountCLP: Number(paidAmountCLP),
-              paymentDate,
-              ufValue,
-            });
-          } catch (error) {
-            console.error(`[Backfill] Error processing installment ${installment.id}:`, error);
-          }
-        }
-      }
-
-      return {
-        processed: results.length,
-        results,
-      };
+      return backfillUfClp(db);
     }),
 
   createCredit: base
@@ -192,43 +139,7 @@ const personalFinanceORPCRouterBase = {
     .output(personalFinanceCreditSchema)
     .handler(async ({ context, input }) => {
       const db = await getAuthorizedDb(context.hono);
-
-      const credit = await db.personalCredit.create({
-        data: {
-          bankName: input.bankName,
-          creditNumber: input.creditNumber,
-          description: input.description,
-          totalAmount: new Decimal(input.totalAmount),
-          currency: input.currency,
-          interestRate: input.interestRate ? new Decimal(input.interestRate) : undefined,
-          startDate: parseDateOnlyUtc(input.startDate),
-          totalInstallments: input.totalInstallments,
-          status: "ACTIVE",
-          installments: {
-            create: input.installments?.map(
-              (installment: NonNullable<typeof input.installments>[number]) => ({
-                installmentNumber: installment.installmentNumber,
-                dueDate: parseDateOnlyUtc(installment.dueDate),
-                amount: new Decimal(installment.amount),
-                capitalAmount: installment.capitalAmount
-                  ? new Decimal(installment.capitalAmount)
-                  : undefined,
-                interestAmount: installment.interestAmount
-                  ? new Decimal(installment.interestAmount)
-                  : undefined,
-                otherCharges: installment.otherCharges
-                  ? new Decimal(installment.otherCharges)
-                  : undefined,
-                status: "PENDING",
-              })
-            ),
-          },
-        },
-        include: {
-          installments: true,
-        },
-      });
-
+      const credit = await createCreditService(db, input);
       return toPlainCredit(credit);
     }),
 
@@ -243,11 +154,7 @@ const personalFinanceORPCRouterBase = {
     .output(personalFinanceDeleteCreditResponseSchema)
     .handler(async ({ context, input }) => {
       const db = await getAuthorizedDb(context.hono);
-
-      await db.personalCredit.delete({
-        where: { id: input.id },
-      });
-
+      await deleteCreditService(db, input.id);
       return { success: true };
     }),
 
@@ -262,19 +169,7 @@ const personalFinanceORPCRouterBase = {
     .output(personalFinanceCreditSchema)
     .handler(async ({ context, input }) => {
       const db = await getAuthorizedDb(context.hono);
-      const credit = await db.personalCredit.findUnique({
-        where: { id: input.id },
-        include: {
-          installments: {
-            orderBy: { installmentNumber: "asc" },
-          },
-        },
-      });
-
-      if (!credit) {
-        throw new ORPCError("NOT_FOUND", { message: "Credit not found" });
-      }
-
+      const credit = await getCreditOrThrow(db, input.id);
       return toPlainCredit(credit);
     }),
 
@@ -288,16 +183,7 @@ const personalFinanceORPCRouterBase = {
     .output(personalFinanceCreditsResponseSchema)
     .handler(async ({ context }) => {
       const db = await getAuthorizedDb(context.hono);
-
-      const credits = await db.personalCredit.findMany({
-        orderBy: { createdAt: "desc" },
-        include: {
-          installments: {
-            orderBy: { installmentNumber: "asc" },
-          },
-        },
-      });
-
+      const credits = await listCreditsService(db);
       return credits.map((credit) => toPlainCredit(credit));
     }),
 
@@ -312,62 +198,7 @@ const personalFinanceORPCRouterBase = {
     .output(personalFinanceInstallmentSchema)
     .handler(async ({ context, input }) => {
       const db = await getAuthorizedDb(context.hono);
-
-      const installment = await db.personalCreditInstallment.findUnique({
-        where: {
-          creditId_installmentNumber: {
-            creditId: input.creditId,
-            installmentNumber: input.installmentNumber,
-          },
-        },
-        include: {
-          credit: true,
-        },
-      });
-
-      if (!installment) {
-        throw new ORPCError("NOT_FOUND", { message: "Installment not found" });
-      }
-
-      if (installment.status === "PAID") {
-        throw new ORPCError("BAD_REQUEST", { message: "Installment already paid" });
-      }
-
-      let paidAmountCLP: Decimal | null = null;
-
-      if (installment.credit.currency === "UF") {
-        try {
-          const ufValue = await getUFValue(input.paymentDate);
-          paidAmountCLP = new Decimal(input.amount).times(ufValue);
-        } catch (error) {
-          console.error("[Payment] Error calculating CLP equivalent:", error);
-        }
-      }
-
-      const updated = await db.personalCreditInstallment.update({
-        where: { id: installment.id },
-        data: {
-          status: "PAID",
-          paidAt: parseDateOnlyUtc(input.paymentDate),
-          paidAmount: new Decimal(input.amount),
-          paidAmountCLP,
-        },
-      });
-
-      const pendingInstallments = await db.personalCreditInstallment.count({
-        where: {
-          creditId: input.creditId,
-          status: "PENDING",
-        },
-      });
-
-      if (pendingInstallments === 0) {
-        await db.personalCredit.update({
-          where: { id: input.creditId },
-          data: { status: "PAID" },
-        });
-      }
-
+      const updated = await payInstallmentService(db, input);
       return toPlainInstallment(updated);
     }),
 };

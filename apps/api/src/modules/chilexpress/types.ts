@@ -73,21 +73,36 @@ export interface CxRateInput {
   originCountyCode: string;
   destinationCountyCode: string;
   package: {
-    weight: number;
-    height: number;
-    width: number;
-    length: number;
+    // Spec declara string con punto. Aceptamos number (se serializa antes de
+    // mandar) o string ya pre-formateado.
+    weight: number | string;
+    height: number | string;
+    width: number | string;
+    length: number | string;
   };
   productType: number;
   contentType: number;
   declaredWorth: string;
   deliveryTime: number;
+  /**
+   * TCC del cliente. Si está presente, se usa /rates/business y la respuesta
+   * incluye `serviceValueDiscount` con el precio con descuento de empresa.
+   */
+  customerCardNumber?: string;
 }
 
 export interface CxServiceOption {
-  serviceTypeCode: string;
+  serviceTypeCode: string | number;
   serviceDescription: string;
-  serviceValue: number;
+  // Spec: string ("8569"). Algunos callers reciben number tras coerción Zod
+  // upstream; aceptamos ambos.
+  serviceValue: number | string;
+  /** Precio final con descuento de empresa (solo /rates/business). */
+  serviceValueDiscount?: number | string;
+  finalWeight?: number | string;
+  didUseVolumetricWeight?: boolean | string;
+  conditions?: string;
+  deliveryType?: number;
   deliveryTime?: string;
 }
 
@@ -96,6 +111,7 @@ export interface CxRateResponse {
     courierServiceOptions?: CxServiceOption[];
   };
   statusCode?: number;
+  statusDescription?: string;
   message?: string;
 }
 
@@ -104,44 +120,70 @@ export interface CxRateResponse {
 export interface CxTransportOrderInput {
   header: {
     certificateNumber: number;
-    clientRut: string;
+    // Número de Tarjeta Cliente Chilexpress (TCC). La API lo exige como
+    // `customerCardNumber`; enviarlo como `clientRut` provoca 400.
+    customerCardNumber: string;
     countyOfOriginCoverageCode: string;
     labelType: number;
   };
   details: Array<{
-    addresses: {
-      deliveryAddress: {
-        streetName: string;
-        streetNumber: string;
-        supplement?: string;
-        county: {
-          coverageRegionCode: string;
-        };
-        isOrigin: false;
-        deliveryOnCommercialOffice: boolean;
-        commercialOfficeId: string;
-        observation?: string;
-      };
-    };
-    contacts: {
-      recipient: {
-        name: string;
-        phoneNumber: string;
-        mail?: string;
-      };
-    };
+    // ChileExpress espera arrays (IList<...>), no objetos con keys nombradas.
+    addresses: Array<{
+      // Código de cobertura de la comuna destino (campo plano, no anidado).
+      countyCoverageCode: string;
+      streetName: string;
+      streetNumber: string;
+      supplement?: string;
+      // Spec (TransportOrderAddress + ejemplo JSON): valor MAYÚSCULA "DEST"
+      // (entrega) / "DEV" (devolución). El mensaje de error de Chilexpress
+      // muestra "Dest/Dev" en texto humano, pero el token aceptado es el del
+      // spec en mayúscula. Probar "Dest" capitalizado también dio statusCode -7.
+      addressType: "DEST" | "DEV";
+      deliveryOnCommercialOffice: boolean;
+      // integer en el spec — incluir SOLO en entrega en sucursal. Mandar ""
+      // en domicilio rompe el binding del address (Chilexpress -7).
+      commercialOfficeId?: string;
+      observation?: string;
+    }>;
+    contacts: Array<{
+      name: string;
+      phoneNumber: string;
+      mail?: string;
+      // "D" = destinatario, "R" = remitente.
+      contactType: "D" | "R";
+    }>;
     packages: Array<{
-      weight: number;
-      height: number;
-      width: number;
-      length: number;
+      // Spec (Package): peso/dimensiones como string con punto.
+      weight: string;
+      height: string;
+      width: string;
+      length: string;
+      /** Código del servicio de entrega, obtenido de la API Cotización. */
       serviceDeliveryCode: string;
-      declaredValue: string;
-      cashOnDelivery: string;
-      descriptionOfContent: string;
+      /** 1 = Documento, 3 = Encomienda. */
       productCode: string;
-      multivariateCode: string;
-      numberOfPackages: number;
+      /**
+       * Referencia única del envío (identifica este bulto en tracking + cierre
+       * de certificado). Spec marca obligatorio.
+       */
+      deliveryReference: string;
+      /**
+       * Referencia del grupo de bultos. Para envíos de un solo bulto, igual
+       * a deliveryReference. Spec marca obligatorio.
+       */
+      groupReference: string;
+      /** Valor declarado del producto. */
+      declaredValue?: string;
+      /**
+       * Código del tipo de producto enviado (declaredContent). Spec:
+       * 1 = Artículos Personales, 2 = Educación, 4 = Vestuario, 5 = Otros,
+       * 7 = Tecnología, 10000331 = Celular.
+       */
+      declaredContent?: string;
+      /** Monto a cobrar contra entrega (COD), si está habilitado. */
+      receivableAmountInDelivery?: number;
+      /** Add-on services per package (e.g. 417 = Cobertura Extendida). */
+      additionalServices?: Array<{ serviceTypeCode: number }>;
     }>;
   }>;
 }
@@ -174,6 +216,12 @@ export interface CxTransportOrderResult {
     labelData: string;
     labelType: number;
   };
+  // Cuando un detalle falla, Chilexpress devuelve el motivo a nivel de detalle
+  // (el statusDescription top-level solo dice "ninguno fue exitoso"). Estos
+  // campos traen la causa accionable (cobertura inválida, servicio no
+  // habilitado para el destino, peso/dimensión fuera de rango, etc).
+  statusCode?: number;
+  statusDescription?: string;
 }
 
 export interface CxTransportOrderResponse {

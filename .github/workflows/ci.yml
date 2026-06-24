@@ -4,11 +4,54 @@ on:
   push:
     branches:
       - main
+      # forthcoming-ocelot es la rama de deploy (Railway). Antes solo main
+      # corría lint/type-check/test/build, así que cambios api-only en la rama
+      # de deploy no tenían gate (quality.yml cubre solo intranet/packages).
+      - forthcoming-ocelot
   pull_request:
     branches:
       - main
+      - forthcoming-ocelot
+
+# Cancel superseded runs on the same ref (matches quality.yml / chromatic.yml).
+# A second push to a branch kills the in-flight run instead of paying for both.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
+  # Graph-aware affected detection (turbo) → gate the browser-mode storybook
+  # jobs so an api/site-only PR doesn't spin up a Chromium runner for intranet
+  # stories (and vice versa). Mirrors chromatic.yml's `changes` job. turbo
+  # walks the workspace graph, so a packages/* change correctly marks both apps.
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      intranet: ${{ steps.filter.outputs.intranet }}
+      site: ${{ steps.filter.outputs.site }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v6
+        with:
+          run_install: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 26
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - id: filter
+        env:
+          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.sha }}
+          TURBO_TELEMETRY_DISABLED: "1"
+        run: |
+          pnpm turbo query affected --packages @finanzas/intranet --tasks build --base "$BASE_SHA" --head "$HEAD_SHA" > intranet-affected.json
+          pnpm turbo query affected --packages @finanzas/site --tasks build --base "$BASE_SHA" --head "$HEAD_SHA" > site-affected.json
+          echo "intranet=$(node -e "const fs=require('fs');const v=JSON.parse(fs.readFileSync('intranet-affected.json','utf8'));process.stdout.write(String((v.data?.affectedTasks?.length ?? 0) > 0))")" >> "$GITHUB_OUTPUT"
+          echo "site=$(node -e "const fs=require('fs');const v=JSON.parse(fs.readFileSync('site-affected.json','utf8'));process.stdout.write(String((v.data?.affectedTasks?.length ?? 0) > 0))")" >> "$GITHUB_OUTPUT"
+
   quality:
     runs-on: ubuntu-latest
     permissions:
@@ -24,29 +67,135 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
 
-      - name: Use Node.js 25
+      - name: Use Node.js 26
         uses: actions/setup-node@v6
         with:
           node-version: 26
           cache: pnpm
 
-      - name: Restore Turbo cache
-        uses: actions/cache@v5
-        with:
-          path: .turbo/cache
-          key: ${{ runner.os }}-turbo-${{ github.job }}-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-turbo-${{ github.job }}-
-            ${{ runner.os }}-turbo-
+      # Turbo remote cache on the free GitHub Actions Cache backend ($0, no
+      # Vercel, no secrets). Replaces the old per-job `actions/cache` of
+      # `.turbo/cache` (keyed on github.sha → never restored across commits,
+      # saved only at job END → invisible mid-run). Now build/test/type-check
+      # become HITS keyed by turbo's content hash, shared across runs and with
+      # the `build` job (which `needs: quality`). SHA-pinned: this 3rd-party
+      # action runs a localhost proxy that sees build artifacts. envMode:strict
+      # is unaffected — TURBO_* are CLI system vars, not task-hash inputs.
+      - name: Turbo remote cache
+        uses: rharkor/caching-for-turbo@75f8ebf4a43d2c60b23bc2a27082cfea94ffdad9 # v2.5.0
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Lint, type-check and test
+      # NOTE: intranet's `test` script is now `vitest --project=unit` (jsdom
+      # only); the browser-mode `storybook` project runs in the separate
+      # `storybook-browser` job below. So this gating job needs NO Chromium and
+      # stays fast + deterministic (decoupled from browser-mode flakiness).
+      - name: Lint, type-check and unit tests
         env:
           TURBO_TELEMETRY_DISABLED: "1"
           TURBO_RUN_FLAGS: ${{ github.event_name == 'pull_request' && '--affected' || '' }}
+          # Pin the diff base for `turbo run --affected`. github.base_ref is
+          # the target branch on PRs (e.g. "main"); falls back to origin/main
+          # for push events. Avoids "Failed to resolve base ref" when the
+          # local checkout has no main branch tracking pointer.
+          TURBO_SCM_BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || 'origin/main' }}
         run: pnpm turbo run lint type-check test $TURBO_RUN_FLAGS --continue=never --summarize --output-logs=errors-only
+
+  # Browser-mode Storybook component tests (@storybook/addon-vitest, Chromium),
+  # split off `quality` so browser flakiness / Chromium availability never
+  # blocks the fast unit signal. Keep this OUT of branch-protection required
+  # checks until proven stable, then promote it. Gated on `changes` so it only
+  # runs when intranet (or a shared dep) is affected.
+  storybook-browser:
+    needs: changes
+    if: needs.changes.outputs.intranet == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+      - name: Use Node.js 26
+        uses: actions/setup-node@v6
+        with:
+          node-version: 26
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      # Cache the Chromium binary download, version-keyed (busts only on a
+      # Playwright bump). apt system deps live in the runner image, not the
+      # cache, so install-deps always runs; only the download is skipped on hit.
+      - name: Resolve Playwright version
+        id: pw
+        run: echo "version=$(pnpm -F @finanzas/intranet exec playwright --version | awk '{print $NF}')" >> "$GITHUB_OUTPUT"
+      - name: Cache Playwright browsers
+        id: pw-cache
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ steps.pw.outputs.version }}-chromium
+      - name: Install Playwright system deps
+        run: pnpm -F @finanzas/intranet exec playwright install-deps chromium
+      - name: Install Chromium (cache miss only)
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+        run: pnpm -F @finanzas/intranet exec playwright install chromium
+      - name: Storybook component tests
+        env:
+          TURBO_TELEMETRY_DISABLED: "1"
+        run: pnpm -F @finanzas/intranet test:storybook
+
+  # Browser-mode Storybook component tests for the public marketing site
+  # (@storybook/addon-vitest, Chromium). Same rationale as storybook-browser:
+  # kept OUT of branch-protection required checks until proven stable, so
+  # browser flakiness / Chromium availability never blocks the fast signal.
+  site-storybook-browser:
+    needs: changes
+    if: needs.changes.outputs.site == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+      - name: Use Node.js 26
+        uses: actions/setup-node@v6
+        with:
+          node-version: 26
+          cache: pnpm
+      - name: Turbo remote cache
+        uses: rharkor/caching-for-turbo@75f8ebf4a43d2c60b23bc2a27082cfea94ffdad9 # v2.5.0
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      # Site stories import @finanzas/* from dist; build those workspace deps
+      # before the Storybook build resolves their entrypoints (cache HIT after
+      # the first run thanks to the turbo remote cache above).
+      - name: Build workspace deps
+        env:
+          TURBO_TELEMETRY_DISABLED: "1"
+        run: pnpm turbo run build --filter=@finanzas/orpc-contracts --filter=@finanzas/orpc-client --filter=@finanzas/db
+      - name: Resolve Playwright version
+        id: pw
+        run: echo "version=$(pnpm -F @finanzas/site exec playwright --version | awk '{print $NF}')" >> "$GITHUB_OUTPUT"
+      - name: Cache Playwright browsers
+        id: pw-cache
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ steps.pw.outputs.version }}-chromium
+      - name: Install Playwright system deps
+        run: pnpm -F @finanzas/site exec playwright install-deps chromium
+      - name: Install Chromium (cache miss only)
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+        run: pnpm -F @finanzas/site exec playwright install chromium
+      - name: Storybook component tests
+        env:
+          TURBO_TELEMETRY_DISABLED: "1"
+        run: pnpm -F @finanzas/site test:storybook
 
   build:
     needs: quality
@@ -62,20 +211,16 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
 
-      - name: Use Node.js 25
+      - name: Use Node.js 26
         uses: actions/setup-node@v6
         with:
           node-version: 26
           cache: pnpm
 
-      - name: Restore Turbo cache
-        uses: actions/cache@v5
-        with:
-          path: .turbo/cache
-          key: ${{ runner.os }}-turbo-${{ github.job }}-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-turbo-${{ github.job }}-
-            ${{ runner.os }}-turbo-
+      # Reuses the artifacts `quality` already produced this run (same turbo
+      # content hash) — no cold rebuild.
+      - name: Turbo remote cache
+        uses: rharkor/caching-for-turbo@75f8ebf4a43d2c60b23bc2a27082cfea94ffdad9 # v2.5.0
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -84,4 +229,5 @@ jobs:
         env:
           TURBO_TELEMETRY_DISABLED: "1"
           TURBO_RUN_FLAGS: ${{ github.event_name == 'pull_request' && '--affected' || '' }}
+          TURBO_SCM_BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || 'origin/main' }}
         run: pnpm turbo run build $TURBO_RUN_FLAGS --continue=never --summarize --output-logs=errors-only

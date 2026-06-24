@@ -1,13 +1,17 @@
 import { db } from "@finanzas/db";
-import dayjs from "dayjs";
-import timezone from "dayjs/plugin/timezone.js";
-import utc from "dayjs/plugin/utc.js";
+import {
+  getMonthRange,
+  instantToChileDate,
+  parseChileDateOnly,
+  toChileDateString,
+  toChilePeriod,
+} from "../lib/time.ts";
 import { upsertTimesheetEntry } from "./timesheets.ts";
 
-dayjs.extend(utc);
-dayjs.extend(timezone);
-
-const TIMEZONE = "America/Santiago";
+// Chile-day bounds (UTC instants) for markedAt range queries.
+const chileMidnight = (isoDate: string) => parseChileDateOnly(isoDate) ?? new Date(NaN);
+const chileEndOfDay = (isoDate: string) =>
+  new Date(chileMidnight(isoDate).getTime() + 86_400_000 - 1);
 
 export type AttendanceMarkType = "CLOCK_IN" | "CLOCK_OUT";
 export type AttendanceCurrentStatus = "CLOCKED_IN" | "CLOCKED_OUT" | "NO_MARKS_TODAY";
@@ -113,7 +117,7 @@ function mapMark(raw: {
 }
 
 /** Compute worked minutes between earliest CLOCK_IN and latest CLOCK_OUT in a set of marks */
-function computeWorkedMinutes(dayMarks: AttendanceMarkData[]): number | null {
+export function computeWorkedMinutes(dayMarks: AttendanceMarkData[]): number | null {
   const clockIns = dayMarks
     .filter((m) => m.type === "CLOCK_IN")
     .sort((a, b) => a.markedAt.getTime() - b.markedAt.getTime());
@@ -121,8 +125,8 @@ function computeWorkedMinutes(dayMarks: AttendanceMarkData[]): number | null {
     .filter((m) => m.type === "CLOCK_OUT")
     .sort((a, b) => b.markedAt.getTime() - a.markedAt.getTime());
   if (clockIns.length === 0 || clockOuts.length === 0) return null;
-  const firstIn = clockIns[0]!;
-  const lastOut = clockOuts[0]!;
+  const firstIn = clockIns[0];
+  const lastOut = clockOuts[0];
   if (lastOut.markedAt <= firstIn.markedAt) return null;
   return Math.floor((lastOut.markedAt.getTime() - firstIn.markedAt.getTime()) / 60_000);
 }
@@ -157,7 +161,7 @@ export async function checkIsOfficeNetwork(ip: string): Promise<boolean> {
   return false;
 }
 
-function ipMatchesCidr(ip: string, cidr: string): boolean {
+export function ipMatchesCidr(ip: string, cidr: string): boolean {
   if (!cidr.includes("/")) return ip === cidr;
 
   const [network, prefixStr] = cidr.split("/");
@@ -173,10 +177,10 @@ function ipMatchesCidr(ip: string, cidr: string): boolean {
   return (ipNum & mask) >>> 0 === (netNum & mask) >>> 0;
 }
 
-function ipToNumber(ip: string): number | null {
+export function ipToNumber(ip: string): number | null {
   const parts = ip.split(".").map(Number);
   if (parts.length !== 4 || parts.some((p) => Number.isNaN(p) || p < 0 || p > 255)) return null;
-  return ((parts[0]! << 24) | (parts[1]! << 16) | (parts[2]! << 8) | parts[3]!) >>> 0;
+  return ((parts[0] << 24) | (parts[1] << 16) | (parts[2] << 8) | parts[3]) >>> 0;
 }
 
 /**
@@ -266,10 +270,9 @@ export async function syncMarkToTimesheet(
   employeeId: number,
   referenceTime: Date
 ): Promise<boolean> {
-  const dayInSantiago = dayjs(referenceTime).tz(TIMEZONE);
-  const dayStart = dayInSantiago.startOf("day").toDate();
-  const dayEnd = dayInSantiago.endOf("day").toDate();
-  const workDateStr = dayInSantiago.format("YYYY-MM-DD");
+  const workDateStr = instantToChileDate(referenceTime) ?? "";
+  const dayStart = chileMidnight(workDateStr);
+  const dayEnd = chileEndOfDay(workDateStr);
 
   const marks = await db.attendanceMark.findMany({
     where: { employeeId, markedAt: { gte: dayStart, lte: dayEnd } },
@@ -281,8 +284,8 @@ export async function syncMarkToTimesheet(
 
   if (clockIns.length === 0 || clockOuts.length === 0) return false;
 
-  const firstIn = clockIns[0]!.markedAt;
-  const lastOut = clockOuts[clockOuts.length - 1]!.markedAt;
+  const firstIn = clockIns[0].markedAt;
+  const lastOut = clockOuts[clockOuts.length - 1].markedAt;
 
   if (lastOut <= firstIn) return false;
 
@@ -314,9 +317,8 @@ export async function getTodayStatus(employeeId: number): Promise<{
   weekSummary: WeekDaySummary[];
   monthStats: { daysWorked: number; totalMinutes: number };
 }> {
-  const now = dayjs().tz(TIMEZONE);
-  const monthStart = now.startOf("month").toDate();
-  const dayEnd = now.endOf("day").toDate();
+  const monthStart = chileMidnight(getMonthRange(toChilePeriod(new Date())).from);
+  const dayEnd = chileEndOfDay(toChileDateString(new Date()));
 
   const rawMarks = await db.attendanceMark.findMany({
     where: { employeeId, markedAt: { gte: monthStart, lte: dayEnd } },
@@ -328,18 +330,19 @@ export async function getTodayStatus(employeeId: number): Promise<{
   // Group marks by local date
   const byDate = new Map<string, AttendanceMarkData[]>();
   for (const mark of marks) {
-    const date = dayjs(mark.markedAt).tz(TIMEZONE).format("YYYY-MM-DD");
+    const date = instantToChileDate(mark.markedAt) ?? "";
     const existing = byDate.get(date);
     if (existing) existing.push(mark);
     else byDate.set(date, [mark]);
   }
 
-  const today = now.format("YYYY-MM-DD");
-  const yesterday = now.subtract(1, "day").format("YYYY-MM-DD");
+  const todayPlain = Temporal.PlainDate.from(toChileDateString(new Date()));
+  const today = todayPlain.toString();
+  const yesterday = todayPlain.subtract({ days: 1 }).toString();
   const todayMarks = byDate.get(today) ?? [];
 
   // Current status
-  const lastMark = todayMarks.length > 0 ? todayMarks[todayMarks.length - 1]! : null;
+  const lastMark = todayMarks.length > 0 ? todayMarks[todayMarks.length - 1] : null;
   let currentStatus: AttendanceCurrentStatus;
   if (todayMarks.length === 0) currentStatus = "NO_MARKS_TODAY";
   else if (lastMark?.type === "CLOCK_IN") currentStatus = "CLOCKED_IN";
@@ -358,16 +361,15 @@ export async function getTodayStatus(employeeId: number): Promise<{
     !yesterdayMarks.some((m) => m.type === "CLOCK_OUT");
 
   // Week summary (Mon → today)
-  const dayOfWeek = now.day(); // 0=Sun, 1=Mon, ..., 6=Sat
-  const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-  const weekMonday = now.subtract(daysFromMonday, "day").startOf("day");
+  const daysFromMonday = todayPlain.dayOfWeek - 1; // dayOfWeek: 1=Mon … 7=Sun
+  const weekMonday = todayPlain.subtract({ days: daysFromMonday });
 
   const weekSummary: WeekDaySummary[] = [];
   for (let i = 0; i < 7; i++) {
-    const day = weekMonday.add(i, "day");
-    if (day.isAfter(now, "day")) break;
-    const dateStr = day.format("YYYY-MM-DD");
-    const isWeekend = day.day() === 0 || day.day() === 6;
+    const day = weekMonday.add({ days: i });
+    if (Temporal.PlainDate.compare(day, todayPlain) > 0) break;
+    const dateStr = day.toString();
+    const isWeekend = day.dayOfWeek === 6 || day.dayOfWeek === 7;
     const dayMarks = byDate.get(dateStr) ?? [];
     const hasCI = dayMarks.some((m) => m.type === "CLOCK_IN");
     const hasCO = dayMarks.some((m) => m.type === "CLOCK_OUT");
@@ -380,8 +382,10 @@ export async function getTodayStatus(employeeId: number): Promise<{
       if (hasCI && hasCO) {
         workedMinutes = computeWorkedMinutes(dayMarks);
       } else if (hasCI) {
-        const firstCI = dayMarks.find((m) => m.type === "CLOCK_IN")!;
-        workedMinutes = Math.floor((Date.now() - firstCI.markedAt.getTime()) / 60_000);
+        const firstCI = dayMarks.find((m) => m.type === "CLOCK_IN");
+        if (firstCI) {
+          workedMinutes = Math.floor((Date.now() - firstCI.markedAt.getTime()) / 60_000);
+        }
       }
     } else if (!hasCI && !hasCO) {
       status = "absent";
@@ -437,12 +441,8 @@ export async function listMarks(options: {
   >;
   summary: { totalMarks: number; incompleteDays: number; totalWorkedMinutes: number };
 }> {
-  const fromDate = options.from
-    ? dayjs.tz(options.from, "YYYY-MM-DD", TIMEZONE).startOf("day").toDate()
-    : undefined;
-  const toDate = options.to
-    ? dayjs.tz(options.to, "YYYY-MM-DD", TIMEZONE).endOf("day").toDate()
-    : undefined;
+  const fromDate = options.from ? chileMidnight(options.from) : undefined;
+  const toDate = options.to ? chileEndOfDay(options.to) : undefined;
 
   const rawMarks = await db.attendanceMark.findMany({
     where: {
@@ -467,13 +467,13 @@ export async function listMarks(options: {
   // Group by employeeId+date to detect incomplete sessions
   const sessionMap = new Map<string, { clockIns: Date[]; clockOuts: Date[] }>();
   for (const raw of rawMarks) {
-    const dateStr = dayjs(raw.markedAt).tz(TIMEZONE).format("YYYY-MM-DD");
+    const dateStr = instantToChileDate(raw.markedAt) ?? "";
     const key = `${raw.employeeId}:${dateStr}`;
-    const existing = sessionMap.get(key);
-    if (!existing) {
-      sessionMap.set(key, { clockIns: [], clockOuts: [] });
+    let session = sessionMap.get(key);
+    if (!session) {
+      session = { clockIns: [], clockOuts: [] };
+      sessionMap.set(key, session);
     }
-    const session = sessionMap.get(key)!;
     if (raw.type === "CLOCK_IN") session.clockIns.push(raw.markedAt);
     else session.clockOuts.push(raw.markedAt);
   }
@@ -489,8 +489,8 @@ export async function listMarks(options: {
       incompleteDayKeys.add(key);
       incompleteDays++;
     } else {
-      const firstCI = session.clockIns.sort((a, b) => a.getTime() - b.getTime())[0]!;
-      const lastCO = session.clockOuts.sort((a, b) => b.getTime() - a.getTime())[0]!;
+      const firstCI = session.clockIns.sort((a, b) => a.getTime() - b.getTime())[0];
+      const lastCO = session.clockOuts.sort((a, b) => b.getTime() - a.getTime())[0];
       if (lastCO > firstCI) {
         totalWorkedMinutes += Math.floor((lastCO.getTime() - firstCI.getTime()) / 60_000);
       }
@@ -499,7 +499,7 @@ export async function listMarks(options: {
 
   // Build result with isDayIncomplete flag
   let allMarks = rawMarks.map((raw) => {
-    const dateStr = dayjs(raw.markedAt).tz(TIMEZONE).format("YYYY-MM-DD");
+    const dateStr = instantToChileDate(raw.markedAt) ?? "";
     const key = `${raw.employeeId}:${dateStr}`;
     return {
       ...mapMark(raw),

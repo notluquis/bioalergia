@@ -5,6 +5,7 @@ import { useState } from "react";
 import { confirmAction } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/context/ToastContext";
 import { deleteAddress, listAddresses, setPrimaryAddress } from "../api";
+import { addressKeys } from "../queries";
 import type { AddressDraft } from "./AddressFormModal";
 import { AddressFormModal } from "./AddressFormModal";
 
@@ -19,7 +20,7 @@ export function AddressList({ personId }: Readonly<AddressListProps>) {
   const [editingDraft, setEditingDraft] = useState<AddressDraft | undefined>(undefined);
 
   const { data: addresses = [], isLoading } = useQuery({
-    queryKey: ["addresses", personId],
+    queryKey: addressKeys.byPerson(personId),
     queryFn: () => listAddresses(personId),
   });
 
@@ -27,7 +28,7 @@ export function AddressList({ personId }: Readonly<AddressListProps>) {
     mutationFn: (id: number) => setPrimaryAddress(id, personId),
     onError: (err) => toastError(err instanceof Error ? err.message : "No se pudo cambiar"),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["addresses", personId] });
+      void queryClient.invalidateQueries({ queryKey: addressKeys.byPerson(personId) });
       success("Dirección principal actualizada");
     },
   });
@@ -36,7 +37,7 @@ export function AddressList({ personId }: Readonly<AddressListProps>) {
     mutationFn: (id: number) => deleteAddress(id),
     onError: (err) => toastError(err instanceof Error ? err.message : "No se pudo eliminar"),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["addresses", personId] });
+      void queryClient.invalidateQueries({ queryKey: addressKeys.byPerson(personId) });
       success("Dirección eliminada");
     },
   });
@@ -88,7 +89,7 @@ export function AddressList({ personId }: Readonly<AddressListProps>) {
               <Card key={addr.id} className="border border-default-100">
                 <Card.Content className="p-4">
                   <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 space-y-1">
+                    <div className="flex-1 space-y-1" data-phi>
                       <div className="flex items-center gap-2">
                         <span className="font-semibold text-foreground">{addr.label}</span>
                         {addr.isPrimary && (
@@ -146,18 +147,20 @@ export function AddressList({ personId }: Readonly<AddressListProps>) {
                       <Button
                         aria-label="Eliminar"
                         isDisabled={deleteMutation.isPending}
-                        onPress={async () => {
-                          const phrase = addr.street?.trim() || "ELIMINAR";
-                          const ok = await confirmAction({
-                            title: "Eliminar dirección",
-                            description: `Esta acción no se puede deshacer. Para confirmar, escribe el nombre de la calle: "${phrase}".`,
-                            confirmLabel: "Eliminar definitivamente",
-                            variant: "danger",
-                            requireText: phrase,
-                            requireTextLabel: `Escribe "${phrase}" para confirmar`,
-                          });
-                          if (!ok) return;
-                          deleteMutation.mutate(addr.id);
+                        onPress={() => {
+                          void (async () => {
+                            const phrase = addr.street?.trim() || "ELIMINAR";
+                            const ok = await confirmAction({
+                              title: "Eliminar dirección",
+                              description: `Esta acción no se puede deshacer. Para confirmar, escribe el nombre de la calle: "${phrase}".`,
+                              confirmLabel: "Eliminar definitivamente",
+                              variant: "danger",
+                              requireText: phrase,
+                              requireTextLabel: `Escribe "${phrase}" para confirmar`,
+                            });
+                            if (!ok) return;
+                            deleteMutation.mutate(addr.id);
+                          })();
                         }}
                         size="sm"
                         variant="outline"

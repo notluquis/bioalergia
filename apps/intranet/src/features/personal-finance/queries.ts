@@ -8,6 +8,10 @@ export const personalFinanceKeys = {
   credits: () => [...personalFinanceKeys.all, "credits"] as const,
 };
 
+export const providerCredentialsKeys = {
+  all: ["provider-credentials"] as const,
+};
+
 export const personalFinanceQueries = {
   detail: (id: number) =>
     queryOptions({

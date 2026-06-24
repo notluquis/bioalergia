@@ -9,14 +9,8 @@
  * - Treatment stage (Mantención, Inducción)
  */
 
-import dayjs from "dayjs";
-import timezone from "dayjs/plugin/timezone.js";
-import utc from "dayjs/plugin/utc.js";
 import { z } from "zod";
 import { joinClinicalText, normalizeClinicalText } from "./clinical-text.ts";
-
-dayjs.extend(utc);
-dayjs.extend(timezone);
 
 // ============================================================================
 // TYPES & EXPORTS
@@ -225,7 +219,7 @@ const INJECTION_PATTERNS = [
  * - reservado solo: sin más info
  * - name and name: "Jose Manuel Martinez and Carlota Arevalo"
  */
-export const IGNORE_PATTERNS = [
+export const IGNORE_PATTERNS: RegExp[] = [
   /^recordar\b/i,
   /^semana\s+de\s+vacaciones$/i,
   /\brecordar\b.*\bdoctor\b/i,
@@ -396,18 +390,6 @@ const MAX_REASONABLE_AMOUNT = 100_000_000; // 100M CLP
 export function isIgnoredEvent(summary: string | null | undefined): boolean {
   const text = normalizeClinicalText(summary).toLowerCase();
   return IGNORE_PATTERNS.some((pattern) => pattern.test(text));
-}
-
-/** Normalize event date to ISO string */
-export function normalizeEventDate(value: string | null | undefined): string | null {
-  if (!value) {
-    return null;
-  }
-  try {
-    return dayjs(value).toISOString();
-  } catch {
-    return null;
-  }
 }
 
 /** Helper to test if any pattern matches */

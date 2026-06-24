@@ -5,7 +5,7 @@ import { personalFinanceQueries } from "@/features/personal-finance/queries";
 import { PersonalPage } from "@/features/personal-finance/pages/PersonalPage";
 
 const searchSchema = z.object({
-  tab: z.enum(["creditos", "servicios", "gastos"]).catch("creditos"),
+  tab: z.enum(["creditos", "servicios", "gastos", "credenciales", "trabajos"]).catch("creditos"),
 });
 
 export const Route = createFileRoute("/_authed/finanzas/personal")({
@@ -14,6 +14,7 @@ export const Route = createFileRoute("/_authed/finanzas/personal")({
     nav: { iconKey: "Coins", label: "Personal", order: 90, section: "Finanzas" },
     permission: { action: "read", subject: "PersonalCredit" },
     breadcrumb: "Personal",
+    title: "Finanzas — Personal",
   },
   beforeLoad: ({ context }) => {
     if (!context.can("read", "PersonalCredit")) {

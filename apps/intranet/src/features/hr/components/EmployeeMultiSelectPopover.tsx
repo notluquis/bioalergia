@@ -81,7 +81,7 @@ export function EmployeeMultiSelectPopover({
       <Popover.Trigger className={cn("w-full", className)}>
         <Button className="w-full justify-between" fullWidth size="sm" variant="outline">
           <span>{buttonLabel}</span>
-          <Search className="h-4 w-4 opacity-60" />
+          <Search className="opacity-60 size-4" />
         </Button>
       </Popover.Trigger>
       <Popover.Content
@@ -136,7 +136,7 @@ export function EmployeeMultiSelectPopover({
                     <span className="truncate">{opt.label}</span>
                     <ListBox.ItemIndicator>
                       {({ isSelected }) =>
-                        isSelected ? <Check className="h-4 w-4 text-primary" /> : null
+                        isSelected ? <Check className="text-primary size-4" /> : null
                       }
                     </ListBox.ItemIndicator>
                   </ListBox.Item>

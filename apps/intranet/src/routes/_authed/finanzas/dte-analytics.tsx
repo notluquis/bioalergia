@@ -1,8 +1,10 @@
-import { createFileRoute, getRouteApi } from "@tanstack/react-router";
-import dayjs from "dayjs";
+import { formatChile } from "@/lib/dates";
+import { createFileRoute } from "@tanstack/react-router";
+import { requirePermission } from "@/lib/authz/route-guards";
 import { z } from "zod";
 
 import { DTEAnalyticsPage } from "@/pages/finanzas/DTEAnalyticsPage";
+import { dteAnalyticsKeys } from "@/features/finance/dte-analytics/queries";
 
 const dteAnalyticsSearchSchema = z
   .object({
@@ -29,7 +31,7 @@ const dteAnalyticsSearchSchema = z
   .transform((search) => ({
     page: search.page ?? 0,
     pageSize: search.pageSize ?? 25,
-    period: search.period ?? dayjs().format("YYYY-MM"),
+    period: search.period ?? formatChile(new Date(), "YYYY-MM"),
     query: search.query,
     status: search.status ?? "all",
     tab: search.tab ?? "purchases-monthly",
@@ -40,7 +42,7 @@ export const Route = createFileRoute("/_authed/finanzas/dte-analytics")({
   staticData: {
     nav: {
       iconKey: "ScanBarcode",
-      label: "Análisis DTEs",
+      label: "DTE (analytics)",
       order: 60,
       section: "Finanzas",
     },
@@ -48,12 +50,14 @@ export const Route = createFileRoute("/_authed/finanzas/dte-analytics")({
     relatedSubjects: ["DTEPeriod", "DTESaleDetail", "DTESyncLog"],
     title: "Análisis de DTEs",
   },
-  beforeLoad: ({ context }) => {
-    if (!context.can("read", "DTEPurchaseDetail")) {
-      const routeApi = getRouteApi("/_authed/finanzas/dte-analytics");
-      // eslint-disable-next-line @typescript-eslint/only-throw-error
-      throw routeApi.redirect({ to: "/" });
-    }
-  },
+  beforeLoad: requirePermission("read", "DTEPurchaseDetail"),
+  // Prefetch both top-level suspense queries in parallel so the page's two
+  // sequential useSuspenseQuery calls (purchases, sales) resolve from cache
+  // instead of waterfalling on render.
+  loader: ({ context: { queryClient } }) =>
+    Promise.all([
+      queryClient.ensureQueryData(dteAnalyticsKeys.purchases()),
+      queryClient.ensureQueryData(dteAnalyticsKeys.sales()),
+    ]),
   validateSearch: (search: Record<string, unknown>) => dteAnalyticsSearchSchema.parse(search),
 });

@@ -8,7 +8,9 @@ import type {
   EmployeeWhereInput,
   PersonUpdateInput,
 } from "../lib/db-types.ts";
-import { canonicalRutFilter, requireCanonicalRut } from "../lib/rut.ts";
+import { DomainError } from "../lib/errors.ts";
+import { requireCanonicalRut } from "../lib/rut.ts";
+import { instantToChileDate, isoToDbDate } from "../lib/time.ts";
 
 // Type for the frontend payload (snake_case)
 interface EmployeePayload {
@@ -152,7 +154,7 @@ export async function getEmployeeById(id: number) {
     include: { person: true },
   });
   if (!employee) {
-    throw new Error(`Employee with ID ${id} not found`);
+    throw new DomainError("NOT_FOUND", `Employee with ID ${id} not found`);
   }
   return employee;
 }
@@ -205,7 +207,9 @@ export async function createEmployee(payload: EmployeePayload & { names: string;
         bankName: payload.bank_name,
         bankAccountType: payload.bank_account_type,
         bankAccountNumber: payload.bank_account_number,
-        startDate: new Date(),
+        startDate: isoToDbDate(
+          instantToChileDate(new Date()) ?? new Date().toISOString().slice(0, 10)
+        ),
         status: "ACTIVE",
       },
       include: { person: true },
@@ -221,7 +225,7 @@ export async function updateEmployee(id: number, payload: EmployeePayload) {
   });
 
   if (!currentEmployee) {
-    throw new Error(`Employee with id ${id} not found`);
+    throw new DomainError("NOT_FOUND", `Employee with id ${id} not found`);
   }
 
   const employeeData = mapToEmployeeData(payload);

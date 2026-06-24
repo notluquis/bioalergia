@@ -1,4 +1,5 @@
 import {
+  Checkbox,
   EmptyState,
   Skeleton,
   type SortDescriptor,
@@ -32,6 +33,15 @@ import { type ReactNode, useMemo, useRef, useState } from "react";
 
 import { cn } from "@/lib/utils";
 
+import {
+  applyVisibleSelection,
+  getStableRowId as getStableRowIdUtil,
+  resolveScrollMode,
+  rowSelectionToKeys,
+  shouldEnableInternalScroll,
+  shouldVirtualizeRows,
+  sortingStateToDescriptor,
+} from "./data-table-utils";
 import { DataTablePagination } from "./DataTablePagination";
 import { type DataTableFilterOption, DataTableToolbar } from "./DataTableToolbar";
 
@@ -115,6 +125,12 @@ interface DataTableProps<TData, TValue, TMeta extends TableMeta<TData> = TableMe
    * Faceted filters for specific columns
    */
   readonly filters?: DataTableFilterOption[];
+  /**
+   * Determines whether a given row can be expanded. Required to enable
+   * row expansion when rows have no nested `subRows` (TanStack returns
+   * `false` from `getCanExpand` otherwise). Pair with `renderSubComponent`.
+   */
+  readonly getRowCanExpand?: (row: Row<TData>) => boolean;
   readonly initialPinning?: ColumnPinningState;
   readonly isLoading?: boolean;
   /**
@@ -144,6 +160,17 @@ interface DataTableProps<TData, TValue, TMeta extends TableMeta<TData> = TableMe
   readonly renderSubComponent?: (props: { row: Row<TData> }) => ReactNode;
   readonly rowSelection?: RowSelectionState;
   /**
+   * Controlled sorting state. When provided (together with `onSortingChange`),
+   * the table is sorting-controlled. Pair with `manualSorting` for server-side
+   * sorting (the parent maps the SortingState to its query).
+   */
+  readonly sorting?: SortingState;
+  readonly onSortingChange?: OnChangeFn<SortingState>;
+  /**
+   * Disable client-side sorting (server already sorts). Defaults to false.
+   */
+  readonly manualSorting?: boolean;
+  /**
    * Minimum row count to activate virtualization.
    * Keeps small tables simple while enabling virtualization for large datasets.
    * @default 80
@@ -162,7 +189,9 @@ interface DataTableContentProps<TData> {
   readonly onRowClick?: (row: TData) => void;
   readonly onSortingChange: (sorting: SortingState) => void;
   readonly onSelectionChange: (keys: Selection) => void;
+  readonly selectionEnabled: boolean;
   readonly renderSubComponent?: (props: { row: Row<TData> }) => ReactNode;
+  readonly rows: Row<TData>[];
   readonly selectedKeys: Set<string>;
   readonly sorting: SortingState;
   readonly table: TanStackTable<TData>;
@@ -195,7 +224,9 @@ function DataTableContent<TData>({
   onRowClick,
   onSortingChange,
   onSelectionChange,
+  selectionEnabled,
   renderSubComponent,
+  rows,
   scrollMaxHeight,
   scrollMode,
   selectedKeys,
@@ -204,11 +235,12 @@ function DataTableContent<TData>({
   virtualizationMaxHeight,
 }: DataTableContentProps<TData>) {
   const tableContainerRef = useRef<HTMLDivElement>(null);
-  const rows = table.getRowModel().rows;
-  const shouldEnableInternalVerticalScroll =
-    scrollMode === "container" ||
-    (scrollMode === "auto" &&
-      (Boolean(scrollMaxHeight) || enableVirtualization || !table.getState().pagination));
+  const shouldEnableInternalVerticalScroll = shouldEnableInternalScroll({
+    enableVirtualization,
+    hasPagination: Boolean(table.getState().pagination),
+    scrollMaxHeight,
+    scrollMode,
+  });
   const resolvedMaxHeight = scrollMaxHeight ?? virtualizationMaxHeight;
   const headerGroups = table.getHeaderGroups();
   const activeHeaderGroup = headerGroups.at(-1);
@@ -238,26 +270,34 @@ function DataTableContent<TData>({
     return items;
   }, [renderSubComponent, rows]);
   const collectionIdentity = useMemo(() => bodyItems.map((item) => item.id).join("|"), [bodyItems]);
-  const sortDescriptor: SortDescriptor | undefined = sorting[0]
-    ? {
-        column: sorting[0].id,
-        direction: sorting[0].desc ? "descending" : "ascending",
-      }
-    : undefined;
+  const sortDescriptor: SortDescriptor | undefined = sortingStateToDescriptor(sorting);
 
   if (!activeHeaderGroup) {
     return null;
   }
 
   const bodyContent = isLoading ? (
-    <Table.Body>
+    <Table.Body aria-busy="true">
       {["1", "2", "3", "4", "5", "6"].map((rowKey) => (
         <Table.Row id={`skeleton-row-${rowKey}`} key={`skeleton-row-${rowKey}`}>
-          {activeHeaderGroup.headers.map((header) => {
+          {selectionEnabled && (
+            <Table.Cell aria-label="Cargando selección" className="pr-0">
+              <Skeleton aria-hidden="true" className="size-4 rounded-md" />
+            </Table.Cell>
+          )}
+          {activeHeaderGroup.headers.map((header, headerIndex) => {
             const loadingColumnKey = String(header.column.id ?? header.id ?? "column");
+            // First cell receives role=rowheader from React Aria's grid
+            // model. axe (`empty-table-header`) flags a rowheader without
+            // visible text — give the cell an aria-label so the skeleton
+            // placeholder still announces "loading row N" to screen readers
+            // (and ticks the WCAG 2.2 AA name-role-value check).
             return (
-              <Table.Cell key={`skeleton-cell-${rowKey}-${loadingColumnKey}`}>
-                <Skeleton className="h-4 w-full max-w-36 rounded-md" />
+              <Table.Cell
+                aria-label={headerIndex === 0 ? `Cargando fila ${rowKey}` : undefined}
+                key={`skeleton-cell-${rowKey}-${loadingColumnKey}`}
+              >
+                <Skeleton aria-hidden="true" className="h-4 w-full max-w-36 rounded-md" />
               </Table.Cell>
             );
           })}
@@ -268,7 +308,7 @@ function DataTableContent<TData>({
     <Table.Body
       items={bodyItems}
       renderEmptyState={() => (
-        <EmptyState className="flex h-full w-full items-center justify-center text-center text-sm text-muted-foreground">
+        <EmptyState className="flex items-center justify-center text-center text-sm text-muted-foreground size-full">
           {noDataMessage}
         </EmptyState>
       )}
@@ -277,7 +317,7 @@ function DataTableContent<TData>({
         if (item.kind === "expanded") {
           return (
             <Table.Row id={item.id}>
-              <Table.Cell colSpan={item.visibleCellCount}>
+              <Table.Cell colSpan={item.visibleCellCount + (selectionEnabled ? 1 : 0)}>
                 {renderSubComponent?.({ row: item.row })}
               </Table.Cell>
             </Table.Row>
@@ -292,8 +332,26 @@ function DataTableContent<TData>({
             id={item.id}
             onAction={() => onRowClick?.(item.row.original)}
           >
+            {selectionEnabled && (
+              <Table.Cell className="pr-0">
+                <Checkbox aria-label="Seleccionar fila" slot="selection" variant="secondary">
+                  <Checkbox.Control>
+                    <Checkbox.Indicator />
+                  </Checkbox.Control>
+                </Checkbox>
+              </Table.Cell>
+            )}
             {visibleCells.map((cell) => (
-              <Table.Cell key={cell.id}>
+              <Table.Cell
+                className="select-text"
+                key={cell.id}
+                // Bubble phase (NO capture): el press de React Aria del contenido
+                // interactivo (botones de acción, links) ocurre en el target ANTES
+                // de llegar acá; recién entonces frenamos la propagación para que la
+                // fila no dispare su selección. Con `onPointerDownCapture` el stop
+                // ocurría en bajada y el evento nunca llegaba al botón → onPress muerto.
+                onPointerDown={selectionEnabled ? (event) => event.stopPropagation() : undefined}
+              >
                 {flexRender(cell.column.columnDef.cell, cell.getContext())}
               </Table.Cell>
             ))}
@@ -325,7 +383,7 @@ function DataTableContent<TData>({
         )}
         selectedKeys={selectedKeys}
         selectionBehavior="toggle"
-        selectionMode="multiple"
+        selectionMode={selectionEnabled ? "multiple" : "none"}
         sortDescriptor={sortDescriptor}
         style={
           enableVirtualization
@@ -349,7 +407,16 @@ function DataTableContent<TData>({
         }}
         onSelectionChange={onSelectionChange}
       >
-        <Table.Header className={enableVirtualization ? "h-full w-full" : undefined}>
+        <Table.Header className={enableVirtualization ? "size-full" : undefined}>
+          {selectionEnabled && (
+            <Table.Column className="pr-0" id="__selection__" minWidth={40}>
+              <Checkbox aria-label="Seleccionar todo" slot="selection">
+                <Checkbox.Control>
+                  <Checkbox.Indicator />
+                </Checkbox.Control>
+              </Checkbox>
+            </Table.Column>
+          )}
           {activeHeaderGroup.headers.map((header) => {
             const headerContent = header.isPlaceholder
               ? null
@@ -357,6 +424,7 @@ function DataTableContent<TData>({
             return (
               <Table.Column
                 allowsSorting={header.column.getCanSort()}
+                className="font-semibold text-default-700 dark:text-default-200"
                 defaultWidth={autoFitColumns ? undefined : header.getSize()}
                 id={header.column.id}
                 isRowHeader={
@@ -425,6 +493,7 @@ export function DataTable<TData, TValue, TMeta extends TableMeta<TData> = TableM
   scrollMode = "auto",
   virtualizationMaxHeight = "70dvh",
   filters = [],
+  getRowCanExpand,
   initialPinning = {},
   isLoading,
   meta,
@@ -438,15 +507,24 @@ export function DataTable<TData, TValue, TMeta extends TableMeta<TData> = TableM
   pagination,
   renderSubComponent,
   rowSelection: controlledRowSelection,
+  sorting: controlledSorting,
+  onSortingChange: controlledOnSortingChange,
+  manualSorting = false,
   virtualizationThreshold = 80,
 }: DataTableProps<TData, TValue, TMeta>) {
-  const [sorting, setSorting] = useState<SortingState>([]);
+  const [internalSorting, setInternalSorting] = useState<SortingState>([]);
+  const sorting = controlledSorting ?? internalSorting;
+  const onSortingChange = controlledOnSortingChange ?? setInternalSorting;
   const [internalColumnVisibility, setInternalColumnVisibility] = useState<VisibilityState>({});
   const [internalRowSelection, setInternalRowSelection] = useState({});
   const [expanded, setExpanded] = useState<ExpandedState>({});
 
   const rowSelection = controlledRowSelection ?? internalRowSelection;
   const onRowSelectionChange = controlledOnRowSelectionChange ?? setInternalRowSelection;
+  // Solo mostramos la columna de checkboxes cuando el caller controla la
+  // selección (pasa onRowSelectionChange). HeroUI v3 NO auto-renderiza los
+  // checkboxes con selectionMode; hay que inyectar Checkbox slot="selection".
+  const selectionEnabled = controlledOnRowSelectionChange != null;
   const columnVisibility = controlledColumnVisibility ?? internalColumnVisibility;
   const onColumnVisibilityChange =
     controlledOnColumnVisibilityChange ?? setInternalColumnVisibility;
@@ -462,18 +540,15 @@ export function DataTable<TData, TValue, TMeta extends TableMeta<TData> = TableM
 
   const manualPagination = pageCount !== undefined;
   const shouldPaginate = enablePagination && !manualPagination;
-  const shouldVirtualize =
-    enableVirtualization && data.length >= virtualizationThreshold && !renderSubComponent;
-  const effectiveScrollMode = scrollMode === "auto" && !enablePagination ? "container" : scrollMode;
-  const getStableRowId = (originalRow: TData, index: number) => {
-    const row = originalRow as Record<string, unknown>;
-    type RowIdValue = number | string | undefined;
-    const id =
-      (row.id as RowIdValue)?.toString() ??
-      (row.employeeId as RowIdValue)?.toString() ??
-      (row._id as RowIdValue)?.toString();
-    return id && id.length > 0 ? id : `row_${index}`;
-  };
+  const shouldVirtualize = shouldVirtualizeRows({
+    enableVirtualization,
+    hasRenderSubComponent: Boolean(renderSubComponent),
+    rowCount: data.length,
+    threshold: virtualizationThreshold,
+  });
+  const effectiveScrollMode = resolveScrollMode(scrollMode, enablePagination);
+  const getStableRowId = (originalRow: TData, index: number) =>
+    getStableRowIdUtil(originalRow, index);
   const dataIdentity = data.map((row, index) => getStableRowId(row, index)).join("|");
 
   const table = useReactTable({
@@ -489,9 +564,11 @@ export function DataTable<TData, TValue, TMeta extends TableMeta<TData> = TableM
     getExpandedRowModel: getExpandedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: shouldPaginate ? getPaginationRowModel() : undefined,
+    getRowCanExpand,
     getSortedRowModel: getSortedRowModel(),
     getRowId: getStableRowId,
     manualPagination,
+    manualSorting,
     meta,
     onColumnFiltersChange: setColumnFilters,
     onColumnPinningChange: setColumnPinning,
@@ -500,7 +577,7 @@ export function DataTable<TData, TValue, TMeta extends TableMeta<TData> = TableM
     onGlobalFilterChange: setGlobalFilter,
     onPaginationChange: onPaginationChange ?? setPagination,
     onRowSelectionChange,
-    onSortingChange: setSorting,
+    onSortingChange,
     pageCount,
     state: {
       columnFilters,
@@ -513,37 +590,22 @@ export function DataTable<TData, TValue, TMeta extends TableMeta<TData> = TableM
       sorting,
     },
   });
-  const selectedKeys = useMemo(
-    () =>
-      new Set(
-        Object.entries(rowSelection)
-          .filter(([, isSelected]) => Boolean(isSelected))
-          .map(([rowId]) => rowId)
-      ),
-    [rowSelection]
-  );
+  // IMPORTANTE: el row model DEBE computarse aquí, en el componente que llama a
+  // useReactTable. Si se llama table.getRowModel() dentro del hijo DataTableContent
+  // (que recibe `table` por prop), el memo de TanStack queda STALE por el orden de
+  // render padre→hijo: getState().pagination ya refleja la página nueva pero
+  // getRowModel() devuelve la página anterior → la paginación (y cualquier cambio
+  // de estado) no se reflejaba. Reproducido en tanstack-iso.repro.test.tsx.
+  const tableRows = table.getRowModel().rows;
+  // Total de filas tras filtros, ANTES de paginar. Se computa acá (donde vive
+  // useReactTable) y se pasa al footer para derivar el nº de páginas de forma
+  // determinística — `table.getPageCount()` puede devolver 1/-1 en algunos
+  // estados aunque haya miles de filas, ocultando la paginación.
+  const filteredRowCount = manualPagination ? undefined : table.getFilteredRowModel().rows.length;
+  const selectedKeys = useMemo(() => rowSelectionToKeys(rowSelection), [rowSelection]);
   const handleSelectionChange = (keys: Selection) => {
     const visibleRowIds = table.getRowModel().rows.map((row) => row.id);
-
-    onRowSelectionChange((prev) => {
-      const next = { ...prev };
-      for (const rowId of visibleRowIds) {
-        delete next[rowId];
-      }
-
-      if (keys === "all") {
-        for (const rowId of visibleRowIds) {
-          next[rowId] = true;
-        }
-        return next;
-      }
-
-      for (const key of keys) {
-        next[String(key)] = true;
-      }
-
-      return next;
-    });
+    onRowSelectionChange((prev) => applyVisibleSelection(prev, visibleRowIds, keys));
   };
 
   return (
@@ -567,8 +629,10 @@ export function DataTable<TData, TValue, TMeta extends TableMeta<TData> = TableM
         noDataMessage={noDataMessage}
         onRowClick={onRowClick}
         onSelectionChange={handleSelectionChange}
-        onSortingChange={setSorting}
+        selectionEnabled={selectionEnabled}
+        onSortingChange={onSortingChange}
         renderSubComponent={renderSubComponent}
+        rows={tableRows}
         scrollMaxHeight={scrollMaxHeight}
         scrollMode={effectiveScrollMode}
         selectedKeys={selectedKeys}
@@ -583,6 +647,7 @@ export function DataTable<TData, TValue, TMeta extends TableMeta<TData> = TableM
           pageSizeOptions={pageSizeOptions}
           pagination={pagination ?? internalPagination}
           table={table}
+          totalRows={filteredRowCount}
         />
       )}
     </div>

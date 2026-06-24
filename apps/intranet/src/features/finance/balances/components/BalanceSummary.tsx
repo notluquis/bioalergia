@@ -1,5 +1,5 @@
+import { formatChile } from "@/lib/dates";
 import { Card, Description, Skeleton } from "@heroui/react";
-import dayjs from "dayjs";
 
 import { fmtCLP } from "@/lib/format";
 
@@ -92,8 +92,7 @@ export function BalanceSummary({ error, loading, report }: Readonly<BalanceSumma
         <div className="space-y-3 text-foreground text-xs">
           {report.previous && (
             <div className="rounded-2xl border border-default-200 bg-default-50 px-4 py-3 text-foreground">
-              Saldo cierre previo ({dayjs(report.previous.date, "YYYY-MM-DD").format("DD-MM-YYYY")}{" "}
-              23:59)
+              Saldo cierre previo ({formatChile(report.previous.date, "DD-MM-YYYY")} 23:59)
               <span className="ml-2 font-semibold text-foreground">
                 {fmtCLP(report.previous.balance)}
               </span>
@@ -102,8 +101,7 @@ export function BalanceSummary({ error, loading, report }: Readonly<BalanceSumma
 
           {lastRecorded && (
             <div className="rounded-2xl border border-emerald-200/80 bg-emerald-50/80 px-4 py-3 text-emerald-700">
-              Último saldo registrado ({dayjs(lastRecorded.date, "YYYY-MM-DD").format("DD-MM-YYYY")}{" "}
-              23:59)
+              Último saldo registrado ({formatChile(lastRecorded.date, "DD-MM-YYYY")} 23:59)
               <span className="ml-2 font-semibold text-emerald-800">
                 {fmtCLP(lastRecorded.recordedBalance)}
               </span>
@@ -117,8 +115,7 @@ export function BalanceSummary({ error, loading, report }: Readonly<BalanceSumma
 
           {!lastRecorded && lastExpected && (
             <div className="rounded-2xl border border-default-200 bg-default-50 px-4 py-3 text-foreground">
-              Saldo esperado del último día (
-              {dayjs(lastExpected.date, "YYYY-MM-DD").format("DD-MM-YYYY")}):
+              Saldo esperado del último día ({formatChile(lastExpected.date, "DD-MM-YYYY")}):
               <span className="ml-2 font-semibold text-foreground">
                 {fmtCLP(lastExpected.expectedBalance)}
               </span>
@@ -153,10 +150,10 @@ function MismatchSummary({ mismatchDays }: Readonly<{ mismatchDays: MismatchDay[
         {mismatchDays.slice(0, 5).map((day) => (
           <li
             className="flex flex-wrap items-center gap-2"
-            key={dayjs(day.date, "YYYY-MM-DD").format("YYYY-MM-DD")}
+            key={formatChile(day.date, "YYYY-MM-DD")}
           >
             <span className="font-medium text-foreground">
-              {dayjs(day.date, "YYYY-MM-DD").format("DD-MM-YYYY")}
+              {formatChile(day.date, "DD-MM-YYYY")}
             </span>
             <span>Diferencia:</span>
             <span className="font-semibold text-rose-600">

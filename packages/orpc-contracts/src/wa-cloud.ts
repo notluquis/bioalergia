@@ -92,6 +92,7 @@ export const waConversationSchema = z.object({
   lastMessagePreview: z.string().nullable(),
   notas: z.string().nullable(),
   etiquetas: z.array(z.string()),
+  mutedUntil: z.coerce.date().nullable(),
 });
 
 export const waMessageSchema = z.object({
@@ -224,6 +225,14 @@ export const markReadInputSchema = z.object({
   conversationId: z.number().int().positive(),
 });
 
+// Per-conversation push mute. mutedUntil = null → unmute. ISO-string
+// in the future → silence push for that conversation until the
+// timestamp passes.
+export const setMuteInputSchema = z.object({
+  conversationId: z.number().int().positive(),
+  mutedUntil: z.string().datetime().nullable(),
+});
+
 export const sendReactionInputSchema = z.object({
   conversationId: z.number().int().positive(),
   phoneNumberId: z.number().int().positive(),
@@ -255,6 +264,16 @@ export const sendMediaInputSchema = z.object({
   caption: z.string().max(1024).optional(),
   filename: z.string().max(120).optional(),
   contextMetaMessageId: z.string().optional(),
+});
+
+// Forward an existing message into another conversation. Server-side copy: the
+// Cloud API has no native forward, so the backend re-sends the source content
+// by type (text/media/location/contacts), re-uploading media bytes to the
+// target line (Meta media ids expire ~30d + are WABA-scoped).
+export const forwardMessageInputSchema = z.object({
+  sourceMessageId: z.number().int().positive(),
+  targetConversationId: z.number().int().positive(),
+  targetPhoneNumberId: z.number().int().positive(),
 });
 
 export const updateWaContactInputSchema = z.object({
@@ -742,6 +761,49 @@ export const sendSavedFlowInputSchema = z.object({
   contextMetaMessageId: z.string().optional(),
 });
 
+// ── Saved stickers (estilo WhatsApp) ─────────────────────────────────────────
+// "Recientes" = auto-poblado al enviar; "Guardados" = favorite=true. El `url`
+// apunta al proxy auth-gated /api/wa-cloud/media/saved-sticker/:id (NUNCA una
+// URL pública sin firmar de R2).
+export const savedStickerTabSchema = z.enum(["recientes", "guardados"]);
+
+export const savedStickerSchema = z.object({
+  id: z.number().int(),
+  url: z.string(),
+  favorite: z.boolean(),
+  lastUsedAt: z.coerce.date().nullable(),
+  hitCount: z.number().int(),
+});
+
+export const listSavedStickersInputSchema = z.object({
+  accountId: z.number().int().positive(),
+  tab: savedStickerTabSchema.default("recientes"),
+});
+
+export const listSavedStickersResponseSchema = z.object({
+  stickers: z.array(savedStickerSchema),
+});
+
+// Marcar un sticker recibido (de un WaMessage inbound) → "Guardados".
+export const saveStickerInputSchema = z.object({
+  messageId: z.number().int().positive(),
+});
+
+// Quitar de "Guardados" (toggle favorite=false; permanece en "Recientes" si
+// tiene historial de uso).
+export const unsaveStickerInputSchema = z.object({
+  id: z.number().int().positive(),
+});
+
+// Enviar un sticker guardado: re-sube a Meta (id fresco desde el .webp en R2),
+// envía vía el mismo path sendMedia(type:"sticker") y bumpea recientes.
+export const sendSavedStickerInputSchema = z.object({
+  conversationId: z.number().int().positive(),
+  phoneNumberId: z.number().int().positive(),
+  savedStickerId: z.number().int().positive(),
+  contextMetaMessageId: z.string().optional(),
+});
+
 // Global scheduled list (cross-conversation)
 export const listAllScheduledInputSchema = z.object({
   status: waScheduledStatusSchema.optional(),
@@ -1113,6 +1175,10 @@ export const embeddedSignupInputSchema = z.object({
   phoneNumberId: z.string().min(1),
   displayPhoneNumber: z.string().min(1),
   displayName: z.string().optional(),
+  // Distinguishes Coexistence (Meta 2025, app + Cloud API on same SIM) from
+  // standard Embedded Signup. Persisted on WaPhoneNumber.onboardingFlow so
+  // the UI can surface the 5 mps cap + Messaging Echoes behaviour.
+  onboardingFlow: z.enum(["coexistence", "embedded_signup"]).optional(),
 });
 
 // Template library (Meta 2026): pre-curated templates that can be cloned
@@ -1283,6 +1349,10 @@ export const waCloudContract = {
     .route({ method: "POST", path: "/conversations/mark-read", tags: ["WA Cloud"] })
     .input(markReadInputSchema)
     .output(waOkResponseSchema),
+  setMute: oc
+    .route({ method: "POST", path: "/conversations/set-mute", tags: ["WA Cloud"] })
+    .input(setMuteInputSchema)
+    .output(waOkResponseSchema),
 
   // Contacts
   updateContact: oc
@@ -1330,6 +1400,10 @@ export const waCloudContract = {
   editText: oc
     .route({ method: "POST", path: "/messages/edit-text", tags: ["WA Cloud"] })
     .input(editTextInputSchema)
+    .output(sendMessageResponseSchema),
+  forwardMessage: oc
+    .route({ method: "POST", path: "/messages/forward", tags: ["WA Cloud"] })
+    .input(forwardMessageInputSchema)
     .output(sendMessageResponseSchema),
 
   createTemplate: oc
@@ -1482,6 +1556,24 @@ export const waCloudContract = {
     .input(sendSavedFlowInputSchema)
     .output(sendMessageResponseSchema),
 
+  // Saved stickers (estilo WhatsApp)
+  listSavedStickers: oc
+    .route({ method: "GET", path: "/saved/stickers", tags: ["WA Cloud"] })
+    .input(listSavedStickersInputSchema)
+    .output(listSavedStickersResponseSchema),
+  saveSticker: oc
+    .route({ method: "POST", path: "/saved/stickers/save", tags: ["WA Cloud"] })
+    .input(saveStickerInputSchema)
+    .output(savedStickerSchema),
+  unsaveSticker: oc
+    .route({ method: "POST", path: "/saved/stickers/unsave", tags: ["WA Cloud"] })
+    .input(unsaveStickerInputSchema)
+    .output(waOkResponseSchema),
+  sendSavedSticker: oc
+    .route({ method: "POST", path: "/messages/send-saved-sticker", tags: ["WA Cloud"] })
+    .input(sendSavedStickerInputSchema)
+    .output(sendMessageResponseSchema),
+
   // Global scheduled list
   listAllScheduled: oc
     .route({ method: "POST", path: "/scheduled/list-all", tags: ["WA Cloud"] })
@@ -1507,6 +1599,31 @@ export const waCloudContract = {
     .route({ method: "POST", path: "/phones/two-step-pin", tags: ["WA Cloud"] })
     .input(setTwoStepPinInputSchema)
     .output(waOkResponseSchema),
+
+  // Deregister a phone number from this WABA so it can be migrated to
+  // a different WABA (Meta requires the source WABA to release the
+  // number before the destination can request_code). Mirror of
+  // registerPhone: same payload schema (no PIN — just phoneNumberId).
+  deregisterPhone: oc
+    .route({ method: "POST", path: "/phones/deregister", tags: ["WA Cloud"] })
+    .input(waPhoneIdInput)
+    .output(waOkResponseSchema),
+
+  // Add a phone slot to a destination WABA, optionally flagged as a
+  // migration (Meta requires `migrate_phone_number: true` to release
+  // the number from its source WABA). Returns the new phoneNumberId
+  // the operator then feeds to request_code → verify_code → register.
+  addMigratingPhone: oc
+    .route({ method: "POST", path: "/phones/add", tags: ["WA Cloud"] })
+    .input(
+      z.object({
+        accountId: z.number().int().positive(),
+        countryCode: z.string().regex(/^\d{1,4}$/),
+        phoneNumber: z.string().regex(/^\d{4,15}$/),
+        migrate: z.boolean().default(true),
+      })
+    )
+    .output(z.object({ phoneNumberId: z.string() })),
 
   // Extended analytics with pricing
   getConversationAnalyticsExtended: oc

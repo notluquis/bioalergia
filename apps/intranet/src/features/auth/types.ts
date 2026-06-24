@@ -14,7 +14,7 @@ export interface AuthUser {
 }
 
 export type LoginResult =
-  | { status: "mfa_required"; userId: number }
+  | { status: "mfa_required"; userId: number; mfaToken: string }
   | { status: "ok"; user: AuthUser };
 
 export interface AuthSessionData {

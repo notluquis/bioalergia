@@ -3,6 +3,10 @@ import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import {
   cgeBillResultSchema,
   essbioBillResultSchema,
+  importCgeConsumoResponseSchema,
+  importEssbioHistoryResponseSchema,
+  listSnapshotsInputSchema,
+  listSnapshotsResponseSchema,
   listUtilityAccountsInputSchema,
   utilityAccountDetailResponseSchema,
   utilityAccountListResponseSchema,
@@ -13,7 +17,7 @@ import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
 import { z } from "zod";
-import { getSessionUser } from "../auth.ts";
+import { getSessionUser } from "../lib/auth.ts";
 import { logError } from "../lib/logger.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
 import {
@@ -21,7 +25,10 @@ import {
   deleteUtilityAccount,
   fetchCgeBill,
   fetchEssbioBill,
+  importCgeConsumoHistory,
+  importEssbioHistory,
   listUtilityAccounts,
+  listUtilityBillSnapshots,
   refreshUtilityAccount,
   updateUtilityAccount,
 } from "../services/utility-bills.ts";
@@ -122,6 +129,36 @@ const utilityBillsRouterBase = {
     .handler(async ({ input }) => {
       const bill = await fetchCgeBill(input.accountNumber);
       return { bill, status: "ok" as const };
+    }),
+
+  // ─── Snapshot history ────────────────────────────────────────────────────
+  listSnapshots: authed
+    .route({ method: "GET", path: "/accounts/{utilityAccountId}/snapshots" })
+    .input(listSnapshotsInputSchema)
+    .output(listSnapshotsResponseSchema)
+    .handler(async ({ input }) => {
+      const snapshots = await listUtilityBillSnapshots(input.utilityAccountId, {
+        limit: input.limit,
+      });
+      return { snapshots, status: "ok" as const };
+    }),
+
+  importEssbioHistory: authed
+    .route({ method: "POST", path: "/accounts/{id}/import-essbio-history" })
+    .input(idInputSchema)
+    .output(importEssbioHistoryResponseSchema)
+    .handler(async ({ input }) => {
+      const result = await importEssbioHistory(input.id);
+      return { ...result, status: "ok" as const };
+    }),
+
+  importCgeConsumo: authed
+    .route({ method: "POST", path: "/accounts/{id}/import-cge-consumo" })
+    .input(idInputSchema)
+    .output(importCgeConsumoResponseSchema)
+    .handler(async ({ input }) => {
+      const result = await importCgeConsumoHistory(input.id);
+      return { ...result, status: "ok" as const };
     }),
 };
 

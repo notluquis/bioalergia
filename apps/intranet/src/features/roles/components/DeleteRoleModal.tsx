@@ -13,7 +13,8 @@ import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-q
 import { AlertCircle, AlertTriangle, ArrowRight } from "lucide-react";
 import { Suspense, useState } from "react";
 import { useToast } from "@/context/ToastContext";
-import { deleteRole, reassignRoleUsers, roleKeys, roleQueries } from "@/features/roles/api";
+import { deleteRole, reassignRoleUsers } from "@/features/roles/api";
+import { roleKeys, roleQueries } from "@/features/roles/queries";
 import type { Role } from "@/types/roles";
 
 interface DeleteRoleModalProps {
@@ -48,7 +49,7 @@ export function DeleteRoleModal({ allRoles, isOpen, onClose, role }: DeleteRoleM
                   <div className="py-2">
                     <Alert status="danger">
                       <Alert.Indicator>
-                        <AlertCircle className="h-4 w-4" />
+                        <AlertCircle className="size-4" />
                       </Alert.Indicator>
                       <Alert.Content>
                         Este es un rol de sistema protegido y no puede ser eliminado.
@@ -140,7 +141,7 @@ function DeleteRoleForm({
         {hasUsers ? (
           <div className="space-y-3 rounded-lg border border-warning-soft-hover bg-warning/10 p-4">
             <div className="flex items-start gap-2 text-warning">
-              <AlertTriangle className="mt-0.5 h-5 w-5" />
+              <AlertTriangle className="mt-0.5 size-5" />
               <div className="font-medium">Usuarios afectados</div>
             </div>
             <Description className="text-sm">
@@ -159,7 +160,7 @@ function DeleteRoleForm({
 
             <div className="w-full space-y-1">
               <span className="mb-1 flex items-center gap-2 font-medium text-sm">
-                <ArrowRight className="h-4 w-4" />
+                <ArrowRight className="size-4" />
                 Mover usuarios a:
               </span>
               <Select

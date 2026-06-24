@@ -78,6 +78,25 @@ export const updateUserProfileSchema = z
     }
   });
 
+/**
+ * Self-service profile update — invoked from `/account?tab=perfil`.
+ * Differs from `updateUserProfileSchema` (admin tool) by:
+ *  - no `position` / `department` (HR-owned, not user-editable)
+ *  - no `mfaEnforced` / `notificationEmail` (security-owned)
+ *  - RUT is intentionally read-only post-setup; not in this schema
+ *    (server pulls the existing RUT from DB).
+ */
+export const updateOwnProfileSchema = z.object({
+  names: z.string().min(1, "Nombres requeridos").max(160),
+  fatherName: z.string().max(120).nullable().optional(),
+  motherName: z.string().max(120).nullable().optional(),
+  loginEmail: z.email("Email de login inválido").nullable().optional(),
+  phone: z.string().max(60).nullable().optional(),
+  bankName: z.string().max(120).nullable().optional(),
+  bankAccountType: z.string().max(80).nullable().optional(),
+  bankAccountNumber: z.string().max(120).nullable().optional(),
+});
+
 export const userPersonSchema = z.object({
   fatherName: z.string().nullable(),
   motherName: z.string().nullable(),
@@ -144,6 +163,8 @@ export const inviteResponseSchema = z.object({
 export const resetPasswordResponseSchema = z.object({
   status: z.literal("ok"),
   tempPassword: z.string(),
+  /** Whether the temp password was also emailed to the user. */
+  emailed: z.boolean().default(false),
 });
 
 export const toggleMfaResponseSchema = z.object({
@@ -189,6 +210,10 @@ export const usersContract = {
     .route({ method: "POST", path: "/{id}/mfa" })
     .input(toggleMfaSchema)
     .output(toggleMfaResponseSchema),
+  updateOwnProfile: oc
+    .route({ method: "PUT", path: "/profile" })
+    .input(updateOwnProfileSchema)
+    .output(usersStatusResponseSchema),
   updateProfile: oc
     .route({ method: "PUT", path: "/{id}/profile" })
     .input(z.object({ id: z.number().int(), payload: updateUserProfileSchema }))

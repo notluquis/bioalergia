@@ -31,6 +31,36 @@ export interface MPReportTask {
   currency_id?: string;
   format?: "CSV" | "XLSX";
   file_name?: string | null;
+  // Present on /search results, absent on /list tasks (which carry
+  // generation_date). Declared so the merge in listReports can backfill it.
+  date_created?: string | null;
+}
+
+// Mirrors the frontend REPORT_PENDING_REGEX: a report whose generation task
+// hasn't materialized a downloadable file yet shows as "Generando".
+const PENDING_REPORT_STATUSES = new Set([
+  "pending",
+  "processing",
+  "in_progress",
+  "waiting",
+  "queued",
+  "creating",
+  "generating",
+]);
+
+function isPendingReportStatus(status?: string | null): boolean {
+  return status ? PENDING_REPORT_STATUSES.has(status.toLowerCase()) : false;
+}
+
+// Float in-flight ("Generando") rows to the top. The intranet table renders
+// rows in backend order, and MP's release /search returns an in-flight report
+// LAST (its date_created is still null), so without this the generating row
+// sinks to the bottom on the liberación tab. Stable sort preserves the rest of
+// the order (Array.prototype.sort is stable since ES2019).
+function floatPendingReportsFirst<T extends { status?: string | null }>(reports: T[]): T[] {
+  return [...reports].sort(
+    (a, b) => Number(isPendingReportStatus(b.status)) - Number(isPendingReportStatus(a.status))
+  );
 }
 
 export interface MPSearchResultItem {
@@ -57,31 +87,91 @@ export interface MPSearchResponse {
   results?: MPSearchResultItem[];
 }
 
-const SETTLEMENT_HINTS = [
-  "settlement",
-  "liquidaci",
-  "account_money",
-  "all_transactions",
-  "todas_las_transacciones",
-  "todas-las-transacciones",
-];
-
-export function isSettlementReport(...inputs: Array<string | undefined | null>): boolean {
-  const haystack = inputs
-    .filter((v): v is string => Boolean(v))
-    .join(" ")
-    .toLowerCase();
-  return SETTLEMENT_HINTS.some((hint) => haystack.includes(hint));
+export interface MPListReportsResult {
+  reports: Array<MPReportTask | MPSearchResultItem>;
+  total: number;
 }
+
+export { isSettlementReport } from "./settlement-detector.ts";
 
 export const MercadoPagoService = {
   /**
    * List available reports from MP API
    */
-  async listReports(type: "release" | "settlement", options?: { silent?: boolean }) {
+  async listReports(
+    type: "release" | "settlement",
+    options?: { limit?: number; offset?: number; silent?: boolean }
+  ): Promise<MPListReportsResult> {
+    const limit = options?.limit ?? 50;
+    const offset = options?.offset ?? 0;
     const baseUrl = type === "release" ? MP_API.RELEASE : MP_API.SETTLEMENT;
-    const res = await mpFetch("/list", baseUrl, { log: !options?.silent });
-    return safeMpJson(res);
+
+    // 1. Available files (reliable file_name) via /search.
+    let files: Array<MPReportTask | MPSearchResultItem> = [];
+    let total = 0;
+    let searchHasFiles = false;
+    try {
+      const searchData = await this.searchReports(type, { limit, offset }, options);
+      files = searchData.results ?? [];
+      total = searchData.paging?.total ?? files.length;
+      searchHasFiles = files.length > 0;
+    } catch (error) {
+      if (!options?.silent) {
+        console.warn(`[MP Service] ${type} report search failed; falling back to list:`, error);
+      }
+    }
+
+    // 2. Generation tasks via /list. This surfaces in-flight reports
+    //    ("Generando") that /search can't return yet because no file exists.
+    //    Released-money /list only carries finished files while settlement
+    //    /list carries the full task queue incl. pending — merging is correct
+    //    for both and is what lets "liberación" show the in-flight state
+    //    instead of jumping straight to "disponible".
+    let tasks: MPReportTask[] = [];
+    try {
+      const res = await mpFetch("/list", baseUrl, { log: false });
+      const listData = await safeMpJson(res);
+      if (Array.isArray(listData)) {
+        tasks = listData as MPReportTask[];
+      }
+    } catch (error) {
+      if (!options?.silent) {
+        console.warn(`[MP Service] ${type} report /list failed:`, error);
+      }
+    }
+
+    // If /search returned nothing, fall back to the full /list (old behavior)
+    // so a type whose /search is empty never regresses.
+    if (!searchHasFiles) {
+      const base = tasks.length > 0 ? tasks : files;
+      return { reports: floatPendingReportsFirst(base), total: tasks.length || total };
+    }
+
+    // 3. Prepend in-flight tasks not yet represented as an available file.
+    //    Match by file_name; a task without a file_name is always in-flight.
+    const knownFileNames = new Set(
+      files
+        .map((report) => ("file_name" in report ? report.file_name : null))
+        .filter((name): name is string => Boolean(name))
+    );
+    const pending = tasks
+      .filter(
+        (task) =>
+          isPendingReportStatus(task.status) &&
+          (!task.file_name || !knownFileNames.has(task.file_name))
+      )
+      .map((task) => ({
+        ...task,
+        date_created: task.date_created ?? task.generation_date ?? null,
+      }));
+
+    // Only the first page carries the in-flight head; deeper pages stay pure
+    // history so pagination math doesn't drift.
+    const reports = offset === 0 ? [...pending, ...files] : files;
+    return {
+      reports: floatPendingReportsFirst(reports),
+      total: offset === 0 ? total + pending.length : total,
+    };
   },
 
   /**
@@ -120,6 +210,25 @@ export const MercadoPagoService = {
     });
 
     if (!res.ok) {
+      // Diagnostic: MP's account-report path may 302-redirect to a short-lived
+      // signed storage URL, so an older file can 404 even though it shows in the
+      // list. Capture the real response so we stop guessing why download fails.
+      let bodySnippet = "";
+      try {
+        bodySnippet = (await res.text()).slice(0, 300);
+      } catch {
+        // ignore body read failure
+      }
+      console.error(
+        `[MP Download] failed ${res.status} ${res.statusText} for ${type} ${fileName}`,
+        {
+          redirected: res.redirected,
+          finalUrl: res.url,
+          location: res.headers.get("location"),
+          contentType: res.headers.get("content-type"),
+          body: bodySnippet,
+        }
+      );
       throw new Error(`Download failed: ${res.status}`);
     }
     return res;
@@ -132,20 +241,22 @@ export const MercadoPagoService = {
    */
   async processReport(
     type: "release" | "settlement",
-    source: { url?: string; fileName?: string }
+    source: { url?: string; fileName?: string; syncLogId?: bigint }
   ): Promise<ImportStats> {
-    let downloadUrl = source.url;
+    let downloadUrl: string | undefined;
 
-    if (!downloadUrl && source.fileName) {
+    if (source.fileName) {
       const baseUrl = type === "release" ? MP_API.RELEASE : MP_API.SETTLEMENT;
       downloadUrl = `${baseUrl}/${source.fileName}`;
+    } else {
+      downloadUrl = source.url;
     }
 
     if (!downloadUrl) {
       throw new Error("Either url or fileName must be provided");
     }
 
-    return await processReportUrl(downloadUrl, type);
+    return await processReportUrl(downloadUrl, type, { syncLogId: source.syncLogId });
   },
 
   /**

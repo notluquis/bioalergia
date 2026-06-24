@@ -1,3 +1,16 @@
+# Global options — applied before any site block. Drops in-memory cost of
+# Caddy features that don't add value behind Railway's TLS-terminating proxy:
+# - HTTP/3 (QUIC) buffers: ~50-100MB; Railway proxy doesn't expose UDP to
+#   the container so QUIC negotiation is a wasted code path.
+# - Local admin API (default :2019): one extra server + goroutines; we don't
+#   reload Caddy via the API in prod.
+{
+	servers {
+		protocols h1 h2
+	}
+	admin off
+}
+
 :{$PORT:3000} {
 	# Root directory for static files
 	root * /srv
@@ -17,8 +30,9 @@
 	#   every <script> tag in index.html (see vite.config.ts
 	#   cspNoncePlugin) and the `templates` directive below substitutes
 	#   it at serve time.
-	# - require-trusted-types-for 'script' closes DOM-XSS sinks (React
-	#   19 has built-in Trusted Types support).
+	# - Trusted Types (require-trusted-types-for) is NOT shipped — see the
+	#   note above the Content-Security-Policy header for why (app not
+	#   TT-compliant; the old report-only was inert + spammed Safari 26).
 	# - style-src keeps 'unsafe-inline' because HeroUI v3 / React Aria
 	#   set inline `style="…"` for popovers; OWASP explicitly accepts
 	#   this trade-off because style-based XSS is dramatically lower
@@ -31,14 +45,57 @@
 		Cross-Origin-Opener-Policy "same-origin"
 		Cross-Origin-Resource-Policy "same-origin"
 		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
-		# Enforced CSP: strict-dynamic + nonce. require-trusted-types-for moved
-		# to a Report-Only header below — Cloudflare Bot Fight Mode and
-		# similar edge-injected scripts use innerHTML / .src assignment that
-		# violates Trusted Types regardless of nonce. Tracking violations in
-		# report-only lets us migrate first-party code to TrustedHTML/Script
-		# without breaking the live app.
-		Content-Security-Policy "default-src 'self'; script-src 'nonce-{http.request.uuid}' 'strict-dynamic' 'unsafe-inline' https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self'; media-src 'self' blob:; worker-src 'self' blob:; manifest-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'"
-		Content-Security-Policy-Report-Only "require-trusted-types-for 'script'; trusted-types default dompurify 'allow-duplicates'"
+		# Enforced CSP: strict-dynamic + nonce + object-src/base-uri 'none'.
+		# Trusted Types is intentionally NOT shipped (neither enforced nor
+		# report-only): (1) no `default`/`dompurify` TT policy is created in
+		# app code, so violations can never clear; (2) the app isn't TT-compliant
+		# — the FB SDK loader (EmbeddedSignupButton) assigns script.src as a raw
+		# string and react-aria/HeroUI internals are unaudited, so enforcement
+		# would break the live app; (3) the prior Report-Only header had no
+		# `report-to`/`Reporting-Endpoints`, so it was inert AND, once Safari 26
+		# (2025) added TT support, it spammed every Safari user with [Report Only]
+		# console violations that nobody collected. The strict script-src nonce +
+		# strict-dynamic + object-src 'none' already close the high-impact sinks.
+		# Revisit TT enforcement (default policy backed by DOMPurify + TrustedScriptURL
+		# for the FB loader) only as a funded security pass.
+		# connect-src includes Sentry ingest endpoints so the browser SDK
+		# can transmit errors / replays / metrics. *.ingest.sentry.io covers
+		# both region-specific (us.ingest, eu.ingest) and the legacy global
+		# host. Without these the SDK initialises silently but every POST
+		# to /api/0/envelope/ is blocked by CSP and events disappear.
+		# *.r2.cloudflarestorage.com is the R2 S3 endpoint for browser PUT
+		# uploads via presigned URLs (product images + clinic logos/signature).
+		# cdn.bioalergia.cl is the R2 public CDN: <img>/<picture> reads go via
+		# img-src (https:), but it's also in connect-src so service-worker
+		# runtime-caching fetch() of those images isn't blocked.
+		# cdn.jsdelivr.net serves the emojibase dataset that the `frimousse`
+		# emoji picker fetch()es at runtime (default emojibaseUrl); without it
+		# the picker hangs on "Cargando…" because the fetch is CSP-blocked.
+		Content-Security-Policy "default-src 'self'; script-src 'nonce-{http.request.uuid}' 'strict-dynamic' 'unsafe-inline' https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://id.who.int https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://*.r2.cloudflarestorage.com https://cdn.bioalergia.cl https://cdn.jsdelivr.net; media-src 'self' blob:; worker-src 'self' blob:; manifest-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'"
+	}
+
+	# Allow embedding the clinic logo from external origins. CORP defaults to
+	# same-origin above; transactional emails (timesheet-email-template.ts)
+	# embed <img src="https://intranet.bioalergia.cl/logo_sin_eslogan.png">,
+	# which webmail/email clients fetch cross-origin → same-origin CORP cancels
+	# the load and the logo breaks in the email. It's a public brand image, so
+	# it opts into cross-origin CORP (mirrors apps/site/Caddyfile @brand).
+	@brand path /logo_sin_eslogan.png /logo.png
+	header @brand {
+		Access-Control-Allow-Origin "*"
+		Cross-Origin-Resource-Policy "cross-origin"
+	}
+
+	# WA media proxy (PDF/image) is embedded in a same-origin <iframe> (the
+	# document-preview modal). The global header block sets X-Frame-Options DENY
+	# + CSP frame-ancestors 'none', which the browser applies to the proxied
+	# media response and blocks the embed. Override BOTH for media only: drop
+	# X-Frame-Options and serve a minimal CSP that allows same-origin framing.
+	# The rest of the app keeps DENY + 'none' (clickjacking protection intact).
+	@waMedia path /api/wa-cloud/media/*
+	header @waMedia {
+		-X-Frame-Options
+		Content-Security-Policy "default-src 'none'; img-src 'self'; media-src 'self'; frame-ancestors 'self'; object-src 'none'; base-uri 'none'"
 	}
 
 	# ========== LOGGING CONFIGURATION ==========
@@ -73,9 +130,19 @@
 		file_server
 	}
 
+	# Hidden sourcemaps: Vite emits `.js.map` next to every bundle with
+	# `sourcemap: 'hidden'` so we can decode prod stack traces locally
+	# without leaking source to the public. Caddy must refuse to serve
+	# them — match BEFORE @static_assets and return 404.
+	@sourcemaps path_regexp \.(js|mjs|css)\.map$
+	handle @sourcemaps {
+		respond 404
+	}
+
 	# Static assets: Return 404 if not found (prevents MIME type errors for missing JS chunks)
-	# This handles cases where old HTML references deleted Vite chunks
-	@static_assets path_regexp \.(js|mjs|css|map|json|woff2?|ttf|eot|svg|png|jpg|jpeg|gif|webp|ico|webmanifest)$
+	# This handles cases where old HTML references deleted Vite chunks.
+	# `map` intentionally omitted from this list — see @sourcemaps above.
+	@static_assets path_regexp \.(js|mjs|css|json|woff2?|ttf|eot|svg|png|jpg|jpeg|gif|webp|ico|webmanifest)$
 
 	handle @static_assets {
 		file_server
@@ -95,12 +162,29 @@
 		file_server
 	}
 
-	# Cache headers for static assets
+	# Cache headers for static assets (everything except the SW).
 	@static {
 		path *.js *.css *.png *.jpg *.jpeg *.gif *.svg *.webp *.ico *.woff *.woff2 *.ttf *.eot
 	}
 	header @static {
 		Cache-Control "public, max-age=2592000, immutable"
+	}
+
+	# Service worker MUST be served fresh (or near-fresh) so a deploy
+	# rolls out without needing manual unregister. Browsers ignore long
+	# max-age on SWs anyway (capped at 24h per spec) but immutable +
+	# 30d was making Safari/iOS PWAs hang on stale builds.
+	# `no-cache` = revalidate every load via ETag; `must-revalidate`
+	# blocks stale-while-revalidate optimizations on the SW path.
+	# MUST be declared AFTER @static — Caddy's `header` directive
+	# evaluates in order and the LAST matching block wins. With
+	# @service_worker before @static, the `*.js` rule was overriding
+	# back to immutable; CF then cached the SW for 30 days.
+	@service_worker {
+		path /sw.js /sw.mjs /workbox-*.js /registerSW.js
+	}
+	header @service_worker {
+		Cache-Control "no-cache, must-revalidate"
 	}
 
 	# No cache for index.html

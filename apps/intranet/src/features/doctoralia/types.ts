@@ -15,6 +15,7 @@ export interface DoctoraliaEventService {
 }
 
 export interface DoctoraliaCalendarAppointment {
+  attendance: number;
   colorSchemaId: null | number;
   comments: null | string;
   duration: number;
@@ -22,13 +23,14 @@ export interface DoctoraliaCalendarAppointment {
   eventServices: { items: DoctoraliaEventService[] } | null;
   eventType: number;
   externalId: number;
+  followUpDate: Date | null;
   hasPatient: boolean;
   id: number;
   isPatientFirstAdminBooking: boolean;
   isPatientFirstTime: boolean;
   patientBirthDate: Date | null;
   patientExternalId: number;
-  patientReferenceId: string;
+  patientReferenceId: null | string;
   schedule: {
     displayName: string;
     externalId: number;

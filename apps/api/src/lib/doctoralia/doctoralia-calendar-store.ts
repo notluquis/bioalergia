@@ -1,5 +1,6 @@
 import { db, type JsonValue } from "@finanzas/db";
 
+import { auditRowChange } from "../audit-diff.ts";
 import { parseDoctoraliaDateTime } from "./doctoralia-date-parser.ts";
 import type {
   DoctoraliaAppointment,
@@ -10,6 +11,23 @@ import type {
 
 function toJsonValue(value: unknown): JsonValue {
   return JSON.parse(JSON.stringify(value)) as JsonValue;
+}
+
+// pg unique-violation SQLSTATE. ZenStack envuelve el error de pg en un ORMError
+// con `dbErrorCode`; el pg crudo trae `code` (y a veces queda en `cause.code`).
+// Chequear los tres para ser robusto al boundary que lo lance.
+const PG_UNIQUE_VIOLATION = "23505";
+
+function isUniqueViolation(err: unknown): boolean {
+  if (typeof err !== "object" || err === null) {
+    return false;
+  }
+  const e = err as { code?: unknown; dbErrorCode?: unknown; cause?: { code?: unknown } };
+  return (
+    e.code === PG_UNIQUE_VIOLATION ||
+    e.dbErrorCode === PG_UNIQUE_VIOLATION ||
+    e.cause?.code === PG_UNIQUE_VIOLATION
+  );
 }
 
 function hasShallowDataChanges<TRecord extends Record<string, unknown>>(
@@ -77,12 +95,15 @@ function mapAppointmentData(scheduleId: number, appointment: DoctoraliaAppointme
     onlinePaymentType: appointment.onlinePaymentType || null,
     onlinePaymentStatus: appointment.onlinePaymentStatus || null,
     isPaidOnline: appointment.isPaidOnline,
-    communicationChannel: appointment.communicationChannel || null,
+    // Doctoralia a veces manda número acá; el schema es String? → coercer.
+    communicationChannel:
+      appointment.communicationChannel == null ? null : String(appointment.communicationChannel),
     fake: appointment.fake,
     isEventWithVoucher: appointment.isEventWithVoucher,
     duration: appointment.duration,
     canNotifyPatient: appointment.canNotifyPatient,
     noShowProtection: appointment.noShowProtection,
+    followUpDate: parseDoctoraliaDateTime(appointment.followUpDateWithSameDoctor),
   };
 }
 
@@ -99,13 +120,14 @@ async function upsertAppointment(
     return "skipped";
   }
 
+  // El externalId es GLOBALMENTE único en Doctoralia (constraint
+  // `doctoralia_calendar_appointments_external_id_key`). Una cita puede MOVERSE
+  // de schedule (otro doctor/agenda) conservando su externalId. Buscar por el
+  // compuesto (scheduleId, externalId) devolvía null al moverse → create →
+  // 23505 dup key sobre external_id. La búsqueda y el update van por externalId
+  // solo; el scheduleId es un atributo que se actualiza si la cita migró.
   const existing = await db.doctoraliaCalendarAppointment.findUnique({
-    where: {
-      scheduleId_externalId: {
-        scheduleId,
-        externalId: appointment.id,
-      },
-    },
+    where: { externalId: appointment.id },
   });
 
   if (existing) {
@@ -115,21 +137,39 @@ async function upsertAppointment(
     }
 
     await db.doctoraliaCalendarAppointment.update({
-      where: {
-        scheduleId_externalId: {
-          scheduleId,
-          externalId: appointment.id,
-        },
-      },
+      where: { externalId: appointment.id },
       data,
     });
     console.log(
       `[DoctoraliaSync] appointment ${appointment.id} updated (${appointment.title} @ ${appointment.start})`
     );
+    // Auditar cambios de estado/horario de la cita (best-effort, no rompe el sync).
+    await auditRowChange({
+      kind: "APPOINTMENT_CHANGE",
+      resource: "doctoralia_calendar_appointment",
+      resourceId: existing.id,
+      oldRow: existing as Record<string, unknown>,
+      newRow: { ...existing, ...data } as Record<string, unknown>,
+      fields: ["startAt", "endAt", "status", "attendance", "followUpDate"],
+    });
     return "updated";
   }
 
-  await db.doctoraliaCalendarAppointment.create({ data });
+  try {
+    await db.doctoraliaCalendarAppointment.create({ data });
+  } catch (error) {
+    // Carrera: otra entrada del mismo batch (Promise.all) insertó esta cita
+    // entre el findUnique y el create. external_id es único → 23505. Es
+    // idempotente reintentar como update en vez de propagar el error.
+    if (isUniqueViolation(error)) {
+      await db.doctoraliaCalendarAppointment.update({
+        where: { externalId: appointment.id },
+        data,
+      });
+      return "updated";
+    }
+    throw error;
+  }
   console.log(
     `[DoctoraliaSync] appointment ${appointment.id} inserted (${appointment.title} @ ${appointment.start})`
   );
@@ -180,7 +220,9 @@ function buildAlertPatch(alert: DoctoraliaCalendarAlert): {
 /**
  * Upsert Doctoralia schedules into the database
  */
-export async function upsertDoctoraliaSchedules(schedules: DoctoraliaCalendarSchedule[]) {
+export async function upsertDoctoraliaSchedules(
+  schedules: DoctoraliaCalendarSchedule[]
+): Promise<{ inserted: number; updated: number; skipped: number }> {
   if (schedules.length === 0) {
     return { inserted: 0, updated: 0, skipped: 0 };
   }
@@ -228,7 +270,7 @@ export async function upsertDoctoraliaSchedules(schedules: DoctoraliaCalendarSch
 export async function upsertDoctoraliaAppointments(
   scheduleExternalId: number,
   appointments: DoctoraliaAppointment[]
-) {
+): Promise<{ inserted: number; updated: number; skipped: number }> {
   if (appointments.length === 0) {
     return { inserted: 0, updated: 0, skipped: 0 };
   }
@@ -280,7 +322,7 @@ export async function upsertDoctoraliaAppointments(
 export async function upsertDoctoraliaWorkPeriods(
   scheduleExternalId: number,
   workPeriods: DoctoraliaWorkPeriod[]
-) {
+): Promise<{ inserted: number; updated: number; skipped: number }> {
   if (workPeriods.length === 0) {
     return { inserted: 0, updated: 0, skipped: 0 };
   }
@@ -354,7 +396,9 @@ export async function upsertDoctoraliaWorkPeriods(
  * Apply appointment updates from alerts feed.
  * We only patch fields present in the alert payload and skip unknown events.
  */
-export async function applyDoctoraliaAlertUpdates(alerts: DoctoraliaCalendarAlert[]) {
+export async function applyDoctoraliaAlertUpdates(
+  alerts: DoctoraliaCalendarAlert[]
+): Promise<{ updated: number; skipped: number }> {
   if (alerts.length === 0) {
     return { updated: 0, skipped: 0 };
   }
@@ -397,7 +441,7 @@ export async function createDoctoraliaSyncLog(data: {
   appointmentsSynced?: number;
   workPeriodsSynced?: number;
   errorMessage?: string;
-}) {
+}): Promise<Awaited<ReturnType<typeof db.doctoraliaSyncLog.create>>> {
   return db.doctoraliaSyncLog.create({
     data: {
       syncType: "CALENDAR",
@@ -425,7 +469,7 @@ export async function updateDoctoraliaSyncLog(
     workPeriodsSynced?: number;
     errorMessage?: string;
   }
-) {
+): Promise<Awaited<ReturnType<typeof db.doctoraliaSyncLog.update>>> {
   return db.doctoraliaSyncLog.update({
     where: { id },
     data: {

@@ -4,13 +4,13 @@ import type { PaginationState } from "@tanstack/react-table";
 import { ChevronUp, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/features/auth/hooks/use-auth";
 import { updateEmployee } from "@/features/hr/employees/api";
 import { columns } from "@/features/hr/employees/components/columns";
 import { EmployeeForm } from "@/features/hr/employees/components/EmployeeForm";
 import { employeeKeys } from "@/features/hr/employees/queries";
 import type { Employee } from "@/features/hr/employees/types";
-import { PAGE_CONTAINER } from "@/lib/styles";
+import { Page } from "@/components/layouts/Page";
 // ... existing imports
 export function EmployeesPage() {
   const { can } = useAuth();
@@ -92,7 +92,7 @@ export function EmployeesPage() {
   }
 
   return (
-    <section className={PAGE_CONTAINER}>
+    <Page>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="flex flex-wrap items-center gap-3">
           <Switch
@@ -126,12 +126,12 @@ export function EmployeesPage() {
             >
               {showForm ? (
                 <>
-                  <ChevronUp className="h-4 w-4" />
+                  <ChevronUp className="size-4" />
                   Ocultar formulario
                 </>
               ) : (
                 <>
-                  <Plus className="h-4 w-4" />
+                  <Plus className="size-4" />
                   {editingEmployee ? "Editar empleado" : "Agregar empleado"}
                 </>
               )}
@@ -155,7 +155,7 @@ export function EmployeesPage() {
               {editingEmployee ? "Editar empleado" : "Agregar nuevo empleado"}
             </h2>
             <Button onPress={handleCancel} size="sm" variant="outline">
-              <ChevronUp className="h-4 w-4" />
+              <ChevronUp className="size-4" />
               Cerrar
             </Button>
           </div>
@@ -187,6 +187,6 @@ export function EmployeesPage() {
           scrollMaxHeight="min(68dvh, 760px)"
         />
       </div>
-    </section>
+    </Page>
   );
 }

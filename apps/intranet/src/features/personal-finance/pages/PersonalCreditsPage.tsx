@@ -1,8 +1,8 @@
 import { Button, Chip, Meter, Skeleton } from "@heroui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
-import dayjs from "dayjs";
 import { Suspense, useState } from "react";
+import { chileDay, formatChile, today } from "@/lib/dates";
 import { DataTable } from "@/components/data-table/DataTable";
 import { formatCurrency } from "@/lib/utils";
 import { CreateCreditForm } from "../components/CreateCreditForm";
@@ -45,12 +45,10 @@ const paid = (credit: PersonalCredit) =>
   credit.installments?.filter((installment) => installment.status === "PAID").length || 0;
 const total = (credit: PersonalCredit) => credit.totalInstallments || 1;
 const overdueSummary = (credit: PersonalCredit) => {
-  const today = dayjs().startOf("day");
+  const todayISO = today();
   const overdueInstallments =
     credit.installments?.filter(
-      (installment) =>
-        installment.status === "PENDING" &&
-        dayjs(installment.dueDate).startOf("day").isBefore(today)
+      (installment) => installment.status === "PENDING" && chileDay(installment.dueDate) < todayISO
     ) ?? [];
 
   return {
@@ -142,7 +140,7 @@ function getColumns(onSelectCredit: (id: number) => void): ColumnDef<PersonalCre
       cell: ({ row }) => {
         const dueDate = nextDueDate(row.original);
         return dueDate ? (
-          <span className="text-sm">{dayjs(dueDate).format("DD/MM/YYYY")}</span>
+          <span className="text-sm">{formatChile(dueDate, "DD/MM/YYYY")}</span>
         ) : (
           <span className="text-muted">-</span>
         );

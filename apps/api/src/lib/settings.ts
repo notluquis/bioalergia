@@ -20,6 +20,21 @@ export type AppSettings = {
   calendarSyncLookaheadDays: string;
   calendarExcludeSummaries: string;
   calendarDailyMaxDays: string;
+  shopLowStockThreshold: string;
+  // Dirección de devolución (DEV) de la clínica para las OTs Chilexpress.
+  // Chilexpress exige DEST + DEV en cada envío; sin DEV devuelve -7.
+  shipmentReturnStreet: string;
+  shipmentReturnNumber: string;
+  shipmentReturnSupplement: string;
+  shipmentReturnCoverageCode: string;
+  // Email senders (non-secret config; the API key + webhook secret live in env).
+  // `from` = transactional sender, `broadcastFrom` = marketing sender (separate
+  // subdomain label keeps reputation isolated), `replyTo` = human inbox.
+  emailFrom: string;
+  emailBroadcastFrom: string;
+  emailReplyTo: string;
+  // Destinatario de avisos de leads B2B (vitrina /venta-empresas → "Quiero reactivos").
+  reactivoLeadsEmail: string;
 };
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -44,6 +59,15 @@ export const DEFAULT_SETTINGS: AppSettings = {
   calendarSyncLookaheadDays: "365",
   calendarExcludeSummaries: "No Disponible",
   calendarDailyMaxDays: "31",
+  shopLowStockThreshold: "3",
+  shipmentReturnStreet: "",
+  shipmentReturnNumber: "",
+  shipmentReturnSupplement: "",
+  shipmentReturnCoverageCode: "",
+  emailFrom: "Bioalergia <noreply@send.bioalergia.cl>",
+  emailBroadcastFrom: "Bioalergia <novedades@send.bioalergia.cl>",
+  emailReplyTo: "contacto@bioalergia.cl",
+  reactivoLeadsEmail: "contacto@bioalergia.cl",
 };
 
 const SETTINGS_KEY_MAP: Record<keyof AppSettings, string> = {
@@ -68,6 +92,15 @@ const SETTINGS_KEY_MAP: Record<keyof AppSettings, string> = {
   calendarSyncLookaheadDays: "calendar.syncLookaheadDays",
   calendarExcludeSummaries: "calendar.excludeSummaries",
   calendarDailyMaxDays: "calendar.dailyMaxDays",
+  shopLowStockThreshold: "shop.lowStockThreshold",
+  shipmentReturnStreet: "shipments.return.street",
+  shipmentReturnNumber: "shipments.return.number",
+  shipmentReturnSupplement: "shipments.return.supplement",
+  shipmentReturnCoverageCode: "shipments.return.coverageCode",
+  emailFrom: "email.from",
+  emailBroadcastFrom: "email.broadcastFrom",
+  emailReplyTo: "email.replyTo",
+  reactivoLeadsEmail: "reactivos.leadsEmail",
 };
 
 export function settingsKeyToDbKey(key: keyof AppSettings): string {
@@ -81,4 +114,74 @@ export function dbKeyToSettingsKey(dbKey: string): keyof AppSettings | null {
     }
   }
   return null;
+}
+
+// ─── DB-backed accessors ──────────────────────────────────────────────────────
+// Moved from services/settings.ts so lib/ files (notably
+// lib/google/google-calendar.ts) can read settings without an upward edge
+// into services/. lib/ is the lowest tier in the DAG and may touch the DB.
+import { db } from "@finanzas/db";
+
+export async function loadSettings(): Promise<AppSettings> {
+  const settings = await db.setting.findMany();
+  const result: AppSettings = { ...DEFAULT_SETTINGS };
+
+  for (const setting of settings) {
+    const appKey = dbKeyToSettingsKey(setting.key);
+    if (appKey) {
+      result[appKey] = setting.value || "";
+    }
+  }
+
+  return result;
+}
+
+export async function getSettings(): Promise<Record<string, string>> {
+  const settings = await db.setting.findMany();
+  return settings.reduce(
+    (acc, curr) => {
+      acc[curr.key] = curr.value ?? "";
+      return acc;
+    },
+    {} as Record<string, string>
+  );
+}
+
+export async function getSetting(key: string): Promise<string | null> {
+  const setting = await db.setting.findUnique({
+    where: { key },
+  });
+  return setting?.value ?? null;
+}
+
+export async function updateSetting(
+  key: string,
+  value: string
+): Promise<Awaited<ReturnType<typeof db.setting.upsert>>> {
+  return await db.setting.upsert({
+    where: { key },
+    update: { value },
+    create: { key, value },
+  });
+}
+
+export async function deleteSetting(
+  key: string
+): Promise<Awaited<ReturnType<typeof db.setting.delete>>> {
+  return await db.setting.delete({
+    where: { key },
+  });
+}
+
+export async function updateSettings(
+  settings: Record<string, string>
+): Promise<Awaited<ReturnType<typeof db.setting.upsert>>[]> {
+  const updates = Object.entries(settings).map(([key, value]) =>
+    db.setting.upsert({
+      where: { key },
+      update: { value },
+      create: { key, value },
+    })
+  );
+  return await db.$transaction(updates);
 }

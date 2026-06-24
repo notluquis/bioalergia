@@ -39,7 +39,7 @@ export function MfaStep({
     return (
       <div className="space-y-6">
         <div className="mb-6 text-center">
-          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-warning/10 text-warning">
+          <div className="mx-auto mb-3 flex items-center justify-center rounded-full bg-warning/10 text-warning size-12">
             <Smartphone size={24} />
           </div>
           <h2 className="font-bold text-2xl">Configurar MFA</h2>
@@ -58,7 +58,7 @@ export function MfaStep({
   return (
     <div className="space-y-6">
       <div className="mb-6 text-center">
-        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-warning/10 text-warning">
+        <div className="mx-auto mb-3 flex items-center justify-center rounded-full bg-warning/10 text-warning size-12">
           <Smartphone size={24} />
         </div>
         <h2 className="font-bold text-2xl">Configurar MFA</h2>
@@ -72,7 +72,7 @@ export function MfaStep({
         <div className="rounded-xl bg-white p-4">
           <img
             alt="QR Code"
-            className="h-48 w-48"
+            className="size-48"
             decoding="async"
             loading="lazy"
             src={mfaSecret.qrCodeUrl}

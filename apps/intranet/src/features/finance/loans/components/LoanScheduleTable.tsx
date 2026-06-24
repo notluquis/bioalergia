@@ -8,17 +8,20 @@ import { getColumns } from "./LoanScheduleColumns";
 
 interface LoanScheduleTableProps {
   canManage: boolean;
+  onEditSchedule: (schedule: LoanSchedule) => void;
   onRegisterPayment: (schedule: LoanSchedule) => void;
   onUnlinkPayment: (schedule: LoanSchedule) => void;
   schedules: LoanSchedule[];
 }
 export function LoanScheduleTable({
   canManage,
+  onEditSchedule,
   onRegisterPayment,
   onUnlinkPayment,
   schedules,
 }: LoanScheduleTableProps) {
   const actions = {
+    onEditSchedule,
     onRegisterPayment,
     onUnlinkPayment,
   };
@@ -26,7 +29,7 @@ export function LoanScheduleTable({
   const columns = getColumns(actions, canManage);
 
   return (
-    <div className="rounded-2xl border border-default-200 bg-background shadow-sm">
+    <div className="overflow-hidden rounded-lg border border-default-200 bg-background">
       <DataTable
         columns={columns}
         data={schedules}
@@ -34,7 +37,7 @@ export function LoanScheduleTable({
         enablePagination={false}
         enableToolbar={false}
         noDataMessage="No hay cronograma disponible."
-        scrollMaxHeight="32rem"
+        scrollMaxHeight="42dvh"
       />
     </div>
   );

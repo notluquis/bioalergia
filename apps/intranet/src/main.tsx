@@ -5,9 +5,11 @@
  * The old React Router v7 routes have been migrated to file-based routing in src/routes/.
  */
 
-import { Button, Spinner } from "@heroui/react";
+import { Button } from "@heroui/react";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRouter, RouterProvider } from "@tanstack/react-router";
+import { ThemeProvider } from "next-themes";
 import { lazy, StrictMode, Suspense, useEffect } from "react";
 import ReactDOM from "react-dom/client";
 import { ZodError } from "zod";
@@ -16,22 +18,28 @@ import { ApiError } from "@/lib/api-client";
 import { AppFallback } from "./components/features/AppFallback";
 import { ChunkErrorBoundary } from "./components/ui/ChunkErrorBoundary";
 import { GlobalError } from "./components/ui/GlobalError";
-import { useAuth } from "./context/AuthContext";
 import { ConfirmDialogProvider } from "./context/ConfirmDialogContext";
-import { SettingsProvider } from "./context/SettingsContext";
 import { ToastProvider } from "./context/ToastContext";
-import type { AuthContextType } from "./features/auth/hooks/use-auth";
+import { type AuthContextType, useAuth } from "./features/auth/hooks/use-auth";
 import { signalAppFallback } from "./lib/app-recovery";
 import { AbilityProvider } from "./lib/authz/AbilityProvider";
 import { createLogger } from "./lib/logger";
 import { initPerformanceMonitoring } from "./lib/performance";
+import { initSentry, isSentryEnabled, Sentry } from "./lib/sentry";
 // Import the generated route tree
 import { routeTree } from "./routeTree.gen";
-// Initialize global dayjs configuration
-import "@/lib/dayjs";
 
 import "./index.css";
 import "./i18n";
+
+// Initialize Sentry as early as possible — Sentry's browser-tracing docs
+// require this so the pageload span starts at boot (it's retroactively
+// backdated to the browser request-start) and so early chunk-load errors
+// are captured. browserTracingIntegration's fetch/XHR wrapping is
+// microsecond-level overhead; the actual prod-latency risk was the
+// lazy-loaded Replay integration, which has been removed from
+// initSentry() (see src/lib/sentry.ts). No-op when VITE_SENTRY_DSN unset.
+initSentry();
 
 // Create namespaced logger for chunk errors
 const log = createLogger("ChunkRecovery");
@@ -122,16 +130,30 @@ const router = createRouter({
   },
   defaultPendingComponent: () => (
     <div className="flex min-h-[50vh] items-center justify-center">
-      <Spinner aria-label="Cargando" color="accent" size="lg" />
+      <LoadingSpinner label="Cargando" color="accent" size="lg" />
     </div>
   ),
   defaultPreload: "intent",
   // Integrate with React Query for cache invalidation on navigation
   defaultPreloadStaleTime: 0,
+  defaultNotFoundComponent: () => (
+    <div className="flex min-h-[40vh] flex-col items-center justify-center gap-4 p-8">
+      <div className="max-w-lg rounded-2xl border border-default-200 bg-background p-6 text-center">
+        <h2 className="mb-2 font-bold text-xl text-foreground">Página no encontrada</h2>
+        <p className="text-default-500 text-sm">La ruta que buscas no existe o fue movida.</p>
+        <Button className="mt-6" variant="primary" onPress={() => (window.location.href = "/")}>
+          Volver al inicio
+        </Button>
+      </div>
+    </div>
+  ),
   defaultErrorComponent: ({ error }) => {
     // Log the error immediately
     useEffect(() => {
       logGlobalError(error, "Router");
+      if (isSentryEnabled()) {
+        Sentry.captureException(error, { tags: { source: "tanstack-router" } });
+      }
     }, [error]);
 
     return (
@@ -199,12 +221,20 @@ if (!rootElement) {
 
 ReactDOM.createRoot(rootElement).render(
   <StrictMode>
-    <AppFallback />
-    <GlobalError>
-      <ChunkErrorBoundary>
-        <QueryClientProvider client={queryClient}>
-          <AuthListener />
-          <SettingsProvider>
+    <ThemeProvider
+      attribute={["class", "data-theme"]}
+      defaultTheme="system"
+      disableTransitionOnChange
+      enableColorScheme
+      enableSystem
+      storageKey="bioalergia:theme"
+      value={{ dark: "bioalergia-dark", light: "bioalergia" }}
+    >
+      <AppFallback />
+      <GlobalError>
+        <ChunkErrorBoundary>
+          <QueryClientProvider client={queryClient}>
+            <AuthListener />
             <ConfirmDialogProvider>
               <ToastProvider>
                 <AbilityProvider>
@@ -215,9 +245,9 @@ ReactDOM.createRoot(rootElement).render(
                 </AbilityProvider>
               </ToastProvider>
             </ConfirmDialogProvider>
-          </SettingsProvider>
-        </QueryClientProvider>
-      </ChunkErrorBoundary>
-    </GlobalError>
+          </QueryClientProvider>
+        </ChunkErrorBoundary>
+      </GlobalError>
+    </ThemeProvider>
   </StrictMode>
 );

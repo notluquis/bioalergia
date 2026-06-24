@@ -1,7 +1,7 @@
 import { Button, Chip } from "@heroui/react";
 import type { ColumnDef } from "@tanstack/react-table";
-import dayjs from "dayjs";
 
+import { chileDay, formatChile, today } from "@/lib/dates";
 import type { ServiceSchedule } from "../types";
 
 // Helper for status label
@@ -31,7 +31,7 @@ export const getColumns = (
     accessorKey: "periodStart",
     cell: ({ row }) => (
       <span className="font-semibold text-foreground">
-        {dayjs(row.original.periodStart).format("MMM YYYY")}
+        {formatChile(row.original.periodStart, "MMM YYYY")}
       </span>
     ),
 
@@ -40,7 +40,7 @@ export const getColumns = (
   {
     accessorKey: "dueDate",
     cell: ({ row }) => (
-      <span className="text-foreground">{dayjs(row.original.dueDate).format("DD MMM YYYY")}</span>
+      <span className="text-foreground">{formatChile(row.original.dueDate, "DD MMM YYYY")}</span>
     ),
 
     header: "Vencimiento",
@@ -81,16 +81,13 @@ export const getColumns = (
       const schedule = row.original;
       let color: "success" | "warning" | "default" | "danger" = "default";
 
-      const today = dayjs().startOf("day");
-      const due = dayjs(schedule.dueDate);
-
       if (schedule.status === "PAID") {
         color = "success";
       } else if (schedule.status === "PARTIAL") {
         color = "warning";
       } else if (schedule.status === "SKIPPED") {
         color = "default";
-      } else if (due.isBefore(today)) {
+      } else if (chileDay(schedule.dueDate) < today()) {
         color = "danger";
       }
 
@@ -116,7 +113,7 @@ export const getColumns = (
             {schedule.paidAmount == null ? "—" : `$${schedule.paidAmount.toLocaleString("es-CL")}`}
           </div>
           <div className="text-default-400 text-xs">
-            {schedule.paidDate ? dayjs(schedule.paidDate).format("DD MMM YYYY") : "—"}
+            {schedule.paidDate ? formatChile(schedule.paidDate, "DD MMM YYYY") : "—"}
           </div>
         </div>
       );

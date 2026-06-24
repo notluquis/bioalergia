@@ -80,6 +80,22 @@ export async function trackShipment(shipmentId: number) {
   }
 }
 
+export async function refreshAllTracking() {
+  try {
+    return await shipmentsORPCClient.refreshAllTracking({});
+  } catch (error) {
+    throw toShipmentsApiError(error);
+  }
+}
+
+export async function cancelShipment(shipmentId: number) {
+  try {
+    return await shipmentsORPCClient.cancelShipment({ shipmentId });
+  } catch (error) {
+    throw toShipmentsApiError(error);
+  }
+}
+
 export async function quoteShipment(input: {
   originCoverageCode: string;
   destinationCoverageCode: string;
@@ -115,6 +131,8 @@ export async function createShipment(input: {
   declaredValue: number;
   cashOnDelivery: number;
   contentDescription: string;
+  additionalServiceCodes?: number[];
+  additionalServicesCost?: number;
 }) {
   try {
     return await shipmentsORPCClient.create(input);
@@ -134,6 +152,44 @@ export async function fetchShipments(patientId: number) {
 export async function fetchAllShipments() {
   try {
     return await shipmentsORPCClient.listAll({});
+  } catch (error) {
+    throw toShipmentsApiError(error);
+  }
+}
+
+// ─── Manifiesto (certificado de transporte del día) ───────────────────────────
+
+export async function fetchActiveManifest() {
+  try {
+    return await shipmentsORPCClient.getActiveCertificate({});
+  } catch (error) {
+    throw toShipmentsApiError(error);
+  }
+}
+
+export async function openManifest() {
+  try {
+    return await shipmentsORPCClient.openCertificate({});
+  } catch (error) {
+    throw toShipmentsApiError(error);
+  }
+}
+
+export async function closeManifest(input?: {
+  certificateNumber?: string | number;
+  certificateType?: 1 | 2;
+  dropNumber?: number;
+}) {
+  try {
+    return await shipmentsORPCClient.closeCertificate(input ?? {});
+  } catch (error) {
+    throw toShipmentsApiError(error);
+  }
+}
+
+export async function fetchManifestCertificate(certificateNumber: string) {
+  try {
+    return await shipmentsORPCClient.getCertificate({ certificateNumber });
   } catch (error) {
     throw toShipmentsApiError(error);
   }

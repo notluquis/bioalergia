@@ -1,7 +1,8 @@
-import { db, kysely } from "@finanzas/db";
+import { db } from "@finanzas/db";
 import type { ExpenseRecurrence, ExpenseScope, ExpenseSource, ExpenseStatus } from "@finanzas/db";
 import { Decimal } from "decimal.js";
-import { sql } from "kysely";
+import { sql, type SelectQueryBuilder } from "kysely";
+import { DomainError } from "../lib/errors.ts";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -194,6 +195,24 @@ export async function deleteExpenseService(id: number) {
   });
 }
 
+// Thin existence-enforcing wrapper for handlers: updates and throws
+// DomainError("NOT_FOUND") if the service row is missing, so the oRPC handler
+// stays thin (no ORPCError / null-check). Mirrors the previous handler's
+// "ExpenseService not found" message + authz-vs-existence ordering (the authz
+// guard already ran in the handler middleware before this is called).
+export async function updateExpenseServiceOrThrow(
+  id: number,
+  payload: Parameters<typeof updateExpenseService>[1]
+) {
+  const existing = await getExpenseService(id);
+
+  if (!existing) {
+    throw new DomainError("NOT_FOUND", "ExpenseService not found");
+  }
+
+  return updateExpenseService(id, payload);
+}
+
 // ─── Expense helpers ──────────────────────────────────────────────────────────
 
 function buildExpenseItem(
@@ -275,8 +294,11 @@ export async function listExpenses(filters: ExpenseFilters = {}) {
     orderBy: [{ expenseMonth: "desc" }, { name: "asc" }],
   });
 
-  return expenses.map((e) => {
-    const amountApplied = e.transactions.reduce((sum, tx) => sum + Number(tx.amount), 0);
+  return expenses.map((e: (typeof expenses)[number]) => {
+    const amountApplied = e.transactions.reduce(
+      (sum: number, tx: (typeof e.transactions)[number]) => sum + Number(tx.amount),
+      0
+    );
     return buildExpenseItem(e, e._count.transactions, amountApplied);
   });
 }
@@ -296,12 +318,15 @@ export async function getExpense(publicId: string) {
     return null;
   }
 
-  const amountApplied = expense.transactions.reduce((sum, tx) => sum + Number(tx.amount), 0);
+  const amountApplied = expense.transactions.reduce(
+    (sum: number, tx: (typeof expense.transactions)[number]) => sum + Number(tx.amount),
+    0
+  );
 
   // For each expense transaction, fetch the settlement transaction to get
   // description, direction (transactionType), and timestamp (transactionDate)
   const txDetails = await Promise.all(
-    expense.transactions.map(async (et) => {
+    expense.transactions.map(async (et: (typeof expense.transactions)[number]) => {
       const settlement = await db.settlementTransaction.findFirst({
         where: { id: et.transactionId },
         select: {
@@ -325,6 +350,19 @@ export async function getExpense(publicId: string) {
     ...buildExpenseItem(expense, expense._count.transactions, amountApplied),
     transactions: txDetails,
   };
+}
+
+// Thin existence-enforcing wrapper for the `detail` handler: returns the
+// expense or throws DomainError("NOT_FOUND") with the same message the handler
+// used. Keeps getExpense's null-returning contract intact (tested + reused).
+export async function getExpenseOrThrow(publicId: string) {
+  const expense = await getExpense(publicId);
+
+  if (!expense) {
+    throw new DomainError("NOT_FOUND", "Expense not found");
+  }
+
+  return expense;
 }
 
 export async function createExpense(payload: {
@@ -504,6 +542,37 @@ export async function unlinkTransaction(publicId: string, transactionId: number)
   return newAmountApplied;
 }
 
+// Thin existence-enforcing wrappers for the link/unlink handlers: return the
+// recomputed amountApplied or throw DomainError("NOT_FOUND") when the expense
+// is missing (same message the handlers used). The underlying functions keep
+// their null-returning contract (tested + reused).
+export async function linkTransactionOrThrow(
+  publicId: string,
+  transactionId: number,
+  amount?: number
+): Promise<number> {
+  const result = await linkTransaction(publicId, transactionId, amount);
+
+  if (result === null) {
+    throw new DomainError("NOT_FOUND", "Expense not found");
+  }
+
+  return result;
+}
+
+export async function unlinkTransactionOrThrow(
+  publicId: string,
+  transactionId: number
+): Promise<number> {
+  const result = await unlinkTransaction(publicId, transactionId);
+
+  if (result === null) {
+    throw new DomainError("NOT_FOUND", "Expense not found");
+  }
+
+  return result;
+}
+
 // ─── Generate from templates ──────────────────────────────────────────────────
 
 export async function generateExpensesFromTemplates(
@@ -593,12 +662,12 @@ export async function getExpenseStats(filters: ExpenseStatsFilters = {}): Promis
   let periodExpr: ReturnType<typeof sql>;
 
   if (groupBy === "year") {
-    periodExpr = sql`TO_CHAR(TO_DATE("expenseMonth", 'YYYY-MM'), 'YYYY')`;
+    periodExpr = sql`TO_CHAR(TO_DATE("expense_month", 'YYYY-MM'), 'YYYY')`;
   } else if (groupBy === "quarter") {
-    periodExpr = sql`TO_CHAR(TO_DATE("expenseMonth", 'YYYY-MM'), 'YYYY-"Q"Q')`;
+    periodExpr = sql`TO_CHAR(TO_DATE("expense_month", 'YYYY-MM'), 'YYYY-"Q"Q')`;
   } else {
     // month (default)
-    periodExpr = sql`"expenseMonth"`;
+    periodExpr = sql`"expense_month"`;
   }
 
   type StatsQueryResult = {
@@ -615,22 +684,22 @@ export async function getExpenseStats(filters: ExpenseStatsFilters = {}): Promis
       sql<string>`${periodExpr}`.as("period"),
       sql<null | string>`"scope"`.as("scope"),
       sql<number>`COUNT(*)::int`.as("expenseCount"),
-      sql<number>`SUM("amountExpected")::float`.as("totalExpected"),
-      sql<number>`SUM("amountApplied")::float`.as("totalApplied"),
+      sql<number>`SUM("amount_expected")::float`.as("totalExpected"),
+      sql<number>`SUM("amount_applied")::float`.as("totalApplied"),
     ])
     .groupBy([sql`${periodExpr}`, sql`"scope"`])
-    .orderBy(sql`${periodExpr}`, "asc") as unknown as import("kysely").SelectQueryBuilder<
+    .orderBy(sql`${periodExpr}`, "asc") as unknown as SelectQueryBuilder<
     Record<string, Record<string, unknown>>,
     string,
     StatsQueryResult
   >;
 
   if (from !== undefined) {
-    query = query.where(sql`"expenseMonth"`, ">=", from);
+    query = query.where(sql`"expense_month"`, ">=", from);
   }
 
   if (to !== undefined) {
-    query = query.where(sql`"expenseMonth"`, "<=", to);
+    query = query.where(sql`"expense_month"`, "<=", to);
   }
 
   if (scope !== undefined) {

@@ -1,20 +1,11 @@
-import {
-  Button,
-  Calendar,
-  DateField,
-  DatePicker,
-  FieldError,
-  Input,
-  Label,
-  Modal,
-  TextField,
-} from "@heroui/react";
-import { parseDate } from "@internationalized/date";
+import { formatChile } from "@/lib/dates";
+import { Button, FieldError, Label, NumberField } from "@heroui/react";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import dayjs from "dayjs";
 import { Check } from "lucide-react";
 import { useState } from "react";
+import { AppDatePicker } from "@/components/forms/AppDatePicker";
+import { AppModal } from "@/components/ui/AppModal";
 import { toast } from "@/lib/toast-interceptor";
 
 import { personalFinanceApi } from "../api";
@@ -28,12 +19,34 @@ import {
 interface PayInstallmentModalProps {
   readonly creditId: number;
   readonly installment: PersonalCreditInstallment;
+  /** Credit currency (CLP/UF/USD) — drives amount field formatting. */
+  readonly currency: string;
   readonly iconOnly?: boolean;
+}
+
+/**
+ * UF is not an ISO 4217 code, so `Intl.NumberFormat({ style: "currency" })`
+ * throws on it. Mirror `lib/utils.ts::formatCurrency`: UF → decimal w/ 2
+ * fraction digits, everything else → currency (CLP shows 0 decimals).
+ */
+function amountFormatOptions(currency: string): Intl.NumberFormatOptions {
+  if (currency === "UF") {
+    return { style: "decimal", minimumFractionDigits: 2, maximumFractionDigits: 2 };
+  }
+  const fractionDigits = currency === "CLP" ? 0 : 2;
+  return {
+    style: "currency",
+    currency,
+    currencyDisplay: "symbol",
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits,
+  };
 }
 
 export function PayInstallmentModal({
   creditId,
   installment,
+  currency,
   iconOnly = false,
 }: PayInstallmentModalProps) {
   const [open, setOpen] = useState(false);
@@ -56,7 +69,7 @@ export function PayInstallmentModal({
   const form = useForm({
     defaultValues: {
       amount: Number(installment.amount),
-      paymentDate: dayjs().format("YYYY-MM-DD"),
+      paymentDate: formatChile(new Date(), "YYYY-MM-DD"),
     } as PayInstallmentInput,
     onSubmit: ({ value }) => {
       mutation.mutate(value);
@@ -79,137 +92,85 @@ export function PayInstallmentModal({
         {iconOnly ? <Check className="size-4" /> : "Pagar"}
       </Button>
 
-      <Modal>
-        <Modal.Backdrop
-          className="bg-black/40 backdrop-blur-[2px]"
-          isOpen={open}
-          onOpenChange={(isOpen) => {
-            if (!isOpen) {
-              setOpen(false);
-            }
+      <AppModal
+        isOpen={open}
+        onClose={() => {
+          setOpen(false);
+        }}
+        title={`Pagar Cuota #${installment.installmentNumber}`}
+        size="md"
+        footer={
+          <>
+            <Button
+              isDisabled={mutation.isPending}
+              onPress={() => {
+                setOpen(false);
+              }}
+              variant="outline"
+            >
+              Cancelar
+            </Button>
+            <Button isPending={mutation.isPending} type="submit" form="pay-installment-form">
+              {mutation.isPending ? "Pagando..." : "Confirmar Pago"}
+            </Button>
+          </>
+        }
+      >
+        <div className="mb-4 text-muted text-sm">
+          Registrar pago de la cuota vencida el {formatChile(installment.dueDate, "DD/MM/YYYY")}.
+        </div>
+
+        <form
+          id="pay-installment-form"
+          className="space-y-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            void form.handleSubmit();
           }}
         >
-          <Modal.Container placement="center">
-            <Modal.Dialog className="relative w-full max-w-2xl rounded-[28px] bg-background p-6 shadow-2xl">
-              <Modal.Header className="mb-4 font-bold text-primary text-xl">
-                <Modal.Heading>{`Pagar Cuota #${installment.installmentNumber}`}</Modal.Heading>
-              </Modal.Header>
-              <Modal.Body className="mt-2 max-h-[80vh] overflow-y-auto overscroll-contain text-foreground">
-                <div className="mb-4 text-gray-500 text-sm">
-                  Registrar pago de la cuota vencida el{" "}
-                  {dayjs(installment.dueDate, "YYYY-MM-DD").format("DD/MM/YYYY")}.
-                </div>
+          <form.Field name="amount">
+            {(field) => (
+              <NumberField
+                isInvalid={field.state.meta.errors.length > 0}
+                isRequired
+                formatOptions={amountFormatOptions(currency)}
+                minValue={0.01}
+                onBlur={field.handleBlur}
+                onChange={(value) => field.handleChange(value ?? 0)}
+                value={field.state.value}
+              >
+                <Label>Monto Pagado</Label>
+                <NumberField.Group className="grid-cols-1">
+                  <NumberField.Input />
+                </NumberField.Group>
+                {field.state.meta.errors.length > 0 && (
+                  <FieldError>{field.state.meta.errors.map(String).join(", ")}</FieldError>
+                )}
+              </NumberField>
+            )}
+          </form.Field>
 
-                <form
-                  className="space-y-4"
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    void form.handleSubmit();
-                  }}
-                >
-                  <form.Field name="amount">
-                    {(field) => (
-                      <div>
-                        <TextField
-                          isInvalid={field.state.meta.errors.length > 0}
-                          isRequired
-                          type="number"
-                          value={String(field.state.value)}
-                          onChange={(v) => field.handleChange(Number.parseFloat(v))}
-                        >
-                          <Label>Monto Pagado</Label>
-                          <Input onBlur={field.handleBlur} />
-                          {field.state.meta.errors.length > 0 && (
-                            <FieldError>
-                              {field.state.meta.errors.map(String).join(", ")}
-                            </FieldError>
-                          )}
-                        </TextField>
-                      </div>
-                    )}
-                  </form.Field>
-
-                  <form.Field name="paymentDate">
-                    {(field) => (
-                      <div>
-                        <DatePicker
-                          isRequired
-                          onBlur={field.handleBlur}
-                          onChange={(value) => {
-                            field.handleChange(value?.toString() ?? "");
-                          }}
-                          value={field.state.value ? parseDate(field.state.value) : undefined}
-                        >
-                          <Label>Fecha de Pago</Label>
-                          <DateField.Group>
-                            <DateField.InputContainer>
-                              <DateField.Input>
-                                {(segment) => <DateField.Segment segment={segment} />}
-                              </DateField.Input>
-                            </DateField.InputContainer>
-                            <DateField.Suffix>
-                              <DatePicker.Trigger>
-                                <DatePicker.TriggerIndicator />
-                              </DatePicker.Trigger>
-                            </DateField.Suffix>
-                          </DateField.Group>
-                          <DatePicker.Popover>
-                            <Calendar aria-label="Fecha de pago">
-                              <Calendar.Header>
-                                <Calendar.YearPickerTrigger>
-                                  <Calendar.YearPickerTriggerHeading />
-                                  <Calendar.YearPickerTriggerIndicator />
-                                </Calendar.YearPickerTrigger>
-                                <Calendar.NavButton slot="previous" />
-                                <Calendar.NavButton slot="next" />
-                              </Calendar.Header>
-                              <Calendar.Grid>
-                                <Calendar.GridHeader>
-                                  {(day) => <Calendar.HeaderCell>{day}</Calendar.HeaderCell>}
-                                </Calendar.GridHeader>
-                                <Calendar.GridBody>
-                                  {(date) => <Calendar.Cell date={date} />}
-                                </Calendar.GridBody>
-                              </Calendar.Grid>
-                              <Calendar.YearPickerGrid>
-                                <Calendar.YearPickerGridBody>
-                                  {({ year }) => <Calendar.YearPickerCell year={year} />}
-                                </Calendar.YearPickerGridBody>
-                              </Calendar.YearPickerGrid>
-                            </Calendar>
-                          </DatePicker.Popover>
-                        </DatePicker>
-
-                        {field.state.meta.errors.length > 0 && (
-                          <p className="mt-1 text-danger text-xs">
-                            {field.state.meta.errors.map(String).join(", ")}
-                          </p>
-                        )}
-                      </div>
-                    )}
-                  </form.Field>
-
-                  <div className="mt-6 flex justify-end gap-3">
-                    <Button
-                      isDisabled={mutation.isPending}
-                      onPress={() => {
-                        setOpen(false);
-                      }}
-                      variant="outline"
-                    >
-                      Cancelar
-                    </Button>
-                    <Button isPending={mutation.isPending} type="submit">
-                      {mutation.isPending ? "Pagando..." : "Confirmar Pago"}
-                    </Button>
-                  </div>
-                </form>
-              </Modal.Body>
-            </Modal.Dialog>
-          </Modal.Container>
-        </Modal.Backdrop>
-      </Modal>
+          <form.Field name="paymentDate">
+            {(field) => (
+              <AppDatePicker
+                label="Fecha de Pago"
+                isRequired
+                onBlur={field.handleBlur}
+                onChange={(value) => {
+                  field.handleChange(value);
+                }}
+                value={field.state.value}
+                errorMessage={
+                  field.state.meta.errors.length > 0
+                    ? field.state.meta.errors.map(String).join(", ")
+                    : undefined
+                }
+              />
+            )}
+          </form.Field>
+        </form>
+      </AppModal>
     </>
   );
 }

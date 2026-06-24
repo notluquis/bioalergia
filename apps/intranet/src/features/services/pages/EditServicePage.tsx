@@ -1,8 +1,8 @@
+import { formatChile } from "@/lib/dates";
 import { Alert, Button, Description, Surface } from "@heroui/react";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { useStore } from "@tanstack/react-store";
-import dayjs from "dayjs";
 import { useMemo, useState } from "react";
 import {
   fetchServiceDetail,
@@ -14,6 +14,7 @@ import { ServiceForm } from "@/features/services/components/ServiceForm";
 import { ServiceScheduleAccordion } from "@/features/services/components/ServiceScheduleAccordion";
 import { ServiceScheduleTable } from "@/features/services/components/ServiceScheduleTable";
 import { SkipScheduleModal } from "@/features/services/components/SkipScheduleModal";
+import { serviceKeys } from "@/features/services/queries";
 import { servicesActions, servicesStore } from "@/features/services/store";
 import type { CreateServicePayload, ServiceDetailResponse } from "@/features/services/types";
 import { fmtCLP } from "@/lib/format";
@@ -35,17 +36,13 @@ export function ServiceEditPage() {
       }
       return fetchServiceDetail(id);
     },
-    queryKey: ["service-detail", id],
+    queryKey: serviceKeys.detail(id),
   });
 
   // Use REST API mutation for service updates (ZenStack has strict Decimal type requirements)
   const updateMutation = useMutation({
     mutationFn: (payload: CreateServicePayload) => updateService(id, payload),
-    onSuccess: () =>
-      Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["service-detail", id] }),
-        queryClient.invalidateQueries({ queryKey: ["services-audit"] }),
-      ]),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: serviceKeys.detail(id) }),
   });
 
   const handleRegenerate = async (
@@ -54,7 +51,7 @@ export function ServiceEditPage() {
   ) => {
     try {
       const updated = await regenerateServiceSchedules(serviceId, payload ?? {});
-      queryClient.setQueryData(["service-detail", id], updated);
+      queryClient.setQueryData(serviceKeys.detail(id), updated);
       setSaveMessage("Proyecciones regeneradas correctamente.");
     } catch (error_) {
       console.error("Regenerate failed:", error_);
@@ -107,7 +104,7 @@ export function ServiceEditPage() {
       {
         helper: "Registro en base de datos",
         label: "Última actualización",
-        value: dayjs(service.updatedAt).tz().format("DD MMM YYYY HH:mm"),
+        value: formatChile(service.updatedAt, "DD MMM YYYY HH:mm"),
       },
     ];
   }, [detail]);
@@ -116,12 +113,12 @@ export function ServiceEditPage() {
     const { service } = detail;
     const items: { date: string; description?: string; title: string }[] = [
       {
-        date: dayjs(service.createdAt).tz().format("DD MMM YYYY HH:mm"),
+        date: formatChile(service.createdAt, "DD MMM YYYY HH:mm"),
         description: "Servicio registrado en la plataforma",
         title: "Creación",
       },
       {
-        date: dayjs(service.updatedAt).tz().format("DD MMM YYYY HH:mm"),
+        date: formatChile(service.updatedAt, "DD MMM YYYY HH:mm"),
         description: "Datos del servicio actualizados",
         title: "Última modificación",
       },
@@ -129,7 +126,7 @@ export function ServiceEditPage() {
 
     if (service.overdueCount > 0) {
       items.push({
-        date: dayjs().format("DD MMM YYYY"),
+        date: formatChile(new Date(), "DD MMM YYYY"),
         description: `${service.overdueCount} cuotas requieren revisión`,
         title: "Cuotas vencidas",
       });
@@ -256,7 +253,9 @@ export function ServiceEditPage() {
               <div className="flex justify-end">
                 <Button
                   isDisabled={updateMutation.isPending}
-                  onPress={() => handleRegenerate(String(service.id))}
+                  onPress={() => {
+                    void handleRegenerate(String(service.id));
+                  }}
                   variant="secondary"
                 >
                   Regenerar cronograma

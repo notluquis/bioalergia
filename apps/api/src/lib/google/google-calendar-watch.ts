@@ -3,7 +3,7 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { db } from "@finanzas/db";
 import { calendar, type calendar_v3 } from "@googleapis/calendar";
-import { JWT } from "google-auth-library";
+import { GoogleAuth } from "google-auth-library";
 import { logEvent, logWarn } from "../logger.ts";
 
 const CALENDAR_SCOPES = ["https://www.googleapis.com/auth/calendar.readonly"];
@@ -14,18 +14,34 @@ const CREDENTIALS_PATH = path.resolve(
   "credentials.json"
 );
 
+// Canonical route path — MUST match the mount in app.ts:
+//   app.route("/api/webhooks/google", googleCalendarWebhookRoutes) + .post("/calendar")
+// Drift here = Google pushes to a dead URL → 404 → silent webhook loss.
+const WEBHOOK_PATH = "/api/webhooks/google/calendar";
+
 function resolveWebhookEndpoint() {
-  const explicit = process.env.GOOGLE_CALENDAR_WEBHOOK_URL?.trim();
-  if (explicit) {
-    return explicit;
+  // Take only the ORIGIN and always append WEBHOOK_PATH, so a typo'd path in
+  // GOOGLE_CALENDAR_WEBHOOK_URL (e.g. /api/webhooks/google-calendar) can't drift
+  // from the actual route and 404 Google's push notifications.
+  // Priority: explicit env → RAILWAY_PUBLIC_DOMAIN (always set by Railway, points
+  // to THIS api service) → PUBLIC_URL → localhost.
+  // NOTE: PUBLIC_URL now points at the api host (api.bioalergia.cl), so it's a
+  // valid fallback; RAILWAY_PUBLIC_DOMAIN still self-heals if the explicit env
+  // is stale (e.g. an old *.up.railway.app value).
+  const railwayDomain = process.env.RAILWAY_PUBLIC_DOMAIN?.trim();
+  const base =
+    process.env.GOOGLE_CALENDAR_WEBHOOK_URL?.trim() ||
+    (railwayDomain ? `https://${railwayDomain}` : undefined) ||
+    process.env.PUBLIC_URL?.trim();
+  if (base) {
+    try {
+      return `${new URL(base).origin}${WEBHOOK_PATH}`;
+    } catch {
+      return `${base.replace(/\/+$/, "")}${WEBHOOK_PATH}`;
+    }
   }
 
-  const publicUrl = process.env.PUBLIC_URL?.trim();
-  if (publicUrl) {
-    return `${publicUrl.replace(/\/$/, "")}/api/webhooks/google/calendar`;
-  }
-
-  return "http://localhost:3000/api/webhooks/google/calendar";
+  return `http://localhost:3000${WEBHOOK_PATH}`;
 }
 
 const WEBHOOK_ENDPOINT = resolveWebhookEndpoint();
@@ -80,9 +96,8 @@ async function getCalendarClient(): Promise<CalendarClient | null> {
     return null;
   }
 
-  const auth = new JWT({
-    email: clientEmail,
-    key: privateKey,
+  const auth = new GoogleAuth({
+    credentials: { client_email: clientEmail, private_key: privateKey },
     scopes: CALENDAR_SCOPES,
   });
 
@@ -447,7 +462,7 @@ type SetupRetryOptions = {
 
 let setupInFlight = false;
 
-export function scheduleWatchChannelSetup(options: SetupRetryOptions = {}) {
+export function scheduleWatchChannelSetup(options: SetupRetryOptions = {}): void {
   const {
     initialDelayMs = 5_000,
     maxDelayMs = 60 * 60 * 1_000,

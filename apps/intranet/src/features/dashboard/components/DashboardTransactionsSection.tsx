@@ -1,4 +1,4 @@
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseQueries } from "@tanstack/react-query";
 
 import { dashboardKeys } from "../queries";
 import { DashboardChart } from "./DashboardChart";
@@ -9,8 +9,10 @@ interface Props {
   statsParams: { from: string; to: string };
 }
 export function DashboardTransactionsSection({ statsParams }: Props) {
-  const { data: stats } = useSuspenseQuery(dashboardKeys.stats(statsParams));
-  const { data: recentMovements } = useSuspenseQuery(dashboardKeys.recentMovements());
+  // Parallel suspense — fire stats and recent movements at once (no waterfall)
+  const [{ data: stats }, { data: recentMovements }] = useSuspenseQueries({
+    queries: [dashboardKeys.stats(statsParams), dashboardKeys.recentMovements()],
+  });
 
   const rawTotals = stats.totals ?? {};
   const totalIn = rawTotals.in ?? rawTotals.IN ?? 0;
@@ -25,6 +27,7 @@ export function DashboardTransactionsSection({ statsParams }: Props) {
         <MetricCard accent="rose" loading={false} title="Egresos" value={totals.out} />
         <MetricCard
           accent={totals.net >= 0 ? "emerald" : "rose"}
+          badgeLabel={totals.net >= 0 ? "Superávit" : "Déficit"}
           loading={false}
           title="Neto"
           value={totals.net}
@@ -35,9 +38,11 @@ export function DashboardTransactionsSection({ statsParams }: Props) {
         <div className="space-y-5">
           <DashboardChart data={stats.monthly ?? []} loading={false} />
         </div>
-        <aside className="space-y-5">
+        {/* <section> instead of <aside> — this widget lives inside <main>
+            and a complementary landmark must be top-level (WCAG 1.3.1). */}
+        <section aria-label="Movimientos recientes" className="space-y-5">
           <RecentMovementsWidget rows={recentMovements} />
-        </aside>
+        </section>
       </div>
     </div>
   );

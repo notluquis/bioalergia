@@ -1,20 +1,16 @@
-import type { Shipment } from "@finanzas/db";
 import { db } from "@finanzas/db";
+import type { createShipmentInputSchema, shipmentSchema } from "@finanzas/orpc-contracts/shipments";
 import { Decimal } from "decimal.js";
 
-type SerializedShipment = Omit<
-  Shipment,
-  "cashOnDelivery" | "declaredValue" | "weight" | "height" | "width" | "length"
-> & {
-  cashOnDelivery: number;
-  declaredValue: number;
-  weight: number;
-  height: number;
-  width: number;
-  length: number;
-};
+// El row de findMany ahora trae todos los campos (cliente sin colapsar), pero
+// el shape de SerializedShipment diverge del contrato Zod en tipos de fecha
+// (Date↔string/unknown) — no es un tema de rows lossy. El contrato es la
+// autoridad del API, así que SerializedShipment = z.infer<shipmentSchema> y
+// serializeShipment castea (el runtime cumple el shape).
+type ShipmentRow = Awaited<ReturnType<typeof db.shipment.findMany>>[number];
+type SerializedShipment = z.infer<typeof shipmentSchema>;
 
-function serializeShipment(s: Shipment): SerializedShipment {
+function serializeShipment(s: ShipmentRow): SerializedShipment {
   return {
     ...s,
     cashOnDelivery: Number(s.cashOnDelivery),
@@ -23,12 +19,19 @@ function serializeShipment(s: Shipment): SerializedShipment {
     height: Number(s.height),
     width: Number(s.width),
     length: Number(s.length),
-  };
+    additionalServicesCost: Number(s.additionalServicesCost ?? 0),
+  } as SerializedShipment;
 }
-import { chilexpressConfig } from "../config.ts";
+import { chilexpressConfig } from "../lib/config.ts";
+import { DomainError } from "../lib/errors.ts";
+import { deleteSetting, getSetting, loadSettings, updateSetting } from "../lib/settings.ts";
 import {
   createTransportOrder,
+  closeCertificate,
+  createCertificate,
+  friendlyChilexpressError,
   georeferenceAddress,
+  getCertificate,
   getCommercialOffices,
   getCommunes,
   getNearbyOffices,
@@ -37,9 +40,12 @@ import {
   quoteCourier,
   reprintLabel,
   searchStreets,
+  trackBulkTransportOrders,
   trackTransportOrder,
 } from "../modules/chilexpress/client.ts";
-import type { CreateShipmentInput } from "../orpc/shipments.ts";
+import type { z } from "zod";
+
+export type CreateShipmentInput = z.infer<typeof createShipmentInputSchema>;
 
 function requireCxConfig() {
   if (!chilexpressConfig) {
@@ -96,7 +102,7 @@ export async function geocodeAddress(input: {
 export async function reprintShipmentLabel(shipmentId: number) {
   const cfg = requireCxConfig();
   const shipment = await db.shipment.findUnique({ where: { id: shipmentId } });
-  if (!shipment) throw new Error("Shipment no encontrado");
+  if (!shipment) throw new DomainError("NOT_FOUND", "Shipment no encontrado");
   const result = await reprintLabel(cfg, {
     transportOrderNumber: shipment.otNumber,
     labelType: shipment.labelType ?? 2,
@@ -113,16 +119,185 @@ export async function reprintShipmentLabel(shipmentId: number) {
 export async function refreshShipmentTracking(shipmentId: number) {
   const cfg = requireCxConfig();
   const shipment = await db.shipment.findUnique({ where: { id: shipmentId } });
-  if (!shipment) throw new Error("Shipment no encontrado");
-  const tracking = await trackTransportOrder(cfg, shipment.otNumber);
+  if (!shipment) throw new DomainError("NOT_FOUND", "Shipment no encontrado");
+  // Spec /tracking exige transportOrderNumber + reference + rut + showTrackingEvents.
+  // shipment.reference es el deliveryReference que mandamos al crear la OT;
+  // companyRut viene de la env CHILEXPRESS_COMPANY_RUT (en sandbox = 96756430).
+  const tracking = await trackTransportOrder(cfg, {
+    transportOrderNumber: shipment.otNumber,
+    reference: shipment.reference ?? undefined,
+    rut: cfg.companyRut,
+    showTrackingEvents: 1,
+  });
   await db.shipment.update({
     where: { id: shipmentId },
     data: {
-      trackingStatus: tracking.statusDescription ?? null,
+      trackingStatus: tracking.status ?? tracking.statusDescription ?? null,
       trackingUpdatedAt: new Date(),
     },
   });
   return tracking;
+}
+
+/**
+ * Cancela un envío. Chilexpress NO expone anulación de OT en su REST API, así
+ * que es una cancelación LOCAL: marca status=CANCELLED para que no se imprima
+ * ni se considere despachado. La OT en Chilexpress queda sin usar (no se cobra
+ * mientras no se entregue el bulto al courier).
+ */
+export async function cancelShipment(shipmentId: number) {
+  const shipment = await db.shipment.findUnique({ where: { id: shipmentId } });
+  if (!shipment) throw new DomainError("NOT_FOUND", "Shipment no encontrado");
+  const updated = await db.shipment.update({
+    where: { id: shipmentId },
+    data: { status: "CANCELLED" },
+  });
+  return serializeShipment(updated);
+}
+
+/**
+ * Refresca el estado de TODAS las OTs en una sola request a Chilexpress
+ * (/tracking/bulk) en vez de N consultas. Matchea por reference
+ * (deliveryReference) y actualiza trackingStatus + trackingUpdatedAt.
+ */
+export async function refreshAllTracking(): Promise<{ updated: number; total: number }> {
+  const cfg = requireCxConfig();
+  const shipments = await db.shipment.findMany({
+    select: { id: true, otNumber: true, reference: true },
+  });
+  if (shipments.length === 0) return { updated: 0, total: 0 };
+
+  const results = await trackBulkTransportOrders(cfg, {
+    rut: cfg.companyRut ?? "",
+    showTrackingEvents: false,
+    items: shipments.map((s) => ({
+      transportOrderNumber: s.otNumber,
+      reference: s.reference ?? "",
+    })),
+  });
+
+  // Chilexpress devuelve el reference (deliveryReference) en cada entry; con eso
+  // matcheamos a nuestro shipment. Actualizamos solo los que traen estado.
+  const byReference = new Map(
+    shipments.filter((s) => s.reference).map((s) => [s.reference as string, s.id])
+  );
+  let updated = 0;
+  for (const r of results) {
+    const id = r.reference ? byReference.get(r.reference) : undefined;
+    const status = r.status ?? r.statusDescription;
+    if (id == null || !status) continue;
+    await db.shipment.update({
+      where: { id },
+      data: { trackingStatus: status, trackingUpdatedAt: new Date() },
+    });
+    updated++;
+  }
+  return { updated, total: shipments.length };
+}
+
+// ─── Manifiesto (certificado de transporte del día) ──────────────────────────
+//
+// El certificado activo se persiste como Setting KV (no requiere migración).
+// Mientras hay uno abierto, cada OT creada referencia su certificateNumber en
+// el header → quedan agrupadas en ese manifiesto. Al cerrar se limpia el KV y
+// se obtiene el PDF.
+const ACTIVE_CERT_KEY = "shipments.activeCertificate";
+
+type ActiveManifest = { certificateNumber: string; openedAt: string };
+
+/** Lee el certificado actualmente abierto desde el Setting KV (o null). */
+export async function getActiveManifest(): Promise<ActiveManifest | null> {
+  const raw = await getSetting(ACTIVE_CERT_KEY);
+  if (!raw) return null;
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (
+      parsed &&
+      typeof parsed === "object" &&
+      "certificateNumber" in parsed &&
+      typeof (parsed as ActiveManifest).certificateNumber === "string"
+    ) {
+      return parsed as ActiveManifest;
+    }
+  } catch {
+    // KV corrupto → tratar como sin manifiesto activo.
+  }
+  return null;
+}
+
+/**
+ * Abre el manifiesto del día: si ya hay uno activo lo devuelve (idempotente),
+ * si no crea un certificado en Chilexpress y lo persiste. Las OTs creadas
+ * mientras esté abierto referencian su certificateNumber en el header.
+ */
+export async function openShipmentCertificate() {
+  const cfg = requireCxConfig();
+  const existing = await getActiveManifest();
+  if (existing) {
+    return { ...existing, alreadyOpen: true as const };
+  }
+  const result = await createCertificate(cfg, cfg.clientRut);
+  const openedAt = new Date().toISOString();
+  await updateSetting(
+    ACTIVE_CERT_KEY,
+    JSON.stringify({ certificateNumber: result.certificateNumber, openedAt })
+  );
+  return {
+    certificateNumber: result.certificateNumber,
+    statusDescription: result.statusDescription,
+    openedAt,
+    alreadyOpen: false as const,
+  };
+}
+
+/**
+ * Cierra el manifiesto y devuelve el PDF (base64) + detalle por
+ * producto/servicio. Operación de fin-de-día: una vez cerrado, las OTs
+ * asociadas no se pueden alterar. Si no se pasa certificateNumber se usa el
+ * manifiesto activo. Limpia el KV para que las próximas OTs no lo referencien.
+ */
+export async function closeShipmentCertificate(input: {
+  certificateNumber?: string | number;
+  certificateType?: 1 | 2;
+  dropNumber?: number;
+}) {
+  const cfg = requireCxConfig();
+  const active = await getActiveManifest();
+  const certificateNumber = input.certificateNumber ?? active?.certificateNumber;
+  if (certificateNumber == null) {
+    throw new DomainError("CONFLICT", "No hay manifiesto activo para cerrar");
+  }
+  const result = await closeCertificate(cfg, {
+    certificateNumber,
+    certificateType: input.certificateType,
+    dropNumber: input.dropNumber,
+  });
+  // Diag: log el shape del response (sin el base64 gigante) para cazar qué
+  // campo rompía la validación de salida. Quitar tras estabilizar.
+  console.error(
+    "[shipments.closeCertificate.raw]",
+    JSON.stringify(
+      Object.fromEntries(
+        Object.entries(result as Record<string, unknown>).map(([k, v]) => [
+          k,
+          k === "imagePdf" || k === "binaryImage"
+            ? `<${typeof v}:${typeof v === "string" ? v.length : 0}>`
+            : v,
+        ])
+      )
+    )
+  );
+  // Solo limpiar el KV si cerramos el que estaba activo.
+  if (active && String(active.certificateNumber) === String(certificateNumber)) {
+    await deleteSetting(ACTIVE_CERT_KEY);
+  }
+  return result;
+}
+
+/** Reconsulta un certificado cerrado para obtener su PDF (base64) y detalle. */
+export async function getShipmentCertificate(certificateNumber: string | number) {
+  const cfg = requireCxConfig();
+  return getCertificate(cfg, certificateNumber);
 }
 
 export async function quoteShipment(input: {
@@ -148,9 +323,41 @@ export async function quoteShipment(input: {
     contentType: 1,
     declaredWorth: String(Math.round(input.declaredValue)),
     deliveryTime: 0,
+    // Pasar la TCC enruta a /rates/business → la respuesta trae
+    // `serviceValueDiscount` con el precio rebajado por contrato de empresa.
+    // Caer al cotizador estándar solo si la cuenta no tiene TCC configurada.
+    customerCardNumber: cfg.clientRut || undefined,
   });
 
-  return response.data?.courierServiceOptions ?? [];
+  const services = response.data?.courierServiceOptions ?? [];
+  // Chilexpress devuelve tipos mixtos (string|number, "true"/"1"/bool) según
+  // tier y env. Normalizar al shape del contrato (cxServiceOptionSchema) acá,
+  // en el boundary, para que el output validator no caiga y el wizard reciba
+  // tipos limpios. Si la respuesta vino de /rates/business, usar
+  // serviceValueDiscount (precio efectivo a cobrar) en vez de serviceValue.
+  return services.map((s) => {
+    const effectiveValue =
+      s.serviceValueDiscount != null && s.serviceValueDiscount !== ""
+        ? s.serviceValueDiscount
+        : s.serviceValue;
+    return {
+      serviceTypeCode: String(s.serviceTypeCode),
+      serviceDescription: s.serviceDescription,
+      serviceValue: Number(effectiveValue),
+      deliveryTime: s.deliveryTime,
+      didUseVolumetricWeight: coerceBool(s.didUseVolumetricWeight),
+      finalWeight: s.finalWeight == null ? undefined : Number(s.finalWeight),
+      conditions: s.conditions,
+      deliveryType: s.deliveryType,
+    };
+  });
+}
+
+/** Chilexpress manda bool como `true`/`false` o "true"/"1"/"0". Normalizar. */
+function coerceBool(value: boolean | string | undefined): boolean | undefined {
+  if (value == null) return undefined;
+  if (typeof value === "boolean") return value;
+  return value === "true" || value === "1";
 }
 
 export async function createShipment(input: CreateShipmentInput) {
@@ -167,14 +374,15 @@ export async function createShipment(input: CreateShipmentInput) {
   let observation: string;
   if (input.deliveryMode === "home") {
     if (!input.addressId) {
-      throw new Error("Para despacho a domicilio se requiere addressId");
+      throw new DomainError("BAD_REQUEST", "Para despacho a domicilio se requiere addressId");
     }
     const address = await db.address.findUnique({ where: { id: input.addressId } });
     if (!address) {
-      throw new Error("Dirección no encontrada");
+      throw new DomainError("NOT_FOUND", "Dirección no encontrada");
     }
     if (!address.coverageCode) {
-      throw new Error(
+      throw new DomainError(
+        "BAD_REQUEST",
         "La dirección guardada no tiene coverageCode de Chilexpress; vuelve a editarla y selecciona la comuna"
       );
     }
@@ -187,7 +395,10 @@ export async function createShipment(input: CreateShipmentInput) {
     observation = address.reference ?? "";
   } else {
     if (!input.commercialOfficeId) {
-      throw new Error("Para despacho a sucursal se requiere commercialOfficeId");
+      throw new DomainError(
+        "BAD_REQUEST",
+        "Para despacho a sucursal se requiere commercialOfficeId"
+      );
     }
     streetName = "A sucursal";
     streetNumber = "0";
@@ -197,64 +408,167 @@ export async function createShipment(input: CreateShipmentInput) {
     commercialOfficeId = input.commercialOfficeId;
     observation = "";
   }
+  // commercialOfficeId SOLO cuando la entrega es en sucursal. El spec lo tipa
+  // como integer; mandar "" en despacho a domicilio rompe el binding del
+  // address en Chilexpress → devuelve -7 "ingrese el tipo de dirección" (que
+  // es engañoso: el addressType estaba bien, el address completo no parseó).
   const deliveryAddress = {
+    countyCoverageCode: coverageRegionCode,
     streetName,
     streetNumber,
     supplement,
-    county: { coverageRegionCode },
-    isOrigin: false as const,
+    addressType: "DEST" as const,
     deliveryOnCommercialOffice,
-    commercialOfficeId,
     observation,
+    ...(deliveryOnCommercialOffice && commercialOfficeId ? { commercialOfficeId } : {}),
   };
 
-  const response = await createTransportOrder(cfg, {
+  // Si hay un manifiesto abierto, la OT lo referencia para quedar agrupada.
+  // Sin manifiesto activo se manda 0 (OT suelta, comportamiento legacy).
+  const activeManifest = await getActiveManifest();
+  const headerCertificateNumber = activeManifest ? Number(activeManifest.certificateNumber) : 0;
+
+  // Chilexpress exige contacto destinatario (D) Y remitente (R). El remitente
+  // es la clínica: tomamos nombre/teléfono/correo de Settings (con fallback).
+  const brand = await loadSettings();
+  const senderName = brand.orgName || "Bioalergia";
+  const senderPhone = (brand.orgPhone || "").replace(/\D/g, "") || "000000000";
+  const senderMail = brand.supportEmail || "contacto@bioalergia.cl";
+
+  // Referencia única del envío (deliveryReference == groupReference para un
+  // solo bulto). Calcularla UNA vez: con dos Date.now() podían diferir por 1ms.
+  // Chilexpress la retorna en tracking + cierre de certificado.
+  const shipmentRef = `BIO-${input.patientId}-${Math.floor(Date.now() / 1000)}`;
+
+  // Dirección de devolución (DEV) de la clínica. Chilexpress exige una DEST +
+  // una DEV en cada OT (el ejemplo del spec siempre manda ambas); sin la DEV
+  // devuelve -7 "ingrese el tipo de dirección". Se configura en Settings (DB):
+  // shipments.return.{street,number,coverageCode}. coverage cae a originCoverageCode.
+  const returnAddress = {
+    countyCoverageCode: brand.shipmentReturnCoverageCode || cfg.originCoverageCode,
+    streetName: brand.shipmentReturnStreet || brand.orgAddress || senderName,
+    streetNumber: brand.shipmentReturnNumber || "1",
+    supplement: brand.shipmentReturnSupplement || "",
+    addressType: "DEV" as const,
+    deliveryOnCommercialOffice: false,
+    observation: "",
+  };
+
+  const otPayload = {
     header: {
-      certificateNumber: 0,
-      clientRut: cfg.clientRut,
+      certificateNumber: Number.isFinite(headerCertificateNumber) ? headerCertificateNumber : 0,
+      customerCardNumber: cfg.clientRut,
       countyOfOriginCoverageCode: cfg.originCoverageCode,
       labelType: 2,
     },
     details: [
       {
-        addresses: {
-          deliveryAddress,
-        },
-        contacts: {
-          recipient: {
+        // ChileExpress espera arrays (IList<TransportOrderAddress/Contact>),
+        // no objetos con keys nombradas — devolvía 400 "requires a JSON array".
+        // DEST (entrega) + DEV (devolución) — ambas obligatorias; el request log
+        // confirmó que mandar solo DEST devuelve -7.
+        addresses: [deliveryAddress, returnAddress],
+        contacts: [
+          {
             name: input.recipientName,
             phoneNumber: input.recipientPhone,
             mail: input.recipientEmail ?? "",
+            contactType: "D" as const,
           },
-        },
+          {
+            // Remitente (R) — la clínica. Spec lo marca obligatorio junto al D.
+            name: senderName,
+            phoneNumber: senderPhone,
+            mail: senderMail,
+            contactType: "R" as const,
+          },
+        ],
         packages: [
           {
-            weight: input.weight,
-            height: input.height,
-            width: input.width,
-            length: input.length,
+            // Spec (Package): weight/height/width/length como string con punto.
+            weight: String(input.weight),
+            height: String(input.height),
+            width: String(input.width),
+            length: String(input.length),
+            // Código del servicio elegido en cotización (3=EXPRESS, etc).
             serviceDeliveryCode: input.serviceTypeCode,
+            // productCode: 1 = Documento, 3 = Encomienda. Antes "2" (inválido).
+            productCode: "3",
+            // deliveryReference y groupReference obligatorios (spec). Mismo valor
+            // para envío de un solo bulto. Chilexpress los retorna en tracking +
+            // cierre de certificado para conciliar con nuestra DB.
+            deliveryReference: shipmentRef,
+            groupReference: shipmentRef,
             declaredValue: String(Math.round(input.declaredValue)),
-            cashOnDelivery: String(Math.round(input.cashOnDelivery)),
-            descriptionOfContent: input.contentDescription,
-            productCode: "2",
-            multivariateCode: input.serviceTypeCode,
-            numberOfPackages: 1,
+            // declaredContent: 1 Personales, 2 Educación, 4 Vestuario, 5 Otros,
+            // 7 Tecnología. Inmunoterapia → "Otros".
+            declaredContent: "5",
+            // receivableAmountInDelivery: monto a cobrar contra entrega (COD).
+            // Solo si > 0; inmunoterapia normalmente es prepagada.
+            ...(input.cashOnDelivery > 0
+              ? { receivableAmountInDelivery: Math.round(input.cashOnDelivery) }
+              : {}),
+            ...(input.additionalServiceCodes && input.additionalServiceCodes.length > 0
+              ? {
+                  additionalServices: input.additionalServiceCodes.map((c) => ({
+                    serviceTypeCode: c,
+                  })),
+                }
+              : {}),
           },
         ],
       },
     ],
-  });
+  };
+
+  // Diag temporal: log del request EXACTO que recibe Chilexpress (sin base64;
+  // el request no lo tiene). Para cazar por qué -7 con addressType correcto.
+  console.error("[shipments.createOT.request]", JSON.stringify(otPayload));
+
+  const response = await createTransportOrder(cfg, otPayload);
 
   const result = response.data?.detail?.[0];
   if (!result?.transportOrderNumber) {
-    throw new Error(
-      `ChileExpress no devolvió OT. Mensaje: ${response.statusDescription ?? response.message ?? "sin detalles"}`
+    // Chilexpress devuelve 200 OK con el motivo real a NIVEL DE DETALLE
+    // (response.data.detail[i].statusDescription); el statusDescription
+    // top-level solo dice "ninguno de los detalles fue exitoso". Preferir
+    // el del detalle, que es accionable (cobertura inválida, servicio no
+    // habilitado para el destino, peso/dimensión fuera de rango, etc).
+    const detailReason = response.data?.detail?.[0]?.statusDescription;
+    const topReason = response.statusDescription ?? response.message;
+    const raw = detailReason ?? topReason ?? "sin detalles";
+    // Log estructurado de la respuesta completa: bug prod-only, sin esto no
+    // hay forma de saber qué detalle rechazó Chilexpress (regla logs-first).
+    console.error(
+      "[shipments.createOT.failed]",
+      JSON.stringify({
+        topStatusCode: response.statusCode,
+        topStatusDescription: topReason,
+        detail: response.data?.detail,
+        sentHeaderCertificate: headerCertificateNumber,
+        coverageCode: input.destinationCoverageCode,
+        serviceTypeCode: input.serviceTypeCode,
+      })
     );
+    const friendly = friendlyChilexpressError(
+      200,
+      JSON.stringify({ statusDescription: raw, statusCode: response.statusCode })
+    );
+    throw new Error(friendly ?? `ChileExpress no generó la OT: ${raw}`);
   }
 
-  const otNumber = result.transportOrderNumber;
+  // Chilexpress devuelve transportOrderNumber como NÚMERO; otNumber es String.
+  const otNumber = String(result.transportOrderNumber);
   const labelBase64 = result.label?.labelData ?? null;
+  // label.labelType en la respuesta es string ("Binary"/"EPL"/"Datos"); nuestro
+  // campo es Int. Guardamos el tipo numérico que solicitamos (2 = binario).
+  const labelTypeNum = typeof result.label?.labelType === "number" ? result.label.labelType : 2;
+  // certificateNumber del header puede venir number o string; el campo Int y el
+  // contrato esperan number. Coercer (null si ausente).
+  const headerCertNum =
+    response.data?.header?.certificateNumber != null
+      ? Number(response.data.header.certificateNumber)
+      : null;
 
   const shipment = await db.shipment.create({
     data: {
@@ -276,11 +590,13 @@ export async function createShipment(input: CreateShipmentInput) {
       commercialOfficeName: input.commercialOfficeName ?? "",
       coverageCode: input.destinationCoverageCode,
       contentDescription: input.contentDescription,
-      certificateNumber: response.data?.header?.certificateNumber ?? null,
+      certificateNumber: headerCertNum,
       reference: result.reference ?? null,
       barcode: result.barcode ?? null,
       labelBase64,
-      labelType: result.label?.labelType ?? null,
+      labelType: labelTypeNum,
+      additionalServiceCodes: input.additionalServiceCodes ?? [],
+      additionalServicesCost: new Decimal(input.additionalServicesCost ?? 0),
       status: "CREATED",
     },
   });
@@ -289,7 +605,7 @@ export async function createShipment(input: CreateShipmentInput) {
     shipment: serializeShipment(shipment),
     otNumber,
     barcode: result.barcode ?? null,
-    certificateNumber: response.data?.header?.certificateNumber ?? null,
+    certificateNumber: headerCertNum,
     labelBase64,
   };
 }

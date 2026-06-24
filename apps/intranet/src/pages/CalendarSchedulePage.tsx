@@ -1,8 +1,6 @@
 import { Button, ButtonGroup, Chip, ListBox, Select, Separator, Surface } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import { getRouteApi } from "@tanstack/react-router";
-import dayjs from "dayjs";
-import isoWeek from "dayjs/plugin/isoWeek";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import React, { useCallback } from "react";
 import { CalendarFiltersPopover } from "@/features/calendar/components/CalendarFiltersPopover";
@@ -18,16 +16,13 @@ import type {
 } from "@/features/doctoralia/types";
 import { useCan } from "@/hooks/use-can";
 import { useDisclosure } from "@/hooks/use-disclosure";
+import { addDays, formatChile, isoWeekday, today as todayISO, weekday } from "@/lib/dates";
 import { numberFormatter } from "@/lib/format";
 import { toTitleCase } from "@/lib/person";
 
 const routeApi = getRouteApi("/_authed/clinical/agenda");
-import "dayjs/locale/es";
 
-dayjs.extend(isoWeek);
-dayjs.locale("es");
-
-const DATE_FORMAT = "YYYY-MM-DD";
+const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 type CalendarSource = "doctoralia" | "google";
 const DOCTORALIA_STANDBY = false;
 
@@ -49,7 +44,19 @@ function mergedEntryToCalendarEventDetail(
       : appointment.serviceColorSchemaId != null
         ? String(appointment.serviceColorSchemaId)
         : null;
+  // Estado real de Doctoralia (attendance + status) → campos que entiende el
+  // event-state genérico. attendance: 3=asistió, 6=no asistió; status: 1=cancelada,
+  // 6=confirmada. Email de cancelación también marca no asistió.
+  const isCancelled =
+    appointment.status === 1 || appointment.attendance === 6 || Boolean(emails.cancellation);
+  const attended = appointment.attendance === 3 ? true : isCancelled ? false : null;
+  const genericStatus = isCancelled
+    ? "cancelled"
+    : appointment.attendance === 3 || appointment.status === 6
+      ? "confirmed"
+      : "needsAction";
   return {
+    attended,
     calendarId: `doctoralia:${appointment.schedule.externalId}`,
     category: null,
     colorId,
@@ -70,7 +77,7 @@ function mergedEntryToCalendarEventDetail(
     startDate: appointment.startAt.toISOString().split("T")[0] ?? null,
     startDateTime: appointment.startAt.toISOString(),
     startTimeZone: null,
-    status: String(appointment.status),
+    status: genericStatus,
     summary: toTitleCase(appointment.title) || appointment.title,
     transparency: null,
     visibility: null,
@@ -175,37 +182,35 @@ function useScheduleRange(params: {
   const actualWeekStart = getActualWeekStart();
   // Type-safe: ensure search.from is string or fallback to current week
   const currentWeekStartStr: string =
-    (typeof search?.from === "string" ? search.from : null) ?? actualWeekStart.format(DATE_FORMAT);
-  const currentDisplayed = dayjs(currentWeekStartStr, DATE_FORMAT);
+    (typeof search?.from === "string" ? search.from : null) ?? actualWeekStart;
+  const valid = ISO_DATE_RE.test(currentWeekStartStr);
 
-  const rangeLabel = currentDisplayed.isValid()
-    ? `${currentDisplayed.format("D MMM")} - ${currentDisplayed.add(5, "day").format("D MMM YYYY")}`
+  const rangeLabel = valid
+    ? `${formatChile(currentWeekStartStr, "D MMM")} - ${formatChile(addDays(currentWeekStartStr, 5), "D MMM YYYY")}`
     : "Seleccionar rango";
-  const isCurrentWeek = currentDisplayed.isSame(actualWeekStart, "day");
-  const isNextWeek = currentDisplayed.isSame(actualWeekStart.add(1, "week"), "day");
+  const isCurrentWeek = currentWeekStartStr === actualWeekStart;
+  const isNextWeek = currentWeekStartStr === addDays(actualWeekStart, 7);
 
   const updateWeek = (newStart: string) => {
-    const start = dayjs(newStart);
-    const end = start.add(6, "day");
     void navigate({
       search: {
         ...search,
-        from: start.format(DATE_FORMAT),
-        to: end.format(DATE_FORMAT),
+        from: newStart,
+        to: addDays(newStart, 6),
       },
     });
   };
 
   const goToPreviousWeek = () => {
-    updateWeek(currentDisplayed.subtract(1, "week").format(DATE_FORMAT));
+    updateWeek(addDays(currentWeekStartStr, -7));
   };
 
   const goToNextWeek = () => {
-    updateWeek(currentDisplayed.add(1, "week").format(DATE_FORMAT));
+    updateWeek(addDays(currentWeekStartStr, 7));
   };
 
   const goToThisWeek = () => {
-    updateWeek(actualWeekStart.format(DATE_FORMAT));
+    updateWeek(actualWeekStart);
   };
 
   return {
@@ -219,11 +224,12 @@ function useScheduleRange(params: {
   };
 }
 
-// Logic moved to validateSearch in route, but we still use it for comparison logic
-const getActualWeekStart = () => {
-  const today = dayjs();
-  const base = today.day() === 0 ? today.add(1, "day") : today;
-  return base.isoWeekday(1);
+// Logic moved to validateSearch in route, but we still use it for comparison logic.
+// Returns the week's Monday as "YYYY-MM-DD" (Sundays roll forward to next Monday).
+const getActualWeekStart = (): string => {
+  const today = todayISO();
+  const base = weekday(today) === 0 ? addDays(today, 1) : today;
+  return addDays(base, -(isoWeekday(base) - 1));
 };
 
 function CalendarSourceSelector({
@@ -458,7 +464,7 @@ function CalendarSchedulePage() {
                 onPress={goToPreviousWeek}
                 variant="outline"
               >
-                <ChevronLeft className="h-4 w-4" />
+                <ChevronLeft className="size-4" />
               </Button>
               <Button
                 className="font-medium text-xs"
@@ -475,7 +481,7 @@ function CalendarSchedulePage() {
                 onPress={goToNextWeek}
                 variant="outline"
               >
-                <ChevronRight className="h-4 w-4" />
+                <ChevronRight className="size-4" />
               </Button>
             </ButtonGroup>
             <div className="hidden items-center gap-2 text-sm sm:flex">

@@ -75,11 +75,11 @@ export function ChecklistRow({
     <Surface className="flex items-start justify-between gap-3 rounded-2xl border border-default-200 px-4 py-3">
       <div className="flex items-start gap-3">
         <div
-          className={`mt-0.5 flex h-9 w-9 items-center justify-center rounded-xl ${
+          className={`mt-0.5 flex items-center justify-center rounded-xl size-9 ${
             ready ? "bg-success/12 text-success" : "bg-warning/12 text-warning"
           }`}
         >
-          <Icon className="h-4 w-4" />
+          <Icon className="size-4" />
         </div>
         <div>
           <p className="font-medium text-sm">{title}</p>
@@ -105,8 +105,8 @@ export function FlowStep({
   return (
     <Surface className="rounded-2xl border border-default-200 px-4 py-3">
       <div className="flex items-start gap-3">
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
-          <Icon className="h-4 w-4" />
+        <div className="flex items-center justify-center rounded-xl bg-primary/10 text-primary size-9">
+          <Icon className="size-4" />
         </div>
         <div className="min-w-0">
           <Description className="font-semibold text-xs text-default-400">{step}</Description>

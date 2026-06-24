@@ -3,7 +3,7 @@ import { startRegistration } from "@simplewebauthn/browser";
 import { useMutation } from "@tanstack/react-query";
 import { Check, Fingerprint, Loader2, Smartphone } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/features/auth/hooks/use-auth";
 import { useConfirmDialog } from "@/context/ConfirmDialogContext";
 import { useToast } from "@/context/ToastContext";
 import {
@@ -209,7 +209,9 @@ export function AccountSettingsPage() {
                   <Button
                     className="text-danger hover:bg-danger/10"
                     isDisabled={disableMfaMutation.isPending}
-                    onPress={handleDisableMfa}
+                    onPress={() => {
+                      void handleDisableMfa();
+                    }}
                     size="sm"
                     variant="outline"
                   >
@@ -314,7 +316,9 @@ export function AccountSettingsPage() {
                   <Button
                     className="text-danger hover:bg-danger/10"
                     isDisabled={deletePasskeyMutation.isPending}
-                    onPress={handleDeletePasskey}
+                    onPress={() => {
+                      void handleDeletePasskey();
+                    }}
                     size="sm"
                     variant="outline"
                   >

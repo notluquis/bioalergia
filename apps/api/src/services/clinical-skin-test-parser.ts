@@ -1,7 +1,20 @@
 import * as XLSX from "xlsx";
 import { validateRut, formatRut } from "../lib/rut.ts";
 
-export const SKIN_TEST_PARSER_VERSION = "2026-05-05.8";
+// 2026-05-27.1: standalone-RUT scan now reaches r16 (was r12, missed clinics
+// with tall logo headers pushing RUT to r13/r14). Bad-DV RUTs surface as
+// `malformed_rut [warning]` instead of `missing_rut [error]` so imports with
+// a typo (transposed body digit, off-by-1 DV, K↔digit confusion) materialize
+// via name+date matching while keeping the raw typo visible for manual fix.
+//
+// 2026-05-25.1: fix cross-panel cell leak in two-column layouts. The allergen
+// name must share the code's panel (adjacent cell or same column block), so a
+// stray metric value (e.g. a control's erythema) can no longer be paired with
+// the next panel's code. normalizeCode now accepts bare 2-letter mezcla/material
+// codes (MH, ME, MO, MP, PC, LT…) that were previously dropped, while still
+// rejecting 3+ letter allergen names. isAllergenNameCell only demotes a section
+// header to a name when the preceding code sits in the same panel.
+export const SKIN_TEST_PARSER_VERSION = "2026-05-27.1";
 
 export interface SkinTestIssue {
   code: string;
@@ -119,7 +132,25 @@ export function parseSkinTestWorksheet(worksheet: XLSX.WorkSheet): ParsedSkinTes
     });
   }
   if (!header.patientRut) {
-    issues.push({ code: "missing_rut", message: "No se encontró RUT válido.", severity: "error" });
+    // A RUT-shaped value may be present but rejected by módulo-11 validation
+    // (data-entry typo: wrong check digit, transposed body digits, K↔digit
+    // confusion). We can't auto-link to a patient with a bad RUT, but we
+    // shouldn't block the whole import — fall back to name+date matching and
+    // surface the malformed value as a warning so a human can fix it.
+    const malformed = extractMalformedRutCandidate(cells);
+    if (malformed) {
+      issues.push({
+        code: "malformed_rut",
+        message: `RUT presente pero con dígito verificador inválido: "${malformed}". Se importará vinculando por nombre y fecha; corregir manualmente.`,
+        severity: "warning",
+      });
+    } else {
+      issues.push({
+        code: "missing_rut",
+        message: "No se encontró RUT válido.",
+        severity: "error",
+      });
+    }
   }
   if (!header.testDate) {
     issues.push({
@@ -338,13 +369,25 @@ function extractRowLabelValue(cells: CellPoint[], label: string): null | string 
   return null;
 }
 
+// RUT body 7–8 digits with optional . , or space thousand-separators, dash, DV
+// (digit or K, case-insensitive). Tolerates Excel's "25,883,164-7" formatting.
+const RUT_LIKE_PATTERN = /\b(?:\d{1,2}[\s.,]?\d{3}[\s.,]?\d{3}|\d{7,8})\s*-\s*[\dkK]\b/;
+
 function extractStandaloneRut(cells: CellPoint[]): null | string {
-  const rutPattern = /\b(?:\d{1,2}[\s.,]?\d{3}[\s.,]?\d{3}|\d{7,8})\s*-\s*[\dkK]\b/;
+  // Header zone scan: some clinics push the RUT row down to r13/r14 with a tall
+  // logo block; row<=16 covers observed layouts without leaking into results.
   const candidate = cells
-    .filter((cell) => cell.row <= 12)
+    .filter((cell) => cell.row <= 16)
     .sort((left, right) => left.row - right.row || left.col - right.col)
-    .find((cell) => rutPattern.test(cell.text));
-  return candidate?.text.match(rutPattern)?.[0] ?? null;
+    .find((cell) => RUT_LIKE_PATTERN.test(cell.text));
+  return candidate?.text.match(RUT_LIKE_PATTERN)?.[0] ?? null;
+}
+
+// Locate a RUT-shaped value WITHOUT modulo-11 validation, for malformed_rut
+// reporting. Returns the raw cell substring so the warning can quote the typo
+// verbatim (the operator can spot which digit/DV is wrong).
+function extractMalformedRutCandidate(cells: CellPoint[]): null | string {
+  return extractStandaloneRut(cells);
 }
 
 function cleanHeaderValue(value: null | string): null | string {
@@ -551,6 +594,19 @@ function extractResultRowsFromRow(
     if (!code && !isControl) continue;
 
     const nameCell = isControl ? cell : cells[index + 1];
+    // The allergen name must belong to the SAME panel as the code. Accept an
+    // immediately-adjacent cell (gap 1, the common case) or any cell within the
+    // same 5-column block. Reject names that sit across a panel gutter in a
+    // different block — that is the cross-panel leak where a stray metric value
+    // (e.g. a control's erythema) gets paired with the next panel's code.
+    if (
+      !isControl &&
+      nameCell &&
+      nameCell.col - cell.col !== 1 &&
+      blockForColumn(nameCell.col) !== blockForColumn(cell.col)
+    ) {
+      continue;
+    }
     const allergenName = isControl ? normalizeText(cell.text) : normalizeText(nameCell?.text ?? "");
     if (!allergenName || allergenName.length < 2) continue;
     if (isResultValue(allergenName)) continue;
@@ -566,8 +622,11 @@ function extractResultRowsFromRow(
     const nearCells = byMetric.sawHeader
       ? numericCells
       : numericCells.filter((c) => c.col <= cell.col + 3);
-    const papule = byMetric.sawHeader ? byMetric.papule : (nearCells[0]?.text ?? null);
-    const erythema = byMetric.sawHeader ? byMetric.erythema : (nearCells[1]?.text ?? null);
+    const fallback = byMetric.sawHeader
+      ? null
+      : assignFallbackMetricsFromTableContext(ws, rowNumber, cell, nameCell, nearCells);
+    const papule = (byMetric.sawHeader ? byMetric.papule : fallback?.papule) ?? null;
+    const erythema = (byMetric.sawHeader ? byMetric.erythema : fallback?.erythema) ?? null;
     if (!byMetric.sawHeader && nearCells.length === 0) continue;
     const section = isControl
       ? "Controles"
@@ -591,6 +650,70 @@ function extractResultRowsFromRow(
     });
   }
   return results;
+}
+
+function assignFallbackMetricsFromTableContext(
+  ws: XLSX.WorkSheet,
+  rowNumber: number,
+  codeCell: { col: number; text: string },
+  nameCell: { col: number; text: string },
+  nearCells: Array<{ col: number; text: string }>
+): { erythema: null | string; papule: null | string } | null {
+  if (nearCells.length === 0) return null;
+  if (nearCells.length > 1) {
+    return { erythema: nearCells[1]?.text ?? null, papule: nearCells[0]?.text ?? null };
+  }
+
+  const only = nearCells[0];
+  if (!only) return null;
+  if (
+    only.col >= nameCell.col + 2 &&
+    (hasNeighborRowsWithTwoMetricColumns(ws, rowNumber, codeCell.col, nameCell.col) ||
+      hasMetricTableHeader(ws, rowNumber, nameCell.col))
+  ) {
+    return { erythema: only.text, papule: null };
+  }
+
+  return { erythema: null, papule: only.text };
+}
+
+function hasNeighborRowsWithTwoMetricColumns(
+  ws: XLSX.WorkSheet,
+  rowNumber: number,
+  codeCol: number,
+  nameCol: number
+): boolean {
+  const papuleCol = nameCol + 1;
+  const erythemaCol = nameCol + 2;
+  for (let row = Math.max(1, rowNumber - 8); row <= rowNumber + 8; row += 1) {
+    if (row === rowNumber) continue;
+    const code = getWorksheetCellText(ws, row, codeCol);
+    const name = getWorksheetCellText(ws, row, nameCol);
+    if (!normalizeCode(code) || !name || isResultValue(name)) continue;
+    if (
+      isResultValue(getWorksheetCellText(ws, row, papuleCol)) &&
+      isResultValue(getWorksheetCellText(ws, row, erythemaCol))
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function hasMetricTableHeader(ws: XLSX.WorkSheet, rowNumber: number, nameCol: number): boolean {
+  for (let row = rowNumber - 1; row >= Math.max(1, rowNumber - 8); row -= 1) {
+    const first = getWorksheetCellText(ws, row, nameCol + 1).toUpperCase();
+    const second = getWorksheetCellText(ws, row, nameCol + 2).toUpperCase();
+    if (first === "MM" || second === "MM") return true;
+    if (first === "P" || second === "E") return true;
+  }
+  return false;
+}
+
+function getWorksheetCellText(ws: XLSX.WorkSheet, row: number, col: number): string {
+  const addr = XLSX.utils.encode_cell({ r: row - 1, c: col - 1 });
+  const cell = ws[addr] as XLSX.CellObject | undefined;
+  return cell && cell.t !== "z" ? normalizeText(getCellText(cell)) : "";
 }
 
 function extractAinesResultFromRow(
@@ -658,10 +781,17 @@ function isAllergenNameCell(
 ) {
   if (/^panel\s+\d+\s*$/i.test(normalizeText(cell.text))) return false;
   const previous = [...cells].reverse().find((candidate) => candidate.col < cell.col);
-  return previous
-    ? Boolean(normalizeCode(previous.text)) &&
-        (!isResultValue(previous.text) || cell.col - previous.col <= 1)
-    : false;
+  if (!previous) return false;
+  // Only a code in the SAME panel makes this an allergen name. A code sitting in
+  // a different column block (the left panel) must not demote a right-panel
+  // section header to a name — that wiped out sections like GRAMINEAS/ALIMENTOS.
+  if (cell.col - previous.col !== 1 && blockForColumn(previous.col) !== blockForColumn(cell.col)) {
+    return false;
+  }
+  return (
+    Boolean(normalizeCode(previous.text)) &&
+    (!isResultValue(previous.text) || cell.col - previous.col <= 1)
+  );
 }
 
 function collectMetricCells(
@@ -731,8 +861,16 @@ function findMetricHeader(ws: XLSX.WorkSheet, rowNumber: number, col: number): M
 function normalizeCode(value: string): null | string {
   const text = value.trim().toUpperCase();
   if (text === "P" || text === "E") return null;
-  if (/^[A-Z]{2,3}$/.test(text) && text !== "MA" && text !== "MC") return null;
-  if (/^(?:[A-Z]{1,3}\d{0,2}|\d{1,2})$/.test(text)) return text;
+  // Patch-test grade tokens, never codes (also matched by isResultValue upstream).
+  if (text === "IR" || text === "NT") return null;
+  // 3+ pure-letter tokens are allergen names or section labels (POA, ARCE, LATEX),
+  // not codes. Reject so they pass through as names instead of swallowing the row.
+  if (/^[A-Z]{3,}$/.test(text)) return null;
+  // Accept: 1–3 letters + 0–2 digits — covers single-letter codes (L, M),
+  // letter+digit (D1, G5, A11) and bare 2-letter mezcla/material codes
+  // (MA, MC, MH, ME, MO, MP, PC, LT, LX, MG, MS, IB, PR — verified against the
+  // workbook corpus). Plus 1–2 digit food-panel codes (1..N).
+  if (/^[A-Z]{1,3}\d{0,2}$/.test(text) || /^\d{1,2}$/.test(text)) return text;
   return null;
 }
 

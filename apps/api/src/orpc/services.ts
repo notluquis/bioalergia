@@ -1,4 +1,3 @@
-import { db } from "@finanzas/db";
 import {
   editScheduleSchema,
   generateSchedulesSchema,
@@ -15,17 +14,23 @@ import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import { Decimal } from "decimal.js";
 import type { Context as HonoContext } from "hono";
 import { z } from "zod";
-import { getSessionUser, hasPermission } from "../auth.ts";
+import { getSessionUser, hasPermission } from "../lib/auth.ts";
 import { logError } from "../lib/logger.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
 import {
   createService,
-  deleteService,
-  generateSchedules,
-  getServiceByIdOrPublicId,
+  deleteServiceByIdentifier,
+  editSchedule,
+  getServiceWithSchedules,
+  listSchedulesForServices,
   listServices,
+  paySchedule,
+  regenerateSchedulesForService,
+  skipSchedule,
   syncServiceSchedulesWithFinancialTransactions,
-  updateService,
+  syncTransactionsForService,
+  unlinkSchedule,
+  updateServiceWithSchedules,
 } from "../services/services.ts";
 import { SuperJSONRPCHandler } from "./superjson.ts";
 
@@ -516,13 +521,7 @@ const servicesORPCRouterBase = {
     .input(contractServiceIdSchema)
     .output(statusOkSchema)
     .handler(async ({ input }: { input: z.input<typeof contractServiceIdSchema> }) => {
-      const existing = await getServiceByIdOrPublicId(input.id);
-
-      if (!existing) {
-        throw new ORPCError("NOT_FOUND", { message: "Not found" });
-      }
-
-      await deleteService(existing.id);
+      await deleteServiceByIdentifier(input.id);
       return { status: "ok" as const };
     }),
 
@@ -531,16 +530,7 @@ const servicesORPCRouterBase = {
     .input(contractServiceIdSchema)
     .output(detailResponseSchema)
     .handler(async ({ input }: { input: z.output<typeof contractServiceIdSchema> }) => {
-      const service = await getServiceByIdOrPublicId(input.id);
-
-      if (!service) {
-        throw new ORPCError("NOT_FOUND", { message: "Not found" });
-      }
-
-      const schedules = await db.serviceSchedule.findMany({
-        where: { serviceId: service.id },
-        orderBy: { periodStart: "asc" },
-      });
+      const { schedules, service } = await getServiceWithSchedules(input.id);
       const mappedSchedules = schedules.map(mapServiceSchedule);
 
       return {
@@ -556,12 +546,7 @@ const servicesORPCRouterBase = {
     .handler(async () => {
       const services = await listServices();
       const serviceIds = services.map((service) => service.id);
-      const schedules = serviceIds.length
-        ? await db.serviceSchedule.findMany({
-            where: { serviceId: { in: serviceIds } },
-            orderBy: { periodStart: "asc" },
-          })
-        : [];
+      const schedules = await listSchedulesForServices(serviceIds);
 
       const schedulesByServiceId = new Map<number, ServiceScheduleDto[]>();
       for (const schedule of schedules) {
@@ -587,22 +572,10 @@ const servicesORPCRouterBase = {
     .input(generateSchedulesSchema)
     .output(generateSchedulesResponseSchema)
     .handler(async ({ input }: { input: z.output<typeof generateSchedulesSchema> }) => {
-      const existing = await getServiceByIdOrPublicId(input.id);
-
-      if (!existing) {
-        throw new ORPCError("NOT_FOUND", { message: "Not found" });
-      }
-
-      const result = await generateSchedules({
-        serviceId: existing.id,
+      const { existing, result, schedules, service } = await regenerateSchedulesForService({
+        identifier: input.id,
         months: input.months,
         fromDate: input.fromDate,
-      });
-
-      const service = await getServiceByIdOrPublicId(existing.id);
-      const schedules = await db.serviceSchedule.findMany({
-        where: { serviceId: existing.id },
-        orderBy: { periodStart: "asc" },
       });
       const mappedSchedules = schedules.map(mapServiceSchedule);
 
@@ -619,33 +592,11 @@ const servicesORPCRouterBase = {
     .input(editScheduleSchema)
     .output(scheduleResponseSchema)
     .handler(async ({ input }: { input: z.output<typeof editScheduleSchema> }) => {
-      const schedule = await db.serviceSchedule.findUnique({ where: { id: input.id } });
-
-      if (!schedule) {
-        throw new ORPCError("NOT_FOUND", { message: "Schedule no encontrado" });
-      }
-
-      const data: {
-        dueDate?: Date;
-        expectedAmount?: Decimal;
-        note?: null | string;
-      } = {};
-
-      if (input.dueDate !== undefined) {
-        data.dueDate = input.dueDate;
-      }
-
-      if (input.expectedAmount !== undefined) {
-        data.expectedAmount = new Decimal(input.expectedAmount);
-      }
-
-      if (input.note !== undefined) {
-        data.note = input.note;
-      }
-
-      const updated = await db.serviceSchedule.update({
-        where: { id: input.id },
-        data,
+      const updated = await editSchedule({
+        id: input.id,
+        dueDate: input.dueDate,
+        expectedAmount: input.expectedAmount,
+        note: input.note,
       });
 
       return {
@@ -659,50 +610,14 @@ const servicesORPCRouterBase = {
     .input(payScheduleSchema)
     .output(scheduleResponseSchema)
     .handler(async ({ input }: { input: z.output<typeof payScheduleSchema> }) => {
-      const schedule = await db.serviceSchedule.findUnique({ where: { id: input.id } });
-
-      if (!schedule) {
-        throw new ORPCError("NOT_FOUND", { message: "Schedule no encontrado" });
-      }
-
       const txRef = normalizeTransactionReference(input.transactionId, input.transactionSource);
-      if (!txRef) {
-        throw new ORPCError("BAD_REQUEST", { message: "Referencia de transacción inválida" });
-      }
 
-      if (txRef.source === "settlement") {
-        const found = await db.settlementTransaction.findUnique({ where: { id: txRef.rawId } });
-        if (!found) {
-          throw new ORPCError("NOT_FOUND", { message: "Settlement transaction no encontrada" });
-        }
-      } else if (txRef.source === "release") {
-        const found = await db.releaseTransaction.findUnique({ where: { id: txRef.rawId } });
-        if (!found) {
-          throw new ORPCError("NOT_FOUND", { message: "Release transaction no encontrada" });
-        }
-      } else {
-        const found = await db.withdrawTransaction.findUnique({ where: { id: txRef.rawId } });
-        if (!found) {
-          throw new ORPCError("NOT_FOUND", { message: "Withdraw transaction no encontrada" });
-        }
-      }
-
-      const paidAmount = new Decimal(input.paidAmount);
-      const dueAmount = new Decimal(schedule.effectiveAmount.toString());
-      const status = paidAmount.greaterThanOrEqualTo(dueAmount) ? "PAID" : "PARTIAL";
-
-      const updated = await db.serviceSchedule.update({
-        where: { id: input.id },
-        data: {
-          paidAmount,
-          paidDate: input.paidDate,
-          note: input.note ?? schedule.note,
-          status,
-          financialTransactionId: null,
-          settlementTransactionId: txRef.source === "settlement" ? txRef.rawId : null,
-          releaseTransactionId: txRef.source === "release" ? txRef.rawId : null,
-          withdrawTransactionId: txRef.source === "withdraw" ? txRef.rawId : null,
-        },
+      const updated = await paySchedule({
+        id: input.id,
+        paidAmount: input.paidAmount,
+        paidDate: input.paidDate,
+        note: input.note,
+        txRef,
       });
 
       return {
@@ -716,19 +631,7 @@ const servicesORPCRouterBase = {
     .input(skipScheduleSchema)
     .output(scheduleResponseSchema)
     .handler(async ({ input }: { input: z.output<typeof skipScheduleSchema> }) => {
-      const schedule = await db.serviceSchedule.findUnique({ where: { id: input.id } });
-
-      if (!schedule) {
-        throw new ORPCError("NOT_FOUND", { message: "Schedule no encontrado" });
-      }
-
-      const updated = await db.serviceSchedule.update({
-        where: { id: input.id },
-        data: {
-          note: input.reason,
-          status: "SKIPPED",
-        },
-      });
+      const updated = await skipSchedule(input.id, input.reason);
 
       return {
         schedule: mapServiceSchedule(updated),
@@ -741,24 +644,7 @@ const servicesORPCRouterBase = {
     .input(contractScheduleIdSchema)
     .output(scheduleResponseSchema)
     .handler(async ({ input }: { input: z.output<typeof contractScheduleIdSchema> }) => {
-      const schedule = await db.serviceSchedule.findUnique({ where: { id: input.id } });
-
-      if (!schedule) {
-        throw new ORPCError("NOT_FOUND", { message: "Schedule no encontrado" });
-      }
-
-      const updated = await db.serviceSchedule.update({
-        where: { id: input.id },
-        data: {
-          paidAmount: null,
-          paidDate: null,
-          status: "PENDING",
-          financialTransactionId: null,
-          settlementTransactionId: null,
-          releaseTransactionId: null,
-          withdrawTransactionId: null,
-        },
-      });
+      const updated = await unlinkSchedule(input.id);
 
       return {
         schedule: mapServiceSchedule(updated),
@@ -779,14 +665,8 @@ const servicesORPCRouterBase = {
     .input(contractServiceIdSchema)
     .output(syncResponseSchema)
     .handler(async ({ input }: { input: z.output<typeof contractServiceIdSchema> }) => {
-      const existing = await getServiceByIdOrPublicId(input.id);
-
-      if (!existing) {
-        throw new ORPCError("NOT_FOUND", { message: "Not found" });
-      }
-
       return {
-        data: await syncServiceSchedulesWithFinancialTransactions(existing.publicId),
+        data: await syncTransactionsForService(input.id),
         status: "ok" as const,
       };
     }),
@@ -801,17 +681,10 @@ const servicesORPCRouterBase = {
       }: {
         input: { id: string; payload: z.output<typeof contractServiceCreateSchema> };
       }) => {
-        const existing = await getServiceByIdOrPublicId(input.id);
-
-        if (!existing) {
-          throw new ORPCError("NOT_FOUND", { message: "Not found" });
-        }
-
-        const service = await updateService(existing.id, mapServicePayload(input.payload));
-        const schedules = await db.serviceSchedule.findMany({
-          where: { serviceId: service.id },
-          orderBy: { periodStart: "asc" },
-        });
+        const { schedules, service } = await updateServiceWithSchedules(
+          input.id,
+          mapServicePayload(input.payload)
+        );
         const mappedSchedules = schedules.map(mapServiceSchedule);
 
         return {

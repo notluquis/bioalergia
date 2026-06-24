@@ -1,10 +1,19 @@
 import { Hono } from "hono";
 import { db } from "@finanzas/db";
-import { startClinicalSkinTestImportJob } from "../lib/clinical-skin-tests/clinical-skin-test-scheduler.ts";
+import { startClinicalSkinTestImportJob } from "../services/clinical-skin-test-scheduler.ts";
 import { logError, logEvent, logWarn } from "../lib/logger.ts";
 
 export const onedriveWebhookRoutes = new Hono();
-const ONEDRIVE_WEBHOOK_CLIENT_STATE = "bioalergia-onedrive-sync";
+
+// clientState is the shared secret echoed back by MS Graph in every webhook
+// notification — it authenticates the notification as ours. The fallback below
+// is for back-compat with the currently-registered subscription ONLY; in
+// Railway, set ONEDRIVE_WEBHOOK_CLIENT_STATE to a random value. NOTE: rotating
+// it fully also requires re-registering the Graph subscription with the new
+// value (the value here MUST match what's registered with MS Graph), otherwise
+// notifications will be rejected.
+const ONEDRIVE_WEBHOOK_CLIENT_STATE =
+  process.env.ONEDRIVE_WEBHOOK_CLIENT_STATE ?? "bioalergia-onedrive-sync";
 
 onedriveWebhookRoutes.post("/", async (c) => {
   // 1. Validation request (synchronous — Microsoft needs the token echoed back immediately)

@@ -279,15 +279,18 @@ export function DoctoraliaCalendarJsonPanel() {
             <input
               ref={fileInputRef}
               type="file"
+              aria-label="Subir archivos JSON"
               accept=".json,application/json"
               multiple
-              onChange={handleFileChange}
+              onChange={(e) => {
+                void handleFileChange(e);
+              }}
               className="text-sm file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-primary-foreground file:text-sm hover:file:bg-primary/90"
               disabled={isImporting}
             />
             {files.length > 0 && (
               <Button variant="outline" size="sm" onPress={handleReset} isDisabled={isImporting}>
-                <RotateCcw className="h-3.5 w-3.5" />
+                <RotateCcw className="size-3.5" />
                 Limpiar
               </Button>
             )}
@@ -362,11 +365,16 @@ export function DoctoraliaCalendarJsonPanel() {
 
           {files.length > 0 && (
             <div className="flex justify-end">
-              <Button onPress={handleImport} isDisabled={isImporting}>
+              <Button
+                onPress={() => {
+                  void handleImport();
+                }}
+                isDisabled={isImporting}
+              >
                 {isImporting ? (
-                  <Loader2 className="mr-2 h-4 w-4" />
+                  <Loader2 className="mr-2 size-4" />
                 ) : (
-                  <FileUp className="mr-2 h-4 w-4" />
+                  <FileUp className="mr-2 size-4" />
                 )}
                 Importar {totalEntries} entradas
               </Button>
@@ -387,7 +395,7 @@ export function DoctoraliaCalendarJsonPanel() {
                 className="space-y-2 rounded-lg border border-default-100 bg-default-50 p-3"
               >
                 <div className="flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4 text-success" />
+                  <CheckCircle className="text-success size-4" />
                   <p className="font-medium text-sm">{result.fileName}</p>
                   <span className="text-default-500 text-xs">
                     {result.entriesProcessed} entradas procesadas

@@ -1,6 +1,17 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["typescript", "react", "vitest"],
+  "plugins": [
+    "typescript",
+    "react",
+    "vitest",
+    "promise",
+    "node",
+    "unicorn",
+    "import",
+    "jsx-a11y",
+    "react-perf"
+  ],
+  "jsPlugins": ["oxlint-tailwindcss"],
   "env": {
     "browser": true,
     "node": true,
@@ -9,6 +20,15 @@
   "settings": {
     "import/resolver": {
       "typescript": true
+    },
+    "tailwindcss": {
+      "//": "entryPoint `use` resolves relative to oxlint's CWD, which differs between `pnpm lint` (repo root) and `turbo run lint` (per-package). The `files` glob matches the linted path AS SEEN from that cwd: root → `apps/site/src/...`; package → `src/...`. Cover both — root-cwd globs first, then package-cwd `src/**`.",
+      "entryPoint": [
+        { "files": "apps/intranet/**", "use": "apps/intranet/src/index.css" },
+        { "files": "apps/site/**", "use": "apps/site/src/index.css" },
+        { "files": "src/**", "use": "src/index.css" },
+        { "files": "**", "use": "src/index.css" }
+      ]
     }
   },
   "rules": {
@@ -27,10 +47,59 @@
     //
     // Reference: https://nodejs.org/api/typescript.html
     "react/only-export-components": ["warn", { "allowConstantExport": true }],
-    "import/extensions": ["error", { "js": "always", "ts": "always", "ignorePackages": true }],
+    // Scoped to apps/api in overrides (Node 26 strip-types backend needs
+    // explicit `.ts` on relative imports). Built packages emit `.js` and the
+    // Vite frontend resolves extensionless, so it's off globally and on only
+    // for api below.
+    "import/extensions": "off",
     "typescript/no-floating-promises": "error",
     "typescript/no-unsafe-assignment": "warn",
-    "typescript/no-explicit-any": "error"
+    "typescript/no-explicit-any": "error",
+    // Non-null assertions (`x!`) lie to TypeScript about nullability and
+    // turn what should be a compile error into a runtime crash. Prod
+    // bug `null is not an object (evaluating 'v.comuna')` traced to
+    // `selected!.comuna` where the upstream `?? null` made the var
+    // genuinely nullable. Use early returns, `??` defaults, or
+    // `invariant()` instead. Suppress with line-level disable + a
+    // comment explaining why narrowing TS can't see is correct here.
+    "typescript/no-non-null-assertion": "error",
+    // Golden 2026: explicit `import type` for type-only imports — keeps the
+    // runtime import graph clean (Node 26 type-stripping erases them) and
+    // helps build/HMR. Autofixable.
+    "typescript/consistent-type-imports": "error",
+    // ESM import hygiene (import plugin). no-cycle protects the api DAG
+    // rebuilt in the Phase-2 migration (0 cycles); the others are cheap
+    // correctness guards.
+    "import/no-cycle": "error",
+    "import/no-self-import": "error",
+    "import/no-duplicates": "error",
+    // Node protocol + Error idioms (golden, zero churn at adoption).
+    "unicorn/prefer-node-protocol": "error",
+    "unicorn/throw-new-error": "error",
+    // ── Type-aware rules (require `oxlint --type-aware`, gated on CI) ──
+    // Each catches a class of bug we have hit in production.
+    // no-unnecessary-type-assertion catches redundant `!`/`as` (the class
+    // cleaned up in the 179→0 lint pass) so it can't silently creep back.
+    "typescript/no-unnecessary-type-assertion": "error",
+    "typescript/no-misused-promises": "error",
+    "typescript/await-thenable": "error",
+    "typescript/no-unsafe-argument": "warn",
+    "typescript/no-unsafe-return": "warn",
+    "typescript/no-unsafe-member-access": "warn",
+    "typescript/restrict-template-expressions": "error",
+    "typescript/no-base-to-string": "error",
+    "typescript/require-array-sort-compare": "error",
+    "typescript/prefer-promise-reject-errors": "error",
+    "typescript/switch-exhaustiveness-check": "error",
+    "promise/no-return-wrap": "error",
+    "unicorn/no-array-callback-reference": "warn",
+    // Tailwind CSS v4 (oxlint-tailwindcss) — conservative subset:
+    // catch real bugs without churn. Shorthand is `warn`, not `error`,
+    // so it doesn't block CI. Note: no rule exists for missing
+    // `min-w-0` on `flex-1` children (not in the 23-rule plugin set).
+    "tailwindcss/no-conflicting-classes": "error",
+    "tailwindcss/no-duplicate-classes": "error",
+    "tailwindcss/enforce-shorthand": "warn"
   },
   "ignorePatterns": [
     "**/dist",
@@ -66,13 +135,35 @@
       "files": ["**/*.test.{ts,tsx}", "**/__tests__/**"],
       "rules": {
         "vitest/require-to-throw-message": "off",
-        "no-constant-binary-expression": "off"
+        "no-constant-binary-expression": "off",
+        // vitest mocks (`.mockResolvedValue`, `.mockReturnValue`) live on
+        // `any` by design (vi.fn() returns Mock<any>). Type-aware unsafe-*
+        // rules fire on every call site without surfacing a real bug —
+        // the alternative (typed mock factories per test) is huge churn
+        // for zero runtime safety win. Keep enforcement on src.
+        "typescript/no-unsafe-member-access": "off",
+        "typescript/no-unsafe-argument": "off",
+        "typescript/no-unsafe-return": "off",
+        "typescript/no-unsafe-assignment": "off",
+        // Test fixtures legitimately drill into known-shape mock data
+        // (e.g. `mock.calls[0]![0]`); the explicit narrowing is noise
+        // when the very next line asserts the value. Source files keep
+        // enforcement.
+        "typescript/no-non-null-assertion": "off"
       }
     },
     {
       "files": ["**/*.stories.*"],
       "rules": {
         "import/no-default-export": "off"
+      }
+    },
+    {
+      // Node 26 strip-types backend: relative imports must carry `.ts`
+      // (no bundler/loader fallback). Verified 0 violations at adoption.
+      "files": ["apps/api/**"],
+      "rules": {
+        "import/extensions": ["error", "ignorePackages", { "js": "always", "ts": "always" }]
       }
     },
     {

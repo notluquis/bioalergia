@@ -201,6 +201,15 @@ export function mapRowToSettlementTransaction(row: MercadoPagoRowRaw): Settlemen
     shippingOrderId: toNullableString(row.SHIPPING_ORDER_ID),
     poiWalletName: toNullableString(row.POI_WALLET_NAME),
     poiBankName: toNullableString(row.POI_BANK_NAME),
+    merchantCategoryCode: toNullableString(row.MERCHANT_CATEGORY_CODE),
+    applicationId: toNullableString(row.APPLICATION_ID),
+    segmentDetail: toNullableString(row.SEGMENT_DETAIL),
+    authorizationCode: toNullableString(row.AUTHORIZATION_CODE),
+    cardEntryMode: toNullableString(row.CARD_ENTRY_MODE),
+    authenticatedPayer: toNullableString(row.AUTHENTICATED_PAYER),
+    transactionDateShort: toNullableString(row.TRANSACTION_DATE_SHORT),
+    settlementDateShort: toNullableString(row.SETTLEMENT_DATE_SHORT),
+    moneyReleaseDateShort: toNullableString(row.MONEY_RELEASE_DATE_SHORT),
   };
 }
 
@@ -261,5 +270,13 @@ export function mapRowToReleaseTransaction(row: MercadoPagoRowRaw): ReleaseTrans
     purchaseId: toNullableString(row.PURCHASE_ID),
     shippingOrderId: toNullableString(row.SHIPPING_ORDER_ID),
     isReleased: parseBoolean(row.IS_RELEASED),
+    countryIssuer: toNullableString(row.COUNTRY_ISSUER),
+    merchantCategoryCode: toNullableString(row.MERCHANT_CATEGORY_CODE),
+    cardEntryMode: toNullableString(row.CARD_ENTRY_MODE),
+    authorizationCode: toNullableString(row.AUTHORIZATION_CODE),
+    applicationId: toNullableString(row.APPLICATION_ID),
+    segmentDetail: toNullableString(row.SEGMENT_DETAIL),
+    dateShort: toNullableString(row.DATE_SHORT),
+    transactionApprovalDateShort: toNullableString(row.TRANSACTION_APPROVAL_DATE_SHORT),
   };
 }

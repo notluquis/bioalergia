@@ -12,7 +12,7 @@ import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
-import { getSessionUser, hasPermission } from "../auth.ts";
+import { getSessionUser, hasPermission } from "../lib/auth.ts";
 import { logError } from "../lib/logger.ts";
 import { canonicalRutFilter } from "../lib/rut.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
@@ -125,11 +125,11 @@ const peopleORPCRouterBase = {
           : {
               NOT: {
                 OR: [
-                  { names: { contains: "Test", mode: "insensitive" } },
+                  { names: { contains: "Test", mode: "insensitive" as const } },
                   { names: { contains: "test" } },
                   { rut: { startsWith: "11111111" } },
                   { rut: { startsWith: "TEMP-" } },
-                  { email: { contains: "test", mode: "insensitive" } },
+                  { email: { contains: "test", mode: "insensitive" as const } },
                 ],
               },
             },

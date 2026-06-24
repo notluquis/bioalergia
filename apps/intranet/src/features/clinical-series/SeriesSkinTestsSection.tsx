@@ -1,3 +1,4 @@
+// oxlint-disable typescript/no-non-null-assertion -- TODO(strict-null): refactor each `!` to invariant() or explicit guard. Tracked in repo-wide non-null cleanup.
 import { Button, Chip, Disclosure, Separator, Spinner, Surface } from "@heroui/react";
 import { ExternalLink, FileSpreadsheet, FileText } from "lucide-react";
 import { useClinicalDocumentsBySeries, useSkinTestsBySeries } from "./skin-tests-queries";
@@ -40,7 +41,11 @@ export function SeriesSkinTestsSection({ seriesId }: { seriesId: number }) {
           <Disclosure.Content>
             <Disclosure.Body className="space-y-3 p-0 pt-2">
               {tests.data?.map((test) => (
-                <Surface key={test.id} className="rounded-lg border border-border p-2">
+                <Surface
+                  key={test.id}
+                  className="rounded-lg border border-border p-2"
+                  data-phi-block
+                >
                   <div className="mb-2 flex flex-wrap items-center gap-2">
                     <Chip size="sm" variant="soft" color="accent">
                       {test.testDate}

@@ -1,5 +1,4 @@
 import { Store } from "@tanstack/store";
-import dayjs from "dayjs";
 
 import type { ServiceSchedule, ServicesFilterState, ServiceTemplate } from "./types";
 
@@ -44,7 +43,7 @@ export const initialServicesState: ServicesState = {
   paymentForm: {
     note: "",
     paidAmount: "",
-    paidDate: dayjs().toDate(),
+    paidDate: new Date(),
     transactionId: "",
   },
   paymentSchedule: null,
@@ -115,7 +114,7 @@ export const servicesActions = {
           schedule.paidAmount == null
             ? String(schedule.effectiveAmount)
             : String(schedule.paidAmount),
-        paidDate: schedule.paidDate ?? dayjs().toDate(),
+        paidDate: schedule.paidDate ?? new Date(),
         transactionId: schedule.transaction?.id ? String(schedule.transaction.id) : "",
       },
       paymentSchedule: schedule,

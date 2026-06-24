@@ -1,3 +1,4 @@
+// oxlint-disable typescript/no-non-null-assertion -- TODO(strict-null): refactor each `!` to invariant() or explicit guard. Tracked in repo-wide non-null cleanup.
 /**
  * Clinical Series - List & Filter View
  * Premium UX: debounced search, server-side pagination, Drawer detail panel, sorting
@@ -17,10 +18,10 @@ import {
   Dropdown,
   Drawer,
   Input,
+  type Key,
   Label,
   ListBox,
   Modal,
-  Pagination,
   ProgressBar,
   RangeCalendar,
   Select,
@@ -30,17 +31,20 @@ import {
   Spinner,
   Surface,
   Switch,
-  Table,
   Tabs,
   TextField,
   Tooltip,
 } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import type { Key, Selection } from "@heroui/react";
+import type { ColumnDef } from "@tanstack/react-table";
 import { Check, ClipboardCopy, Megaphone, MessageCircle, Phone } from "lucide-react";
 import { Fragment, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
-import { buildPaginationItems } from "@/components/pagination/pagination-items";
+import { DataTable } from "@/components/data-table/DataTable";
+import {
+  descriptorToSortingState,
+  sortingStateToDescriptor,
+} from "@/components/data-table/data-table-utils";
 import { EventDteLinkModal } from "@/features/calendar/components/EventDteLinkModal";
 import { FormattedEventDescription } from "@/features/calendar/components/FormattedEventDescription";
 import type { CalendarEventDetail } from "@/features/calendar/types";
@@ -1063,6 +1067,248 @@ function AbandonmentContactSection({ seriesId }: { seriesId: number }) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
+// Columna "Paciente" compartida por ambos layouts.
+const patientColumn: ColumnDef<ClinicalSeriesSnapshot> = {
+  id: "patient",
+  header: "Paciente",
+  enableSorting: true,
+  cell: ({ row }) => {
+    const s = row.original;
+    const samePerson = isSamePatientAndBeneficiary(s);
+    return (
+      <div className="flex flex-col gap-1">
+        <span className="font-medium text-foreground text-sm transition-colors hover:text-accent">
+          {s.patientName ?? s.displayName ?? (
+            <span className="text-foreground-400 italic">Sin nombre</span>
+          )}
+        </span>
+        {s.beneficiaryName && !samePerson && (
+          <span className="text-foreground-400 text-xs">Beneficiario: {s.beneficiaryName}</span>
+        )}
+      </div>
+    );
+  },
+};
+
+const rutsColumn: ColumnDef<ClinicalSeriesSnapshot> = {
+  id: "ruts",
+  header: "RUTs",
+  enableSorting: false,
+  cell: ({ row }) => <IdentityDropdownCell entries={buildRutEntries(row.original)} title="RUTs" />,
+};
+
+const phonesColumn: ColumnDef<ClinicalSeriesSnapshot> = {
+  id: "phones",
+  header: "Teléfonos",
+  enableSorting: false,
+  cell: ({ row }) => (
+    <IdentityDropdownCell entries={buildPhoneEntries(row.original)} title="Teléfonos" />
+  ),
+};
+
+const statusColumn: ColumnDef<ClinicalSeriesSnapshot> = {
+  id: "status",
+  header: "Estado",
+  enableSorting: true,
+  cell: ({ row }) => (
+    <Chip size="sm" color={STATUS_COLORS[row.original.status]} variant="soft">
+      {STATUS_LABELS[row.original.status]}
+    </Chip>
+  ),
+};
+
+const SERIES_COLUMNS: ColumnDef<ClinicalSeriesSnapshot>[] = [
+  patientColumn,
+  rutsColumn,
+  phonesColumn,
+  {
+    id: "kind",
+    header: "Tipo",
+    enableSorting: true,
+    cell: ({ row }) => {
+      const s = row.original;
+      return (
+        <div className="flex flex-col items-start gap-1">
+          <Chip size="sm" color={KIND_COLORS[s.kind]} variant="tertiary">
+            {KIND_LABELS[s.kind]}
+          </Chip>
+          {s.allergenType && (
+            <Chip size="sm" color="accent" variant="tertiary">
+              {ALLERGEN_LABELS[s.allergenType]}
+            </Chip>
+          )}
+          {s.vaccineProduct && (
+            <Chip size="sm" color="default" variant="tertiary">
+              {VACCINE_LABELS[s.vaccineProduct]}
+            </Chip>
+          )}
+          {s.healthInsurance && (
+            <Chip size="sm" color={INSURANCE_COLORS[s.healthInsurance]} variant="tertiary">
+              {s.healthInsurance === "ISAPRE" && s.isapreName
+                ? `${INSURANCE_LABELS[s.healthInsurance]} · ${s.isapreName}`
+                : INSURANCE_LABELS[s.healthInsurance]}
+            </Chip>
+          )}
+        </div>
+      );
+    },
+  },
+  statusColumn,
+  {
+    id: "lastEvent",
+    header: "Últ. evento",
+    enableSorting: true,
+    cell: ({ row }) => (
+      <span className="text-foreground-400 text-xs">
+        {row.original.lastEventDate ? formatEventDate(row.original.lastEventDate, true) : "—"}
+      </span>
+    ),
+  },
+  {
+    id: "nextEvent",
+    header: "Próx. visita",
+    enableSorting: true,
+    cell: ({ row }) =>
+      row.original.nextEventDate ? (
+        <span className="font-medium text-accent text-xs">
+          {formatEventDate(row.original.nextEventDate)}
+        </span>
+      ) : (
+        <span className="text-foreground-400 text-xs">—</span>
+      ),
+  },
+  {
+    id: "totalEvents",
+    header: () => <div className="text-right">Eventos</div>,
+    enableSorting: true,
+    cell: ({ row }) => (
+      <div className="text-right">
+        <span className="text-foreground-500 text-xs tabular-nums">
+          {row.original.events.length}
+        </span>
+      </div>
+    ),
+  },
+  {
+    id: "upcomingEvents",
+    header: () => <div className="text-right">Próximos</div>,
+    enableSorting: true,
+    cell: ({ row }) => (
+      <div className="text-right">
+        {row.original.upcomingCount > 0 ? (
+          <Chip size="sm" color="accent" variant="soft">
+            {row.original.upcomingCount}
+          </Chip>
+        ) : (
+          <span className="text-foreground-400 text-xs">—</span>
+        )}
+      </div>
+    ),
+  },
+  {
+    id: "financial",
+    header: () => <div className="text-right">Financiero</div>,
+    enableSorting: true,
+    cell: ({ row }) => {
+      const s = row.original;
+      const fs = seriesFinancialStatus(s.events);
+      return (
+        <div className="flex flex-col items-end gap-0.5">
+          {fs === "unknown" ? (
+            <span className="text-foreground-300 text-xs italic">Por definir</span>
+          ) : fs === "free" ? (
+            <span className="text-success text-xs italic">Sin costo</span>
+          ) : (
+            <span className="text-foreground-400 text-xs">
+              ${s.totalPaid.toLocaleString("es-CL")} /
+              <span className="text-foreground-500">
+                {" "}
+                ${s.totalExpected.toLocaleString("es-CL")}
+              </span>
+            </span>
+          )}
+          {s.remainingExpected > 0 && (
+            <span className="font-medium text-danger text-xs">
+              −${s.remainingExpected.toLocaleString("es-CL")} pend.
+            </span>
+          )}
+        </div>
+      );
+    },
+  },
+];
+
+const ABANDONMENT_COLUMNS: ColumnDef<ClinicalSeriesSnapshot>[] = [
+  patientColumn,
+  rutsColumn,
+  phonesColumn,
+  {
+    id: "lastEvent",
+    header: "Últ. sesión",
+    enableSorting: true,
+    cell: ({ row }) => (
+      <span className="text-foreground-400 text-xs">
+        {row.original.lastEventDate ? formatEventDate(row.original.lastEventDate, true) : "—"}
+      </span>
+    ),
+  },
+  {
+    id: "daysSinceLastEvent",
+    header: () => <div className="text-right">Días</div>,
+    enableSorting: true,
+    cell: ({ row }) => (
+      <div className="text-right">
+        {row.original.daysSinceLastEvent != null ? (
+          <span className="font-medium text-foreground-600 text-xs tabular-nums">
+            {row.original.daysSinceLastEvent}
+          </span>
+        ) : (
+          <span className="text-foreground-400 text-xs">—</span>
+        )}
+      </div>
+    ),
+  },
+  {
+    id: "bucket",
+    header: "Bucket",
+    enableSorting: false,
+    cell: ({ row }) =>
+      row.original.abandonmentBucket ? (
+        <Chip
+          size="sm"
+          color={ABANDONMENT_BUCKET_COLORS[row.original.abandonmentBucket]}
+          variant="soft"
+        >
+          {ABANDONMENT_BUCKET_LABELS[row.original.abandonmentBucket]}
+        </Chip>
+      ) : (
+        <span className="text-foreground-400 text-xs">—</span>
+      ),
+  },
+  statusColumn,
+  {
+    id: "contact",
+    header: "Contacto",
+    enableSorting: false,
+    cell: ({ row }) => {
+      const c = row.original.lastAbandonmentContact;
+      return c ? (
+        <Tooltip>
+          <Tooltip.Trigger aria-label={OUTCOME_LABELS[c.outcome]}>
+            <Chip size="sm" color={OUTCOME_COLORS[c.outcome]} variant="soft">
+              <Check size={10} />
+              <Chip.Label>{OUTCOME_LABELS[c.outcome]}</Chip.Label>
+            </Chip>
+          </Tooltip.Trigger>
+          <Tooltip.Content>{formatEventDate(c.contactedAt.slice(0, 10), true)}</Tooltip.Content>
+        </Tooltip>
+      ) : (
+        <span className="text-foreground-300 text-xs italic">Sin contacto</span>
+      );
+    },
+  },
+];
+
 export function ClinicalSeriesView() {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<ClinicalSeriesTab>("series");
@@ -1206,24 +1452,11 @@ export function ClinicalSeriesView() {
   });
 
   const totalPages = data ? Math.ceil(data.total / pageSize) : 1;
-  const pageItems = buildPaginationItems({
-    currentPage: page,
-    totalPages,
-  });
   const isapreProviderOptions = insuranceStats?.isapreProviders ?? [];
   const showIsapreSpecificFilters = healthInsurance === "ISAPRE" || !!isapreProvider;
   const selectedIsapreFilter = isapreOnlyUnidentified
     ? ISAPRE_UNIDENTIFIED_OPTION
     : ((isapreProvider ?? ISAPRE_ALL_OPTION) as Key);
-
-  const handleRowSelect = (keys: Selection) => {
-    if (keys === "all") return;
-    const [firstKey] = keys;
-    if (firstKey !== undefined) {
-      setSelectedId(Number(firstKey));
-      setDrawerOpen(true);
-    }
-  };
 
   const handleDrawerOpenChange = (open: boolean) => {
     setDrawerOpen(open);
@@ -1435,7 +1668,15 @@ export function ClinicalSeriesView() {
         onSelectionChange={(key) => setActiveTab(key as ClinicalSeriesTab)}
       >
         <Tabs.ListContainer>
-          <Tabs.List aria-label="Vistas de series clínicas" className="w-full justify-start">
+          {/* HeroUI's primary Tabs variant gives the list no overflow
+              handling — 4 full-width pills don't fit a 375px viewport
+              (the spec caught a 4px bleed). Mobile: intrinsic-width tabs
+              in a horizontally-scrollable list (scrollbar hidden). ≥md:
+              unchanged — the wider content column fits all four. */}
+          <Tabs.List
+            aria-label="Vistas de series clínicas"
+            className="w-full justify-start max-md:overflow-x-auto max-md:[scrollbar-width:none] max-md:[&::-webkit-scrollbar]:hidden max-md:[&>*]:shrink-0 max-md:[&>*]:!w-auto"
+          >
             <Tabs.Tab id="series">
               Series
               <Tabs.Indicator />
@@ -2016,401 +2257,39 @@ export function ClinicalSeriesView() {
                   )}
                 </div>
               ) : (
-                <Table className="flex-1 min-h-0 flex flex-col">
-                  <Table.ScrollContainer className="flex-1 min-h-0">
-                    <Table.Content
-                      key={isAbandonmentTab ? "abandonment" : "series"}
-                      aria-label="Series Clínicas"
-                      selectionMode="single"
-                      selectedKeys={selectedId !== null ? new Set([selectedId]) : new Set()}
-                      onSelectionChange={handleRowSelect}
-                      sortDescriptor={sortDescriptor}
-                      onSortChange={setSortDescriptor}
-                      className="min-w-384"
-                    >
-                      <Table.Header>
-                        {isAbandonmentTab ? (
-                          <>
-                            <Table.Column
-                              allowsSorting
-                              id="patient"
-                              isRowHeader
-                              className="w-[22%]"
-                            >
-                              Paciente
-                            </Table.Column>
-                            <Table.Column id="ruts" className="w-[16%]">
-                              RUTs
-                            </Table.Column>
-                            <Table.Column id="phones" className="w-[18%]">
-                              Teléfonos
-                            </Table.Column>
-                            <Table.Column allowsSorting id="lastEvent" className="w-[12%]">
-                              Últ. sesión
-                            </Table.Column>
-                            <Table.Column
-                              allowsSorting
-                              id="daysSinceLastEvent"
-                              className="w-[10%] text-right"
-                            >
-                              Días
-                            </Table.Column>
-                            <Table.Column id="bucket" className="w-[11%]">
-                              Bucket
-                            </Table.Column>
-                            <Table.Column allowsSorting id="status" className="w-[9%]">
-                              Estado
-                            </Table.Column>
-                            <Table.Column id="contact" className="w-[12%]">
-                              Contacto
-                            </Table.Column>
-                          </>
-                        ) : (
-                          <>
-                            <Table.Column
-                              allowsSorting
-                              id="patient"
-                              isRowHeader
-                              className="w-[18%]"
-                            >
-                              Paciente
-                            </Table.Column>
-                            <Table.Column id="ruts" className="w-[16%]">
-                              RUTs
-                            </Table.Column>
-                            <Table.Column id="phones" className="w-[18%]">
-                              Teléfonos
-                            </Table.Column>
-                            <Table.Column allowsSorting id="kind" className="w-[11%]">
-                              Tipo
-                            </Table.Column>
-                            <Table.Column allowsSorting id="status" className="w-[10%]">
-                              Estado
-                            </Table.Column>
-                            <Table.Column allowsSorting id="lastEvent" className="w-[10%]">
-                              Últ. evento
-                            </Table.Column>
-                            <Table.Column allowsSorting id="nextEvent" className="w-[10%]">
-                              Próx. visita
-                            </Table.Column>
-                            <Table.Column
-                              allowsSorting
-                              id="totalEvents"
-                              className="w-[7%] text-right"
-                            >
-                              Eventos
-                            </Table.Column>
-                            <Table.Column
-                              allowsSorting
-                              id="upcomingEvents"
-                              className="w-[8%] text-right"
-                            >
-                              Próximos
-                            </Table.Column>
-                            <Table.Column
-                              allowsSorting
-                              id="financial"
-                              className="w-[20%] text-right"
-                            >
-                              Financiero
-                            </Table.Column>
-                          </>
-                        )}
-                      </Table.Header>
-                      <Table.Body>
-                        {data.items.map((s) => {
-                          const samePerson = isSamePatientAndBeneficiary(s);
-                          return (
-                            <Table.Row key={s.id} id={s.id} className="cursor-pointer group">
-                              <Table.Cell>
-                                <div className="flex flex-col gap-1">
-                                  <span className="text-sm font-medium text-foreground transition-colors group-hover:text-accent">
-                                    {s.patientName ?? s.displayName ?? (
-                                      <span className="text-foreground-400 italic">Sin nombre</span>
-                                    )}
-                                  </span>
-                                  {s.beneficiaryName && !samePerson && (
-                                    <span className="text-xs text-foreground-400">
-                                      Beneficiario: {s.beneficiaryName}
-                                    </span>
-                                  )}
-                                </div>
-                              </Table.Cell>
-                              <Table.Cell>
-                                <IdentityDropdownCell entries={buildRutEntries(s)} title="RUTs" />
-                              </Table.Cell>
-                              <Table.Cell>
-                                <IdentityDropdownCell
-                                  entries={buildPhoneEntries(s)}
-                                  title="Teléfonos"
-                                />
-                              </Table.Cell>
-                              {isAbandonmentTab ? (
-                                <>
-                                  <Table.Cell>
-                                    <span className="text-xs text-foreground-400">
-                                      {s.lastEventDate
-                                        ? formatEventDate(s.lastEventDate, true)
-                                        : "—"}
-                                    </span>
-                                  </Table.Cell>
-                                  <Table.Cell className="text-right">
-                                    {s.daysSinceLastEvent != null ? (
-                                      <span className="text-xs font-medium tabular-nums text-foreground-600">
-                                        {s.daysSinceLastEvent}
-                                      </span>
-                                    ) : (
-                                      <span className="text-xs text-foreground-400">—</span>
-                                    )}
-                                  </Table.Cell>
-                                  <Table.Cell>
-                                    {s.abandonmentBucket ? (
-                                      <Chip
-                                        size="sm"
-                                        color={ABANDONMENT_BUCKET_COLORS[s.abandonmentBucket]}
-                                        variant="soft"
-                                      >
-                                        {ABANDONMENT_BUCKET_LABELS[s.abandonmentBucket]}
-                                      </Chip>
-                                    ) : (
-                                      <span className="text-xs text-foreground-400">—</span>
-                                    )}
-                                  </Table.Cell>
-                                  <Table.Cell>
-                                    <Chip size="sm" color={STATUS_COLORS[s.status]} variant="soft">
-                                      {STATUS_LABELS[s.status]}
-                                    </Chip>
-                                  </Table.Cell>
-                                  <Table.Cell>
-                                    {s.lastAbandonmentContact ? (
-                                      <Tooltip>
-                                        <Tooltip.Trigger
-                                          aria-label={
-                                            OUTCOME_LABELS[s.lastAbandonmentContact.outcome]
-                                          }
-                                        >
-                                          <Chip
-                                            size="sm"
-                                            color={OUTCOME_COLORS[s.lastAbandonmentContact.outcome]}
-                                            variant="soft"
-                                          >
-                                            <Check size={10} />
-                                            <Chip.Label>
-                                              {OUTCOME_LABELS[s.lastAbandonmentContact.outcome]}
-                                            </Chip.Label>
-                                          </Chip>
-                                        </Tooltip.Trigger>
-                                        <Tooltip.Content>
-                                          {formatEventDate(
-                                            s.lastAbandonmentContact.contactedAt.slice(0, 10),
-                                            true
-                                          )}
-                                        </Tooltip.Content>
-                                      </Tooltip>
-                                    ) : (
-                                      <span className="text-xs text-foreground-300 italic">
-                                        Sin contacto
-                                      </span>
-                                    )}
-                                  </Table.Cell>
-                                </>
-                              ) : (
-                                <>
-                                  <Table.Cell>
-                                    <div className="flex flex-col items-start gap-1">
-                                      <Chip
-                                        size="sm"
-                                        color={KIND_COLORS[s.kind]}
-                                        variant="tertiary"
-                                      >
-                                        {KIND_LABELS[s.kind]}
-                                      </Chip>
-                                      {s.allergenType && (
-                                        <Chip size="sm" color="accent" variant="tertiary">
-                                          {ALLERGEN_LABELS[s.allergenType]}
-                                        </Chip>
-                                      )}
-                                      {s.vaccineProduct && (
-                                        <Chip size="sm" color="default" variant="tertiary">
-                                          {VACCINE_LABELS[s.vaccineProduct]}
-                                        </Chip>
-                                      )}
-                                      {s.healthInsurance && (
-                                        <Chip
-                                          size="sm"
-                                          color={INSURANCE_COLORS[s.healthInsurance]}
-                                          variant="tertiary"
-                                        >
-                                          {s.healthInsurance === "ISAPRE" && s.isapreName
-                                            ? `${INSURANCE_LABELS[s.healthInsurance]} · ${s.isapreName}`
-                                            : INSURANCE_LABELS[s.healthInsurance]}
-                                        </Chip>
-                                      )}
-                                    </div>
-                                  </Table.Cell>
-                                  <Table.Cell>
-                                    <Chip size="sm" color={STATUS_COLORS[s.status]} variant="soft">
-                                      {STATUS_LABELS[s.status]}
-                                    </Chip>
-                                  </Table.Cell>
-                                  <Table.Cell>
-                                    <span className="text-xs text-foreground-400">
-                                      {s.lastEventDate
-                                        ? formatEventDate(s.lastEventDate, true)
-                                        : "—"}
-                                    </span>
-                                  </Table.Cell>
-                                  <Table.Cell>
-                                    {s.nextEventDate ? (
-                                      <span className="text-xs font-medium text-accent">
-                                        {formatEventDate(s.nextEventDate)}
-                                      </span>
-                                    ) : (
-                                      <span className="text-xs text-foreground-400">—</span>
-                                    )}
-                                  </Table.Cell>
-                                  <Table.Cell className="text-right">
-                                    <span className="text-xs tabular-nums text-foreground-500">
-                                      {s.events.length}
-                                    </span>
-                                  </Table.Cell>
-                                  <Table.Cell className="text-right">
-                                    {s.upcomingCount > 0 ? (
-                                      <Chip size="sm" color="accent" variant="soft">
-                                        {s.upcomingCount}
-                                      </Chip>
-                                    ) : (
-                                      <span className="text-xs text-foreground-400">—</span>
-                                    )}
-                                  </Table.Cell>
-                                  <Table.Cell className="text-right">
-                                    <div className="flex flex-col items-end gap-0.5">
-                                      {(() => {
-                                        const fs = seriesFinancialStatus(s.events);
-                                        if (fs === "unknown")
-                                          return (
-                                            <span className="text-xs text-foreground-300 italic">
-                                              Por definir
-                                            </span>
-                                          );
-                                        if (fs === "free")
-                                          return (
-                                            <span className="text-xs text-success italic">
-                                              Sin costo
-                                            </span>
-                                          );
-                                        return (
-                                          <span className="text-xs text-foreground-400">
-                                            ${s.totalPaid.toLocaleString("es-CL")} /
-                                            <span className="text-foreground-500">
-                                              {" "}
-                                              ${s.totalExpected.toLocaleString("es-CL")}
-                                            </span>
-                                          </span>
-                                        );
-                                      })()}
-                                      {s.remainingExpected > 0 && (
-                                        <span className="text-xs font-medium text-danger">
-                                          −${s.remainingExpected.toLocaleString("es-CL")} pend.
-                                        </span>
-                                      )}
-                                    </div>
-                                  </Table.Cell>
-                                </>
-                              )}
-                            </Table.Row>
-                          );
-                        })}
-                      </Table.Body>
-                    </Table.Content>
-                  </Table.ScrollContainer>
-                  <Table.Footer className="border-t border-separator/60">
-                    <div className="flex flex-col items-start justify-between gap-3 px-4 py-3 sm:flex-row sm:items-center">
-                      <div className="flex flex-wrap items-center gap-3 text-default-500 text-sm">
-                        <span>
-                          {data.total > 0
-                            ? `${((page - 1) * pageSize + 1).toLocaleString("es-CL")}–${Math.min(
-                                page * pageSize,
-                                data.total
-                              ).toLocaleString("es-CL")} de ${data.total.toLocaleString("es-CL")}`
-                            : `${data.total.toLocaleString("es-CL")} resultados`}
-                        </span>
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-xs uppercase tracking-wide">Filas</span>
-                          <Select
-                            className="w-24"
-                            value={String(pageSize)}
-                            onChange={(key) =>
-                              key && setPageSize(Number(key) as (typeof PAGE_SIZE_OPTIONS)[number])
-                            }
-                            variant="secondary"
-                          >
-                            <Label className="sr-only">Filas por página</Label>
-                            <Select.Trigger>
-                              <Select.Value />
-                              <Select.Indicator />
-                            </Select.Trigger>
-                            <Select.Popover>
-                              <ListBox>
-                                {PAGE_SIZE_OPTIONS.map((n) => (
-                                  <ListBox.Item key={n} id={String(n)} textValue={`${n}`}>
-                                    {n}
-                                    <ListBox.ItemIndicator />
-                                  </ListBox.Item>
-                                ))}
-                              </ListBox>
-                            </Select.Popover>
-                          </Select>
-                        </div>
-                      </div>
-
-                      {totalPages > 1 ? (
-                        <Pagination className="w-full sm:w-auto" size="sm">
-                          <Pagination.Summary className="text-default-500 text-sm">
-                            Página {page.toLocaleString("es-CL")} de{" "}
-                            {totalPages.toLocaleString("es-CL")}
-                          </Pagination.Summary>
-                          <Pagination.Content>
-                            <Pagination.Item>
-                              <Pagination.Previous
-                                isDisabled={page === 1}
-                                onPress={() => setPage((p) => Math.max(1, p - 1))}
-                              >
-                                <Pagination.PreviousIcon />
-                                <span>Anterior</span>
-                              </Pagination.Previous>
-                            </Pagination.Item>
-                            {pageItems.map((item) =>
-                              item.type === "ellipsis" ? (
-                                <Pagination.Item key={item.key}>
-                                  <Pagination.Ellipsis />
-                                </Pagination.Item>
-                              ) : (
-                                <Pagination.Item key={item.key}>
-                                  <Pagination.Link
-                                    isActive={item.value === page}
-                                    onPress={() => setPage(item.value ?? 1)}
-                                  >
-                                    {item.value}
-                                  </Pagination.Link>
-                                </Pagination.Item>
-                              )
-                            )}
-                            <Pagination.Item>
-                              <Pagination.Next
-                                isDisabled={page === totalPages}
-                                onPress={() => setPage((p) => Math.min(totalPages, p + 1))}
-                              >
-                                <span>Siguiente</span>
-                                <Pagination.NextIcon />
-                              </Pagination.Next>
-                            </Pagination.Item>
-                          </Pagination.Content>
-                        </Pagination>
-                      ) : null}
-                    </div>
-                  </Table.Footer>
-                </Table>
+                <DataTable
+                  key={isAbandonmentTab ? "abandonment" : "series"}
+                  columns={isAbandonmentTab ? ABANDONMENT_COLUMNS : SERIES_COLUMNS}
+                  data={data.items}
+                  enableToolbar={false}
+                  enableVirtualization={false}
+                  manualSorting
+                  onPaginationChange={(updater) => {
+                    const prev = { pageIndex: page - 1, pageSize };
+                    const next = typeof updater === "function" ? updater(prev) : updater;
+                    if (next.pageSize !== pageSize) {
+                      setPageSize(next.pageSize as (typeof PAGE_SIZE_OPTIONS)[number]);
+                      setPage(1);
+                    } else {
+                      setPage(next.pageIndex + 1);
+                    }
+                  }}
+                  onRowClick={(s) => {
+                    setSelectedId(s.id);
+                    setDrawerOpen(true);
+                  }}
+                  onSortingChange={(updater) => {
+                    const current = descriptorToSortingState(sortDescriptor);
+                    const next = typeof updater === "function" ? updater(current) : updater;
+                    const desc = sortingStateToDescriptor(next);
+                    if (desc) setSortDescriptor(desc);
+                  }}
+                  pageCount={totalPages}
+                  pageSizeOptions={[...PAGE_SIZE_OPTIONS]}
+                  pagination={{ pageIndex: page - 1, pageSize }}
+                  scrollMode="container"
+                  sorting={descriptorToSortingState(sortDescriptor)}
+                />
               )}
             </Card>
           )}
@@ -2652,7 +2531,7 @@ export function ClinicalSeriesView() {
                                         >
                                           <Accordion.Heading>
                                             <Accordion.Trigger
-                                              className={`w-full rounded-xl px-2 py-2 text-left hover:bg-default-100/60 data-[hover=true]:bg-default-100/60${isFuture ? " ring-1 ring-accent/30" : ""}`}
+                                              className={`w-full rounded-xl text-left hover:bg-default-100/60 data-[hover=true]:bg-default-100/60 p-2 ${isFuture ? " ring-1 ring-accent/30" : ""}`}
                                             >
                                               <div className="flex min-w-0 flex-1 flex-col gap-2">
                                                 <div className="flex flex-wrap items-start justify-between gap-2">

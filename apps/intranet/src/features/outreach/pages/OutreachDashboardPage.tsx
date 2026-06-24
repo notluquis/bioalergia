@@ -1,5 +1,8 @@
-import { Card, Chip, Spinner, Table } from "@heroui/react";
+import { DataTable } from "@/components/data-table/DataTable";
+import { Card, Chip, Spinner } from "@heroui/react";
+import type { ColumnDef } from "@tanstack/react-table";
 import { Link } from "@tanstack/react-router";
+import { useMemo } from "react";
 import type { OutreachProspectType, OutreachStatus } from "@finanzas/orpc-contracts/outreach";
 import { useDashboard } from "../hooks/useOutreach";
 import { DEPENDENCIA_LABELS, ESTADO_COLOR, ESTADO_LABELS, INTERACCION_LABELS } from "../labels";
@@ -189,6 +192,8 @@ function StatCard({ label, value, accent }: { label: string; value: number; acce
   );
 }
 
+type MatrixRow = { id: string; tipo: OutreachProspectType };
+
 function TipoEstadoMatrix({
   data,
 }: {
@@ -196,35 +201,44 @@ function TipoEstadoMatrix({
 }) {
   const tipos = Array.from(new Set(data.map((d) => d.tipo))) as OutreachProspectType[];
   const estados = Array.from(new Set(data.map((d) => d.estado))) as OutreachStatus[];
+
+  const lookup = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const d of data) m.set(`${d.tipo}|${d.estado}`, d.count);
+    return m;
+  }, [data]);
+
+  const columns = useMemo<ColumnDef<MatrixRow>[]>(
+    () => [
+      {
+        accessorKey: "tipo",
+        header: "Tipo",
+        cell: ({ row }) => TIPO_LABELS[row.original.tipo] ?? row.original.tipo,
+        enableSorting: false,
+      },
+      ...estados.map<ColumnDef<MatrixRow>>((e) => ({
+        id: e,
+        header: ESTADO_LABELS[e].slice(0, 6),
+        cell: ({ row }) => lookup.get(`${row.original.tipo}|${e}`) || "·",
+        enableSorting: false,
+      })),
+    ],
+    [estados, lookup]
+  );
+
+  const rows = useMemo<MatrixRow[]>(() => tipos.map((t) => ({ id: t, tipo: t })), [tipos]);
+
   if (tipos.length === 0) {
     return <p className="text-default-500 text-sm">Sin datos.</p>;
   }
-  const lookup = new Map<string, number>();
-  for (const d of data) lookup.set(`${d.tipo}|${d.estado}`, d.count);
 
   return (
-    <Table>
-      <Table.ScrollContainer>
-        <Table.Content aria-label="Matriz tipo × estado">
-          <Table.Header>
-            <Table.Column isRowHeader>Tipo</Table.Column>
-            {estados.map((e) => (
-              <Table.Column key={e}>{ESTADO_LABELS[e].slice(0, 6)}</Table.Column>
-            ))}
-          </Table.Header>
-          <Table.Body items={tipos.map((t) => ({ id: t, tipo: t }))}>
-            {(row) => (
-              <Table.Row id={row.id}>
-                <Table.Cell>{TIPO_LABELS[row.tipo] ?? row.tipo}</Table.Cell>
-                {estados.map((e) => {
-                  const v = lookup.get(`${row.tipo}|${e}`) ?? 0;
-                  return <Table.Cell key={e}>{v || "·"}</Table.Cell>;
-                })}
-              </Table.Row>
-            )}
-          </Table.Body>
-        </Table.Content>
-      </Table.ScrollContainer>
-    </Table>
+    <DataTable
+      columns={columns}
+      data={rows}
+      enablePagination={false}
+      enableToolbar={false}
+      enableVirtualization={false}
+    />
   );
 }

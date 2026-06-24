@@ -1,7 +1,7 @@
 import { db } from "@finanzas/db";
 import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
-import { getSessionUser, hasPermission } from "../auth.ts";
+import { getSessionUser, hasPermission } from "../lib/auth.ts";
 import { logWarn } from "../lib/logger.ts";
 import { subscribeWaConversation } from "../modules/wa-cloud/events.ts";
 
@@ -13,7 +13,7 @@ export const waCloudSseRoutes = new Hono();
 // every 3s. Events:
 //   event: message     data: { messageId, direction, ts }
 //   event: status      data: { metaMessageId, status, ts }
-//   event: typing      data: { ts }
+//   event: typing      data: { ts, userId, userName }
 //   event: reaction    data: { metaMessageId, emoji, ts }
 //   event: deleted     data: { metaMessageId, ts }
 //   (heartbeat every 25s as :ping comment to keep proxies open)

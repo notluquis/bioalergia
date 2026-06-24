@@ -20,6 +20,7 @@ describe("clinical series patient-name cleaning", () => {
       ["toca arantxa emilia magdalena ruiz etchepare", "arantxa emilia magdalena ruiz etchepare"],
       ["confirm emilio sabath saez", "emilio sabath saez"],
       ["llegop Emilio Sabath Saez, vacuna de clustoid (50)", "emilio sabath saez"],
+      ["isaac chacon chavez clusted max", "isaac chacon chavez"],
       ["ultima daniel escobar romero", "daniel escobar romero"],
       [
         "no vino confirma, vacuna Clustoid mantención (50), Daniel Escobar, Hualpén, 995936864",

@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type * as NotificationStore from "./use-notification-store";
 
 type PersistedNotifications = {
   notifications: unknown[];
@@ -14,7 +15,7 @@ function isPersistedNotifications(value: unknown): value is PersistedNotificatio
   );
 }
 
-type NotificationStoreModule = typeof import("./use-notification-store");
+type NotificationStoreModule = typeof NotificationStore;
 
 const storageKey = (scope: string) => `bioalergia-notification-history:${scope}`;
 

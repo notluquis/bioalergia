@@ -1,5 +1,6 @@
-import { Spinner } from "@heroui/react";
-import { createFileRoute, getRouteApi } from "@tanstack/react-router";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { createFileRoute } from "@tanstack/react-router";
+import { requirePermission } from "@/lib/authz/route-guards";
 import { lazy, Suspense } from "react";
 
 const ClinicalSeriesPage = lazy(() =>
@@ -8,14 +9,12 @@ const ClinicalSeriesPage = lazy(() =>
   }))
 );
 
-const routeApi = getRouteApi("/_authed/clinical/");
-
 export const Route = createFileRoute("/_authed/clinical/")({
   component: () => (
     <Suspense
       fallback={
         <div className="flex items-center justify-center py-24">
-          <Spinner aria-label="Cargando series clínicas" />
+          <LoadingSpinner label="Cargando series clínicas" />
         </div>
       }
     >
@@ -27,10 +26,5 @@ export const Route = createFileRoute("/_authed/clinical/")({
     permission: { action: "read", subject: "ClinicalSeries" },
     title: "Series clínicas",
   },
-  beforeLoad: ({ context }) => {
-    if (!context.can("read", "ClinicalSeries")) {
-      // eslint-disable-next-line @typescript-eslint/only-throw-error
-      throw routeApi.redirect({ to: "/" });
-    }
-  },
+  beforeLoad: requirePermission("read", "ClinicalSeries"),
 });

@@ -1,10 +1,9 @@
+import { formatChile } from "@/lib/dates";
 import { Button, Chip, Spinner } from "@heroui/react";
 import type { ColumnDef } from "@tanstack/react-table";
-import dayjs from "dayjs";
 import { Download, RefreshCw } from "lucide-react";
+import { isReportPending } from "@/features/finance/mercadopago/reportStatus";
 import type { MPReport } from "@/services/mercadopago";
-
-const REPORT_PENDING_REGEX = /processing|pending|in_progress|waiting|generating|queued|creating/i;
 
 export const getMpReportColumns = (
   handleDownload: (fileName: string) => void,
@@ -27,7 +26,7 @@ export const getMpReportColumns = (
       const date = row.original.date_created ?? row.original.begin_date;
       return (
         <span className="whitespace-nowrap text-sm">
-          {date ? dayjs(date).tz().format("DD/MM/YY HH:mm") : "-"}
+          {date ? formatChile(date, "DD/MM/YY HH:mm") : "-"}
         </span>
       );
     },
@@ -38,7 +37,7 @@ export const getMpReportColumns = (
     accessorKey: "begin_date",
     cell: ({ row }) => (
       <span className="whitespace-nowrap text-default-600 text-sm">
-        {row.original.begin_date ? dayjs(row.original.begin_date).format("DD/MM/YYYY") : "-"}
+        {row.original.begin_date ? formatChile(row.original.begin_date, "DD/MM/YYYY") : "-"}
       </span>
     ),
 
@@ -48,7 +47,7 @@ export const getMpReportColumns = (
     accessorKey: "end_date",
     cell: ({ row }) => (
       <span className="whitespace-nowrap text-default-600 text-sm">
-        {row.original.end_date ? dayjs(row.original.end_date).format("DD/MM/YYYY") : "-"}
+        {row.original.end_date ? formatChile(row.original.end_date, "DD/MM/YYYY") : "-"}
       </span>
     ),
 
@@ -91,7 +90,7 @@ export const getMpReportColumns = (
         </Chip>
       ) : (
         <Chip className="gap-1.5" color="success" size="sm" variant="soft">
-          <span className="h-1.5 w-1.5 rounded-full bg-success" />
+          <span className="rounded-full bg-success size-1.5" />
           <Chip.Label>Disponible</Chip.Label>
         </Chip>
       ),
@@ -106,7 +105,8 @@ export const getMpReportColumns = (
       return (
         <div className="flex justify-end gap-1 text-right">
           <Button
-            className="h-9 w-9 p-0 sm:opacity-70 sm:group-hover:opacity-100"
+            aria-label="Descargar reporte"
+            className="p-0 sm:opacity-70 sm:group-hover:opacity-100 size-9"
             isDisabled={downloadPending || pending || !report.file_name}
             isIconOnly
             isPending={downloadPending}
@@ -118,11 +118,12 @@ export const getMpReportColumns = (
             variant="outline"
           >
             {({ isPending }) =>
-              isPending ? <Spinner color="current" size="sm" /> : <Download className="h-5 w-5" />
+              isPending ? <Spinner color="current" size="sm" /> : <Download className="size-5" />
             }
           </Button>
           <Button
-            className="h-9 w-9 p-0 sm:opacity-70 sm:group-hover:opacity-100"
+            aria-label="Procesar reporte"
+            className="p-0 sm:opacity-70 sm:group-hover:opacity-100 size-9"
             isDisabled={processPending || pending || !report.file_name}
             isIconOnly
             isPending={isProcessingThis}
@@ -134,7 +135,7 @@ export const getMpReportColumns = (
             variant="outline"
           >
             {({ isPending }) =>
-              isPending ? <Spinner color="current" size="sm" /> : <RefreshCw className="h-5 w-5" />
+              isPending ? <Spinner color="current" size="sm" /> : <RefreshCw className="size-5" />
             }
           </Button>
         </div>
@@ -144,10 +145,3 @@ export const getMpReportColumns = (
     id: "actions",
   },
 ];
-
-function isReportPending(status?: null | string) {
-  if (!status) {
-    return false;
-  }
-  return REPORT_PENDING_REGEX.test(status);
-}

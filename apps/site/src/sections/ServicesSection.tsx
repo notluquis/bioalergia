@@ -22,7 +22,7 @@ export function ServicesSection() {
             <Card.Content className="grid gap-4 pb-6">
               {service.points.map((point) => (
                 <div className="flex items-start gap-3 text-sm leading-relaxed" key={point}>
-                  <span className="mt-2 h-2 w-2 rounded-full bg-(--accent)" />
+                  <span className="mt-2 rounded-full bg-(--accent) size-2" />
                   <span className="text-(--ink-muted)">{point}</span>
                 </div>
               ))}

@@ -1,7 +1,8 @@
-import { Badge, Button, Card, Chip, EmptyState, Spinner } from "@heroui/react";
-import dayjs from "dayjs";
+import { formatChile } from "@/lib/dates";
+import { Badge, Button, Card, Chip, EmptyState } from "@heroui/react";
 import { Bell, Check, Megaphone, Settings2, ShieldAlert } from "lucide-react";
 import { useState } from "react";
+import { WaListSkeleton } from "../components/shared/Skeletons";
 import { useAccountEvents, useAcknowledgeAccountEvent } from "../hooks/useWaCloud";
 
 const SEVERITY_COLOR: Record<string, "success" | "warning" | "danger" | "default" | "accent"> = {
@@ -47,9 +48,9 @@ export function WaCloudAlertsPage() {
       </div>
 
       {events.isLoading ? (
-        <div className="flex justify-center py-12">
-          <Spinner />
-        </div>
+        <Card>
+          <WaListSkeleton rows={5} />
+        </Card>
       ) : items.length === 0 ? (
         <Card>
           <Card.Content className="p-8">
@@ -89,7 +90,7 @@ export function WaCloudAlertsPage() {
                         <Chip.Label>{e.kind}</Chip.Label>
                       </Chip>
                       <span className="text-default-400 text-xs">
-                        {dayjs(e.receivedAt).format("DD-MM HH:mm")}
+                        {formatChile(e.receivedAt, "DD-MM HH:mm")}
                       </span>
                     </div>
                     {e.description && <p className="text-default-600 text-sm">{e.description}</p>}

@@ -1,7 +1,6 @@
 import { Button, Chip, type ChipProps } from "@heroui/react";
 import type { ColumnDef } from "@tanstack/react-table";
-import dayjs from "dayjs";
-
+import { chileDay, formatChile, today } from "@/lib/dates";
 import { currencyFormatter } from "@/lib/format";
 
 import type { LoanSchedule } from "../types";
@@ -10,13 +9,13 @@ import type { LoanSchedule } from "../types";
 const isScheduleLate = (schedule: LoanSchedule) => {
   return (
     schedule.status === "OVERDUE" ||
-    (schedule.status === "PENDING" &&
-      dayjs(schedule.due_date, "YYYY-MM-DD").isBefore(dayjs(), "day"))
+    (schedule.status === "PENDING" && chileDay(schedule.due_date) < today())
   );
 };
 
 export const getColumns = (
   actions: {
+    onEditSchedule: (schedule: LoanSchedule) => void;
     onRegisterPayment: (schedule: LoanSchedule) => void;
     onUnlinkPayment: (schedule: LoanSchedule) => void;
   },
@@ -37,7 +36,7 @@ export const getColumns = (
       const isLate = isScheduleLate(schedule);
       return (
         <span className={isLate ? "font-semibold text-rose-600" : ""}>
-          {dayjs(schedule.due_date, "YYYY-MM-DD").format("DD MMM YYYY")}
+          {formatChile(schedule.due_date, "DD MMM YYYY")}
         </span>
       );
     },
@@ -93,6 +92,10 @@ export const getColumns = (
         props.color = "warning";
         props.variant = "primary";
         statusLabel = "Parcial";
+      } else if (schedule.status === "SKIPPED") {
+        props.color = "default";
+        props.variant = "secondary";
+        statusLabel = "Omitida";
       } else if (isLate) {
         props.color = "danger";
         props.variant = "primary";
@@ -117,14 +120,37 @@ export const getColumns = (
         return <div className="text-right text-default-200">—</div>;
       }
       return (
-        <div className="flex flex-col items-end">
+        <div className="flex min-w-28 flex-col items-end gap-1">
           <span className="font-bold text-success">
             {currencyFormatter.format(schedule.paid_amount)}
           </span>
-          {schedule.paid_date && (
-            <span className="text-xs text-default-400">
-              {dayjs(schedule.paid_date, "YYYY-MM-DD").format("DD MMM")}
+          <div className="flex items-center gap-1 text-default-400 text-xs">
+            {schedule.paid_date && <span>{formatChile(schedule.paid_date, "DD MMM")}</span>}
+            {schedule.payments && schedule.payments.length > 1 && (
+              <span>· {schedule.payments.length} pagos</span>
+            )}
+          </div>
+          {schedule.payments && schedule.payments.length === 1 && (
+            <span className="max-w-28 truncate text-default-500 text-xs">
+              {schedule.payments[0]?.kind === "DISCOUNT"
+                ? "Desc."
+                : schedule.payments[0]?.kind === "ADJUSTMENT"
+                  ? "Ajuste"
+                  : "Pago"}{" "}
+              {currencyFormatter.format(schedule.payments[0]?.amount ?? 0)}
             </span>
+          )}
+          {schedule.payments && schedule.payments.length > 1 && (
+            <div className="flex max-w-40 flex-wrap justify-end gap-1">
+              {schedule.payments.map((payment) => (
+                <span
+                  className="rounded-full bg-default-100 px-1.5 py-0.5 text-default-600 text-xs"
+                  key={payment.id}
+                >
+                  {currencyFormatter.format(payment.amount)}
+                </span>
+              ))}
+            </div>
           )}
         </div>
       );
@@ -136,9 +162,30 @@ export const getColumns = (
         {
           cell: ({ row }) => {
             const schedule = row.original;
+            const hasPayments = schedule.status === "PAID" || schedule.status === "PARTIAL";
             return (
-              <div className="flex justify-end">
-                {schedule.status === "PAID" || schedule.status === "PARTIAL" ? (
+              <div className="flex justify-end gap-2">
+                <Button
+                  onPress={() => {
+                    actions.onEditSchedule(schedule);
+                  }}
+                  size="sm"
+                  variant="secondary"
+                >
+                  Editar
+                </Button>
+                {schedule.status !== "PAID" && (
+                  <Button
+                    onPress={() => {
+                      actions.onRegisterPayment(schedule);
+                    }}
+                    size="sm"
+                    variant="primary"
+                  >
+                    {schedule.status === "PARTIAL" ? "Agregar" : "Pagar"}
+                  </Button>
+                )}
+                {hasPayments && (
                   <Button
                     onPress={() => {
                       actions.onUnlinkPayment(schedule);
@@ -147,17 +194,6 @@ export const getColumns = (
                     variant="outline"
                   >
                     Desvincular
-                  </Button>
-                ) : (
-                  <Button
-                    isDisabled={schedule.loan_id === 0}
-                    onPress={() => {
-                      actions.onRegisterPayment(schedule);
-                    }}
-                    size="sm"
-                    variant="primary"
-                  >
-                    Pagar
                   </Button>
                 )}
               </div>

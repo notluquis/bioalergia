@@ -1,4 +1,5 @@
-import { createFileRoute, getRouteApi } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
+import { requirePermission } from "@/lib/authz/route-guards";
 
 import { z } from "zod";
 
@@ -6,8 +7,6 @@ import { calendarQueries } from "@/features/calendar/queries";
 import { CalendarClassificationPage } from "@/pages/CalendarClassificationPage";
 
 import type { MissingFieldFilters } from "@/features/calendar/api";
-
-const routeApi = getRouteApi("/_authed/clinical/classify");
 
 const MISSING_FILTER_KEYS = [
   "missingCategory",
@@ -63,16 +62,16 @@ type MissingFilterKey = NonNullable<MissingFieldFilters["missing"]>[number];
 
 export const Route = createFileRoute("/_authed/clinical/classify")({
   staticData: {
-    nav: { iconKey: "ClipboardCheck", label: "Clasificación", order: 60, section: "Clínica" },
+    nav: {
+      iconKey: "ClipboardCheck",
+      label: "Calendario — clasificación",
+      order: 19,
+      section: "Clínica",
+    },
     permission: { action: "update", subject: "CalendarEvent" },
     title: "Clasificación clínica",
   },
-  beforeLoad: ({ context }) => {
-    if (!context.can("update", "CalendarEvent")) {
-      // eslint-disable-next-line @typescript-eslint/only-throw-error
-      throw routeApi.redirect({ to: "/" });
-    }
-  },
+  beforeLoad: requirePermission("update", "CalendarEvent"),
   validateSearch: (search: Record<string, unknown>): ClassifySearchParams =>
     classifySearchSchema.parse(search),
   loaderDeps: ({ search }) => search,

@@ -1,5 +1,5 @@
 import { DataTable } from "@/components/data-table/DataTable";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/features/auth/hooks/use-auth";
 
 import type { SupplyRequest } from "../types";
 

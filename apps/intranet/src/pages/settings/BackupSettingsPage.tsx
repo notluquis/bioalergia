@@ -9,11 +9,9 @@ import {
   ScrollShadow,
   Skeleton,
   Surface,
-  Table,
 } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import dayjs from "dayjs";
-import relativeTime from "dayjs/plugin/relativeTime";
+import type { ColumnDef } from "@tanstack/react-table";
 import {
   AlertTriangle,
   CheckCircle,
@@ -30,19 +28,16 @@ import {
 } from "lucide-react";
 import { type Dispatch, type SetStateAction, useCallback, useEffect, useState } from "react";
 import { GoogleDriveConnect } from "@/components/backup/GoogleDriveConnect";
-import { useAuth } from "@/context/AuthContext";
+import { DataTable } from "@/components/data-table/DataTable";
+import { useAuth } from "@/features/auth/hooks/use-auth";
 import { useToast } from "@/context/ToastContext";
 import { triggerBackup, triggerRestore } from "@/features/backup/api";
 import { backupKeys } from "@/features/backup/queries";
 import type { BackupFile, BackupJob, RestoreJob } from "@/features/backup/types";
 import { ApiError } from "@/lib/api-client";
+import { formatChile, fromNowShort } from "@/lib/dates";
 import { formatFileSize } from "@/lib/format";
 import { cn } from "@/lib/utils";
-
-import "dayjs/locale/es";
-
-dayjs.extend(relativeTime);
-dayjs.locale("es");
 
 type BackupProgressMessage = {
   job: BackupJob | RestoreJob;
@@ -203,6 +198,18 @@ function LastCompletedBackupCard({ result }: { result: BackupJob["result"] | nul
   const statsEntries = result.stats ? Object.entries(result.stats) : [];
   const hasStats = statsEntries.length > 0;
 
+  const statsRows = statsEntries
+    .map(([tableName, stat]) => ({ count: stat.count, tableName }))
+    .sort((a, b) => a.tableName.localeCompare(b.tableName));
+  const statsColumns: ColumnDef<(typeof statsRows)[number]>[] = [
+    { accessorKey: "tableName", header: "Tabla" },
+    {
+      accessorKey: "count",
+      header: () => <span className="block text-right">Registros</span>,
+      cell: ({ row }) => <span className="block text-right">{row.original.count}</span>,
+    },
+  ];
+
   return (
     <Surface className="rounded-[28px] p-6 shadow-inner" variant="secondary">
       <div className="mb-3 flex items-center justify-between gap-3">
@@ -231,26 +238,16 @@ function LastCompletedBackupCard({ result }: { result: BackupJob["result"] | nul
       {hasStats ? (
         <div className="rounded-lg border border-default-200 bg-background p-3">
           <span className="mb-2 block font-medium text-sm">Conteo por tabla</span>
-          <Table variant="secondary">
-            <Table.ScrollContainer className="max-h-56">
-              <Table.Content aria-label="Conteo por tabla del último backup" className="min-w-90">
-                <Table.Header>
-                  <Table.Column isRowHeader>Tabla</Table.Column>
-                  <Table.Column className="text-right">Registros</Table.Column>
-                </Table.Header>
-                <Table.Body>
-                  {statsEntries
-                    .sort(([a], [b]) => a.localeCompare(b))
-                    .map(([tableName, stat]) => (
-                      <Table.Row id={tableName} key={tableName}>
-                        <Table.Cell>{tableName}</Table.Cell>
-                        <Table.Cell className="text-right">{stat.count}</Table.Cell>
-                      </Table.Row>
-                    ))}
-                </Table.Body>
-              </Table.Content>
-            </Table.ScrollContainer>
-          </Table>
+          <DataTable
+            columns={statsColumns}
+            containerVariant="plain"
+            data={statsRows}
+            enablePagination={false}
+            enableToolbar={false}
+            enableVirtualization={false}
+            noDataMessage="Sin estadísticas por tabla."
+            scrollMaxHeight={224}
+          />
         </div>
       ) : (
         <div className="rounded-lg border border-default-200 bg-background p-3 text-default-500 text-sm">
@@ -290,7 +287,7 @@ function BackupSummaryCards({
         color="warning"
         icon={<Clock className="size-5 text-warning" />}
         label="Último backup"
-        value={latestBackupCreatedTime ? dayjs(latestBackupCreatedTime).fromNow(true) : "-"}
+        value={latestBackupCreatedTime ? fromNowShort(latestBackupCreatedTime) : "-"}
       />
     </div>
   );
@@ -363,7 +360,9 @@ export function BackupSettingsPage() {
           <BackupRow
             backup={backup}
             key={backup.id}
-            onSuccess={() => queryClient.invalidateQueries({ queryKey: ["backups"] })}
+            onSuccess={() => {
+              void queryClient.invalidateQueries({ queryKey: ["backups"] });
+            }}
           />
         ))}
       </>
@@ -395,8 +394,10 @@ export function BackupSettingsPage() {
             <span className="font-semibold text-lg">Backups</span>
             <div className="flex items-center gap-2">
               <Button
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full p-0"
-                onPress={() => queryClient.invalidateQueries({ queryKey: ["backups"] })}
+                className="flex shrink-0 items-center justify-center rounded-full p-0 size-8"
+                onPress={() => {
+                  void queryClient.invalidateQueries({ queryKey: ["backups"] });
+                }}
                 size="sm"
                 variant="outline"
               >
@@ -468,7 +469,7 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
                 <span className="truncate font-medium">{backup.name}</span>
               </div>
               <Description className="leading-5 text-default-500 text-xs">
-                {dayjs(backup.createdTime).tz().format("DD MMM YYYY, HH:mm")} •{" "}
+                {formatChile(backup.createdTime, "DD MMM YYYY, HH:mm")} •{" "}
                 {formatFileSize(Number(backup.size))}
               </Description>
             </div>
@@ -476,7 +477,7 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
           <div className="flex items-center gap-2">
             {backup.webViewLink && (
               <Link
-                className="inline-flex h-8 w-8 items-center justify-center rounded-medium hover:bg-default-100"
+                className="inline-flex items-center justify-center rounded-medium hover:bg-default-100 size-8"
                 href={backup.webViewLink}
                 rel="noreferrer"
                 target="_blank"

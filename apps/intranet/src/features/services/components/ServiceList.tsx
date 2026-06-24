@@ -1,5 +1,5 @@
+import { formatChile } from "@/lib/dates";
 import { Button, Description } from "@heroui/react";
-import dayjs from "dayjs";
 
 import type { ServiceFrequency, ServiceSummary, ServiceType } from "../types";
 
@@ -100,7 +100,7 @@ export function ServiceList({ loading = false, onSelect, selectedId, services }:
                 </div>
                 <span
                   aria-hidden="true"
-                  className={`h-2.5 w-2.5 rounded-full ${indicatorColor} shadow-inner`}
+                  className={`rounded-full size-2.5 ${indicatorColor} shadow-inner`}
                 />
               </div>
               <div className="mt-2 flex flex-wrap items-center gap-4 text-xs">
@@ -111,7 +111,7 @@ export function ServiceList({ loading = false, onSelect, selectedId, services }:
                 <span className="text-default-500">{typeLabels[service.serviceType]}</span>
               </div>
               <div className="mt-1 flex flex-wrap items-center gap-3 text-default-400 text-xs">
-                <span>Inicio {dayjs(service.startDate).format("DD MMM YYYY")}</span>
+                <span>Inicio {formatChile(service.startDate, "DD MMM YYYY")}</span>
                 {service.counterpartName && <span>{service.counterpartName}</span>}
                 <span>Recordatorio {service.reminderDaysBefore ?? 3}d</span>
                 {service.transactionCategory?.name && (

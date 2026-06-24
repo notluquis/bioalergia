@@ -1,3 +1,4 @@
+import { formatChile, fromNow } from "@/lib/dates";
 import {
   Alert,
   Button,
@@ -11,7 +12,6 @@ import {
   TextField,
 } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import dayjs from "dayjs";
 import { Cookie, Save } from "lucide-react";
 import { useMemo, useState } from "react";
 
@@ -22,12 +22,12 @@ const COOKIES_QUERY_KEY = ["doctoralia", "scraper", "cookies", "status"];
 
 function formatRelative(date: Date | null): string {
   if (!date) return "—";
-  return dayjs(date).fromNow();
+  return fromNow(date);
 }
 
 function formatDate(date: Date | null): string {
   if (!date) return "—";
-  return dayjs(date).tz().format("D MMM YYYY, HH:mm");
+  return formatChile(date, "D MMM YYYY, HH:mm");
 }
 
 export function DoctoraliaCookieStorePanel() {
@@ -73,7 +73,7 @@ export function DoctoraliaCookieStorePanel() {
       <Card.Header className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-3">
           <Surface className="rounded-xl bg-primary/10 p-2 text-primary">
-            <Cookie className="h-5 w-5" />
+            <Cookie className="size-5" />
           </Surface>
           <div className="space-y-1">
             <Card.Title className="text-sm">Cookies del bot scraper</Card.Title>
@@ -160,7 +160,7 @@ export function DoctoraliaCookieStorePanel() {
           isPending={saveMutation.isPending}
           onPress={() => saveMutation.mutate(trimmed)}
         >
-          <Save className="h-3.5 w-3.5" />
+          <Save className="size-3.5" />
           {saveMutation.isPending ? "Guardando…" : "Guardar cookies"}
         </Button>
       </Card.Footer>

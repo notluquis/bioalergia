@@ -1,13 +1,61 @@
 import { defineConfig, devices } from "@playwright/test";
 
 const isCI = Boolean(process.env.CI);
-// Default target is `vite preview` on :4173 (production build + the
-// configurePreviewServer middleware that fills the CSP nonce placeholder).
-// Override with E2E_BASE_URL to point at a deployed environment.
-const BASE_URL = process.env.E2E_BASE_URL ?? "http://localhost:4173";
+// Two base URLs:
+//   PREVIEW_URL — local vite preview, always-fresh code from this commit.
+//                  Used by unauthed UI/UX specs so they exercise the latest
+//                  index.html / theme tokens / a11y fixes immediately.
+//   AUTHED_URL  — deployed Railway when secret is set. Authed specs hit
+//                  the real API (login, oRPC reads).
+// When AUTHED_URL is unset, authed projects fall back to PREVIEW_URL and
+// the API-probe in e2e/login.ts gates them off cleanly.
+const PREVIEW_URL = "http://localhost:4173";
+const AUTHED_URL = process.env.E2E_BASE_URL ?? PREVIEW_URL;
+// Hermetic mode = no remote E2E_BASE_URL → boot a LOCAL api against an
+// ephemeral seeded Postgres (DATABASE_URL) so authed specs run against fake
+// data, never prod/PHI. The preview server proxies /api → 127.0.0.1:4000.
+const HERMETIC = !process.env.E2E_BASE_URL && Boolean(process.env.DATABASE_URL);
+// Layer-3 DB read-only role (defense in depth). When CI provisions the
+// `e2e_readonly` Postgres role (see e2e-hermetic.yml + quality.yml) it
+// exports DATABASE_URL_READONLY; the booted api connects with it so every
+// write except the narrow login/session carve-out is rejected AT THE DB.
+// Falls back to DATABASE_URL when unset (local hermetic runs stay full-RW).
+const API_DATABASE_URL = process.env.DATABASE_URL_READONLY ?? process.env.DATABASE_URL ?? "";
+
+// Viewport anchors aligned with Chromatic Story Modes (.storybook/modes.ts).
+// A regression in any of these widths narrows to the same bucket regardless
+// of which tool caught it.
+const MOBILE = { width: 375, height: 740 };
+const TABLET = { width: 768, height: 1024 };
+const DESKTOP = { width: 1280, height: 800 };
+
+const chromium = devices["Desktop Chrome"];
+// iPhone 14 — WebKit + iOS UA. Used by the dvh/svh-specific spec to
+// catch URL-bar-shrink clipping that Chromium devices won't reproduce.
+const iosWebkit = devices["iPhone 14"];
+
+// route-snapshots.spec is opt-in (env-gated) so the regular CI
+// `playwright test` run doesn't fail on missing baselines. The
+// snapshots workflow_dispatch in `.github/workflows/snapshots.yml`
+// sets RUN_SNAPSHOTS=true before invoking with --update-snapshots.
+const SNAPSHOTS_ENABLED = Boolean(process.env.RUN_SNAPSHOTS);
+const UNAUTHED_TESTIGNORE = SNAPSHOTS_ENABLED
+  ? /a11y\.spec\.ts|skip-link\.spec\.ts|wa-cloud-.*\.spec\.ts|layout-integrity\.spec\.ts|drawer\.spec\.ts|dialog-discovery\.spec\.ts/
+  : /a11y\.spec\.ts|skip-link\.spec\.ts|wa-cloud-.*\.spec\.ts|route-snapshots\.spec\.ts|layout-integrity\.spec\.ts|drawer\.spec\.ts|dialog-discovery\.spec\.ts/;
+const AUTHED_DESKTOP_PATTERN = SNAPSHOTS_ENABLED
+  ? /a11y\.spec\.ts|skip-link\.spec\.ts|wa-cloud-.*\.spec\.ts|route-snapshots\.spec\.ts|layout-integrity\.spec\.ts|drawer\.spec\.ts|dialog-discovery\.spec\.ts/
+  : /a11y\.spec\.ts|skip-link\.spec\.ts|wa-cloud-.*\.spec\.ts|layout-integrity\.spec\.ts|drawer\.spec\.ts|dialog-discovery\.spec\.ts/;
+const AUTHED_TABLET_PATTERN = SNAPSHOTS_ENABLED
+  ? /a11y\.spec\.ts|wa-cloud-.*\.spec\.ts|route-snapshots\.spec\.ts|layout-integrity\.spec\.ts|drawer\.spec\.ts|dialog-discovery\.spec\.ts/
+  : /a11y\.spec\.ts|wa-cloud-.*\.spec\.ts|layout-integrity\.spec\.ts|drawer\.spec\.ts|dialog-discovery\.spec\.ts/;
 
 /**
- * Playwright config for intranet e2e + axe-based a11y scans.
+ * Playwright config — viewport-keyed projects (golden 2026 pattern).
+ *
+ * One spec, N projects: assertions like "drawer opens at <lg, split layout
+ * at >=lg" become provable by gating tests with `test.skip(({ project }) =>
+ * project.name !== 'mobile')`. setViewportSize mid-test is avoided because
+ * mid-test resize is flaky on React Aria + HeroUI portals.
  *
  * Auth-protected suites pull credentials from E2E_USER / E2E_PASS. They are
  * skipped automatically when those env vars are missing so a fresh checkout
@@ -16,6 +64,14 @@ const BASE_URL = process.env.E2E_BASE_URL ?? "http://localhost:4173";
 export default defineConfig({
   testDir: "./e2e",
   outputDir: "./e2e-results",
+  // Drop the default `-{platform}` suffix from snapshot filenames. A
+  // single set of baselines per (route × project) is generated on Linux
+  // CI (see `.github/workflows/snapshots.yml` workflow_dispatch job).
+  // macOS dev runs the diff for read-only feedback and never updates
+  // baselines. Without this template the default
+  // `{arg}-{projectName}-{platform}.png` would force separate baselines
+  // per OS that never match each other.
+  snapshotPathTemplate: "{snapshotDir}/{testFilePath}-snapshots/{arg}-{projectName}{ext}",
   fullyParallel: true,
   forbidOnly: isCI,
   retries: isCI ? 1 : 0,
@@ -27,7 +83,7 @@ export default defineConfig({
   expect: { timeout: 10_000 },
 
   use: {
-    baseURL: BASE_URL,
+    baseURL: PREVIEW_URL,
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
     video: "retain-on-failure",
@@ -36,35 +92,100 @@ export default defineConfig({
   },
 
   projects: [
+    // ── Unauthenticated specs (no auth, vite preview) ───────────────────
     {
-      name: "chromium-desktop",
-      use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 800 } },
+      name: "mobile-unauthed",
+      testIgnore: UNAUTHED_TESTIGNORE,
+      use: { ...chromium, viewport: MOBILE, hasTouch: true, isMobile: true },
     },
     {
-      // Mobile emulation via Chromium (skips the WebKit binary). Keeps the
-      // iPhone 14 Pro viewport (393×852), pixel ratio 3, and touch flag.
-      name: "chromium-mobile",
+      name: "tablet-unauthed",
+      testIgnore: UNAUTHED_TESTIGNORE,
+      use: { ...chromium, viewport: TABLET, hasTouch: true, isMobile: true },
+    },
+    {
+      name: "desktop-unauthed",
+      testIgnore: UNAUTHED_TESTIGNORE,
+      use: { ...chromium, viewport: DESKTOP },
+    },
+
+    // ── Authed specs (hit AUTHED_URL) ──────────────────────────────────
+    // No `setup` dependency or static `storageState`: the worker-scoped
+    // `workerStorageState` fixture in e2e/fixtures.ts logs in once per
+    // parallel worker and overrides `storageState`. One session per
+    // worker → no shared-token rotation race against production.
+    {
+      name: "mobile",
+      testMatch: AUTHED_DESKTOP_PATTERN,
       use: {
-        browserName: "chromium",
-        viewport: { width: 393, height: 852 },
-        deviceScaleFactor: 3,
-        isMobile: true,
+        ...chromium,
+        viewport: MOBILE,
         hasTouch: true,
+        isMobile: true,
+        baseURL: AUTHED_URL,
+      },
+    },
+    {
+      name: "tablet",
+      testMatch: AUTHED_TABLET_PATTERN,
+      use: {
+        ...chromium,
+        viewport: TABLET,
+        hasTouch: true,
+        isMobile: true,
+        baseURL: AUTHED_URL,
+      },
+    },
+    {
+      name: "desktop",
+      testMatch: AUTHED_DESKTOP_PATTERN,
+      use: {
+        ...chromium,
+        viewport: DESKTOP,
+        baseURL: AUTHED_URL,
+      },
+    },
+    // ── iOS Safari (WebKit) — only the dvh/svh-sensitive spec ─────────
+    // Chromium-on-mobile-viewport doesn't simulate the URL-bar shrink
+    // that makes 100vh clip on real iPhones. WebKit + iPhone 14 device
+    // descriptor reproduces it. Scoped tightly to keep CI cheap.
+    {
+      name: "ios-webkit",
+      testMatch: /wa-cloud-.*\.spec\.ts/,
+      use: {
+        ...iosWebkit,
+        baseURL: AUTHED_URL,
       },
     },
   ],
 
-  webServer: process.env.E2E_BASE_URL
-    ? undefined
-    : {
-        // `pnpm preview` serves the prod build via `vite preview`. The Vite
-        // config's configurePreviewServer middleware substitutes the
-        // {{ placeholder "http.request.uuid" }} sentinel + emits a matching
-        // CSP header so React mounts. Build first (CI does
-        // `turbo run build --filter=@finanzas/intranet`).
-        command: "pnpm preview --port 4173 --strictPort",
-        url: BASE_URL,
-        reuseExistingServer: !isCI,
-        timeout: 120_000,
-      },
+  webServer: [
+    // Local api (hermetic only) on :4000, against the ephemeral seeded DB.
+    // queue runner off + NODE_ENV=test so localhost CORS is auto-allowed and
+    // graphile-worker doesn't boot.
+    ...(HERMETIC
+      ? [
+          {
+            command: "pnpm -F @finanzas/api start",
+            url: "http://127.0.0.1:4000/api/health",
+            reuseExistingServer: !isCI,
+            timeout: 120_000,
+            env: {
+              // Prefer the read-only role when CI provides it (layer-3);
+              // otherwise the full-access hermetic DB. Never prod.
+              DATABASE_URL: API_DATABASE_URL,
+              NODE_ENV: "test",
+              PORT: "4000",
+              DISABLE_QUEUE_RUNNER: "true",
+            },
+          },
+        ]
+      : []),
+    {
+      command: "pnpm preview --port 4173 --strictPort",
+      url: PREVIEW_URL,
+      reuseExistingServer: !isCI,
+      timeout: 120_000,
+    },
+  ],
 });

@@ -20,9 +20,8 @@ export const serviceQueries = {
       queryKey: serviceKeys.detail(publicId),
     }),
 
-  list: (enabled = true) =>
+  list: () =>
     queryOptions({
-      enabled,
       queryFn: fetchServices,
       queryKey: serviceKeys.lists(),
     }),

@@ -36,6 +36,7 @@ export interface DoctoraliaEventService {
   serviceName: string;
   duration: number;
   price: number;
+  priceFrom?: number | string | null;
   quantity: number;
   isDefault: boolean;
   voucherUsed: boolean;
@@ -63,7 +64,7 @@ export interface DoctoraliaAppointment {
   serviceIsDeleted: boolean;
   attendance: number;
   patientId: number;
-  patientReferenceId: string;
+  patientReferenceId: null | string;
   patientPhone: string;
   patientEmail: string;
   patientBirthDate: string | null;
@@ -82,7 +83,7 @@ export interface DoctoraliaAppointment {
   onlinePaymentType: string | null;
   onlinePaymentStatus: string | null;
   isPaidOnline: boolean;
-  communicationChannel: string | null;
+  communicationChannel: null | number | string; // Doctoralia manda número a veces
   fake: boolean;
   isEventWithVoucher: boolean;
   duration: number;

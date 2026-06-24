@@ -2,11 +2,13 @@ import { Skeleton, Tabs } from "@heroui/react";
 import { getRouteApi } from "@tanstack/react-router";
 import { Suspense } from "react";
 
+import { JobRadarPage } from "@/features/job-radar/pages/JobRadarPage";
 import { PersonalGastosTab } from "../components/PersonalGastosTab";
+import { ProviderCredentialsTab } from "../components/ProviderCredentialsTab";
 import { UtilityAccountsTab } from "../components/UtilityAccountsTab";
 import { PersonalCreditsPageWrapper } from "./PersonalCreditsPage";
 
-type TabKey = "creditos" | "servicios" | "gastos";
+type TabKey = "creditos" | "credenciales" | "servicios" | "gastos" | "trabajos";
 
 const routeApi = getRouteApi("/_authed/finanzas/personal");
 
@@ -33,6 +35,14 @@ export function PersonalPage() {
             </Tabs.Tab>
             <Tabs.Tab id="gastos">
               Gastos
+              <Tabs.Indicator />
+            </Tabs.Tab>
+            <Tabs.Tab id="credenciales">
+              Credenciales
+              <Tabs.Indicator />
+            </Tabs.Tab>
+            <Tabs.Tab id="trabajos">
+              Trabajos
               <Tabs.Indicator />
             </Tabs.Tab>
           </Tabs.List>
@@ -69,6 +79,18 @@ export function PersonalPage() {
       {tab === "gastos" && (
         <Suspense fallback={<Skeleton className="h-24 w-full rounded-xl" />}>
           <PersonalGastosTab />
+        </Suspense>
+      )}
+
+      {tab === "credenciales" && (
+        <Suspense fallback={<Skeleton className="h-24 w-full rounded-xl" />}>
+          <ProviderCredentialsTab />
+        </Suspense>
+      )}
+
+      {tab === "trabajos" && (
+        <Suspense fallback={<Skeleton className="h-96 w-full rounded-xl" />}>
+          <JobRadarPage />
         </Suspense>
       )}
     </div>

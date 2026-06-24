@@ -21,11 +21,13 @@ import {
   counterpartUpdateInputSchema,
   counterpartsResponseSchema,
   counterpartsSyncResponseSchema,
+  payoutAccountMovementsInputSchema,
+  payoutAccountMovementsResponseSchema,
   unassignedPayoutAccountsResponseSchema,
 } from "@finanzas/orpc-contracts/counterparts";
 import type { Context as HonoContext } from "hono";
 import type { z } from "zod";
-import { getSessionUser, hasPermission } from "../auth.ts";
+import { getSessionUser, hasPermission } from "../lib/auth.ts";
 import { logError } from "../lib/logger.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
 import {
@@ -36,6 +38,7 @@ import {
   getCounterpartSuggestions,
   getCounterpartSummary,
   listCounterparts,
+  listPayoutAccountMovements,
   listUnassignedPayoutAccounts,
   syncCounterpartsFromTransactions,
   updateCounterpart,
@@ -189,6 +192,23 @@ const counterpartsORPCRouterBase = {
     .handler(async () => ({
       counterparts: await listCounterparts(),
     })),
+
+  payoutAccountMovements: readCounterparts
+    .route({
+      method: "GET",
+      path: "/payout-account-movements",
+      summary: "List MercadoPago movements for a payout account",
+      tags: ["Counterparts"],
+    })
+    .input(payoutAccountMovementsInputSchema)
+    .output(payoutAccountMovementsResponseSchema)
+    .handler(async ({ input }: { input: z.input<typeof payoutAccountMovementsInputSchema> }) =>
+      listPayoutAccountMovements({
+        account: input.account,
+        page: input.page ?? 1,
+        pageSize: input.pageSize ?? 50,
+      })
+    ),
 
   suggestions: readCounterparts
     .route({

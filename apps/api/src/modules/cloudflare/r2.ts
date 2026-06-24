@@ -1,0 +1,268 @@
+// Cloudflare R2 (S3-compatible) presigned PUT para upload directo desde el
+// browser. Las imágenes de producto son públicas (no PHI) — servimos via
+// CDN URL (custom domain o pub-<hash>.r2.dev).
+//
+// Env vars requeridas (validar en lib/env.ts):
+//   CF_R2_ACCOUNT_ID, CF_R2_ACCESS_KEY, CF_R2_SECRET,
+//   CF_R2_BUCKET, CF_R2_PUBLIC_BASE_URL
+
+import {
+  DeleteObjectsCommand,
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+
+function getEnv(name: string): string {
+  const v = process.env[name];
+  if (!v) {
+    throw new Error(`[r2] missing env ${name}`);
+  }
+  return v;
+}
+
+function r2Endpoint(accountId: string): string {
+  return `https://${accountId}.r2.cloudflarestorage.com`;
+}
+
+let cachedClient: S3Client | null = null;
+
+function getClient(): S3Client {
+  if (cachedClient) return cachedClient;
+  cachedClient = new S3Client({
+    region: "auto",
+    endpoint: r2Endpoint(getEnv("CF_R2_ACCOUNT_ID")),
+    credentials: {
+      accessKeyId: getEnv("CF_R2_ACCESS_KEY"),
+      secretAccessKey: getEnv("CF_R2_SECRET"),
+    },
+  });
+  return cachedClient;
+}
+
+const ALLOWED_MIME = new Set(["image/jpeg", "image/png", "image/webp", "image/avif"]);
+const MAX_BYTES = 5 * 1024 * 1024;
+
+export type PresignedUpload = {
+  url: string;
+  cdnUrl: string;
+  r2Key: string;
+  expiresIn: number;
+};
+
+export async function presignProductImageUpload(opts: {
+  productId: number;
+  filename: string;
+  contentType: string;
+}): Promise<PresignedUpload> {
+  if (!ALLOWED_MIME.has(opts.contentType)) {
+    throw new Error(`Tipo de imagen no permitido: ${opts.contentType}`);
+  }
+
+  const safeName = opts.filename
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+  const stamp = Date.now();
+  const rnd = Math.random().toString(36).slice(2, 8);
+  const r2Key = `products/${opts.productId}/${stamp}-${rnd}-${safeName}`;
+
+  const cmd = new PutObjectCommand({
+    Bucket: getEnv("CF_R2_BUCKET"),
+    Key: r2Key,
+    ContentType: opts.contentType,
+    ContentLength: undefined, // browser sets at upload
+    Metadata: { "product-id": String(opts.productId) },
+  });
+
+  const url = await getSignedUrl(getClient(), cmd, { expiresIn: 300 });
+  const cdnBase = getEnv("CF_R2_PUBLIC_BASE_URL").replace(/\/+$/, "");
+  const cdnUrl = `${cdnBase}/${r2Key}`;
+
+  return { url, cdnUrl, r2Key, expiresIn: 300 };
+}
+
+// Logos/firma de la clínica embebidos en PDFs: pdf-lib sólo embebe PNG/JPEG
+// (NO WebP/AVIF), así que restringimos el tipo. Claves bajo `clinic/`.
+const CLINIC_ASSET_MIME = new Set(["image/jpeg", "image/png"]);
+export type ClinicAssetKind = "logo" | "secondary-logo" | "signature";
+
+export async function presignClinicAssetUpload(opts: {
+  kind: ClinicAssetKind;
+  filename: string;
+  contentType: string;
+}): Promise<PresignedUpload> {
+  if (!CLINIC_ASSET_MIME.has(opts.contentType)) {
+    throw new Error(`Tipo no permitido (sólo PNG/JPEG): ${opts.contentType}`);
+  }
+
+  const safeName = opts.filename
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+  const stamp = Date.now();
+  const rnd = Math.random().toString(36).slice(2, 8);
+  const r2Key = `clinic/${opts.kind}/${stamp}-${rnd}-${safeName}`;
+
+  const cmd = new PutObjectCommand({
+    Bucket: getEnv("CF_R2_BUCKET"),
+    Key: r2Key,
+    ContentType: opts.contentType,
+  });
+
+  const url = await getSignedUrl(getClient(), cmd, { expiresIn: 300 });
+  const cdnBase = getEnv("CF_R2_PUBLIC_BASE_URL").replace(/\/+$/, "");
+  const cdnUrl = `${cdnBase}/${r2Key}`;
+
+  return { url, cdnUrl, r2Key, expiresIn: 300 };
+}
+
+// Imágenes que sólo se muestran en el browser (campañas, categorías) — NO van
+// a PDF, así que aceptan formatos next-gen. Prefijo whitelisteado (no key
+// arbitraria) para evitar inyección de path.
+const GENERIC_IMAGE_PREFIX: Record<string, string> = {
+  campaign: "campaigns",
+  category: "categories",
+};
+
+export type GenericImageTarget = keyof typeof GENERIC_IMAGE_PREFIX;
+
+export async function presignGenericImageUpload(opts: {
+  target: GenericImageTarget;
+  filename: string;
+  contentType: string;
+}): Promise<PresignedUpload> {
+  if (!ALLOWED_MIME.has(opts.contentType)) {
+    throw new Error(`Tipo de imagen no permitido: ${opts.contentType}`);
+  }
+  const prefix = GENERIC_IMAGE_PREFIX[opts.target];
+  if (!prefix) throw new Error(`Target inválido: ${opts.target}`);
+
+  const safeName = opts.filename
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+  const stamp = Date.now();
+  const rnd = Math.random().toString(36).slice(2, 8);
+  const r2Key = `${prefix}/${stamp}-${rnd}-${safeName}`;
+
+  const cmd = new PutObjectCommand({
+    Bucket: getEnv("CF_R2_BUCKET"),
+    Key: r2Key,
+    ContentType: opts.contentType,
+  });
+  const url = await getSignedUrl(getClient(), cmd, { expiresIn: 300 });
+  const cdnBase = getEnv("CF_R2_PUBLIC_BASE_URL").replace(/\/+$/, "");
+  return { url, cdnUrl: `${cdnBase}/${r2Key}`, r2Key, expiresIn: 300 };
+}
+
+const DOC_MIME = new Set(["application/pdf", "image/jpeg", "image/png"]);
+const DOC_MAX_BYTES = 20 * 1024 * 1024;
+
+/** URL pública (CDN) a partir de una key R2 almacenada. */
+export function cdnUrlForKey(r2Key: string): string {
+  const cdnBase = getEnv("CF_R2_PUBLIC_BASE_URL").replace(/\/+$/, "");
+  return `${cdnBase}/${r2Key.replace(/^\/+/, "")}`;
+}
+
+/**
+ * Presigned PUT para fichas técnicas de producto (IFU/SDS/CoA en PDF). Distinto
+ * de las imágenes: acepta application/pdf y un límite mayor.
+ */
+export async function presignProductDocumentUpload(opts: {
+  filename: string;
+  contentType: string;
+}): Promise<PresignedUpload> {
+  if (!DOC_MIME.has(opts.contentType)) {
+    throw new Error(`Tipo de documento no permitido: ${opts.contentType}`);
+  }
+  const safeName = opts.filename
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+  const stamp = Date.now();
+  const rnd = Math.random().toString(36).slice(2, 8);
+  const r2Key = `product-documents/${stamp}-${rnd}-${safeName}`;
+
+  const cmd = new PutObjectCommand({
+    Bucket: getEnv("CF_R2_BUCKET"),
+    Key: r2Key,
+    ContentType: opts.contentType,
+  });
+  const url = await getSignedUrl(getClient(), cmd, { expiresIn: 300 });
+  const cdnBase = getEnv("CF_R2_PUBLIC_BASE_URL").replace(/\/+$/, "");
+  return { url, cdnUrl: `${cdnBase}/${r2Key}`, r2Key, expiresIn: 300 };
+}
+
+export const R2_LIMITS = {
+  ALLOWED_MIME: Array.from(ALLOWED_MIME),
+  CLINIC_ASSET_MIME: Array.from(CLINIC_ASSET_MIME),
+  DOC_MIME: Array.from(DOC_MIME),
+  MAX_BYTES,
+  DOC_MAX_BYTES,
+} as const;
+
+/** Sube bytes directo a R2 (server-side, sin presign). Devuelve la CDN URL. */
+export async function putR2Object(
+  key: string,
+  body: Uint8Array | Buffer,
+  contentType: string
+): Promise<string> {
+  await getClient().send(
+    new PutObjectCommand({
+      Bucket: getEnv("CF_R2_BUCKET"),
+      Key: key,
+      Body: body,
+      ContentType: contentType,
+    })
+  );
+  const cdnBase = getEnv("CF_R2_PUBLIC_BASE_URL").replace(/\/+$/, "");
+  return `${cdnBase}/${key}`;
+}
+
+/**
+ * Lee bytes de un objeto R2 (server-side). Devuelve el cuerpo como
+ * ReadableStream (para stream directo al browser) + content type. Lanza si el
+ * objeto no existe. Usado por rutas auth-gated que proxean blobs privados
+ * (p.ej. stickers guardados) sin exponer la R2 pública.
+ */
+export async function getR2Object(
+  key: string
+): Promise<{ body: ReadableStream<Uint8Array>; contentType: string; contentLength?: number }> {
+  const res = await getClient().send(
+    new GetObjectCommand({ Bucket: getEnv("CF_R2_BUCKET"), Key: key })
+  );
+  if (!res.Body) throw new Error(`[r2] objeto vacío: ${key}`);
+  return {
+    body: res.Body.transformToWebStream() as ReadableStream<Uint8Array>,
+    contentType: res.ContentType ?? "application/octet-stream",
+    contentLength: res.ContentLength,
+  };
+}
+
+/** Deriva la key R2 a partir de una CDN URL pública (o null si no matchea). */
+export function r2KeyFromCdnUrl(url: string): string | null {
+  const base = `${getEnv("CF_R2_PUBLIC_BASE_URL").replace(/\/+$/, "")}/`;
+  return url.startsWith(base) ? url.slice(base.length) : null;
+}
+
+/** Borra objetos de R2 por key (best-effort; ignora si no existen). */
+export async function deleteR2Objects(keys: string[]): Promise<void> {
+  const unique = [...new Set(keys.filter(Boolean))];
+  if (unique.length === 0) return;
+  try {
+    await getClient().send(
+      new DeleteObjectsCommand({
+        Bucket: getEnv("CF_R2_BUCKET"),
+        Delete: { Objects: unique.map((Key) => ({ Key })), Quiet: true },
+      })
+    );
+  } catch (error) {
+    console.warn("[r2] no se pudieron borrar objetos:", error);
+  }
+}

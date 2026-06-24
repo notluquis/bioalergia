@@ -3,6 +3,9 @@ import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import {
+  activeManifestSchema,
+  closedCertificateSchema,
+  closeManifestInputSchema,
   createShipmentInputSchema,
   createShipmentOutputSchema,
   cxCommercialOfficeSchema,
@@ -15,6 +18,7 @@ import {
   cxStreetSchema,
   cxTrackingResultSchema,
   listShipmentsInputSchema,
+  openManifestOutputSchema,
   quoteShipmentInputSchema,
   quoteShipmentOutputSchema,
   shipmentSchema,
@@ -22,6 +26,8 @@ import {
 import { z } from "zod";
 import { logError } from "../lib/logger.ts";
 import {
+  cancelShipment,
+  closeShipmentCertificate,
   createShipment,
   fetchCommercialOffices,
   fetchCommunes,
@@ -30,9 +36,13 @@ import {
   fetchStreetNumbers,
   fetchStreets,
   geocodeAddress,
+  getActiveManifest,
+  getShipmentCertificate,
   listAllShipments,
   listShipmentsByPatient,
+  openShipmentCertificate,
   quoteShipment,
+  refreshAllTracking,
   refreshShipmentTracking,
   reprintShipmentLabel,
 } from "../services/shipments.ts";
@@ -41,7 +51,7 @@ import { SuperJSONRPCHandler } from "./superjson.ts";
 
 configureSuperjson();
 
-export type CreateShipmentInput = z.infer<typeof createShipmentInputSchema>;
+export type { CreateShipmentInput } from "../services/shipments.ts";
 
 // Re-use the canonical contract schemas so the server output matches the
 // shape the intranet client expects byte-for-byte.
@@ -169,6 +179,31 @@ const shipmentsRouterBase = {
       return { tracking };
     }),
 
+  refreshAllTracking: base
+    .route({
+      method: "POST",
+      path: "/tracking/refresh-all",
+      summary: "Refrescar estado de todas las OTs (bulk)",
+      tags: ["Shipments"],
+    })
+    .input(emptySchema)
+    .output(z.object({ updated: z.number().int(), total: z.number().int() }))
+    .handler(async () => refreshAllTracking()),
+
+  cancelShipment: base
+    .route({
+      method: "POST",
+      path: "/{shipmentId}/cancel",
+      summary: "Cancelar envío (local; Chilexpress no anula OTs por API)",
+      tags: ["Shipments"],
+    })
+    .input(z.object({ shipmentId: z.number().int() }))
+    .output(z.object({ shipment: serializedShipmentSchema }))
+    .handler(async ({ input }) => {
+      const shipment = await cancelShipment(input.shipmentId);
+      return { shipment };
+    }),
+
   quote: base
     .route({ method: "POST", path: "/quote", summary: "Quote shipment cost", tags: ["Shipments"] })
     .input(quoteShipmentInputSchema)
@@ -216,6 +251,55 @@ const shipmentsRouterBase = {
       const shipments = await listAllShipments();
       return { shipments };
     }),
+
+  // ─── Manifiesto (certificados de transporte) ────────────────────────────
+  //
+  // Flujo Chilexpress: abrir certificado → OTs lo referencian → cerrar al final
+  // del día → obtener PDF base64 del manifiesto. Reconsulta via getCertificate.
+
+  getActiveCertificate: base
+    .route({
+      method: "GET",
+      path: "/certificates/active",
+      summary: "Manifiesto del día actualmente abierto (o null)",
+      tags: ["Shipments"],
+    })
+    .input(emptySchema)
+    .output(z.object({ active: activeManifestSchema.nullable() }))
+    .handler(async () => ({ active: await getActiveManifest() })),
+
+  openCertificate: base
+    .route({
+      method: "POST",
+      path: "/certificates/open",
+      summary: "Abrir certificado (manifiesto) Chilexpress",
+      tags: ["Shipments"],
+    })
+    .input(emptySchema)
+    .output(openManifestOutputSchema)
+    .handler(async () => openShipmentCertificate()),
+
+  closeCertificate: base
+    .route({
+      method: "POST",
+      path: "/certificates/close",
+      summary: "Cerrar certificado y obtener PDF del manifiesto",
+      tags: ["Shipments"],
+    })
+    .input(closeManifestInputSchema)
+    .output(closedCertificateSchema)
+    .handler(async ({ input }) => closeShipmentCertificate(input)),
+
+  getCertificate: base
+    .route({
+      method: "GET",
+      path: "/certificates/{certificateNumber}",
+      summary: "Consultar certificado cerrado (PDF + detalle)",
+      tags: ["Shipments"],
+    })
+    .input(z.object({ certificateNumber: z.string() }))
+    .output(closedCertificateSchema)
+    .handler(async ({ input }) => getShipmentCertificate(input.certificateNumber)),
 };
 
 export const shipmentsORPCRouter = base.prefix("/api/orpc/shipments").router(shipmentsRouterBase);

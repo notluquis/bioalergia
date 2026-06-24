@@ -2,16 +2,18 @@ import { Button, Surface } from "@heroui/react";
 import { fmtCLP } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
+import { DAY_STATUS_CHIP_CLASSES, DAY_STATUS_LABELS } from "../labels";
 import type { BalanceSummary, DayStatus } from "../types";
 
 import { formatSaveTime } from "../utils";
 
 interface CierrePanelProps {
   className?: string;
+  isFinalized: boolean;
   isSaving: boolean;
   lastSaved: Date | null;
   onFinalize: () => Promise<void> | void;
-  onSaveDraft: () => Promise<void> | void;
+  onReopen: () => Promise<void> | void;
   status: DayStatus;
   summary: BalanceSummary;
 }
@@ -21,28 +23,22 @@ interface CierrePanelProps {
  */
 export function CierrePanel({
   className,
+  isFinalized,
   isSaving,
   lastSaved,
   onFinalize,
-  onSaveDraft,
+  onReopen,
   status,
   summary,
 }: CierrePanelProps) {
-  const statusLabels: Record<DayStatus, string> = {
-    balanced: "Cuadra",
-    draft: "Borrador",
-    empty: "Vacío",
-    unbalanced: "Pendiente",
-  };
-
-  const statusColors: Record<DayStatus, string> = {
-    balanced: "bg-success/20 text-success",
-    draft: "bg-warning/20 text-warning",
-    empty: "bg-default-100 text-default-500",
-    unbalanced: "bg-danger/20 text-danger",
-  };
-
   const canFinalize = summary.cuadra && summary.totalMetodos > 0;
+  const hasMovimientos = summary.totalMetodos > 0 || summary.totalServicios > 0;
+  // Día vacío: diferencia $0 en neutro — el verde sugería "cuadra" sin datos.
+  const diferenciaTone = hasMovimientos
+    ? summary.cuadra
+      ? "text-success"
+      : "text-warning"
+    : "text-default-400";
 
   return (
     <aside className={className}>
@@ -53,8 +49,13 @@ export function CierrePanel({
         {/* Header */}
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-semibold text-lg">Cierre</h2>
-          <span className={cn("rounded-full px-3 py-1 font-medium text-xs", statusColors[status])}>
-            {statusLabels[status]}
+          <span
+            className={cn(
+              "rounded-full px-3 py-1 font-medium text-xs",
+              DAY_STATUS_CHIP_CLASSES[status]
+            )}
+          >
+            {DAY_STATUS_LABELS[status]}
           </span>
         </div>
 
@@ -67,20 +68,8 @@ export function CierrePanel({
           {/* Diferencia - highlighted */}
           <div className="mt-2 border-default-200 border-t pt-2">
             <div className="flex items-baseline justify-between">
-              <span
-                className={cn(
-                  "font-medium text-sm",
-                  summary.cuadra ? "text-success" : "text-warning"
-                )}
-              >
-                Diferencia
-              </span>
-              <span
-                className={cn(
-                  "font-bold text-xl tabular-nums",
-                  summary.cuadra ? "text-success" : "text-warning"
-                )}
-              >
+              <span className={cn("font-medium text-sm", diferenciaTone)}>Diferencia</span>
+              <span className={cn("font-bold text-xl tabular-nums", diferenciaTone)}>
                 {fmtCLP(summary.diferencia)}
               </span>
             </div>
@@ -102,25 +91,40 @@ export function CierrePanel({
           </div>
         )}
 
-        {/* Action buttons */}
-        <div className="mt-4 hidden gap-2 lg:flex">
-          <Button
-            variant="outline"
-            className="flex-1 rounded-xl"
-            isPending={isSaving}
-            isDisabled={isSaving}
-            onPress={onSaveDraft}
-          >
-            Guardar
-          </Button>
-          <Button
-            variant="primary"
-            className="flex-1 rounded-xl"
-            isDisabled={!canFinalize || isSaving}
-            onPress={onFinalize}
-          >
-            Finalizar
-          </Button>
+        {/* Acción principal (Guardar vive en el TopBar / barra mobile) */}
+        <div className="mt-4 hidden lg:block">
+          {isFinalized ? (
+            <Button
+              className="w-full rounded-xl"
+              isDisabled={isSaving}
+              onPress={() => {
+                void onReopen();
+              }}
+              variant="outline"
+            >
+              Reabrir día
+            </Button>
+          ) : (
+            <>
+              <Button
+                className="w-full rounded-xl"
+                isDisabled={!canFinalize || isSaving}
+                onPress={() => {
+                  void onFinalize();
+                }}
+                variant="primary"
+              >
+                Finalizar día
+              </Button>
+              {!canFinalize && (
+                <p className="mt-2 text-center text-default-400 text-xs">
+                  {hasMovimientos
+                    ? "La diferencia debe quedar en $0 para finalizar."
+                    : "Ingresa los montos del día para finalizar."}
+                </p>
+              )}
+            </>
+          )}
         </div>
       </Surface>
     </aside>

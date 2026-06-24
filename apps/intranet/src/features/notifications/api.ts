@@ -55,3 +55,24 @@ export async function unsubscribeFromNotifications(payload: UnsubscribePayload) 
     throw toNotificationsApiError(error);
   }
 }
+
+const PreviewModeResponseSchema = z.object({
+  mode: z.enum(["GENERIC", "SENDER_NAME", "FULL"]),
+});
+export type PushPreviewMode = z.infer<typeof PreviewModeResponseSchema>["mode"];
+
+export async function getPushPreviewMode() {
+  try {
+    return PreviewModeResponseSchema.parse(await notificationsORPCClient.getPreviewMode());
+  } catch (error) {
+    throw toNotificationsApiError(error);
+  }
+}
+
+export async function setPushPreviewMode(mode: PushPreviewMode) {
+  try {
+    return StatusResponseSchema.parse(await notificationsORPCClient.setPreviewMode({ mode }));
+  } catch (error) {
+    throw toNotificationsApiError(error);
+  }
+}

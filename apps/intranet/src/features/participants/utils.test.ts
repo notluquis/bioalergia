@@ -1,5 +1,5 @@
-import dayjs from "dayjs";
 import { describe, expect, it } from "vitest";
+import { endOfMonth, startOfMonth } from "@/lib/dates";
 import { resolveRange } from "./utils";
 
 describe("resolveRange", () => {
@@ -45,9 +45,8 @@ describe("resolveRange", () => {
   });
 
   it("uses current month when quickValue is 'current'", () => {
-    const now = dayjs();
-    const expectedFrom = now.startOf("month").format("YYYY-MM-DD");
-    const expectedTo = now.endOf("month").format("YYYY-MM-DD");
+    const expectedFrom = startOfMonth();
+    const expectedTo = endOfMonth();
     const result = resolveRange("current", "", "");
     expect(result.from).toBe(expectedFrom);
     expect(result.to).toBe(expectedTo);

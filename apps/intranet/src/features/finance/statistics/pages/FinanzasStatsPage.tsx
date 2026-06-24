@@ -3,68 +3,58 @@
  * Dashboard de estadísticas financieras con KPIs, gráficas y análisis temporal
  */
 
-import {
-  Alert,
-  Button,
-  Card,
-  DateField,
-  DateRangePicker,
-  Label,
-  ListBox,
-  RangeCalendar,
-  Select,
-  Spinner,
-} from "@heroui/react";
-import { parseDate } from "@internationalized/date";
-import dayjs from "dayjs";
+import { Alert, Button, Card, Label, ListBox, Select, Spinner } from "@heroui/react";
 import { ArrowDown, ArrowUp, BarChart3, Calendar, TrendingUp } from "lucide-react";
 import { useState } from "react";
 
-import { useAuth } from "@/context/AuthContext";
+import {
+  endOfMonth,
+  endOfYear,
+  monthsAgoEnd,
+  monthsAgoStart,
+  startOfMonth,
+  startOfYear,
+} from "@/lib/dates";
+import { AppDateRangePicker } from "@/components/forms/AppDatePicker";
+import { useAuth } from "@/features/auth/hooks/use-auth";
 import { BalanceSummary } from "@/features/finance/balances/components/BalanceSummary";
-import { PAGE_CONTAINER } from "@/lib/styles";
+import { Page } from "@/components/layouts/Page";
 
 import { MonthlyFlowChart } from "../components/MonthlyFlowChart";
 import { MovementTypeList } from "../components/MovementTypeList";
 import { TopParticipantsSection } from "../components/TopParticipantsSection";
 import { useStatsData } from "../hooks/use-stats-data";
 
-import "dayjs/locale/es";
-
-const DATE_FORMAT = "YYYY-MM-DD";
-
-dayjs.locale("es");
-
 // Quick date ranges
 const QUICK_MONTHS = [
   {
-    from: dayjs().startOf("month").format(DATE_FORMAT),
+    from: startOfMonth(),
     label: "Este mes",
-    to: dayjs().endOf("month").format(DATE_FORMAT),
+    to: endOfMonth(),
     value: "current",
   },
   {
-    from: dayjs().subtract(1, "month").startOf("month").format(DATE_FORMAT),
+    from: monthsAgoStart(1),
     label: "Mes pasado",
-    to: dayjs().subtract(1, "month").endOf("month").format(DATE_FORMAT),
+    to: monthsAgoEnd(1),
     value: "previous",
   },
   {
-    from: dayjs().subtract(3, "month").startOf("month").format(DATE_FORMAT),
+    from: monthsAgoStart(3),
     label: "Últimos 3 meses",
-    to: dayjs().endOf("month").format(DATE_FORMAT),
+    to: endOfMonth(),
     value: "3months",
   },
   {
-    from: dayjs().subtract(6, "month").startOf("month").format(DATE_FORMAT),
+    from: monthsAgoStart(6),
     label: "Últimos 6 meses",
-    to: dayjs().endOf("month").format(DATE_FORMAT),
+    to: endOfMonth(),
     value: "6months",
   },
   {
-    from: dayjs().startOf("year").format(DATE_FORMAT),
+    from: startOfYear(),
     label: "Este año",
-    to: dayjs().endOf("year").format(DATE_FORMAT),
+    to: endOfYear(),
     value: "year",
   },
 ];
@@ -120,7 +110,7 @@ export function FinanzasStatsPage() {
 
   if (!canView) {
     return (
-      <section className={PAGE_CONTAINER}>
+      <Page>
         <Alert status="danger">
           <Alert.Content>
             <Alert.Description>
@@ -128,65 +118,33 @@ export function FinanzasStatsPage() {
             </Alert.Description>
           </Alert.Content>
         </Alert>
-      </section>
+      </Page>
     );
   }
 
   return (
-    <section className={PAGE_CONTAINER}>
+    <Page>
       {/* Date Range Filters */}
       <form
         className="grid gap-4 rounded-2xl border border-default-100 bg-background p-6 shadow-sm sm:grid-cols-5"
         onSubmit={handleSubmit}
       >
         <div className="sm:col-span-2">
-          <DateRangePicker
+          <AppDateRangePicker
+            label="Rango de fechas"
             className="w-full"
-            onChange={(value) => {
-              if (!value) {
+            visibleMonths={2}
+            startValue={from}
+            endValue={to}
+            onChange={(start, end) => {
+              if (!start || !end) {
                 return;
               }
-              setFrom(value.start.toString());
-              setTo(value.end.toString());
+              setFrom(start);
+              setTo(end);
               setQuickRange("custom");
             }}
-            value={from && to ? { end: parseDate(to), start: parseDate(from) } : undefined}
-          >
-            <Label className="font-medium text-xs">Rango de fechas</Label>
-            <DateField.Group>
-              <DateField.InputContainer>
-                <DateField.Input slot="start">
-                  {(segment) => <DateField.Segment segment={segment} />}
-                </DateField.Input>
-                <DateRangePicker.RangeSeparator />
-                <DateField.Input slot="end">
-                  {(segment) => <DateField.Segment segment={segment} />}
-                </DateField.Input>
-              </DateField.InputContainer>
-              <DateField.Suffix>
-                <DateRangePicker.Trigger>
-                  <DateRangePicker.TriggerIndicator />
-                </DateRangePicker.Trigger>
-              </DateField.Suffix>
-            </DateField.Group>
-            <DateRangePicker.Popover>
-              <RangeCalendar visibleDuration={{ months: 2 }}>
-                <RangeCalendar.Header>
-                  <RangeCalendar.Heading />
-                  <RangeCalendar.NavButton slot="previous" />
-                  <RangeCalendar.NavButton slot="next" />
-                </RangeCalendar.Header>
-                <RangeCalendar.Grid>
-                  <RangeCalendar.GridHeader>
-                    {(day) => <RangeCalendar.HeaderCell>{day}</RangeCalendar.HeaderCell>}
-                  </RangeCalendar.GridHeader>
-                  <RangeCalendar.GridBody>
-                    {(date) => <RangeCalendar.Cell date={date} />}
-                  </RangeCalendar.GridBody>
-                </RangeCalendar.Grid>
-              </RangeCalendar>
-            </DateRangePicker.Popover>
-          </DateRangePicker>
+          />
         </div>
 
         <div>
@@ -223,7 +181,7 @@ export function FinanzasStatsPage() {
               </>
             ) : (
               <>
-                <TrendingUp className="h-4 w-4" />
+                <TrendingUp className="size-4" />
                 Actualizar
               </>
             )}
@@ -248,7 +206,7 @@ export function FinanzasStatsPage() {
             <Card className="p-3" variant="secondary">
               <Card.Header className="items-center justify-between p-0">
                 <Card.Title className="text-sm">INGRESOS</Card.Title>
-                <ArrowUp className="h-4 w-4 text-success" />
+                <ArrowUp className="text-success size-4" />
               </Card.Header>
               <Card.Content className="p-0 pt-2">
                 <p className="font-semibold text-2xl text-success">
@@ -261,7 +219,7 @@ export function FinanzasStatsPage() {
             <Card className="p-3" variant="secondary">
               <Card.Header className="items-center justify-between p-0">
                 <Card.Title className="text-sm">EGRESOS</Card.Title>
-                <ArrowDown className="h-4 w-4 text-danger" />
+                <ArrowDown className="text-danger size-4" />
               </Card.Header>
               <Card.Content className="p-0 pt-2">
                 <p className="font-semibold text-2xl text-danger">
@@ -274,7 +232,7 @@ export function FinanzasStatsPage() {
             <Card className="p-3" variant="secondary">
               <Card.Header className="items-center justify-between p-0">
                 <Card.Title className="text-sm">RESULTADO</Card.Title>
-                <BarChart3 className="h-4 w-4 text-primary" />
+                <BarChart3 className="text-primary size-4" />
               </Card.Header>
               <Card.Content className="p-0 pt-2">
                 <p
@@ -304,7 +262,7 @@ export function FinanzasStatsPage() {
             {/* Movement Types */}
             <Card className="p-6">
               <h2 className="mb-4 flex items-center gap-2 font-bold text-lg">
-                <Calendar className="h-5 w-5 text-secondary" />
+                <Calendar className="text-secondary size-5" />
                 Por tipo de movimiento
               </h2>
               <MovementTypeList data={data.byType} />
@@ -313,7 +271,7 @@ export function FinanzasStatsPage() {
             {/* Top Participants Preview */}
             <Card className="p-6">
               <h2 className="mb-4 flex items-center gap-2 font-bold text-lg">
-                <TrendingUp className="h-5 w-5 text-accent" />
+                <TrendingUp className="text-accent size-5" />
                 Resumen rápido
               </h2>
               <div className="space-y-3 text-sm">
@@ -362,6 +320,6 @@ export function FinanzasStatsPage() {
           </Alert.Content>
         </Alert>
       )}
-    </section>
+    </Page>
   );
 }

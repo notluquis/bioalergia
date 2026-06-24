@@ -1,9 +1,9 @@
-import { RouterProvider } from "@heroui/react";
+import { I18nProvider, RouterProvider } from "@heroui/react";
 import type { QueryClient } from "@tanstack/react-query";
 import { createRootRouteWithContext, Outlet, useNavigate } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
 
-import type { AuthContextType } from "@/context/AuthContext";
+import type { AuthContextType } from "@/features/auth/hooks/use-auth";
 
 // Lazy load devtools for development only
 const TanStackRouterDevtools =
@@ -44,15 +44,19 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 function RootComponent() {
   const navigate = useNavigate();
   // Adapter for HeroUI/React Aria (expects (path: string) => void)
-  const handleNavigate = (path: string) => navigate({ to: path });
+  const handleNavigate = (path: string) => {
+    void navigate({ to: path });
+  };
 
   return (
-    <RouterProvider navigate={handleNavigate}>
-      <Outlet />
-      <ConfirmDialogHost />
-      <Suspense>
-        <TanStackRouterDevtools position="bottom-right" />
-      </Suspense>
-    </RouterProvider>
+    <I18nProvider locale="es-CL">
+      <RouterProvider navigate={handleNavigate}>
+        <Outlet />
+        <ConfirmDialogHost />
+        <Suspense>
+          <TanStackRouterDevtools position="bottom-right" />
+        </Suspense>
+      </RouterProvider>
+    </I18nProvider>
   );
 }

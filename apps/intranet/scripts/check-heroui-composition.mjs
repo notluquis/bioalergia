@@ -19,7 +19,7 @@ const rules = [
   {
     id: "button-onclick",
     message: "HeroUI Button debe usar onPress (no onClick).",
-    pattern: /<Button\b[\s\S]*?\bonClick=/g,
+    pattern: /<Button\b[^>]*?\bonClick=/g,
   },
   {
     id: "press-mouseevent-cast",

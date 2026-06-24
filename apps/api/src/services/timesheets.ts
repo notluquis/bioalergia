@@ -1,25 +1,26 @@
 import { db } from "@finanzas/db";
 
-import dayjs from "dayjs";
-import timezone from "dayjs/plugin/timezone.js";
-import utc from "dayjs/plugin/utc.js";
+import { DomainError } from "../lib/errors.ts";
 
-dayjs.extend(utc);
-dayjs.extend(timezone);
-
-const TIMEZONE = "America/Santiago";
 const DATE_ONLY_FORMAT = "YYYY-MM-DD";
 
 // Regex patterns for performance (top-level definition)
 const TIME_FORMAT_PATTERN = /^[0-9]{1,2}:[0-9]{2}(:[0-9]{2})?$/;
 const TIME_EXTRACT_PATTERN = /^(\d{1,2}):(\d{2})(?::(\d{2}))?$/;
-const TIME_ONLY_PATTERN = /^(\d{1,2}):(\d{2})/;
 
 import { roundCurrency } from "../lib/currency.ts";
 import type { EmployeeTimesheet, EmployeeTimesheetUpdateInput } from "../lib/db-types.ts";
 import { logEvent, logWarn } from "../lib/logger.ts";
 import { getEffectiveRetentionRate } from "../lib/retention.ts";
-import { formatDateOnly, getNthBusinessDay } from "../lib/time.ts";
+import {
+  dbDateToISO,
+  dbTimeToHHmm,
+  formatChile,
+  formatDateOnly,
+  getNthBusinessDay,
+  isoToDbDate,
+  parseChileDateOnly,
+} from "../lib/time.ts";
 import { getEmployeeById, listEmployees } from "./employees.ts";
 
 // Types
@@ -59,36 +60,54 @@ export interface ListTimesheetOptions {
   to: string;
 }
 
-function parseDateOnlyUtc(value: string) {
-  return dayjs.utc(value, DATE_ONLY_FORMAT, true);
+/** Strict "YYYY-MM-DD" -> PlainDate (UTC calendar date), or null if invalid. */
+export function parseDateOnlyUtc(value: string): Temporal.PlainDate | null {
+  const m = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return null;
+  try {
+    return Temporal.PlainDate.from(
+      { year: +m[1], month: +m[2], day: +m[3] },
+      { overflow: "reject" }
+    );
+  } catch {
+    return null;
+  }
 }
 
-function dateOnlyStartUtc(value: string): Date {
+export function dateOnlyStartUtc(value: string): Date {
   const parsed = parseDateOnlyUtc(value);
-  if (!parsed.isValid()) {
-    throw new Error(`Invalid date format: ${value}. Expected ${DATE_ONLY_FORMAT}`);
+  if (!parsed) {
+    throw new DomainError(
+      "BAD_REQUEST",
+      `Invalid date format: ${value}. Expected ${DATE_ONLY_FORMAT}`
+    );
   }
-  return parsed.startOf("day").toDate();
+  return new Date(`${parsed.toString()}T00:00:00.000Z`);
 }
 
-function dateOnlyEndUtc(value: string): Date {
+export function dateOnlyEndUtc(value: string): Date {
   const parsed = parseDateOnlyUtc(value);
-  if (!parsed.isValid()) {
-    throw new Error(`Invalid date format: ${value}. Expected ${DATE_ONLY_FORMAT}`);
+  if (!parsed) {
+    throw new DomainError(
+      "BAD_REQUEST",
+      `Invalid date format: ${value}. Expected ${DATE_ONLY_FORMAT}`
+    );
   }
-  return parsed.endOf("day").toDate();
+  return new Date(`${parsed.toString()}T23:59:59.999Z`);
 }
 
-function monthStartUtc(month: string) {
-  const parsed = dayjs.utc(month, "YYYY-MM", true);
-  if (!parsed.isValid()) {
-    throw new Error(`Invalid month format: ${month}. Expected YYYY-MM`);
+/** Strict "YYYY-MM" -> PlainDate of the first day of that month (UTC). */
+export function monthStartUtc(month: string): Temporal.PlainDate {
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) {
+    throw new DomainError("BAD_REQUEST", `Invalid month format: ${month}. Expected YYYY-MM`);
   }
-  return parsed.startOf("month");
+  const [year, m] = month.split("-").map(Number);
+  return Temporal.PlainDate.from({ year, month: m, day: 1 });
 }
 
-function formatDbDateOnly(value: Date | string) {
-  return dayjs.utc(value).format(DATE_ONLY_FORMAT);
+export function formatDbDateOnly(value: Date | string) {
+  // @db.Date workDate -> "YYYY-MM-DD". Canonical helper (UTC, no .tz).
+  return dbDateToISO(value) ?? "";
 }
 
 // Helper Functions
@@ -99,24 +118,29 @@ function formatDbDateOnly(value: Date | string) {
 /**
  * Convert time string (HH:MM or HH:MM:SS) to minutes since midnight.
  */
-function timeToMinutes(time: string): number {
+export function timeToMinutes(time: string): number {
   if (!time) {
-    throw new Error("Time string is required");
+    throw new DomainError("BAD_REQUEST", "Time string is required");
   }
-  const d = dayjs(time);
-  if (d.isValid() && (time.includes("T") || time.includes("-"))) {
-    return d.hour() * 60 + d.minute();
+  if (time.includes("T") || time.includes("-")) {
+    const dt = new Date(time);
+    if (!Number.isNaN(dt.getTime())) {
+      return dt.getHours() * 60 + dt.getMinutes();
+    }
   }
   if (!TIME_FORMAT_PATTERN.test(time)) {
-    throw new Error(`Invalid time format: ${time}. Expected HH:MM or HH:MM:SS`);
+    throw new DomainError(
+      "BAD_REQUEST",
+      `Invalid time format: ${time}. Expected HH:MM or HH:MM:SS`
+    );
   }
   const parts = time.split(":").map(Number);
   const [hours, minutes] = parts;
   if (hours === undefined || minutes === undefined) {
-    throw new Error(`Invalid time components: ${time}`);
+    throw new DomainError("BAD_REQUEST", `Invalid time components: ${time}`);
   }
   if (hours < 0 || hours > 23 || minutes < 0 || minutes >= 60) {
-    throw new Error(`Time out of range: ${time}`);
+    throw new DomainError("BAD_REQUEST", `Time out of range: ${time}`);
   }
   return hours * 60 + minutes;
 }
@@ -128,20 +152,17 @@ function timeToMinutes(time: string): number {
  * - ISO 8601 timestamp (e.g., "2025-12-02T12:40:00.000Z")
  * For ISO timestamps, converts to America/Santiago timezone and extracts time
  */
-function normalizeTimeString(time: string): string | null {
+export function normalizeTimeString(time: string): string | null {
   if (!time) {
     return null;
   }
 
-  // Check if it's an ISO timestamp (contains 'T' or '-')
-  const d = dayjs(time);
-  if (d.isValid() && (time.includes("T") || time.includes("-"))) {
-    // Parse as ISO timestamp and convert to Santiago timezone
-    const santiago = d.tz(TIMEZONE);
-    const h = santiago.hour();
-    const m = santiago.minute();
-    const s = santiago.second();
-    return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+  // ISO timestamp (contains 'T' or '-') -> its wall-clock time in Santiago.
+  if (time.includes("T") || time.includes("-")) {
+    const dt = new Date(time);
+    if (!Number.isNaN(dt.getTime())) {
+      return formatChile(dt, "HH:mm:ss");
+    }
   }
 
   // Match HH:MM or HH:MM:SS format
@@ -172,77 +193,70 @@ function normalizeTimeString(time: string): string | null {
  * Uses reference date (work_date) and America/Santiago timezone
  * ZenStack/Prisma extracts only TIME component for PostgreSQL TIME columns
  */
-function timeStringToDate(time: string | null | undefined, referenceDate: Date = new Date()): Date {
+export function timeStringToDate(
+  time: string | null | undefined,
+  referenceDate: Date = new Date()
+): Date {
   if (!time) {
-    throw new Error("Time string is required for date conversion");
+    throw new DomainError("BAD_REQUEST", "Time string is required for date conversion");
   }
 
-  // Format reference date as YYYY-MM-DD in Santiago timezone
-  const refDateStr = dayjs(referenceDate).tz(TIMEZONE).format("YYYY-MM-DD");
+  // ZenStack/Prisma maps @db.Time to/from a Date by its UTC components
+  // (09:00 <-> 1970-01-01T09:00:00Z). The wall-clock time must therefore be
+  // anchored in UTC, NOT in America/Santiago — otherwise the stored time is
+  // shifted +3h/+4h. The reference date only contributes the calendar day,
+  // which Postgres ignores for a time-only column; we anchor it in UTC too.
+  let hours: number;
+  let minutes: number;
+  let seconds: number;
 
-  // Try parsing as ISO datetime first
-  const d = dayjs(time);
-  if (d.isValid() && (time.includes("T") || time.includes("-"))) {
-    // Build datetime string in Santiago timezone: "YYYY-MM-DD HH:mm:ss"
-    const timeStr = `${d.hour().toString().padStart(2, "0")}:${d.minute().toString().padStart(2, "0")}:${d.second().toString().padStart(2, "0")}`;
-    return dayjs.tz(`${refDateStr} ${timeStr}`, TIMEZONE).toDate();
-  }
-
-  // Parse HH:MM or HH:MM:SS format
-  if (TIME_FORMAT_PATTERN.test(time)) {
+  const isoDate = time.includes("T") || time.includes("-") ? new Date(time) : null;
+  if (isoDate && !Number.isNaN(isoDate.getTime())) {
+    hours = isoDate.getHours();
+    minutes = isoDate.getMinutes();
+    seconds = isoDate.getSeconds();
+  } else if (TIME_FORMAT_PATTERN.test(time)) {
     const parts = time.split(":").map(Number);
-    const [hours, minutes, seconds = 0] = parts;
+    const [h, m, s = 0] = parts;
     if (
-      hours === undefined ||
-      minutes === undefined ||
-      hours < 0 ||
-      hours > 23 ||
-      minutes < 0 ||
-      minutes >= 60 ||
-      seconds < 0 ||
-      seconds >= 60
+      h === undefined ||
+      m === undefined ||
+      h < 0 ||
+      h > 23 ||
+      m < 0 ||
+      m >= 60 ||
+      s < 0 ||
+      s >= 60
     ) {
-      throw new Error(`Invalid time components in: ${time}`);
+      throw new DomainError("BAD_REQUEST", `Invalid time components in: ${time}`);
     }
-    // Build datetime string in Santiago timezone: "YYYY-MM-DD HH:mm:ss"
-    const timeStr = `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
-    return dayjs.tz(`${refDateStr} ${timeStr}`, TIMEZONE).toDate();
+    hours = h;
+    minutes = m;
+    seconds = s;
+  } else {
+    throw new DomainError("BAD_REQUEST", `Unable to parse time string: ${time}`);
   }
 
-  throw new Error(`Unable to parse time string: ${time}`);
+  return new Date(
+    Date.UTC(
+      referenceDate.getUTCFullYear(),
+      referenceDate.getUTCMonth(),
+      referenceDate.getUTCDate(),
+      hours,
+      minutes,
+      seconds,
+      0
+    )
+  );
 }
 
 /**
- * Format Date object from ZenStack to "HH:MM" string for API responses
+ * Format a @db.Time value (UTC-anchored Date from ZenStack, or "HH:MM:SS"
+ * string from $qb) to "HH:MM" for API responses. Canonical impl lives in
+ * lib/time.ts::dbTimeToHHmm; kept here as a named re-export for call-sites.
  */
-function dateToTimeString(date: Date | string | null): string | null {
-  if (!date) {
-    return null;
-  }
-
-  // If it's already a string in HH:MM or HH:MM:SS format, extract just HH:MM
-  if (typeof date === "string") {
-    const match = date.match(TIME_ONLY_PATTERN);
-    if (match) {
-      const [, hours, minutes] = match;
-      if (hours && minutes) {
-        return `${hours.padStart(2, "0")}:${minutes}`;
-      }
-      return null;
-    }
-    // Try parsing as date/time
-    const d = dayjs(date);
-    if (d.isValid()) {
-      return d.format("HH:mm");
-    }
-    return null;
-  }
-
-  const d = dayjs(date);
-  if (!d.isValid()) {
-    return null;
-  }
-  return d.format("HH:mm");
+export function dateToTimeString(date: Date | string | null): string | null {
+  return dbTimeToHHmm(date);
 }
 
 /**
@@ -271,7 +285,7 @@ export async function getTimesheetEntryById(id: number): Promise<TimesheetEntry>
     where: { id: BigInt(id) },
   });
   if (!entry) {
-    throw new Error("Registro no encontrado");
+    throw new DomainError("NOT_FOUND", "Registro no encontrado");
   }
   return mapTimesheetEntry(entry);
 }
@@ -290,15 +304,17 @@ export async function ensureFixedSalaryRecord(
   }
 
   const monthStart = monthStartUtc(month);
-  const monthEnd = monthStart.add(1, "month");
+  const monthEnd = monthStart.add({ months: 1 });
+  const monthStartDate = isoToDbDate(monthStart.toString());
+  const monthEndDate = isoToDbDate(monthEnd.toString());
 
   // Check if record already exists for this month
   const existing = await db.employeeTimesheet.findFirst({
     where: {
       employeeId,
       workDate: {
-        gte: monthStart.toDate(),
-        lt: monthEnd.toDate(),
+        gte: monthStartDate,
+        lt: monthEndDate,
       },
     },
   });
@@ -311,7 +327,7 @@ export async function ensureFixedSalaryRecord(
   await db.employeeTimesheet.create({
     data: {
       employeeId,
-      workDate: monthStart.toDate(),
+      workDate: monthStartDate,
       startTime: null,
       endTime: null,
       workedMinutes: 0,
@@ -369,17 +385,18 @@ type NormalizedUpsertPayload = {
   workedMinutes: number;
 };
 
-function normalizeUpsertPayload(payload: UpsertTimesheetPayload): NormalizedUpsertPayload {
+export function normalizeUpsertPayload(payload: UpsertTimesheetPayload): NormalizedUpsertPayload {
   const workDateObj = dateOnlyStartUtc(payload.work_date);
   const startTimeStr = payload.start_time ? normalizeTimeString(payload.start_time) : null;
   const endTimeStr = payload.end_time ? normalizeTimeString(payload.end_time) : null;
   const workedMinutes = calculateWorkedMinutes(payload);
-  const workDateDb = dayjs(workDateObj).format("YYYY-MM-DD");
+  // workDateObj is UTC-anchored midnight; dbDateToISO reads the UTC day.
+  const workDateDb = dbDateToISO(workDateObj) ?? "";
 
   return { endTimeStr, startTimeStr, workDateDb, workDateObj, workedMinutes };
 }
 
-function calculateWorkedMinutes(payload: UpsertTimesheetPayload): number {
+export function calculateWorkedMinutes(payload: UpsertTimesheetPayload): number {
   const providedWorkedMinutes = payload.worked_minutes ?? 0;
   if (providedWorkedMinutes > 0 || !payload.start_time || !payload.end_time) {
     return providedWorkedMinutes;
@@ -461,7 +478,7 @@ async function buildTimesheetUpdateData(
     where: { id: BigInt(id) },
   });
   if (!existing) {
-    throw new Error("Registro no encontrado");
+    throw new DomainError("NOT_FOUND", "Registro no encontrado");
   }
 
   const referenceDate = existing.workDate;
@@ -552,11 +569,11 @@ export function normalizeTimesheetPayload(data: {
  * Compute pay date based on employee role and period start
  */
 export function computePayDate(role: string, periodStart: string): string {
-  const nextMonthFirstDay = dayjs
-    .tz(periodStart, TIMEZONE)
-    .add(1, "month")
-    .startOf("month")
-    .toDate();
+  // First day of the month after periodStart (Chile calendar).
+  const nextMonthYM = Temporal.PlainYearMonth.from(periodStart.slice(0, 7)).add({ months: 1 });
+  const nextMonthFirstDay =
+    parseChileDateOnly(nextMonthYM.toPlainDate({ day: 1 }).toString()) ?? new Date(NaN);
+  const day5 = nextMonthYM.toPlainDate({ day: 5 }).toString();
 
   const roleUpper = role
     .normalize("NFD")
@@ -571,7 +588,7 @@ export function computePayDate(role: string, periodStart: string): string {
 
   // TENS: día 5 calendario del mes siguiente
   if (isTens) {
-    return dayjs(nextMonthFirstDay).tz(TIMEZONE).date(5).format(DATE_ONLY_FORMAT);
+    return day5;
   }
 
   // Enfermero Universitario: 5to día hábil del mes siguiente
@@ -585,7 +602,7 @@ export function computePayDate(role: string, periodStart: string): string {
   }
 
   // Otros: día 5 calendario del mes siguiente
-  return dayjs(nextMonthFirstDay).tz(TIMEZONE).date(5).format(DATE_ONLY_FORMAT);
+  return day5;
 }
 
 /**

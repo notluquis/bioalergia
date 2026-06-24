@@ -1,3 +1,4 @@
+import { formatChile } from "@/lib/dates";
 import {
   Button,
   Card,
@@ -12,7 +13,6 @@ import {
 } from "@heroui/react";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import type { ColumnDef, PaginationState } from "@tanstack/react-table";
-import dayjs from "dayjs";
 import { Check } from "lucide-react";
 import { useEffect, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
@@ -82,7 +82,7 @@ function buildSalesColumns(
     {
       accessorKey: "documentDate",
       header: "document_date",
-      cell: ({ row }) => dayjs(row.original.documentDate).format("DD-MM-YYYY"),
+      cell: ({ row }) => formatChile(row.original.documentDate, "DD-MM-YYYY"),
     },
     {
       accessorKey: "exemptAmount",
@@ -217,7 +217,7 @@ function SalesLinkedEventsDrawer({
                       {resolvedDte.clientRUT}
                     </Chip>
                     <Chip color="default" size="sm" variant="soft">
-                      {dayjs(resolvedDte.documentDate).format("DD-MM-YYYY")}
+                      {formatChile(resolvedDte.documentDate, "DD-MM-YYYY")}
                     </Chip>
                     <Chip color="success" size="sm" variant="soft">
                       {formatCurrency(resolvedDte.totalAmount)}
@@ -276,7 +276,7 @@ function SalesLinkedEventsDrawer({
                             {event.summary ?? "(Sin título)"}
                           </Card.Title>
                           <Card.Description>
-                            {dayjs(event.eventDate).format("DD-MM-YYYY")}
+                            {formatChile(event.eventDate, "DD-MM-YYYY")}
                             {event.eventTime ? ` · ${event.eventTime}` : ""}
                           </Card.Description>
                         </div>
@@ -391,7 +391,7 @@ export function DteSalesDetailsPanel() {
                   {period}
                   <ListBox.ItemIndicator>
                     {({ isSelected }) =>
-                      isSelected ? <Check className="h-4 w-4 text-primary" /> : null
+                      isSelected ? <Check className="text-primary size-4" /> : null
                     }
                   </ListBox.ItemIndicator>
                 </ListBox.Item>

@@ -66,4 +66,25 @@ describe("createPersistentStore", () => {
     expect(saved?.visible).toBe(false);
     expect(saved?.token).toBeUndefined();
   });
+
+  it("warns when localStorage.setItem throws (line 47-48 catch)", () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.stubGlobal("localStorage", {
+      getItem: () => null,
+      setItem: () => {
+        throw new Error("QuotaExceeded");
+      },
+      removeItem: () => {},
+      clear: () => {},
+      length: 0,
+      key: () => null,
+    });
+    const store = createPersistentStore("test-throw", { count: 0 });
+    store.setState(() => ({ count: 1 }));
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining("Failed to save"),
+      expect.any(Error)
+    );
+    warnSpy.mockRestore();
+  });
 });

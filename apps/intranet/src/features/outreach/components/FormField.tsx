@@ -1,4 +1,4 @@
-import { Input, Label, ListBox, Select, TextArea, TextField } from "@heroui/react";
+import { FieldError, Input, Label, ListBox, Select, TextArea, TextField } from "@heroui/react";
 import type { ReactNode } from "react";
 
 export type SelectOption = { value: string; label: string };
@@ -11,6 +11,10 @@ export type TextInputProps = {
   onValueChange: (value: string) => void;
   type?: "text" | "email" | "url" | "number" | "datetime-local";
   required?: boolean;
+  isRequired?: boolean;
+  isInvalid?: boolean;
+  /** Inline FieldError rendered under the input when isInvalid is true. */
+  errorMessage?: string;
   isDisabled?: boolean;
   placeholder?: string;
   min?: number;
@@ -28,6 +32,9 @@ export function TextInput({
   onValueChange,
   type = "text",
   required,
+  isRequired,
+  isInvalid,
+  errorMessage,
   isDisabled,
   placeholder,
   min,
@@ -44,7 +51,8 @@ export function TextInput({
       defaultValue={defaultValue}
       onChange={onValueChange}
       type={type}
-      isRequired={required}
+      isRequired={isRequired ?? required}
+      isInvalid={isInvalid}
       isDisabled={isDisabled}
       onBlur={onBlur}
       className={className}
@@ -57,6 +65,7 @@ export function TextInput({
         max={max}
         onKeyDown={onKeyDown}
       />
+      {errorMessage && isInvalid ? <FieldError>{errorMessage}</FieldError> : null}
     </TextField>
   );
 }
@@ -107,6 +116,9 @@ export type SelectInputProps = {
   onValueChange: (value: string) => void;
   options: SelectOption[];
   isDisabled?: boolean;
+  isRequired?: boolean;
+  isInvalid?: boolean;
+  errorMessage?: string;
   className?: string;
 };
 
@@ -116,6 +128,9 @@ export function SelectInput({
   onValueChange,
   options,
   isDisabled,
+  isRequired,
+  isInvalid,
+  errorMessage,
   className,
 }: SelectInputProps) {
   return (
@@ -123,6 +138,8 @@ export function SelectInput({
       value={value}
       onChange={(key) => onValueChange(typeof key === "string" ? key : "")}
       isDisabled={isDisabled}
+      isRequired={isRequired}
+      isInvalid={isInvalid}
       className={className}
     >
       {label && <Label>{label}</Label>}
@@ -139,6 +156,7 @@ export function SelectInput({
           ))}
         </ListBox>
       </Select.Popover>
+      {errorMessage && isInvalid ? <FieldError>{errorMessage}</FieldError> : null}
     </Select>
   );
 }

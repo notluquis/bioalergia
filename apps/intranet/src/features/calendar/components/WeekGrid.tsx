@@ -1,26 +1,39 @@
 import { Button, Tooltip } from "@heroui/react";
-import dayjs from "dayjs";
-import isoWeek from "dayjs/plugin/isoWeek";
 import type { CSSProperties } from "react";
 import { useEffect, useState } from "react";
-import { useTheme } from "@/hooks/use-theme";
+import { useTheme } from "next-themes";
+import { addDays, chileDay, formatChile, isoWeekday, today } from "@/lib/dates";
 import { toTitleCase } from "@/lib/person";
 import { cn } from "@/lib/utils";
 
 import type { CalendarEventDetail } from "../types";
 
-dayjs.extend(isoWeek);
+// Chile-local wall-clock projection of an instant (UTC ISO string). `ms` is the
+// real epoch for ordering/duration; `hour`/`minute`/`date`/`hhmm` are what the
+// clock reads in America/Santiago. All event times arrive as UTC ISO strings
+// (e.g. "2026-04-21T15:00:00.000Z"); `formatChile`/`chileDay` render them in
+// Chile time without the +4h drift a naive zone-reinterpret would cause.
+interface LocalTime {
+  date: string; // "YYYY-MM-DD" in Chile
+  hhmm: string; // "HH:mm" in Chile
+  hour: number; // 0-23 Chile local
+  minute: number;
+  ms: number; // epoch millis of the instant
+}
 
-const DISPLAY_TZ = "America/Santiago";
-
-// All event times arrive as UTC ISO strings (e.g. "2026-04-21T15:00:00.000Z").
-// Parse as UTC first, THEN convert to Chile local — `dayjs.tz(str, zone)`
-// silently reinterprets the wall-clock of a Z-suffixed string as that zone,
-// which drops the offset and shifts displayed times by +4h.
-function toLocal(input: null | string | undefined) {
+function toLocal(input: null | string | undefined): LocalTime | null {
   if (!input) return null;
-  const d = dayjs.utc(input).tz(DISPLAY_TZ);
-  return d.isValid() ? d : null;
+  const ms = new Date(input).getTime();
+  if (Number.isNaN(ms)) return null;
+  const hhmm = formatChile(input, "HH:mm");
+  const parts = hhmm.split(":");
+  return {
+    date: chileDay(input),
+    hhmm,
+    hour: Number(parts[0]),
+    minute: Number(parts[1]),
+    ms,
+  };
 }
 
 // Event with layout info for overlapping display
@@ -63,8 +76,8 @@ function getEventPosition(event: CalendarEventDetail, startHour: number, endHour
     return null;
   }
 
-  const startMinutes = start.hour() * 60 + start.minute();
-  let endMinutes = end ? end.hour() * 60 + end.minute() : startMinutes + 30;
+  const startMinutes = start.hour * 60 + start.minute;
+  let endMinutes = end ? end.hour * 60 + end.minute : startMinutes + 30;
 
   // Handle events that cross midnight (end time is "earlier" than start time)
   // Treat them as ending at 24:00 for grid display purposes
@@ -89,21 +102,21 @@ function getEventPosition(event: CalendarEventDetail, startHour: number, endHour
   };
 }
 
-// Group events by day
-function groupEventsByDay(events: CalendarEventDetail[], weekStart: dayjs.Dayjs) {
+// Group events by day. `monday` is the "YYYY-MM-DD" of the week's Monday.
+function groupEventsByDay(events: CalendarEventDetail[], monday: string) {
   const days: Record<string, CalendarEventDetail[]> = {};
 
   // Initialize 6 days (Mon-Sat)
   for (let i = 0; i < 6; i++) {
-    const date = weekStart.add(i, "day").format("YYYY-MM-DD");
+    const date = addDays(monday, i);
     days[date] = []; // eslint-disable-line security/detect-object-injection
   }
 
   for (const event of events) {
     const eventDate = event.startDateTime
-      ? (toLocal(event.startDateTime)?.format("YYYY-MM-DD") ?? null)
+      ? (toLocal(event.startDateTime)?.date ?? null)
       : event.startDate
-        ? dayjs(event.startDate).format("YYYY-MM-DD")
+        ? chileDay(event.startDate)
         : null;
 
     // eslint-disable-next-line security/detect-object-injection -- eventDate is YYYY-MM-DD format, safe access
@@ -115,31 +128,26 @@ function groupEventsByDay(events: CalendarEventDetail[], weekStart: dayjs.Dayjs)
   return days;
 }
 
-function resolveWeekMonday(weekStart: string) {
-  const parsed = dayjs(weekStart);
-  if (!parsed.isValid()) {
-    return dayjs().isoWeekday(1);
-  }
-  return parsed.isoWeekday(1);
+// Monday ("YYYY-MM-DD") of the ISO week containing `weekStart`.
+function resolveWeekMonday(weekStart: string): string {
+  const base = /^\d{4}-\d{2}-\d{2}$/.test(weekStart) ? weekStart : today();
+  return addDays(base, -(isoWeekday(base) - 1));
 }
 
-function isTodayInVisibleWeek(monday: dayjs.Dayjs, weekEnd: dayjs.Dayjs) {
-  const now = dayjs();
-  return now.isAfter(monday.startOf("day")) && now.isBefore(weekEnd);
+// Is today's Chile calendar day within the visible Mon-Sat window?
+function isTodayInVisibleWeek(monday: string, saturday: string): boolean {
+  const t = today();
+  return t >= monday && t <= saturday;
 }
 
-function getWeekEventsInRange(
-  events: CalendarEventDetail[],
-  monday: dayjs.Dayjs,
-  weekEnd: dayjs.Dayjs
-) {
+function getWeekEventsInRange(events: CalendarEventDetail[], monday: string, saturday: string) {
   return events.filter((event) => {
     if (!event.startDateTime) {
       return false;
     }
     const eventDate = toLocal(event.startDateTime);
     if (!eventDate) return false;
-    return eventDate.isSameOrAfter(monday.startOf("day")) && eventDate.isBefore(weekEnd);
+    return eventDate.date >= monday && eventDate.date <= saturday;
   });
 }
 
@@ -148,44 +156,45 @@ function computeEventMaxHour(event: CalendarEventDetail) {
     const endTime = toLocal(event.endDateTime);
     const startTime = toLocal(event.startDateTime);
     if (!endTime) return 0;
-    const crossesMidnight = startTime && endTime.isBefore(startTime);
-    const isMidnight = endTime.hour() === 0 && endTime.minute() === 0;
+    const crossesMidnight = startTime && endTime.ms < startTime.ms;
+    const isMidnight = endTime.hour === 0 && endTime.minute === 0;
 
     if (crossesMidnight || isMidnight) {
       return 24;
     }
-    const roundedEndHour = endTime.minute() > 0 ? endTime.hour() + 1 : endTime.hour();
+    const roundedEndHour = endTime.minute > 0 ? endTime.hour + 1 : endTime.hour;
     return Math.min(24, roundedEndHour);
   }
 
   if (event.startDateTime) {
     const s = toLocal(event.startDateTime);
-    return s ? Math.min(24, s.hour() + 1) : 0;
+    return s ? Math.min(24, s.hour + 1) : 0;
   }
 
   return 0;
 }
 
-function computeGridHourBounds(events: CalendarEventDetail[], monday: dayjs.Dayjs) {
+function computeGridHourBounds(events: CalendarEventDetail[], monday: string) {
   const businessStart = 9;
   const businessEnd = 20;
-  const weekEnd = monday.add(5, "day").endOf("day");
-  const now = dayjs();
-  const isNowWithinBusiness = now.hour() >= businessStart && now.hour() <= businessEnd;
-  const includeCurrentTime = isTodayInVisibleWeek(monday, weekEnd) && isNowWithinBusiness;
-  const weekEvents = getWeekEventsInRange(events, monday, weekEnd);
+  const saturday = addDays(monday, 5);
+  const now = toLocal(new Date().toISOString());
+  const nowHour = now?.hour ?? 0;
+  const isNowWithinBusiness = nowHour >= businessStart && nowHour <= businessEnd;
+  const includeCurrentTime = isTodayInVisibleWeek(monday, saturday) && isNowWithinBusiness;
+  const weekEvents = getWeekEventsInRange(events, monday, saturday);
 
   if (weekEvents.length === 0) {
     return { endHour: businessEnd, startHour: businessStart };
   }
 
-  let minTotalMinutes = includeCurrentTime ? now.hour() * 60 : 24 * 60;
-  let max = includeCurrentTime ? now.hour() + 1 : 0;
+  let minTotalMinutes = includeCurrentTime ? nowHour * 60 : 24 * 60;
+  let max = includeCurrentTime ? nowHour + 1 : 0;
 
   for (const event of weekEvents) {
     const s = toLocal(event.startDateTime);
     if (s) {
-      const m = s.hour() * 60 + s.minute();
+      const m = s.hour * 60 + s.minute;
       if (m < minTotalMinutes) minTotalMinutes = m;
     }
     max = Math.max(max, computeEventMaxHour(event));
@@ -225,15 +234,16 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
 
   const hours = generateHours(startHour, endHour);
   const eventsByDay = groupEventsByDay(events, monday);
+  const todayStr = today();
   const days = Array.from({ length: 6 }, (_, i) => {
-    const date = monday.add(i, "day");
+    const isoDate = addDays(monday, i);
     return {
-      dayName: date.format("ddd").toUpperCase(),
-      dayNumber: date.format("D"),
-      fullDayName: date.format("dddd"),
-      isoDate: date.format("YYYY-MM-DD"),
-      isToday: date.isSame(dayjs(), "day"),
-      key: date.format("YYYY-MM-DD"),
+      dayName: formatChile(isoDate, "ddd").replace(/\.$/, "").toUpperCase(),
+      dayNumber: formatChile(isoDate, "D"),
+      fullDayName: formatChile(isoDate, "dddd"),
+      isoDate,
+      isToday: isoDate === todayStr,
+      key: isoDate,
     };
   });
 
@@ -409,14 +419,14 @@ function getDisplayMode(durationMinutes: number): DisplayMode {
 function getEventDisplayTimes(event: CalendarEventDetail) {
   const start = toLocal(event.startDateTime);
   const end = toLocal(event.endDateTime);
-  const durationMinutes = start && end ? Math.max(1, end.diff(start, "minute")) : 30;
+  const durationMinutes = start && end ? Math.max(1, Math.round((end.ms - start.ms) / 60_000)) : 30;
 
   return {
     durationMinutes,
     end,
-    endTimeStr: end ? end.format("HH:mm") : "",
+    endTimeStr: end ? end.hhmm : "",
     start,
-    timeStr: start ? start.format("HH:mm") : "",
+    timeStr: start ? start.hhmm : "",
   };
 }
 
@@ -607,7 +617,8 @@ function EventButtonContent({
 }
 
 function EventItem({ endHour, event, onEventClick, startHour, tooltipTrigger }: EventItemProps) {
-  const { isDark } = useTheme();
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
   const position = getEventPosition(event, startHour, endHour);
   if (!position) {
     return null;
@@ -727,16 +738,18 @@ function assignColumnsForCluster(cluster: CalendarEventDetail[]): EventWithLayou
 function getEventTimes(event: CalendarEventDetail) {
   // UTC epoch millis — operator-independent of browser TZ. We only care about
   // relative ordering/overlap here, so we don't need zone conversion.
-  const startDt = event.startDateTime ? dayjs(event.startDateTime) : null;
-  const start = startDt ? startDt.valueOf() : 0;
+  const startMs = event.startDateTime ? new Date(event.startDateTime).getTime() : Number.NaN;
+  const start = Number.isNaN(startMs) ? 0 : startMs;
   let end: number;
 
   if (event.endDateTime) {
-    const endDt = dayjs(event.endDateTime);
-    if (startDt && (endDt.isBefore(startDt) || endDt.isSame(startDt))) {
-      end = startDt.add(1, "day").startOf("day").valueOf();
+    const endMs = new Date(event.endDateTime).getTime();
+    if (!Number.isNaN(startMs) && endMs <= startMs) {
+      // Crosses midnight (or zero-length): extend a full day so it keeps a
+      // positive span for overlap layout. TZ-independent; only ordering matters.
+      end = start + 24 * 60 * 60 * 1000;
     } else {
-      end = endDt.valueOf();
+      end = endMs;
     }
   } else {
     end = start + 30 * 60 * 1000;
@@ -810,19 +823,20 @@ function getCategoryClass(category: null | string | undefined): string {
 
 // Current time indicator - Live Updating
 function NowIndicator({ endHour, startHour }: Readonly<{ endHour: number; startHour: number }>) {
-  const [now, setNow] = useState(() => dayjs().tz(DISPLAY_TZ));
+  const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
-    setNow(dayjs().tz(DISPLAY_TZ));
+    setNow(new Date());
     const timer = setInterval(() => {
-      setNow(dayjs().tz(DISPLAY_TZ));
+      setNow(new Date());
     }, 60_000);
     return () => {
       clearInterval(timer);
     };
   }, []);
 
-  const currentMinutes = now.hour() * 60 + now.minute();
+  const local = toLocal(now.toISOString());
+  const currentMinutes = local ? local.hour * 60 + local.minute : 0;
   const gridStartMinutes = startHour * 60;
   const gridEndMinutes = (endHour + 1) * 60;
   const totalMinutes = gridEndMinutes - gridStartMinutes;
@@ -837,7 +851,7 @@ function NowIndicator({ endHour, startHour }: Readonly<{ endHour: number; startH
     <div
       className="pointer-events-none absolute inset-x-0 z-20 flex items-center"
       style={{ top: `${position}%` }}
-      title={`Hora actual: ${now.format("HH:mm")}`}
+      title={`Hora actual: ${local?.hhmm ?? "--:--"}`}
     >
       <div className="-ml-1.25 size-2.5 rounded-full bg-danger shadow-[0_0_8px] shadow-danger/50" />
       <div className="h-0.5 flex-1 bg-danger" />

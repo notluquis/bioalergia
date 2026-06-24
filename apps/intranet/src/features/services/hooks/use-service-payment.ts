@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useStore } from "@tanstack/react-store";
-import dayjs from "dayjs";
+import { addDays, chileDay, civilNoon, today } from "@/lib/dates";
 import { fetchTransactions } from "@/features/finance/api";
 import type { Transaction } from "@/features/finance/types";
 import { extractErrorMessage, registerServicePayment } from "../api";
@@ -26,9 +26,9 @@ export function useServicePayment() {
         return [];
       }
       const tolerance = Math.max(100, Math.round(expectedAmount * 0.01));
-      const dueDateValue = dueDate ? dayjs(dueDate) : dayjs();
-      const from = dueDateValue.clone().subtract(45, "day").format("YYYY-MM-DD");
-      const to = dueDateValue.clone().add(45, "day").format("YYYY-MM-DD");
+      const baseISO = dueDate ? chileDay(dueDate) : today();
+      const from = addDays(baseISO, -45);
+      const to = addDays(baseISO, 45);
 
       const payload = await fetchTransactions({
         filters: {
@@ -114,7 +114,7 @@ export function useServicePayment() {
     closePaymentModal: servicesActions.closePaymentModal,
     handlePaymentFieldChange: (key: keyof typeof paymentForm, value: string | Date) => {
       if (key === "paidDate") {
-        const dateValue = value instanceof Date ? value : dayjs(value).toDate();
+        const dateValue = value instanceof Date ? value : civilNoon(chileDay(value));
         servicesActions.updatePaymentForm({ paidDate: dateValue });
         return;
       }

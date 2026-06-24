@@ -1,5 +1,6 @@
 import type { AnyAbility, RawRuleOf } from "@casl/ability";
 import { db } from "@finanzas/db";
+import { sql } from "kysely";
 import {
   authDebugScopeSchema,
   authEmptySchema,
@@ -7,6 +8,10 @@ import {
   authExchangeDebugTokenSchema,
   authIssueDebugTokenResponseSchema,
   authIssueDebugTokenSchema,
+  forgotPasswordResponseSchema,
+  forgotPasswordSchema,
+  resetPasswordTokenResponseSchema,
+  resetPasswordTokenSchema,
   authLoginOkResponseSchema,
   authLoginResponseSchema,
   authLoginSchema,
@@ -32,12 +37,14 @@ import type {
 import type { Context as HonoContext } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import { randomUUID } from "node:crypto";
-import { getSessionUser, hasPermission, resolveSessionUserFromToken } from "../auth.ts";
+import { getSessionUser, hasPermission, resolveSessionUserFromToken } from "../lib/auth.ts";
 import { isLockedNow, recordLoginFailure, recordLoginSuccess } from "../lib/account-lockout.ts";
 import { ipFromContext, logAuditFromContext } from "../lib/audit-log.ts";
 import { fakeVerifyPassword } from "../lib/crypto.ts";
 import { DomainError } from "../lib/errors.ts";
-import { logError } from "../lib/logger.ts";
+import { logError, logEvent } from "../lib/logger.ts";
+import { requestPasswordReset, resetPasswordWithToken } from "../services/password-reset.ts";
+import { rehashPassword, touchLastActivity } from "../services/auth-user.ts";
 import {
   clearEmailLoginFailure,
   isEmailThrottled,
@@ -50,7 +57,7 @@ import {
   createDebugTokenRecord,
   ensureDebugTokenSupportEnabled,
 } from "../services/debug-tokens.ts";
-import { getAbilityRulesForUser } from "../services/authz.ts";
+import { getAbilityRulesForUser } from "../lib/authz.ts";
 import { SuperJSONRPCHandler } from "./superjson.ts";
 
 configureSuperjson();
@@ -145,38 +152,28 @@ function getChallenge(key: string): { challenge: string; userId?: number } | nul
 }
 
 async function findUserByLoginIdentifier(email: string) {
-  const rows = await db.$queryRaw<
-    Array<{ id: number; loginEmail: null | string; notificationEmail: null | string }>
-  >`
-    SELECT
-      u.id AS "id",
-      u.login_email AS "loginEmail",
-      p.email AS "notificationEmail"
-    FROM users u
-    JOIN people p ON p.id = u.person_id
-    WHERE lower(coalesce(nullif(u.login_email, ''), p.email)) = lower(${email})
-    LIMIT 1
-  `;
+  // login_email gana si no es vacío; si no, cae a person.email. Comparación
+  // case-insensitive. Dentro del sql`` fragment las columnas son físicas (snake_case);
+  // el builder (selectFrom/join/select) usa nombres de modelo camelCase.
+  const row = await db.$qb
+    .selectFrom("User as u")
+    .innerJoin("Person as p", "p.id", "u.personId")
+    .select(["u.id as id", "u.loginEmail as loginEmail", "p.email as notificationEmail"])
+    .where(sql<boolean>`lower(coalesce(nullif(u.login_email, ''), p.email)) = lower(${email})`)
+    .limit(1)
+    .executeTakeFirst();
 
-  return rows[0] ?? null;
+  return row ?? null;
 }
 
 async function getEffectiveLoginEmailByUserId(userId: number, fallbackEmail: string) {
-  const rows = await db.$queryRaw<
-    Array<{ loginEmail: null | string; notificationEmail: null | string }>
-  >`
-    SELECT
-      u.login_email AS "loginEmail",
-      p.email AS "notificationEmail"
-    FROM users u
-    JOIN people p ON p.id = u.person_id
-    WHERE u.id = ${userId}
-    LIMIT 1
-  `;
-
-  const row = rows[0];
+  // login_email explícito gana; si no, el email de la persona; si no, el fallback.
+  const row = await db.user.findUnique({
+    where: { id: userId },
+    select: { loginEmail: true, person: { select: { email: true } } },
+  });
   const explicitLoginEmail = row?.loginEmail?.trim();
-  const notificationEmail = row?.notificationEmail?.trim();
+  const notificationEmail = row?.person?.email?.trim();
   return explicitLoginEmail || notificationEmail || fallbackEmail;
 }
 
@@ -347,15 +344,16 @@ const authORPCRouterBase = {
 
       if (needsRehash) {
         const newHash = await hashPassword(input.password);
-        await db.user.update({
-          where: { id: user.id },
-          data: { passwordHash: newHash },
-        });
+        await rehashPassword(user.id, newHash);
       }
 
       if (user.mfaEnabled) {
         // Don't reset failure count yet — completion happens after MFA.
-        return { status: "mfa_required" as const, userId: user.id };
+        // Issue an ephemeral proof that the password step succeeded; loginMfa
+        // requires it so the first factor can't be skipped (OWASP ASVS 5.0
+        // multi-step authentication).
+        const mfaToken = await signToken({ typ: "mfa-pending", sub: user.id }, "5m");
+        return { status: "mfa_required" as const, userId: user.id, mfaToken };
       }
 
       await recordLoginSuccess(user.id, ipFromContext(context.hono));
@@ -366,7 +364,7 @@ const authORPCRouterBase = {
         actorLabel: normalizedEmail,
       });
 
-      const roles = user.roles.map((role) => role.role.name);
+      const roles = user.roles.map((role: (typeof user.roles)[number]) => role.role.name);
       const notificationEmail = user.person?.email ?? normalizedEmail;
       const loginEmail =
         loginCandidate.loginEmail?.trim() ||
@@ -380,8 +378,11 @@ const authORPCRouterBase = {
         userId: user.id,
       });
       setCookie(context.hono, COOKIE_NAME, token, COOKIE_OPTIONS);
+      // Reset the inactivity clock at login (see touchLastActivity for the
+      // >8h deadlock rationale this avoids).
+      await touchLastActivity(user.id);
 
-      const { getAbilityRulesForUser } = await import("../services/authz.ts");
+      const { getAbilityRulesForUser } = await import("../lib/authz.ts");
       const abilityRules = (await getAbilityRulesForUser(user.id)) as RawRuleOf<AnyAbility>[];
 
       return {
@@ -405,8 +406,22 @@ const authORPCRouterBase = {
     .input(authMfaLoginSchema)
     .output(authLoginOkResponseSchema)
     .handler(async ({ context, input }) => {
+      // First factor proof: the pending token issued by `login` after a
+      // successful password check. Rejecting anything else means a bare
+      // userId can never mint a session.
+      let pendingUserId: number;
+      try {
+        const pending = await verifyToken(input.mfaToken);
+        if (pending.typ !== "mfa-pending" || typeof pending.sub !== "number") {
+          throw new Error("invalid mfa-pending token");
+        }
+        pendingUserId = pending.sub;
+      } catch {
+        authError("UNAUTHORIZED", "Sesión MFA expirada. Ingresa tu contraseña nuevamente.");
+      }
+
       const user = await db.user.findUnique({
-        where: { id: input.userId },
+        where: { id: pendingUserId },
         include: {
           person: true,
           roles: { include: { role: true } },
@@ -417,9 +432,12 @@ const authORPCRouterBase = {
         authError("BAD_REQUEST", "MFA no configurado");
       }
 
-      const { verifyMfaToken } = await import("../services/mfa.ts");
+      const { verifyMfaToken, isTotpReplay, recordTotpAccepted } =
+        await import("../services/mfa.ts");
       const { decryptSecret } = await import("../lib/secret-cipher.ts");
-      const isValid = await verifyMfaToken(input.token, decryptSecret(user.mfaSecret) ?? "");
+      const isValid =
+        !isTotpReplay(user.id, input.token) &&
+        (await verifyMfaToken(input.token, decryptSecret(user.mfaSecret) ?? ""));
 
       if (!isValid) {
         const failure = await recordLoginFailure(user.id);
@@ -432,13 +450,14 @@ const authORPCRouterBase = {
         authError("UNAUTHORIZED", "Código incorrecto");
       }
 
+      recordTotpAccepted(user.id, input.token);
       await recordLoginSuccess(user.id, ipFromContext(context.hono));
       await logAuditFromContext(context.hono, {
         kind: "MFA_SUCCESS",
         userId: user.id,
       });
 
-      const roles = user.roles.map((role) => role.role.name);
+      const roles = user.roles.map((role: (typeof user.roles)[number]) => role.role.name);
       const notificationEmail = user.person?.email ?? "";
       const loginEmail = await getEffectiveLoginEmailByUserId(user.id, notificationEmail);
       // Clear the per-email throttle that may have accumulated entries
@@ -451,8 +470,11 @@ const authORPCRouterBase = {
         userId: user.id,
       });
       setCookie(context.hono, COOKIE_NAME, token, COOKIE_OPTIONS);
+      // Reset the inactivity clock at login (see touchLastActivity for the
+      // >8h deadlock rationale this avoids).
+      await touchLastActivity(user.id);
 
-      const { getAbilityRulesForUser } = await import("../services/authz.ts");
+      const { getAbilityRulesForUser } = await import("../lib/authz.ts");
       const abilityRules = (await getAbilityRulesForUser(user.id)) as RawRuleOf<AnyAbility>[];
 
       return {
@@ -471,11 +493,61 @@ const authORPCRouterBase = {
       };
     }),
 
+  forgotPassword: base
+    .route({
+      method: "POST",
+      path: "/forgot-password",
+      summary: "Request password reset",
+      tags: ["Auth"],
+    })
+    .input(forgotPasswordSchema)
+    .output(forgotPasswordResponseSchema)
+    .handler(async ({ input }) => {
+      // Anti-enumeration: ALWAYS return ok, even on internal failure (DB error,
+      // etc.). Surfacing a non-200 here would let an attacker distinguish
+      // existing vs unknown emails. requestPasswordReset already swallows email
+      // send failures; this catch covers query/update throws.
+      try {
+        await requestPasswordReset(input.email);
+      } catch (err) {
+        logEvent("[password-reset] request failed (swallowed for anti-enumeration)", {
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
+      return { status: "ok" as const };
+    }),
+
+  resetPassword: base
+    .route({
+      method: "POST",
+      path: "/reset-password",
+      summary: "Reset password with token",
+      tags: ["Auth"],
+    })
+    .input(resetPasswordTokenSchema)
+    .output(resetPasswordTokenResponseSchema)
+    .handler(async ({ input }) => {
+      await resetPasswordWithToken(input.token, input.password);
+      return { status: "ok" as const };
+    }),
+
   logout: base
     .route({ method: "POST", path: "/logout", summary: "Logout", tags: ["Auth"] })
     .input(authEmptySchema)
     .output(authStatusResponseSchema)
     .handler(async ({ context }) => {
+      // Wipe push subscriptions for this user — without this, the
+      // operator's device keeps receiving WhatsApp message previews
+      // (sender name + body snippet) on the lock screen after they
+      // logged out. Ex-employee devices would also keep getting PHI.
+      // We swallow the error so a transient DB hiccup doesn't block
+      // the cookie deletion below.
+      const session = await getSessionUser(context.hono);
+      if (session) {
+        await db.pushSubscription
+          .deleteMany({ where: { userId: session.id } })
+          .catch(() => undefined);
+      }
       deleteCookie(context.hono, COOKIE_NAME);
       return { status: "ok" as const };
     }),
@@ -531,7 +603,7 @@ const authORPCRouterBase = {
             mfaEnforced: user.mfaEnforced,
             name: user.person?.names || null,
             notificationEmail,
-            roles: user.roles.map((role) => role.role.name),
+            roles: user.roles.map((role: (typeof user.roles)[number]) => role.role.name),
             status: user.status,
           },
         };
@@ -641,7 +713,7 @@ const authORPCRouterBase = {
       const accessToken = await issueTokenWithOptions(
         {
           email: loginEmail,
-          roles: targetUser.roles.map((role) => role.role.name),
+          roles: targetUser.roles.map((role: (typeof targetUser.roles)[number]) => role.role.name),
           sessionVersion: targetUser.sessionVersion,
           userId: targetUser.id,
         },
@@ -673,7 +745,7 @@ const authORPCRouterBase = {
           mfaEnabled: targetUser.mfaEnabled,
           name: targetUser.person?.names || null,
           notificationEmail,
-          roles: targetUser.roles.map((role) => role.role.name),
+          roles: targetUser.roles.map((role: (typeof targetUser.roles)[number]) => role.role.name),
           status: targetUser.status,
         },
       };
@@ -777,7 +849,9 @@ const authORPCRouterBase = {
       const options = await generateAuthenticationOptions({
         allowCredentials: [],
         rpID: RP_ID,
-        userVerification: "preferred",
+        // PHI app: the authenticator must verify the human (PIN/biometric),
+        // not just be present. Pairs with requireUserVerification below.
+        userVerification: "required",
       });
 
       storeChallenge(`login:${options.challenge}`, options.challenge);
@@ -845,7 +919,7 @@ const authORPCRouterBase = {
               expectedChallenge: input.challenge,
               expectedOrigin: ORIGIN,
               expectedRPID: RP_ID,
-              requireUserVerification: false,
+              requireUserVerification: true,
               response: responseBody,
             })
         );
@@ -866,7 +940,7 @@ const authORPCRouterBase = {
       });
 
       const user = passkey.user;
-      const roles = user.roles.map((role) => role.role.name);
+      const roles = user.roles.map((role: (typeof user.roles)[number]) => role.role.name);
       const notificationEmail = user.person?.email ?? "";
       const loginEmail = await getEffectiveLoginEmailByUserId(user.id, notificationEmail);
       const token = await issueToken({
@@ -876,8 +950,11 @@ const authORPCRouterBase = {
         userId: user.id,
       });
       setCookie(context.hono, COOKIE_NAME, token, COOKIE_OPTIONS);
+      // Reset the inactivity clock at login (see touchLastActivity for the
+      // >8h deadlock rationale this avoids).
+      await touchLastActivity(user.id);
 
-      const { getAbilityRulesForUser } = await import("../services/authz.ts");
+      const { getAbilityRulesForUser } = await import("../lib/authz.ts");
       const abilityRules = (await getAbilityRulesForUser(user.id)) as RawRuleOf<AnyAbility>[];
 
       return {
@@ -925,7 +1002,7 @@ const authORPCRouterBase = {
         authenticatorSelection: {
           authenticatorAttachment: "platform",
           residentKey: "required",
-          userVerification: "preferred",
+          userVerification: "required",
         },
         rpID: RP_ID,
         rpName: RP_NAME,

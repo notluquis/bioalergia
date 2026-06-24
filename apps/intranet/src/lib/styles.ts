@@ -5,11 +5,14 @@
 
 // ===== LAYOUT CONTAINERS =====
 
-/** Main page container: centered, max-width, vertical spacing */
-export const PAGE_CONTAINER = "w-full space-y-4";
+/** Main page container: full width, slim vertical rhythm.
+ *  NO padding — the app-shell content pane (`_authed.tsx`) owns the page
+ *  inset (single source of truth). Pages add only vertical spacing here. */
+export const PAGE_CONTAINER = "w-full space-y-3";
 
-/** Looser spacing variant (for pages with larger sections) */
-export const PAGE_CONTAINER_RELAXED = "mx-auto max-w-7xl space-y-6";
+/** Centered, max-width variant for form / reading-width pages.
+ *  Also padding-free — inset still comes from the shell. */
+export const PAGE_CONTAINER_RELAXED = "mx-auto max-w-7xl space-y-4";
 
 // ===== TYPOGRAPHY =====
 

@@ -1,5 +1,10 @@
 name: quality-gates
 
+# Least-privilege GITHUB_TOKEN: jobs only run tests/lint; the LHCI PR comment
+# uses LHCI_GITHUB_APP_TOKEN (a GitHub App), not GITHUB_TOKEN. Read-only.
+permissions:
+  contents: read
+
 on:
   push:
     branches:
@@ -7,6 +12,7 @@ on:
       - forthcoming-ocelot
     paths:
       - "apps/intranet/**"
+      - "apps/site/**"
       - "packages/**"
       - "package.json"
       - "pnpm-lock.yaml"
@@ -16,6 +22,11 @@ on:
     branches:
       - main
       - forthcoming-ocelot
+    # NO paths: filter here on purpose — the workflow must always run on PRs so
+    # that if any of these jobs is ever promoted to a required check it always
+    # reports (a workflow skipped via on.paths leaves required checks Pending
+    # forever). Per-app skipping is done with the `changes` job + job-level `if`
+    # below, which reports "skipped" = success instead of Pending.
 
 concurrency:
   group: quality-${{ github.ref }}
@@ -27,8 +38,46 @@ env:
   TURBO_TELEMETRY_DISABLED: "1"
 
 jobs:
+  # Graph-aware affected detection (turbo, $0) → per-app booleans used to skip
+  # the opposite app's heavy jobs (build / e2e / lighthouse / coverage) on a
+  # single-app PR. turbo walks the workspace graph, so a packages/* change
+  # marks BOTH apps (path globs would miss that). Mirrors chromatic.yml.
+  # ponytail: when branch protection is enabled, add a final `if: always()`
+  # aggregator job and mark only IT required (job names churn). Not needed now
+  # (forthcoming-ocelot is unprotected), so skipped.
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      intranet: ${{ steps.filter.outputs.intranet }}
+      site: ${{ steps.filter.outputs.site }}
+      # api: the hermetic e2e job boots `node apps/api/src/index.ts`, so an
+      # api-only PR must still run it even though intranet doesn't depend on api.
+      api: ${{ steps.filter.outputs.api }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v6
+        with:
+          run_install: false
+      - uses: actions/setup-node@v6
+        with: { node-version: "${{ env.NODE_VERSION }}", cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - id: filter
+        env:
+          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          pnpm turbo query affected --packages @finanzas/intranet --tasks build --base "$BASE_SHA" --head "$HEAD_SHA" > intranet-affected.json
+          pnpm turbo query affected --packages @finanzas/site --tasks build --base "$BASE_SHA" --head "$HEAD_SHA" > site-affected.json
+          pnpm turbo query affected --packages @finanzas/api --tasks build --base "$BASE_SHA" --head "$HEAD_SHA" > api-affected.json
+          echo "intranet=$(node -e "const fs=require('fs');const v=JSON.parse(fs.readFileSync('intranet-affected.json','utf8'));process.stdout.write(String((v.data?.affectedTasks?.length ?? 0) > 0))")" >> "$GITHUB_OUTPUT"
+          echo "site=$(node -e "const fs=require('fs');const v=JSON.parse(fs.readFileSync('site-affected.json','utf8'));process.stdout.write(String((v.data?.affectedTasks?.length ?? 0) > 0))")" >> "$GITHUB_OUTPUT"
+          echo "api=$(node -e "const fs=require('fs');const v=JSON.parse(fs.readFileSync('api-affected.json','utf8'));process.stdout.write(String((v.data?.affectedTasks?.length ?? 0) > 0))")" >> "$GITHUB_OUTPUT"
+
   design-tokens:
     name: design-token lint
+    # Cross-cutting (intranet + site + api): always run, never gated.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -38,12 +87,19 @@ jobs:
         with: { node-version: "${{ env.NODE_VERSION }}", cache: pnpm }
       - run: pnpm install --frozen-lockfile
       - run: pnpm -F @finanzas/intranet audit:design
+      - run: pnpm -F @finanzas/intranet audit:datetime
+      - run: pnpm -F @finanzas/api audit:datetime
+      - run: pnpm -F @finanzas/intranet audit:css
+      # GATING: same stylelint gate for the public marketing site (mirrors the
+      # intranet config — defensive-css + rhythmguard, Tailwind v4 tolerant).
+      - run: pnpm -F @finanzas/site audit:css
 
   dead-code:
     # Informational: prints knip report but never fails the workflow.
     # `audit:dead:advisory` keeps the script exit code at 0 so the job stays
     # green while the 71-file backlog is worked down. Flip to `audit:dead`
     # (which exits non-zero on findings) once we hit zero.
+    # Whole-workspace audit → always run, never gated.
     name: knip (dead code, advisory)
     runs-on: ubuntu-latest
     steps:
@@ -54,38 +110,179 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm audit:dead:advisory
 
-  bundle-budget:
-    name: size-limit (bundle budgets)
+  coverage:
+    # GATING: vitest `test:coverage` enforces the thresholds in
+    # vite.config.ts (statements 75 / branches 65 / functions 72 / lines 79),
+    # set to the measured baseline (77/68/74/82) minus a small headroom. A
+    # coverage regression below these now blocks the merge. Ratchet the
+    # thresholds UP after a test batch raises the actuals.
+    name: vitest coverage (gating)
+    needs: changes
+    if: needs.changes.outputs.intranet == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v6
         with: { node-version: "${{ env.NODE_VERSION }}", cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -F @finanzas/intranet test:coverage
+      - name: Upload coverage HTML report on success
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-html
+          path: apps/intranet/coverage
+          retention-days: 14
+
+  bundle-budget:
+    name: size-limit (bundle budgets)
+    needs: changes
+    if: needs.changes.outputs.intranet == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with: { node-version: "${{ env.NODE_VERSION }}", cache: pnpm }
+      # Turbo remote cache ($0, GitHub Actions Cache backend). Without it this
+      # job cold-built intranet + its deps every run; now they HIT the cache
+      # produced by ci.yml / a prior run. SHA-pinned 3rd-party action.
+      - name: Turbo remote cache
+        uses: rharkor/caching-for-turbo@75f8ebf4a43d2c60b23bc2a27082cfea94ffdad9 # v2.5.0
       - run: pnpm install --frozen-lockfile
       # Build via turbo so workspace deps (@finanzas/db, @finanzas/orpc-contracts)
       # are produced before vite resolves their entrypoints.
       - run: pnpm turbo run build --filter=@finanzas/intranet
       - run: pnpm -F @finanzas/intranet audit:size
 
-  e2e-and-a11y:
-    name: playwright + axe
+  site-bundle:
+    name: site size-limit (bundle budget)
+    needs: changes
+    if: needs.changes.outputs.site == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v6
         with: { node-version: "${{ env.NODE_VERSION }}", cache: pnpm }
+      - name: Turbo remote cache
+        uses: rharkor/caching-for-turbo@75f8ebf4a43d2c60b23bc2a27082cfea94ffdad9 # v2.5.0
       - run: pnpm install --frozen-lockfile
+      # Build via turbo so workspace deps (@finanzas/db, @finanzas/orpc-contracts,
+      # @finanzas/orpc-client) are produced before vite resolves their entrypoints.
+      - run: pnpm turbo run build --filter=@finanzas/site
+      - run: pnpm -F @finanzas/site audit:size
+
+  e2e-and-a11y:
+    name: playwright + axe (hermetic)
+    needs: changes
+    # intranet OR api: this hermetic suite boots the api under test, so an
+    # api-only PR (intranet doesn't depend on api) must still run it. This is
+    # the single hermetic e2e gate — the old standalone e2e-hermetic.yml (PR
+    # path duplicated this job; dispatch path duplicated snapshots.yml) was
+    # removed. db changes are covered via intranet (intranet depends on db).
+    if: needs.changes.outputs.intranet == 'true' || needs.changes.outputs.api == 'true'
+    runs-on: ubuntu-latest
+    # Hermetic: authed smoke + a11y run against an EPHEMERAL, synthetically
+    # seeded Postgres — never prod, no PHI. The run is mutation-safe BY
+    # CONSTRUCTION (no production data exists to mutate), which is why the
+    # app-level (ZenStack @@deny) and DB-level (readonly role) E2E guards are
+    # unnecessary. The network-layer read-only guard in fixtures.ts stays on as
+    # belt-and-suspenders.
+    env:
+      DATABASE_URL: postgres://e2e:e2e@localhost:5432/bioalergia_e2e
+      NODE_ENV: test
+      CI: "true"
+      DISABLE_QUEUE_RUNNER: "true"
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: e2e
+          POSTGRES_PASSWORD: e2e
+          POSTGRES_DB: bioalergia_e2e
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with: { node-version: "${{ env.NODE_VERSION }}", cache: pnpm }
+      - name: Turbo remote cache
+        uses: rharkor/caching-for-turbo@75f8ebf4a43d2c60b23bc2a27082cfea94ffdad9 # v2.5.0
+      - run: pnpm install --frozen-lockfile
+
+      # db .mjs (api/intranet import it) + social-render dist (api imports it at
+      # boot). Built via turbo (not `pnpm -F`) so both HIT the remote cache.
+      # Fresh schema via db push (NOT migrate deploy — the rebaseline migration
+      # assumes existing tables; db push is correct for a throwaway DB) +
+      # synthetic faker data.
+      - run: pnpm turbo run build --filter=@finanzas/db --filter=@finanzas/social-render
+      - run: pnpm -F @finanzas/db db:push
+      - run: pnpm -F @finanzas/db seed:synthetic
+
+      # Seed the dedicated E2E user (random password each run) and export the
+      # printed creds so the authed specs actually log in. Without this the
+      # fixture bails (`!E2E_USER`) and authed specs skip vacuously.
+      - name: Seed E2E user + export creds
+        run: |
+          CREDS=$(node apps/api/scripts/seed-e2e-user.ts | tail -1)
+          E2E_USER=$(printf '%s' "$CREDS" | sed -n 's/.*EMAIL=\([^ ]*\).*/\1/p')
+          E2E_PASS=$(printf '%s' "$CREDS" | sed -n 's/.*PASS=\([^ ]*\).*/\1/p')
+          echo "::add-mask::$E2E_PASS"
+          echo "E2E_USER=$E2E_USER" >> "$GITHUB_ENV"
+          echo "E2E_PASS=$E2E_PASS" >> "$GITHUB_ENV"
+
+      # Layer-3 DB read-only role (hermetic only, defense in depth). The
+      # writes above (db:push, seed:synthetic, seed-e2e-user) ran as the
+      # full-access `e2e` superuser. From here the api Playwright boots
+      # connects as `e2e_readonly`: SELECT everywhere, a narrow column-level
+      # UPDATE on the auth-bookkeeping columns of `users` (keeps login's
+      # session/lockout stamp working), and INSERT on audit_logs. Every
+      # other mutation is rejected at the DB. graphile-worker is off so no
+      # background writer fights the role. Non-blocking job.
+      - name: Create e2e_readonly DB role + export readonly URL
+        run: |
+          E2E_RO_PASS="$(openssl rand -base64 32 | tr -d '=+/' | head -c 32)"
+          echo "::add-mask::$E2E_RO_PASS"
+          psql "$DATABASE_URL" \
+            -v ON_ERROR_STOP=1 \
+            -v pw="$E2E_RO_PASS" \
+            -f apps/api/scripts/setup-postgres-readonly-role.sql
+          echo "DATABASE_URL_READONLY=postgres://e2e_readonly:${E2E_RO_PASS}@localhost:5432/bioalergia_e2e" >> "$GITHUB_ENV"
+
       - name: Build intranet (preview server target)
         run: pnpm turbo run build --filter=@finanzas/intranet
-      - name: Install Chromium
-        run: pnpm exec playwright install --with-deps chromium
-      - name: Run smoke + a11y suite
-        env:
-          CI: "true"
-          E2E_USER: ${{ secrets.E2E_USER }}
-          E2E_PASS: ${{ secrets.E2E_PASS }}
+
+      # Cache the Chromium + WebKit downloads, version-keyed. apt system deps
+      # live in the runner image (not the cache), so install-deps always runs;
+      # only the browser download is skipped on a cache hit. Distinct key from
+      # chromium-only jobs so a chromium-only restore never hides a missing
+      # webkit.
+      - name: Resolve Playwright version
+        id: pw
+        run: echo "version=$(pnpm -F @finanzas/intranet exec playwright --version | awk '{print $NF}')" >> "$GITHUB_OUTPUT"
+      - name: Cache Playwright browsers
+        id: pw-cache
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ steps.pw.outputs.version }}-chromium-webkit
+      - name: Install Playwright system deps
+        # WebKit needed by the ios-webkit project (one spec — wa-cloud-inbox)
+        # for true iOS Safari URL-bar shrink dvh testing.
+        run: pnpm -F @finanzas/intranet exec playwright install-deps chromium webkit
+      - name: Install browsers (cache miss only)
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+        run: pnpm -F @finanzas/intranet exec playwright install chromium webkit
+      - name: Run smoke + a11y suite (hermetic, no prod, no PHI)
+        # No E2E_BASE_URL → HERMETIC=true (DATABASE_URL is set) → playwright
+        # boots a local api(:4000)+preview(:4173) against the ephemeral DB.
         run: pnpm -F @finanzas/intranet audit:e2e
       - name: Upload Playwright report on failure
         if: failure()
@@ -97,6 +294,8 @@ jobs:
 
   lighthouse:
     name: lighthouse-ci (perf budgets)
+    needs: changes
+    if: needs.changes.outputs.intranet == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -110,10 +309,143 @@ jobs:
         id: setup-chrome
         uses: browser-actions/setup-chrome@v2
         with: { chrome-version: stable }
+      - name: Turbo remote cache
+        uses: rharkor/caching-for-turbo@75f8ebf4a43d2c60b23bc2a27082cfea94ffdad9 # v2.5.0
       - run: pnpm install --frozen-lockfile
       - name: Build intranet (preview target)
         run: pnpm turbo run build --filter=@finanzas/intranet
       - name: Run Lighthouse CI
         env:
           CHROME_PATH: ${{ steps.setup-chrome.outputs.chrome-path }}
+          # Posts the report as a GitHub commit status check + PR
+          # comment when the LHCI GitHub App is installed on the repo
+          # (https://github.com/apps/lighthouse-ci). Token comes from
+          # the app at install time. Without the secret the LHCI run
+          # still completes; only the status check is skipped.
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
         run: pnpm -F @finanzas/intranet audit:perf
+      - name: Run Lighthouse CI (mobile emulation)
+        # Mobile is Lighthouse's default form factor and what matters most for
+        # a PWA on phones. Public /login only — authed routes stay OFF until a
+        # staging DB exists (auditing prod patient pages = PHI in reports; see
+        # lhci-puppeteer-login.cjs). Perf assertions are `warn` to avoid flaky
+        # gating on emulated-mobile throttling.
+        env:
+          CHROME_PATH: ${{ steps.setup-chrome.outputs.chrome-path }}
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+        run: pnpm -F @finanzas/intranet audit:perf:mobile
+
+  site-e2e-a11y:
+    name: site playwright + axe (gating)
+    needs: changes
+    if: needs.changes.outputs.site == 'true'
+    runs-on: ubuntu-latest
+    # GATING: public marketing site (incl. tienda) e2e + a11y. BACKEND-FREE —
+    # apps/site/playwright.config.ts boots `vite build && vite preview` itself
+    # and the shop specs mock the oRPC network layer, so NO Postgres/api service
+    # is needed (unlike the hermetic intranet job). Just build the workspace
+    # deps the site imports from dist, install chromium, run the suite.
+    env:
+      CI: "true"
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with: { node-version: "${{ env.NODE_VERSION }}", cache: pnpm }
+      - name: Turbo remote cache
+        uses: rharkor/caching-for-turbo@75f8ebf4a43d2c60b23bc2a27082cfea94ffdad9 # v2.5.0
+      - run: pnpm install --frozen-lockfile
+      # Workspace deps the site imports from dist (@finanzas/db ships .mjs;
+      # orpc-contracts + orpc-client supply the typed client the site consumes).
+      - name: Build workspace deps
+        run: pnpm turbo run build --filter=@finanzas/db --filter=@finanzas/orpc-contracts --filter=@finanzas/orpc-client
+      - name: Resolve Playwright version
+        id: pw
+        run: echo "version=$(pnpm -F @finanzas/site exec playwright --version | awk '{print $NF}')" >> "$GITHUB_OUTPUT"
+      - name: Cache Playwright browsers
+        id: pw-cache
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ steps.pw.outputs.version }}-chromium
+      - name: Install Playwright system deps
+        run: pnpm -F @finanzas/site exec playwright install-deps chromium
+      - name: Install Chromium (cache miss only)
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+        run: pnpm -F @finanzas/site exec playwright install chromium
+      - name: Run site e2e + a11y suite
+        # The Playwright webServer builds + previews the site (vite build &&
+        # vite preview --port 4173); specs mock oRPC, so no DB is touched.
+        run: pnpm -F @finanzas/site audit:e2e
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: site-playwright-report
+          path: apps/site/e2e-report
+          retention-days: 7
+
+  site-lighthouse:
+    name: site lighthouse-ci (perf budgets)
+    needs: changes
+    if: needs.changes.outputs.site == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with: { node-version: "${{ env.NODE_VERSION }}", cache: pnpm }
+      - name: Install Google Chrome
+        # @lhci/cli's chrome-launcher needs a real Chrome binary, not just
+        # Playwright's chromium-headless-shell. setup-chrome installs Chrome
+        # for Testing under /opt/hostedtoolcache and exports its path.
+        id: setup-chrome
+        uses: browser-actions/setup-chrome@v2
+        with: { chrome-version: stable }
+      - name: Turbo remote cache
+        uses: rharkor/caching-for-turbo@75f8ebf4a43d2c60b23bc2a27082cfea94ffdad9 # v2.5.0
+      - run: pnpm install --frozen-lockfile
+      - name: Build site (lhci serves dist via preview)
+        # Build workspace deps + the site; lhci's startServerCommand runs
+        # `vite preview` against the produced dist for the public routes.
+        run: pnpm turbo run build --filter=@finanzas/site
+      - name: Run Lighthouse CI
+        # NON-GATING: perf assertions in lighthouserc.json are `warn` to avoid
+        # flaky failures on CI throttling. Public routes only (no PHI/auth).
+        env:
+          CHROME_PATH: ${{ steps.setup-chrome.outputs.chrome-path }}
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+        run: pnpm -F @finanzas/site audit:perf
+      - name: Run Lighthouse CI (mobile emulation)
+        # NON-GATING: mobile form-factor audit of the same public routes. All
+        # assertions in lighthouserc.mobile.json are `warn` to avoid flaky
+        # gating on emulated-mobile throttling. Public routes only (no PHI/auth).
+        env:
+          CHROME_PATH: ${{ steps.setup-chrome.outputs.chrome-path }}
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+        run: pnpm -F @finanzas/site audit:perf:mobile
+
+  site-coverage:
+    name: site vitest coverage (gating)
+    needs: changes
+    if: needs.changes.outputs.site == 'true'
+    runs-on: ubuntu-latest
+    # GATING: enforces the thresholds in apps/site/vite.config.ts, scoped to the
+    # site's PURE-LOGIC surface (src/lib + features/**/lib). The UI layer is
+    # covered by Chromatic + the site-e2e-a11y job, not by jsdom render tests,
+    # so it is intentionally out of this denominator. Ratchet thresholds UP as
+    # more pure modules (with tests) are added to the coverage `include` list.
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with: { node-version: "${{ env.NODE_VERSION }}", cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -F @finanzas/site test:coverage
+      - name: Upload coverage HTML report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: site-coverage-html
+          path: apps/site/coverage
+          retention-days: 14

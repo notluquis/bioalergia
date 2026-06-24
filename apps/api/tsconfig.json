@@ -1,8 +1,8 @@
 {
   "compilerOptions": {
     "target": "ESNext",
-    "module": "ESNext",
-    "moduleResolution": "Bundler",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "allowImportingTsExtensions": true,
     "incremental": true,
     "skipLibCheck": true,
@@ -13,8 +13,18 @@
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
-    "noImplicitOverride": true
+    "noImplicitOverride": true,
+
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true
   },
   "include": ["src/**/*"],
-  "references": [{ "path": "../../packages/db" }, { "path": "../../packages/orpc-contracts" }]
+  "exclude": ["src/utils/**", "src/lib/**", "src/modules/**", "src/services/**"],
+  "references": [
+    { "path": "../../packages/orpc-contracts" },
+    { "path": "./src/utils" },
+    { "path": "./src/lib" },
+    { "path": "./src/modules" },
+    { "path": "./src/services" }
+  ]
 }

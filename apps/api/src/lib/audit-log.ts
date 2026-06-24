@@ -29,6 +29,13 @@ export type AuditEventKind =
   | "WA_CONTACT_BLOCK"
   | "WA_CONTACT_UNBLOCK"
   | "SETTINGS_UPDATE"
+  | "DATA_UPDATE"
+  | "APPOINTMENT_CHANGE"
+  | "IMPORT_UPSERT"
+  | "FINANCIAL_CHANGE"
+  // Clinical-record access (Decreto 41/2012 art. 9 + Ley 20.584).
+  | "CLINICAL_RECORD_READ"
+  | "CLINICAL_DOCUMENT_VIEW"
   | "OTHER";
 
 export type AuditInput = {
@@ -44,7 +51,7 @@ export type AuditInput = {
   metadata?: Record<string, unknown> | null;
 };
 
-export const ipFromContext = clientIp;
+export const ipFromContext: typeof clientIp = clientIp;
 
 export async function logAuditEvent(input: AuditInput): Promise<void> {
   try {
@@ -59,7 +66,13 @@ export async function logAuditEvent(input: AuditInput): Promise<void> {
         resourceId: input.resourceId == null ? null : String(input.resourceId),
         outcome: input.outcome ?? "ok",
         message: input.message ?? null,
-        metadata: (input.metadata ?? null) as never,
+        // ZenStack v3 / Prisma reject a raw `null` literal on a JSON
+        // column — it expects the typed `JsonNull` sentinel. Simplest
+        // safe path: omit the key entirely when there is no metadata, so
+        // the column falls back to its DB default. Passing `null` here
+        // was throwing `Invalid input ... at "data.metadata"` on EVERY
+        // login (caught + warned, but the audit row was silently lost).
+        ...(input.metadata == null ? {} : { metadata: input.metadata as never }),
       },
     });
   } catch (err) {

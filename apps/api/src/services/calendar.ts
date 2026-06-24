@@ -1,8 +1,8 @@
 import { db } from "@finanzas/db";
 import { DomainError } from "../lib/errors.ts";
 
-import type { CalendarEventRecord } from "../lib/google/google-calendar.ts";
-import { calendarSyncService } from "../modules/calendar/service.ts";
+import type { CalendarEventRecord } from "./google-calendar.ts";
+import { calendarSyncService } from "./calendar-module-service.ts";
 import { extractIdentityHints, syncClinicalSeriesForExternalEvents } from "./clinical-series.ts";
 
 export type CalendarSyncLogEntryPayload = {
@@ -376,7 +376,7 @@ export async function updateCalendarEventClassification(
   });
 
   if (!calendar) {
-    throw new Error(`Calendar not found: ${calendarId}`);
+    throw new DomainError("NOT_FOUND", `Calendar not found: ${calendarId}`);
   }
 
   const existingEvent = await db.event.findUnique({
@@ -450,7 +450,7 @@ export async function createCalendarEvent(data: CalendarEventRecord) {
   });
 
   if (!calendar) {
-    throw new Error(`Calendar not found for googleId: ${data.calendarId}`);
+    throw new DomainError("NOT_FOUND", `Calendar not found for googleId: ${data.calendarId}`);
   }
 
   const identityHints = extractIdentityHints(data.summary ?? null, data.description ?? null);

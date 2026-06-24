@@ -4,7 +4,7 @@
  */
 
 import { z } from "zod";
-import type { MpReportType } from "../../shared/mercadopago";
+import type { MpChangeReportType, MpReportType } from "../../shared/mercadopago";
 import { mercadopagoORPCClient, toMercadoPagoApiError } from "../features/finance/mercadopago/orpc";
 import { apiClient, ApiError } from "../lib/api-client";
 
@@ -14,11 +14,14 @@ import { apiClient, ApiError } from "../lib/api-client";
 export interface ImportStats {
   duplicateRows: number;
   errors: string[];
+  fieldChangeCount: number;
   insertedRows: number;
   processedSourceIds?: string[];
   skippedRows: number;
   sourceUnavailable?: boolean;
   totalRows: number;
+  unchangedRows: number;
+  updatedRows: number;
   validRows: number;
 }
 
@@ -54,19 +57,33 @@ export interface MpSyncLog {
   updated?: number | null;
 }
 
+export interface MpImportChange {
+  changedAt: Date;
+  fieldName: string;
+  id: bigint;
+  newValue: unknown;
+  oldValue: unknown;
+  reportType: MpChangeReportType;
+  sourceId: string;
+  syncLogId: bigint;
+}
+
 export interface MpSyncImportStats {
   duplicateRows: number;
   errorCount?: number;
+  fieldChangeCount?: number;
   insertedRows: number;
   skippedRows: number;
   totalRows: number;
+  unchangedRows?: number;
+  updatedRows?: number;
   validRows: number;
 }
 
 export type MpSyncChangeDetails = Record<string, unknown> & {
   importStats?: MpSyncImportStats;
-  importStatsByType?: Partial<Record<"release" | "settlement", MpSyncImportStats>>;
-  reportTypes?: Array<"release" | "settlement">;
+  importStatsByType?: Partial<Record<MpChangeReportType, MpSyncImportStats>>;
+  reportTypes?: Array<MpChangeReportType>;
 };
 
 interface ProcessReportResponse {
@@ -114,16 +131,35 @@ const MpSyncLogsResponseSchema = z.object({
   total: z.number(),
 });
 
+const MpImportChangeSchema = z.object({
+  changedAt: z.coerce.date(),
+  fieldName: z.string(),
+  id: z.coerce.bigint(),
+  newValue: z.unknown().nullable(),
+  oldValue: z.unknown().nullable(),
+  reportType: z.enum(["release", "settlement", "withdraw"]),
+  sourceId: z.string(),
+  syncLogId: z.coerce.bigint(),
+});
+
+const MpImportChangesResponseSchema = z.object({
+  changes: z.array(MpImportChangeSchema),
+  total: z.number(),
+});
+
 const ProcessReportResponseSchema = z.object({
   message: z.string(),
   stats: z.object({
     duplicateRows: z.number(),
     errors: z.array(z.string()),
+    fieldChangeCount: z.number(),
     insertedRows: z.number(),
     processedSourceIds: z.array(z.string()).optional(),
     skippedRows: z.number(),
     sourceUnavailable: z.boolean().optional(),
     totalRows: z.number(),
+    unchangedRows: z.number(),
+    updatedRows: z.number(),
     validRows: z.number(),
   }),
   status: z.string(),
@@ -275,7 +311,7 @@ export const MPService = {
       return report;
     };
     return {
-      reports: (response.reports ?? []).map(normalizeReportStatus),
+      reports: (response.reports ?? []).map((report) => normalizeReportStatus(report)),
       total: response.total ?? 0,
     };
   },
@@ -297,6 +333,28 @@ export const MPService = {
       throw toMercadoPagoApiError(error);
     }
     return { logs: response.logs ?? [], total: response.total ?? 0 };
+  },
+
+  listImportChanges: async (params: {
+    fieldName?: string;
+    limit?: number;
+    offset?: number;
+    sourceId?: string;
+    syncLogId: bigint;
+  }): Promise<{ changes: MpImportChange[]; total: number }> => {
+    try {
+      return MpImportChangesResponseSchema.parse(
+        await mercadopagoORPCClient.listImportChanges({
+          ...(params.fieldName ? { fieldName: params.fieldName } : {}),
+          ...(params.limit != null ? { limit: params.limit } : {}),
+          ...(params.offset != null ? { offset: params.offset } : {}),
+          ...(params.sourceId ? { sourceId: params.sourceId } : {}),
+          syncLogId: params.syncLogId,
+        })
+      );
+    } catch (error) {
+      throw toMercadoPagoApiError(error);
+    }
   },
 
   processReport: async (fileName: string, type: MpReportType): Promise<ImportStats> => {

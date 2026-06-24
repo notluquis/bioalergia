@@ -10,7 +10,7 @@ import {
   TextField,
 } from "@heroui/react";
 import { useStore } from "@tanstack/react-form";
-import dayjs from "dayjs";
+import { chileDay, formatChile } from "@/lib/dates";
 import type { CalendarUnclassifiedEvent } from "@/features/calendar/types";
 
 import type { ClassificationForm } from "../form-types";
@@ -451,20 +451,16 @@ export function ClassificationRow({
 // Helper to format date
 function formatEventDate(event: CalendarUnclassifiedEvent) {
   if (event.startDateTime) {
-    const start = dayjs(event.startDateTime).tz();
     if (event.endDateTime) {
-      const end = dayjs(event.endDateTime).tz();
-      return `${start.format("DD MMM YYYY HH:mm")} – ${end.format("HH:mm")}`;
+      return `${formatChile(event.startDateTime, "DD MMM YYYY HH:mm")} – ${formatChile(event.endDateTime, "HH:mm")}`;
     }
-    return start.format("DD MMM YYYY HH:mm");
+    return formatChile(event.startDateTime, "DD MMM YYYY HH:mm");
   }
   if (event.startDate) {
-    const start = dayjs(event.startDate);
-    if (event.endDate && !dayjs(event.endDate).isSame(start, "day")) {
-      const end = dayjs(event.endDate);
-      return `${start.format("DD MMM YYYY")} – ${end.format("DD MMM YYYY")}`;
+    if (event.endDate && chileDay(event.endDate) !== chileDay(event.startDate)) {
+      return `${formatChile(event.startDate, "DD MMM YYYY")} – ${formatChile(event.endDate, "DD MMM YYYY")}`;
     }
-    return start.format("DD MMM YYYY");
+    return formatChile(event.startDate, "DD MMM YYYY");
   }
   return "Sin fecha";
 }

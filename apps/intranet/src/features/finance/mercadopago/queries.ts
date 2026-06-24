@@ -14,4 +14,22 @@ export const mercadoPagoKeys = {
       queryFn: () => MPService.listSyncLogs(params),
       queryKey: ["mp-sync-logs", params?.limit ?? null, params?.offset ?? null],
     }),
+  importChanges: (params: {
+    fieldName?: string;
+    limit?: number;
+    offset?: number;
+    sourceId?: string;
+    syncLogId: bigint;
+  }) =>
+    queryOptions({
+      queryFn: () => MPService.listImportChanges(params),
+      queryKey: [
+        "mp-import-changes",
+        params.syncLogId.toString(),
+        params.limit ?? null,
+        params.offset ?? null,
+        params.sourceId ?? null,
+        params.fieldName ?? null,
+      ],
+    }),
 };

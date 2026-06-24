@@ -2,17 +2,15 @@ import { Button, Card, Chip, SearchField, Tabs } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import type { ColumnDef, PaginationState } from "@tanstack/react-table";
-import dayjs from "dayjs";
+import { ageYears, formatChile } from "@/lib/dates";
 import { ArrowRight, Database, RefreshCw, User, UserPlus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import { TableRegion } from "@/components/data-table/TableRegion";
-import {
-  fetchPatientDteSources,
-  fetchPatients,
-  syncPatientDteSources,
-} from "@/features/patients/api";
+import { syncPatientDteSources } from "@/features/patients/api";
+import type { fetchPatientDteSources, fetchPatients } from "@/features/patients/api";
 import { CreatePatientModal } from "@/features/patients/components/CreatePatientModal";
+import { patientKeys, patientQueries } from "@/features/patients/queries";
 import { useDisclosure } from "@/hooks/use-disclosure";
 import { useLazyTabs } from "@/hooks/use-lazy-tabs";
 import { PAGE_CONTAINER_RELAXED } from "@/lib/styles";
@@ -22,6 +20,7 @@ export const Route = createFileRoute("/_authed/patients/")({
     nav: { iconKey: "Users", label: "Pacientes", order: 10, section: "Pacientes" },
     permission: { action: "read", subject: "Patient" },
     relatedSubjects: ["Person", "Consultation", "Passkey"],
+    title: "Pacientes — Lista",
   },
   component: PatientsListPage,
 });
@@ -46,19 +45,17 @@ function PatientsListPage() {
     pageSize: 20,
   });
 
-  const { data: patients = [], isLoading: isLoadingPatients } = useQuery({
-    queryKey: ["patients", searchClinical],
-    queryFn: async () => fetchPatients(searchClinical),
-  });
+  const { data: patients = [], isLoading: isLoadingPatients } = useQuery(
+    patientQueries.nameSearch(searchClinical)
+  );
 
-  const { data: dteSources = [], isLoading: isLoadingDteSources } = useQuery({
-    queryKey: ["patients", "dte-sources", searchDte],
-    queryFn: async () => fetchPatientDteSources({ limit: 300, q: searchDte }),
-  });
+  const { data: dteSources = [], isLoading: isLoadingDteSources } = useQuery(
+    patientQueries.dteSources(searchDte)
+  );
 
   const syncDteSourcesMutation = useMutation({
     mutationFn: async () => syncPatientDteSources({ dryRun: false }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["patients", "dte-sources"] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: patientKeys.dteSourcesAll }),
   });
 
   const patientColumns = useMemo<ColumnDef<Patient>[]>(
@@ -70,10 +67,10 @@ function PatientsListPage() {
           const patient = row.original;
           return (
             <div className="flex items-center gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <div className="flex items-center justify-center rounded-full bg-primary/10 text-primary size-8">
                 <User size={16} />
               </div>
-              <div className="flex flex-col">
+              <div className="flex flex-col" data-phi>
                 <span className="font-medium text-foreground">
                   {patient.person.names} {patient.person.fatherName} {patient.person.motherName}
                 </span>
@@ -89,7 +86,9 @@ function PatientsListPage() {
         accessorKey: "person.rut",
         header: "RUT",
         cell: ({ row }) => (
-          <span className="font-mono text-default-700">{row.original.person.rut}</span>
+          <span className="font-mono text-default-700" data-phi>
+            {row.original.person.rut}
+          </span>
         ),
       },
       {
@@ -98,14 +97,14 @@ function PatientsListPage() {
         cell: ({ row }) => {
           const { birthDate } = row.original;
           if (!birthDate) {
-            return <span className="text-default-400 text-sm">Sin fecha</span>;
+            return <span className="text-default-600 text-sm">Sin fecha</span>;
           }
-          const age = dayjs().diff(dayjs(birthDate, "YYYY-MM-DD"), "year");
+          const age = ageYears(birthDate);
           return (
-            <div className="flex flex-col">
+            <div className="flex flex-col" data-phi>
               <span className="text-default-700 text-sm">{age} años</span>
-              <span className="text-xs text-default-400">
-                {dayjs(birthDate, "YYYY-MM-DD").format("DD/MM/YYYY")}
+              <span className="text-xs text-default-600">
+                {formatChile(birthDate, "DD/MM/YYYY")}
               </span>
             </div>
           );
@@ -116,7 +115,9 @@ function PatientsListPage() {
         header: "ACCIONES",
         cell: ({ row }) => (
           <Button
-            className="h-8 w-8 min-w-0 p-0"
+            aria-label="Ver paciente"
+            className="min-w-0 p-0 size-8"
+            isIconOnly
             onPress={() =>
               void navigate({
                 params: { id: String(row.original.id) },
@@ -140,7 +141,7 @@ function PatientsListPage() {
         accessorKey: "clientName",
         header: "CLIENTE (DTE)",
         cell: ({ row }) => (
-          <div className="flex flex-col">
+          <div className="flex flex-col" data-phi>
             <span className="font-medium text-foreground">{row.original.clientName}</span>
             <span className="font-mono text-default-500 text-xs">{row.original.clientRUT}</span>
           </div>
@@ -166,7 +167,7 @@ function PatientsListPage() {
         header: "FECHA DOC",
         cell: ({ row }) => {
           const date = row.original.documentDate;
-          return date ? dayjs(date).format("DD/MM/YYYY") : "-";
+          return date ? formatChile(date, "DD/MM/YYYY") : "-";
         },
       },
     ],

@@ -1,5 +1,4 @@
 import { authDb } from "@finanzas/db";
-import type { SettlementTransactionWhereInput } from "@finanzas/db/input";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { ORPCError, onError, os } from "@orpc/server";
@@ -12,7 +11,7 @@ import {
 } from "@finanzas/orpc-contracts/settlement-transactions";
 import type { Context as HonoContext } from "hono";
 import type { z } from "zod";
-import { getSessionUser, hasPermission } from "../auth.ts";
+import { getSessionUser, hasPermission } from "../lib/auth.ts";
 import { logError } from "../lib/logger.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
 import { SuperJSONRPCHandler } from "./superjson.ts";
@@ -25,6 +24,12 @@ type SettlementTransactionsORPCContext = {
 
 const base = os.$context<SettlementTransactionsORPCContext>();
 const NUMERIC_PATTERN = /^\d+$/;
+
+// Tipo `where` derivado del método real del cliente ZenStack v3.7 (el alias de
+// @finanzas/db/input no coincide con el WhereInput interno Kysely+$expr).
+type SettlementTransactionWhereInput = NonNullable<
+  NonNullable<Parameters<typeof authDb.settlementTransaction.findMany>[0]>["where"]
+>;
 
 const authed = base.use(async ({ context, next }) => {
   const user = await getSessionUser(context.hono);
@@ -58,7 +63,7 @@ function buildSettlementWhere(
   const whereConditions: SettlementTransactionWhereInput[] = [];
 
   if (from || to) {
-    const dateFilter: Record<string, Date> = {};
+    const dateFilter: { gte?: Date; lte?: Date } = {};
 
     if (from) {
       dateFilter.gte = new Date(from);
@@ -85,8 +90,8 @@ function buildSettlementWhere(
     const isNumeric = NUMERIC_PATTERN.test(search);
     whereConditions.push({
       OR: [
-        { externalReference: { contains: search, mode: "insensitive" } },
-        { sourceId: { contains: search, mode: "insensitive" } },
+        { externalReference: { contains: search, mode: "insensitive" as const } },
+        { sourceId: { contains: search, mode: "insensitive" as const } },
         ...(isNumeric ? [{ orderId: Number(search) }] : []),
       ],
     });

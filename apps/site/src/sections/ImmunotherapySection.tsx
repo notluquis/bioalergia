@@ -58,7 +58,7 @@ export function ImmunotherapySection() {
             {immunotherapyComparison.map((row, index) => (
               <div
                 key={row.aspect}
-                className={`-mx-4 grid grid-cols-1 gap-6 border-border border-b px-4 py-4 sm:grid-cols-3 ${
+                className={`-mx-4 grid grid-cols-1 gap-6 border-border border-b sm:grid-cols-3 p-4 ${
                   index % 2 === 0 ? "bg-(--surface-2)" : ""
                 }`}
               >
@@ -81,7 +81,7 @@ export function ImmunotherapySection() {
         <Card.Content className="grid gap-4 pb-6">
           {immunotherapyBenefits.map((benefit) => (
             <div className="flex items-start gap-3 text-sm leading-relaxed" key={benefit}>
-              <span className="mt-2 h-2 w-2 rounded-full bg-(--accent)" />
+              <span className="mt-2 rounded-full bg-(--accent) size-2" />
               <span className="text-(--ink-muted)">{benefit}</span>
             </div>
           ))}

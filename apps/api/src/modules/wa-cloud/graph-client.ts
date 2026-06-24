@@ -31,6 +31,7 @@ export {
 } from "./graph/messages.ts";
 export {
   type WaMediaUploadResult,
+  downloadMediaBytes,
   downloadMediaUrl,
   markMessageDelivered,
   markMessageRead,
@@ -43,6 +44,7 @@ export {
   updateBusinessProfile,
 } from "./graph/profile.ts";
 export {
+  addMigratingPhoneNumber,
   deregisterPhoneNumber,
   getPhoneHealth,
   listAccountPhoneNumbers,

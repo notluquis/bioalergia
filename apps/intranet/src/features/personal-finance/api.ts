@@ -13,10 +13,61 @@ import type {
   PersonalCreditInstallment,
 } from "./types";
 
-const PersonalCreditSchema = z.custom<PersonalCredit>();
+// Real schemas matching the POST-normalize shape (amounts coerced to number,
+// dates coerced to YYYY-MM-DD strings by normalizeCredit/normalizeInstallment).
+// These are NOT no-ops: a `z.custom<T>()` with no predicate passes ANY value at
+// runtime (it's a compile-time assertion only). Parsing the normalized shape
+// catches backend payload drift — the exact gap that let the `institution` vs
+// `bankName` mismatch slip through historically.
+//
+// We validate AFTER normalize (not the raw oRPC response against the contract)
+// because the real backend ships Decimal-like (`{ toNumber() }`) amounts and
+// superjson Date objects that the contract's `z.number()`/date fields don't all
+// accept verbatim — coercion is normalizeCredit's whole job, so the post-normalize
+// layer is where a meaningful invariant exists.
+const dateOnly = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+
+const PersonalCreditInstallmentSchema = z
+  .object({
+    amount: z.number(),
+    capitalAmount: z.number().nullable().optional(),
+    creditId: z.number().int(),
+    dueDate: dateOnly,
+    id: z.number().int(),
+    installmentNumber: z.number().int(),
+    interestAmount: z.number().nullable().optional(),
+    otherCharges: z.number().nullable().optional(),
+    paidAmount: z.number().nullable().optional(),
+    paidAmountCLP: z.number().nullable().optional(),
+    paidAt: dateOnly.nullable().optional(),
+    status: z.enum(["PAID", "PENDING"]),
+  })
+  .passthrough() satisfies z.ZodType<PersonalCreditInstallment>;
+
+const PersonalCreditSchema = z
+  .object({
+    bankName: z.string(),
+    createdAt: z.date(),
+    creditNumber: z.string(),
+    currency: z.string(),
+    description: z.string().nullable().optional(),
+    id: z.number().int(),
+    installments: z.array(PersonalCreditInstallmentSchema).optional(),
+    interestRate: z.number().nullable().optional(),
+    nextPaymentAmount: z.number().nullable().optional(),
+    nextPaymentDate: dateOnly.nullable().optional(),
+    remainingAmount: z.number().optional(),
+    startDate: dateOnly,
+    status: z.enum(["ACTIVE", "PAID", "REFINANCED"]),
+    totalAmount: z.number(),
+    totalInstallments: z.number().int(),
+    updatedAt: z.date(),
+  })
+  .passthrough() satisfies z.ZodType<PersonalCredit>;
+
 const PersonalCreditsSchema = z.array(PersonalCreditSchema);
 const DeleteCreditResponseSchema = z.object({ success: z.boolean() });
-const PayInstallmentResponseSchema = z.custom<PersonalCreditInstallment>();
+const PayInstallmentResponseSchema = PersonalCreditInstallmentSchema;
 
 function toDateOnlyString(value: Date | null | string | undefined): null | string | undefined {
   if (value === null || value === undefined) {

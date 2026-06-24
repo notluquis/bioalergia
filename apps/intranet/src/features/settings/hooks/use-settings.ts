@@ -27,6 +27,15 @@ export interface AppSettings {
   supportEmail: string;
   whatsappFreeformMessage: string;
   tagline: string;
+  shopLowStockThreshold: string;
+  shipmentReturnStreet: string;
+  shipmentReturnNumber: string;
+  shipmentReturnSupplement: string;
+  shipmentReturnCoverageCode: string;
+  emailFrom: string;
+  emailBroadcastFrom: string;
+  emailReplyTo: string;
+  reactivoLeadsEmail: string;
 }
 
 // eslint-disable-next-line react-refresh/only-export-components

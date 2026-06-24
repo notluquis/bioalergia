@@ -1,3 +1,4 @@
+import { formatChile } from "@/lib/dates";
 import {
   Alert,
   Button,
@@ -10,7 +11,6 @@ import {
   Surface,
 } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import dayjs from "dayjs";
 import { useEffect, useMemo, useState } from "react";
 import { useToast } from "@/context/ToastContext";
 import { confirmEventDteLink, unlinkEventDteLink } from "@/features/calendar/api";
@@ -97,7 +97,7 @@ function compareSeriesEventsDesc(a: { eventDate: string }, b: { eventDate: strin
 export function EventDteLinkModal({ event, isOpen, onClose, onLinked }: EventDteLinkModalProps) {
   const queryClient = useQueryClient();
   const toast = useToast();
-  const today = dayjs().format("YYYY-MM-DD");
+  const today = formatChile(new Date(), "YYYY-MM-DD");
   const isPendingEmission = Boolean(event?.eventDate && event.eventDate > today);
   const [suggestionsExpanded, setSuggestionsExpanded] = useState(true);
 
@@ -449,7 +449,7 @@ export function EventDteLinkModal({ event, isOpen, onClose, onLinked }: EventDte
                 >
                   <Disclosure.Heading>
                     <Button
-                      className="w-full justify-between rounded-xl border border-default-200 px-3 py-3 h-auto"
+                      className="w-full justify-between rounded-xl border border-default-200 h-auto p-3"
                       slot="trigger"
                       variant="secondary"
                     >

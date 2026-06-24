@@ -1,7 +1,6 @@
 import { Button, Description } from "@heroui/react";
-import dayjs from "dayjs";
 import { useEffect, useState } from "react";
-import { today } from "@/lib/dates";
+import { chileDay, civilNoon, diffDays, formatChile, today } from "@/lib/dates";
 import { currencyFormatter } from "@/lib/format";
 
 import type { ServiceSchedule, ServiceSummary } from "../types";
@@ -44,8 +43,8 @@ function capitalize(value: string) {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
-function getRelativeDayLabel(dueDate: dayjs.Dayjs, todayDate: dayjs.Dayjs) {
-  const diff = dueDate.diff(todayDate, "day");
+function getRelativeDayLabel(dueDateISO: string, todayISO: string) {
+  const diff = diffDays(dueDateISO, todayISO);
   if (diff === -1) {
     return "Ayer";
   }
@@ -61,7 +60,7 @@ function getRelativeDayLabel(dueDate: dayjs.Dayjs, todayDate: dayjs.Dayjs) {
   if (diff < -1 && diff >= -5) {
     return `Hace ${Math.abs(diff)} días`;
   }
-  return capitalize(dateFormatter.format(dueDate.toDate()));
+  return capitalize(dateFormatter.format(civilNoon(dueDateISO)));
 }
 
 function buildScheduleGroups(schedules: ServiceSchedule[]): ScheduleGroup[] {
@@ -70,19 +69,18 @@ function buildScheduleGroups(schedules: ServiceSchedule[]): ScheduleGroup[] {
   }
 
   const sorted = [...schedules].toSorted(
-    (a, b) => dayjs(a.dueDate).valueOf() - dayjs(b.dueDate).valueOf()
+    (a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
   );
-  const todayDate = dayjs().startOf("day");
+  const todayDate = today();
   const map = new Map<string, ScheduleGroup>();
 
   for (const schedule of sorted) {
-    const dueDate = dayjs(schedule.dueDate).startOf("day");
-    const key = dueDate.format("YYYY-MM-DD");
+    const key = chileDay(schedule.dueDate);
     if (!map.has(key)) {
       map.set(key, {
         dateKey: key,
         items: [],
-        label: getRelativeDayLabel(dueDate, todayDate),
+        label: getRelativeDayLabel(key, todayDate),
       });
     }
     const group = map.get(key);
@@ -176,7 +174,7 @@ function ServiceScheduleAccordion({
                   </Description>
                 </div>
                 <span
-                  className={`inline-flex h-7 w-7 items-center justify-center rounded-full border border-default-200 bg-default-50 font-semibold text-default-500 text-xs ${
+                  className={`inline-flex items-center justify-center rounded-full border border-default-200 bg-default-50 font-semibold text-default-500 text-xs size-7 ${
                     isExpanded ? "rotate-180" : ""
                   }`}
                 >
@@ -189,9 +187,9 @@ function ServiceScheduleAccordion({
                 }
               >
                 {group.items.map((item) => {
-                  const dueDate = dayjs(item.dueDate);
-                  const diffDays = dueDate.startOf("day").diff(dayjs().startOf("day"), "day");
-                  const isOverdue = item.status === "PENDING" && diffDays < 0;
+                  const dueISO = chileDay(item.dueDate);
+                  const dayDiff = diffDays(dueISO, today());
+                  const isOverdue = item.status === "PENDING" && dayDiff < 0;
                   const statusClasses = {
                     PAID: "bg-success/20 text-success",
                     PARTIAL: "bg-warning/20 text-warning",
@@ -210,7 +208,7 @@ function ServiceScheduleAccordion({
                             {currencyFormatter.format(item.expectedAmount)}
                           </span>
                           <Description className="text-default-400 text-xs">
-                            Vence el {dateFormatter.format(dueDate.toDate())}
+                            Vence el {dateFormatter.format(civilNoon(dueISO))}
                           </Description>
                         </div>
                         <span
@@ -225,13 +223,13 @@ function ServiceScheduleAccordion({
                       </div>
                       <div className="mt-2 flex flex-wrap items-center gap-4 text-default-500 text-xs">
                         <span>
-                          Periodo {dayjs(item.periodStart).format("DD MMM")} –{" "}
-                          {dayjs(item.periodEnd).format("DD MMM YYYY")}
+                          Periodo {formatChile(item.periodStart, "DD MMM")} –{" "}
+                          {formatChile(item.periodEnd, "DD MMM YYYY")}
                         </span>
                         {item.transaction && (
                           <span className="text-success">
                             Pago {currencyFormatter.format(item.transaction.amount ?? 0)} ·{" "}
-                            {dayjs(item.transaction.timestamp).format("DD MMM")}
+                            {formatChile(item.transaction.timestamp, "DD MMM")}
                           </span>
                         )}
                       </div>

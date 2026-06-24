@@ -9,6 +9,7 @@ import {
   verifyPasskeyRegistration,
 } from "@/features/auth/api";
 import { fetchUserProfile, setupUser } from "@/features/users/api";
+import { userProfileKey } from "@/features/users/queries";
 import { validateRut } from "@/lib/rut";
 
 export const profileSchema = z.object({
@@ -71,7 +72,7 @@ interface OnboardingValues {
 export function useOnboardingForm() {
   const queryClient = useQueryClient();
   const { data: userProfile } = useSuspenseQuery({
-    queryKey: ["user", "profile"],
+    queryKey: userProfileKey,
     queryFn: fetchUserProfile,
   });
 
@@ -152,6 +153,14 @@ export function useOnboardingForm() {
       }
       return verifyResult;
     },
+    onSuccess: () => {
+      // Advance to the next step on successful passkey registration —
+      // mirrors mfaVerify above. Missing this was the bug that froze
+      // the wizard on step 4 after passkey enrolment (no test caught
+      // it because the onboarding flow has zero tests; see
+      // useOnboardingForm.test.ts companion file).
+      setCurrentStep((prev) => prev + 1);
+    },
     onError: (mutationError) => {
       const msg =
         mutationError instanceof Error ? mutationError.message : "No se pudo registrar el Passkey";
@@ -176,7 +185,7 @@ export function useOnboardingForm() {
     },
     onSuccess: () => {
       setError(null);
-      return queryClient.invalidateQueries({ queryKey: ["user", "profile"] });
+      return queryClient.invalidateQueries({ queryKey: userProfileKey });
     },
     onError: (mutationError) => {
       const msg =

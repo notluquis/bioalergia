@@ -16,7 +16,7 @@ import xlsx from "xlsx";
 // can't parse weight, etc.) come back as a structured array so the
 // reprocess job can decide IMPORTED vs PENDING_REVIEW.
 
-export const CLINICAL_RECORD_PARSER_VERSION = "0.1.0";
+export const CLINICAL_RECORD_PARSER_VERSION = "0.3.0";
 
 export type ClinicalRecordIssue = {
   code: string;
@@ -32,6 +32,14 @@ export type ParsedClinicalRecord = {
   physicalExam: string | null;
   diagnosis: string | null;
   indications: string[];
+  // FHIR-mappable extras (HL7 FHIR R5 + IPS-CL Chile R4). String[] for
+  // v1 since the xlsx is free-form; structurable into
+  // {condition,onset,…} / {name,dose,…} / {substance,severity,…}
+  // later without breaking the schema.
+  antecedents: { personal: string[]; family: string[] };
+  medications: string[];
+  knownAllergies: string[];
+  observations: string | null;
   weightKg: number | null;
   heightCm: number | null;
   headCircumferenceCm: number | null;
@@ -45,14 +53,40 @@ export type ParsedClinicalRecord = {
 type Cell = string;
 type Row = Cell[];
 
+// Section anchors. The classifier below maps each normalized marker
+// to one of the ParsedClinicalRecord array buckets. Order matters:
+// "ANTECEDENTES FAMILIARES" must be checked before bare "ANTECEDENTES"
+// so the family sub-bucket wins.
 const SECTION_MARKERS = [
   "HISTORIA",
+  "ANTECEDENTES FAMILIARES",
+  "ANTECEDENTES PERSONALES",
+  "ANTECEDENTES",
   "EXAMEN FÍSICO",
   "EXAMEN FISICO",
   "DIAGNÓSTICO",
   "DIAGNOSTICO",
+  "MEDICAMENTOS",
+  "TRATAMIENTO ACTUAL",
+  "MEDICACION ACTUAL",
+  "MEDICACIÓN ACTUAL",
+  "ALERGIAS CONOCIDAS",
+  "ALERGIAS",
   "INDICACIONES",
+  "OBSERVACIONES",
+  "NOTAS",
 ] as const;
+
+type SectionKey =
+  | "history"
+  | "antecedentsPersonal"
+  | "antecedentsFamily"
+  | "physicalExam"
+  | "diagnosis"
+  | "medications"
+  | "knownAllergies"
+  | "indications"
+  | "observations";
 
 function normalize(s: string): string {
   return s
@@ -66,7 +100,7 @@ function normalize(s: string): string {
 
 function rowsFromBuffer(buffer: Buffer): Row[] {
   const wb = xlsx.read(buffer, { type: "buffer" });
-  const sheet = wb.Sheets[wb.SheetNames[0]!];
+  const sheet = wb.Sheets[wb.SheetNames[0]];
   if (!sheet) return [];
   const json = xlsx.utils.sheet_to_json<unknown[]>(sheet, {
     header: 1,
@@ -79,7 +113,7 @@ function rowsFromBuffer(buffer: Buffer): Row[] {
 
 function findCellRight(row: Row, fromIdx: number): string {
   for (let i = fromIdx + 1; i < row.length; i++) {
-    if (row[i]) return row[i]!;
+    if (row[i]) return row[i];
   }
   return "";
 }
@@ -90,11 +124,28 @@ function isSectionMarker(cellNorm: string): boolean {
   );
 }
 
-function classifySectionMarker(cellNorm: string): keyof ParsedClinicalRecord["rawSections"] | null {
+function classifySectionMarker(cellNorm: string): SectionKey | null {
+  // ANTECEDENTES sub-types first so "FAMILIARES" / "PERSONALES" win
+  // over bare "ANTECEDENTES".
+  if (cellNorm.startsWith("ANTECEDENTES FAMILIARES")) return "antecedentsFamily";
+  if (cellNorm.startsWith("ANTECEDENTES PERSONALES")) return "antecedentsPersonal";
+  if (cellNorm.startsWith("ANTECEDENTES")) return "antecedentsPersonal";
   if (cellNorm.startsWith("HISTORIA")) return "history";
   if (cellNorm.startsWith("EXAMEN")) return "physicalExam";
-  if (cellNorm.startsWith("DIAGNOSTICO") || cellNorm.startsWith("DIAGNÓSTICO")) return "diagnosis";
+  // cellNorm is accent-stripped, so DIAGNÓSTICO == DIAGNOSTICO.
+  if (cellNorm.startsWith("DIAGNOSTICO")) return "diagnosis";
+  if (
+    cellNorm.startsWith("MEDICAMENTOS") ||
+    cellNorm.startsWith("TRATAMIENTO ACTUAL") ||
+    cellNorm.startsWith("MEDICACION ACTUAL")
+  ) {
+    return "medications";
+  }
+  if (cellNorm.startsWith("ALERGIAS")) return "knownAllergies";
   if (cellNorm.startsWith("INDICACIONES")) return "indications";
+  if (cellNorm.startsWith("OBSERVACIONES") || cellNorm.startsWith("NOTAS")) {
+    return "observations";
+  }
   return null;
 }
 
@@ -124,9 +175,9 @@ export function parseSpanishDate(value: string): string | null {
   //   "21 DE JULIO DE 2025"
   const m = norm.match(/(\d{1,2})\s+(?:DE\s+)?([A-Z]+)(?:\s+DE)?(?:\s+DE)?\s+(\d{4})/);
   if (m) {
-    const day = Number.parseInt(m[1]!, 10);
-    const month = SPANISH_MONTHS[m[2]!];
-    const year = Number.parseInt(m[3]!, 10);
+    const day = Number.parseInt(m[1], 10);
+    const month = SPANISH_MONTHS[m[2]];
+    const year = Number.parseInt(m[3], 10);
     if (month && day >= 1 && day <= 31 && year >= 2000 && year <= 2100) {
       return `${year.toString().padStart(4, "0")}-${month.toString().padStart(2, "0")}-${day.toString().padStart(2, "0")}`;
     }
@@ -134,12 +185,12 @@ export function parseSpanishDate(value: string): string | null {
   // ISO fallback yyyy-mm-dd already normalized away by normalize(); try raw
   const iso = value.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
   if (iso) {
-    return `${iso[1]}-${iso[2]!.padStart(2, "0")}-${iso[3]!.padStart(2, "0")}`;
+    return `${iso[1]}-${iso[2].padStart(2, "0")}-${iso[3].padStart(2, "0")}`;
   }
   // dd/mm/yyyy or dd-mm-yyyy
   const slash = value.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
   if (slash) {
-    return `${slash[3]}-${slash[2]!.padStart(2, "0")}-${slash[1]!.padStart(2, "0")}`;
+    return `${slash[3]}-${slash[2].padStart(2, "0")}-${slash[1].padStart(2, "0")}`;
   }
   return null;
 }
@@ -147,18 +198,32 @@ export function parseSpanishDate(value: string): string | null {
 function parseDecimal(value: string): number | null {
   if (!value) return null;
   // Chilean format uses comma as decimal: "7,830". Accept both.
-  const cleaned = value.replace(/[^\d,.\-]/g, "").replace(",", ".");
+  const cleaned = value.replace(/[^\d,.-]/g, "").replace(",", ".");
   if (!cleaned) return null;
   const n = Number.parseFloat(cleaned);
   return Number.isFinite(n) ? n : null;
 }
 
+function dedupeLines(lines: string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const raw of lines) {
+    const trimmed = raw.trim();
+    if (!trimmed) continue;
+    const key = normalize(trimmed);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(trimmed);
+  }
+  return out;
+}
+
 function extractInlineAnthropometric(text: string, target: ParsedClinicalRecord): void {
   // Match patterns like "P: 8,100 T: 67,5 CC: 43,5" in any single cell.
-  const matches = text.matchAll(/\b([A-ZÁÉÍÓÚÑ\/]+)\s*[:\-]\s*([\d.,]+)/g);
+  const matches = text.matchAll(/\b([A-ZÁÉÍÓÚÑ/]+)\s*[:-]\s*([\d.,]+)/g);
   for (const m of matches) {
-    const key = normalize(m[1]!);
-    const numTxt = m[2]!;
+    const key = normalize(m[1]);
+    const numTxt = m[2];
     target.anthropometric[key] = numTxt;
     if ((key === "P" || key === "PESO") && target.weightKg == null) {
       target.weightKg = parseDecimal(numTxt);
@@ -172,8 +237,204 @@ function extractInlineAnthropometric(text: string, target: ParsedClinicalRecord)
   }
 }
 
+// --- Positional ("dash") consulta variant ---------------------------------
+// A large slice of the 2024-2026 corpus uses a label-less template: row 0 is
+// `CONSULTA MEDICA- PEGAR CUADERNO`, the header fields (name / age-city / date)
+// sit in col >= 2 of dash-marked rows (col 0 == "-"), and the clinical body is
+// purely positional:
+//
+//   col 1  HISTORIA lines → (col >=3 ANTECEDENTES) → EXAMEN lines
+//   "-"    separator
+//   col 1  DIAGNÓSTICO
+//   "-"    separator
+//   col 1  INDICACIONES
+//
+// The marker-based pass above produces nothing here (no NOMBRE / HISTORIA text
+// labels exist), so when it fails to find a name we fall back to this layout.
+
+function cellAt(row: Row, c: number): string {
+  return (row[c] ?? "").trim();
+}
+
+// A structural separator row: the marker column (`base`) is literally "-" and
+// the rest of the row is empty. Header rows hold a value further right (not a
+// separator); blank trailing rows have an empty marker column (also not a
+// separator) — both must be excluded so the DIAGNÓSTICO / INDICACIONES brackets
+// land on the real dashes.
+function isSeparatorRow(row: Row, base: number): boolean {
+  if (cellAt(row, base) !== "-") return false;
+  for (let c = 0; c < row.length; c++) {
+    if (c !== base && cellAt(row, c)) return false;
+  }
+  return true;
+}
+
+// The template is sometimes shifted one column to the right (dashes in col 1,
+// body in col 2, header values in col 3). Anchor everything to the column that
+// holds the `CONSULTA MEDICA` banner so the offset is handled generically.
+function findPositionalBase(rows: Row[]): number {
+  for (let r = 0; r < Math.min(rows.length, 4); r++) {
+    for (let c = 0; c < rows[r].length; c++) {
+      if (normalize(cellAt(rows[r], c)).includes("CONSULTA MEDICA")) return c;
+    }
+  }
+  return 0;
+}
+
+function looksLikeAge(value: string): boolean {
+  return /\b\d+\s*(AÑOS?|ANOS?|MES|MESES|D[IÍ]AS?|SEMANAS?|RNT|RNPT)\b/i.test(value);
+}
+
+// "38 AÑOS - SAN PEDRO DE LA PAZ" → ageLabel "38 AÑOS" + rawHeader.CIUDAD. The
+// clinic frequently appends the comuna after a dash on the EDAD line.
+function setAgeLabel(result: ParsedClinicalRecord, value: string): void {
+  const [age, ...city] = value.split(/\s+-\s+/);
+  result.ageLabel = age.trim();
+  if (city.length > 0) result.rawHeader.CIUDAD = city.join(" - ").trim();
+  result.rawHeader.EDAD = value;
+}
+
+function applyPositionalConsulta(rows: Row[], result: ParsedClinicalRecord): void {
+  const base = findPositionalBase(rows); // "-" marker column
+  const bodyCol = base + 1; // HISTORIA / EXAMEN / DIAGNÓSTICO / INDICACIONES
+  const headerCol = base + 2; // start of NOMBRE / EDAD / FECHA values
+
+  // First row carrying clinical text in the body column marks the body start.
+  let firstBodyRow = -1;
+  for (let r = 0; r < rows.length; r++) {
+    if (cellAt(rows[r], bodyCol)) {
+      firstBodyRow = r;
+      break;
+    }
+  }
+  if (firstBodyRow < 0) return;
+
+  // Header: the first non-dash value in headerCol+ of each row above the body.
+  const headerValues: string[] = [];
+  for (let r = 0; r < firstBodyRow; r++) {
+    for (let c = headerCol; c < rows[r].length; c++) {
+      const v = cellAt(rows[r], c);
+      if (v && v !== "-") {
+        headerValues.push(v);
+        break;
+      }
+    }
+  }
+  for (const v of headerValues) {
+    const iso = parseSpanishDate(v);
+    if (iso && !result.consultDate) {
+      result.consultDate = iso;
+      result.rawHeader.FECHA = v;
+      continue;
+    }
+    if (looksLikeAge(v) && !result.ageLabel) {
+      setAgeLabel(result, v);
+      continue;
+    }
+    if (!result.patientName) {
+      result.patientName = v;
+      result.rawHeader.NOMBRE = v;
+    }
+  }
+
+  // Body: split DIAGNÓSTICO / INDICACIONES off the two trailing "-" separators.
+  const sepRows: number[] = [];
+  for (let r = firstBodyRow; r < rows.length; r++) {
+    if (isSeparatorRow(rows[r], base)) sepRows.push(r);
+  }
+  const lastSep = sepRows.length >= 1 ? sepRows[sepRows.length - 1] : -1;
+  const prevSep = sepRows.length >= 2 ? sepRows[sepRows.length - 2] : -1;
+
+  const historyLines: string[] = [];
+  const examLines: string[] = [];
+  const diagLines: string[] = [];
+  const indLines: string[] = [];
+  const antPersonal: string[] = [];
+  const antFamily: string[] = [];
+  let seenAntecedent = false;
+
+  for (let r = firstBodyRow; r < rows.length; r++) {
+    if (isSeparatorRow(rows[r], base)) continue;
+    const c1 = cellAt(rows[r], bodyCol);
+
+    // Stop at the doctor signature footer.
+    const nc1 = normalize(c1);
+    if (nc1.startsWith("DR ") || nc1.includes("ALERGOLOGO") || nc1.includes("INMUNOLOGO")) {
+      break;
+    }
+
+    // Indications: everything in the body column after the last separator.
+    if (lastSep >= 0 && r > lastSep) {
+      if (c1) indLines.push(c1);
+      continue;
+    }
+    // Diagnosis: body column between the two trailing separators.
+    if (prevSep >= 0 && r > prevSep && r < lastSep) {
+      if (c1) diagLines.push(c1);
+      continue;
+    }
+
+    // Antecedentes / overflow: text in the column right of the body column,
+    // ignoring stray single-letter junk cells.
+    let other = "";
+    for (let c = bodyCol + 2; c < rows[r].length; c++) {
+      const v = cellAt(rows[r], c);
+      if (v && v !== "-" && v.length >= 3) {
+        other = v;
+        break;
+      }
+    }
+    if (other && !c1) {
+      seenAntecedent = true;
+      if (/padre|madre|hermano|abuel|familiar|t[ií]o|t[ií]a|primo/i.test(other))
+        antFamily.push(other);
+      else antPersonal.push(other);
+    }
+    // Body column before the antecedentes block is HISTORIA; after it EXAMEN.
+    if (c1) {
+      if (seenAntecedent) examLines.push(c1);
+      else historyLines.push(c1);
+    }
+  }
+
+  if (!result.history && historyLines.length > 0) result.history = historyLines.join("\n").trim();
+  if (!result.physicalExam && examLines.length > 0)
+    result.physicalExam = examLines.join("\n").trim();
+  if (!result.diagnosis && diagLines.length > 0) result.diagnosis = diagLines.join("\n").trim();
+  if (result.indications.length === 0 && indLines.length > 0) {
+    result.indications = dedupeLines(indLines);
+  }
+  if (antPersonal.length > 0) result.antecedents.personal.push(...dedupeLines(antPersonal));
+  if (antFamily.length > 0) result.antecedents.family.push(...dedupeLines(antFamily));
+}
+
+// Detect non-ficha documents that share the OneDrive folder: lab-order
+// requests, prescriptions, misrouted skin-test panels (those belong to the
+// clinical-skin-test pipeline), allergen/vaccine inventories and the doctor's
+// weekly schedule. All carry an unambiguous banner in their first rows, so a
+// title match there is enough to flag — no real ficha opens with these words.
+function detectNonFichaDocument(rows: Row[]): boolean {
+  const top = rows
+    .slice(0, 4)
+    .flat()
+    .map((c) => normalize(c))
+    .join(" ");
+  return (
+    /SOLICITUD DE EXAMEN/.test(top) ||
+    /\bRECETA\b/.test(top) ||
+    /MULTITEST CUTANEO/.test(top) ||
+    /\bINVENTARIO\b/.test(top) ||
+    /\bCALENDARIO\b/.test(top)
+  );
+}
+
 export function parseClinicalRecordWorkbook(buffer: Buffer): ParsedClinicalRecord {
-  const rows = rowsFromBuffer(buffer);
+  return parseClinicalRecordRows(rowsFromBuffer(buffer));
+}
+
+// Parse from an already-extracted row grid (e.g. reconstructed from a stored
+// snapshot), so reprocess can re-parse without re-downloading the xlsx.
+export function parseClinicalRecordRows(rows: Row[]): ParsedClinicalRecord {
   const issues: ClinicalRecordIssue[] = [];
 
   const result: ParsedClinicalRecord = {
@@ -184,15 +445,26 @@ export function parseClinicalRecordWorkbook(buffer: Buffer): ParsedClinicalRecor
     physicalExam: null,
     diagnosis: null,
     indications: [],
+    antecedents: { personal: [], family: [] },
+    medications: [],
+    knownAllergies: [],
+    observations: null,
     weightKg: null,
     heightCm: null,
     headCircumferenceCm: null,
     anthropometric: {},
     rawHeader: {},
-    rawSections: { history: [], physicalExam: [], diagnosis: [], indications: [] } as Record<
-      string,
-      string[]
-    >,
+    rawSections: {
+      history: [],
+      antecedentsPersonal: [],
+      antecedentsFamily: [],
+      physicalExam: [],
+      diagnosis: [],
+      medications: [],
+      knownAllergies: [],
+      indications: [],
+      observations: [],
+    },
     issues,
     confidence: 0,
   };
@@ -204,14 +476,16 @@ export function parseClinicalRecordWorkbook(buffer: Buffer): ParsedClinicalRecor
 
   // Locate header markers (NOMBRE, EDAD, FECHA, etc.) and section markers.
   // Header markers expect the value in a sibling cell on the same row.
-  let currentSection: keyof typeof result.rawSections | null = null;
-  let inIndicationsBlock = false;
+  let currentSection: SectionKey | null = null;
+  // Sections whose content is a numbered list (col 1 = "1.", col 2 = text).
+  const isListSection = (s: SectionKey): boolean =>
+    s === "indications" || s === "medications" || s === "knownAllergies";
   let consultMarkerSeen = false;
 
   for (let r = 0; r < rows.length; r++) {
-    const row = rows[r]!;
+    const row = rows[r];
     for (let c = 0; c < row.length; c++) {
-      const cell = row[c]!.trim();
+      const cell = row[c].trim();
       if (!cell) continue;
       const norm = normalize(cell);
 
@@ -231,8 +505,7 @@ export function parseClinicalRecordWorkbook(buffer: Buffer): ParsedClinicalRecor
       if (norm === "EDAD") {
         const value = findCellRight(row, c);
         if (value && !result.ageLabel) {
-          result.ageLabel = value;
-          result.rawHeader.EDAD = value;
+          setAgeLabel(result, value);
         }
         continue;
       }
@@ -270,20 +543,19 @@ export function parseClinicalRecordWorkbook(buffer: Buffer): ParsedClinicalRecor
       const sect = classifySectionMarker(norm);
       if (sect) {
         currentSection = sect;
-        inIndicationsBlock = sect === "indications";
         // Sometimes the marker cell contains "HISTORIA: ..." with content inline.
         const inline = cell.replace(/^[^:]+:\s*/, "").trim();
         if (inline && inline.length > 1 && normalize(inline) !== norm) {
-          result.rawSections[sect]!.push(inline);
+          result.rawSections[sect].push(inline);
         }
         // Capture the right-cell value too (e.g. EXAMEN FÍSICO  P/E  N).
         const right = findCellRight(row, c);
         if (right && !isSectionMarker(normalize(right))) {
           if (sect === "physicalExam") {
             extractInlineAnthropometric(right, result);
-            result.rawSections.physicalExam!.push(right);
-          } else if (sect !== "indications") {
-            result.rawSections[sect]!.push(right);
+            result.rawSections.physicalExam.push(right);
+          } else if (!isListSection(sect)) {
+            result.rawSections[sect].push(right);
           }
         }
         continue;
@@ -312,12 +584,13 @@ export function parseClinicalRecordWorkbook(buffer: Buffer): ParsedClinicalRecor
         }
       }
 
-      // Indications: numbered list. Sometimes col 1 has the number, col 2+ has text.
-      if (inIndicationsBlock) {
+      // Numbered list (indications / medications / allergies). col 1 = "1.",
+      // col 2+ = text. Collect text under the active list section.
+      if (currentSection && isListSection(currentSection)) {
         const isNumberLabel = /^\d+\.?$/.test(cell);
         if (isNumberLabel) {
           const text = findCellRight(row, c);
-          if (text) result.indications.push(text);
+          if (text) result.rawSections[currentSection].push(text);
           continue;
         }
       }
@@ -327,17 +600,10 @@ export function parseClinicalRecordWorkbook(buffer: Buffer): ParsedClinicalRecor
         // Skip footer / signature rows.
         if (norm.startsWith("DR ") || norm.includes("ALERGOLOGO") || norm.includes("INMUNOLOGO")) {
           currentSection = null;
-          inIndicationsBlock = false;
           continue;
         }
-        if (currentSection === "indications") {
-          // Indication text without explicit number — append.
-          extractInlineAnthropometric(cell, result);
-          result.indications.push(cell);
-        } else {
-          extractInlineAnthropometric(cell, result);
-          result.rawSections[currentSection]!.push(cell);
-        }
+        extractInlineAnthropometric(cell, result);
+        result.rawSections[currentSection].push(cell);
       } else {
         // Pre-NOMBRE / pre-section header lines (consultorio address etc.)
         // are kept in rawHeader for debugging only.
@@ -346,10 +612,37 @@ export function parseClinicalRecordWorkbook(buffer: Buffer): ParsedClinicalRecor
     }
   }
 
-  // Collapse section arrays into joined strings for the SQL columns.
-  result.history = result.rawSections.history!.join("\n").trim() || null;
-  result.physicalExam = result.rawSections.physicalExam!.join("\n").trim() || null;
-  result.diagnosis = result.rawSections.diagnosis!.join("\n").trim() || null;
+  // Collapse section arrays into the final per-column shape:
+  //   - text columns: \n-joined trim
+  //   - list columns: array passed through, deduped + trimmed
+  result.history = result.rawSections.history.join("\n").trim() || null;
+  result.physicalExam = result.rawSections.physicalExam.join("\n").trim() || null;
+  result.diagnosis = result.rawSections.diagnosis.join("\n").trim() || null;
+  result.observations = result.rawSections.observations.join("\n").trim() || null;
+  result.antecedents = {
+    personal: dedupeLines(result.rawSections.antecedentsPersonal),
+    family: dedupeLines(result.rawSections.antecedentsFamily),
+  };
+  result.medications = dedupeLines(result.rawSections.medications);
+  result.knownAllergies = dedupeLines(result.rawSections.knownAllergies);
+  result.indications = dedupeLines(result.rawSections.indications);
+
+  // Label-less "dash" template: the marker pass found no NOMBRE. Recover the
+  // header + body positionally.
+  if (!result.patientName) {
+    applyPositionalConsulta(rows, result);
+  }
+
+  // Lab orders / recetas / skin-test panels / inventories / schedules that
+  // aren't fichas at all but share the OneDrive folder.
+  if (detectNonFichaDocument(rows)) {
+    issues.push({
+      code: "document_type_not_ficha",
+      message:
+        "El documento no es una ficha clínica (solicitud de exámenes, receta, test cutáneo, inventario o calendario).",
+      severity: "warning",
+    });
+  }
 
   // Confidence + issues.
   if (!consultMarkerSeen) {
@@ -378,13 +671,17 @@ export function parseClinicalRecordWorkbook(buffer: Buffer): ParsedClinicalRecor
   }
 
   let score = 0;
-  if (consultMarkerSeen) score += 15;
-  if (result.patientName) score += 25;
-  if (result.consultDate) score += 20;
-  if (result.history) score += 15;
+  if (consultMarkerSeen) score += 10;
+  if (result.patientName) score += 20;
+  if (result.consultDate) score += 15;
+  if (result.history) score += 10;
   if (result.physicalExam) score += 10;
   if (result.diagnosis) score += 10;
   if (result.indications.length > 0) score += 5;
+  if (result.medications.length > 0) score += 5;
+  if (result.knownAllergies.length > 0) score += 3;
+  if (result.antecedents.personal.length + result.antecedents.family.length > 0) score += 5;
+  if (result.observations) score += 2;
   result.confidence = Math.min(score, 100);
 
   return result;

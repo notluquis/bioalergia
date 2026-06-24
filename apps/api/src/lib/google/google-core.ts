@@ -10,7 +10,7 @@ import { db } from "@finanzas/db";
 import { drive, type drive_v3 } from "@googleapis/drive";
 import { OAuth2Client } from "google-auth-library";
 
-import { googleCalendarConfig } from "../../config.ts";
+import { googleCalendarConfig } from "../config.ts";
 
 import { logEvent, logWarn } from "../logger.ts";
 import { parseGoogleError } from "./google-errors.ts";

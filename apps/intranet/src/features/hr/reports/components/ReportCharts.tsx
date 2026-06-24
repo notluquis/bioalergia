@@ -2,8 +2,8 @@
  * Lazy-loaded Chart Components for Reports
  * These are separated to enable code-splitting of Recharts (~400KB)
  */
+import { formatChile } from "@/lib/dates";
 import { Chip } from "@heroui/react";
-import dayjs from "dayjs";
 import { BarChart2, PieChart as PieChartIcon } from "lucide-react";
 import {
   Bar,
@@ -119,7 +119,7 @@ export function DistributionChart({ reportData }: DistributionChartProps) {
   return (
     <div className="rounded-3xl border border-default-100 bg-background p-4 shadow-sm sm:p-6">
       <h3 className="mb-2 flex items-center gap-2 font-bold text-lg">
-        <PieChartIcon className="h-5 w-5 text-secondary" />
+        <PieChartIcon className="text-secondary size-5" />
         Distribución Total
       </h3>
       <div className="h-64 w-full min-w-0 sm:h-80">
@@ -172,14 +172,14 @@ export function TemporalChart({ chartData, granularity, reportData }: TemporalCh
   const formatSalaryTick = (value: number | string) => compactClpFormatter.format(Number(value));
   const formatPeriodLabel = (label: unknown) => {
     const value = typeof label === "string" || typeof label === "number" ? String(label) : "";
-    return granularity === "month" && value ? dayjs(value).format("MMM YYYY") : value;
+    return granularity === "month" && value ? formatChile(value, "MMM YYYY") : value;
   };
 
   return (
     <div className="rounded-3xl border border-default-100 bg-background p-4 shadow-sm sm:p-6">
       <div className="mb-6 flex items-center justify-between">
         <h3 className="flex items-center gap-2 font-bold text-lg">
-          <BarChart2 className="h-5 w-5 text-primary" />
+          <BarChart2 className="text-primary size-5" />
           Comparativa Temporal
           {hasSalaryData && <span className="text-default-500 text-xs">(Horas y Salarios)</span>}
         </h3>

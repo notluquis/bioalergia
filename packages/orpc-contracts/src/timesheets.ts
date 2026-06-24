@@ -247,6 +247,13 @@ export const timesheetPrepareEmailResponseSchema = z.object({
   status: z.literal("ok"),
 });
 
+export const timesheetSendEmailResponseSchema = z.object({
+  status: z.literal("ok"),
+  sent: z.boolean(),
+  messageId: z.string().nullable(),
+  to: z.string(),
+});
+
 export const timesheetSalarySummaryInputSchema = z.object({
   employeeIds: z.array(z.number()).optional(),
   from: z
@@ -303,6 +310,10 @@ export const timesheetsContract = {
     .route({ method: "POST", path: "/prepare-email" })
     .input(timesheetEmailPayloadInputSchema)
     .output(timesheetPrepareEmailResponseSchema),
+  sendEmail: oc
+    .route({ method: "POST", path: "/send-email" })
+    .input(timesheetEmailPayloadInputSchema)
+    .output(timesheetSendEmailResponseSchema),
   prepareEmailPayload: oc
     .route({ method: "POST", path: "/prepare-email-payload" })
     .input(timesheetEmailPayloadInputSchema)

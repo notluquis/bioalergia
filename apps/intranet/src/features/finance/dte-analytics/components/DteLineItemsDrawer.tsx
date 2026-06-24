@@ -1,6 +1,6 @@
+import { formatChile } from "@/lib/dates";
 import { Button, Chip, Drawer, Skeleton, Surface } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
-import dayjs from "dayjs";
 import { Download, Package } from "lucide-react";
 import { dteAnalyticsKeys } from "../queries";
 import { useFetchDteXml } from "../hooks/useFetchDteXml";
@@ -83,7 +83,7 @@ export function DteLineItemsDrawer({ detail, isOpen, onClose }: DteLineItemsDraw
                     {"clientName" in detail ? detail.clientName : detail.providerName}
                   </Chip>
                   <Chip color="default" size="sm" variant="soft">
-                    {dayjs(detail.documentDate).format("DD-MM-YYYY")}
+                    {formatChile(detail.documentDate, "DD-MM-YYYY")}
                   </Chip>
                   <Chip color="success" size="sm" variant="soft">
                     {formatCurrency(detail.totalAmount)}

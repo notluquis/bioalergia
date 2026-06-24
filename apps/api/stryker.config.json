@@ -1,0 +1,46 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "packageManager": "pnpm",
+  "testRunner": "vitest",
+  "plugins": ["@stryker-mutator/vitest-runner"],
+  "vitest": {
+    "configFile": "vitest.stryker.config.ts"
+  },
+  "coverageAnalysis": "perTest",
+  "mutate": [
+    "src/services/immunotherapy.ts",
+    "src/services/balances.ts",
+    "src/services/dte-import.ts",
+    "src/services/dte-expense-matcher.ts",
+    "src/services/people-factory.ts",
+    "src/services/cart.ts",
+    "src/services/dte-event-linking.ts",
+    "src/services/finance.ts",
+    "src/services/loans.ts",
+    "src/services/expenses.ts",
+    "src/services/transactions.ts",
+    "src/services/timesheets.ts",
+    "src/services/attendance.ts",
+    "src/services/timesheet-email-template.ts",
+    "src/services/utility-bills.ts",
+    "src/services/social.ts",
+    "src/modules/social/publish-runner.ts",
+    "!src/services/**/*.test.ts",
+    "!src/services/**/__tests__/**",
+    "!src/services/**/*.d.ts",
+    "!src/modules/**/*.test.ts",
+    "!src/modules/**/__tests__/**",
+    "!src/modules/**/*.d.ts"
+  ],
+  "incremental": true,
+  "incrementalFile": "reports/stryker-incremental.json",
+  "concurrency": "50%",
+  "ignoreStatic": true,
+  "thresholds": {
+    "high": 80,
+    "low": 60,
+    "break": 64
+  },
+  "ignorePatterns": ["dist", "coverage", "node_modules"],
+  "reporters": ["html", "clear-text", "progress"]
+}

@@ -7,6 +7,7 @@ import { PolicyPlugin } from "@zenstackhq/plugin-policy";
 import { Pool, types } from "pg";
 
 import { schema } from "./zenstack/schema.ts";
+import type { SchemaType } from "./zenstack/schema.ts";
 
 // Configure pg driver to parse numeric/decimal as JavaScript number natively
 // This is the ZenStack/Kysely recommended approach for Decimal handling
@@ -36,7 +37,9 @@ const getEnv = (key: string): string | undefined => {
 // Connection pool — tuned for Railway PostgreSQL
 // - connectionTimeoutMillis: 20s to tolerate Railway cold starts (can reach 15s)
 // - idleTimeoutMillis: 10min to keep the pool warm between requests
-// - max: 10 conservative for Railway Hobby (max ~97 PG connections, multiple instances)
+// - max: 10 conservative for Railway Hobby (max ~97 PG connections, multiple instances).
+//   graphile-worker uses its own separate pool (apps/api/src/queue/runner.ts,
+//   maxPoolSize: 2) so app and queue don't compete for slots.
 // - min: 2 pre-warmed connections so the first requests don't incur connection overhead
 // - keepAlive: prevents Railway's NAT from silently dropping idle TCP connections
 const pool = new Pool({
@@ -68,7 +71,28 @@ pool.on("connect", (client) => {
   }
 });
 
-// Base ORM client (no access control)
+// Pool error handler. node-postgres emits 'error' on the Pool when an IDLE
+// client's connection dies (Railway/PgBouncer idle kill, NAT drop, server
+// restart). Without a listener that emission becomes an unhandled 'error'
+// event → uncaught exception → the whole API process crashes ("Connection
+// terminated unexpectedly"). The pool already evicts the broken client and
+// the next acquire transparently opens a fresh one, so we only need to log
+// and swallow — never rethrow, or we reintroduce the crash.
+pool.on("error", (err) => {
+  console.error("[db] idle pool client error (recovered, connection evicted):", err.message);
+});
+
+// Base ORM client (no access control).
+//
+// Tipo completo inferido (NO colapsado a `ClientContract<SchemaType>`). El
+// colapso era un workaround para el TS2321 "Excessive stack depth" que dispara
+// el `TransactionClientContract` profundo cuando `db.$transaction(async tx =>…)`
+// se instancia INLINE en archivos oRPC pesados. Solución golden 2026: toda la
+// lógica DB/transacción vive en el service layer (contexto de tipos liviano),
+// los handlers oRPC quedan finos → el TS2321 no ocurre y los rows de findMany
+// conservan TODOS los campos del modelo (sin colapso lossy). Ver
+// services/exam-reports.ts y services/users.ts. NO reintroducir el colapso:
+// si vuelve TS2321, mover el $transaction culpable a un servicio.
 export const db = new ZenStackClient(schema, {
   dialect: new PostgresDialect({ pool }),
   diagnostics: {
@@ -78,14 +102,14 @@ export const db = new ZenStackClient(schema, {
   },
 });
 
-// ORM client with access control policies
-// Type assertion needed due to nested @zenstackhq/schema versions
+// ORM client with access control policies.
 export const authDb = db.$use(new PolicyPlugin());
+
+// Canonical client type re-export.
+export type DbClient = typeof db;
 
 // Direct Kysely access for complex queries
 import { Kysely } from "kysely";
-
-import type { SchemaType } from "./zenstack/schema.ts";
 
 export const kysely = new Kysely<SchemaType>({
   dialect: new PostgresDialect({ pool }),

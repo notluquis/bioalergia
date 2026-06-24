@@ -1,3 +1,4 @@
+// oxlint-disable typescript/no-non-null-assertion -- TODO(strict-null): refactor each `!` to invariant() or explicit guard. Tracked in repo-wide non-null cleanup.
 import type { Key } from "@heroui/react";
 import {
   Alert,
@@ -26,7 +27,11 @@ import {
   getStreetNumbers,
   searchStreets,
 } from "@/features/shipments/api";
-import { createAddress, updateAddress } from "../api";
+import { createAddress, listAddresses, updateAddress } from "../api";
+import { addressKeys, cxKeys } from "../queries";
+
+// Etiquetas comunes sugeridas; el campo acepta valor personalizado igual.
+const LABEL_PRESETS = ["Principal", "Casa", "Trabajo", "Familiar", "Consulta"] as const;
 
 interface AddressFormState {
   label: string;
@@ -71,15 +76,26 @@ export function AddressFormModal({
   const isEditMode = Boolean(draft?.id);
 
   const { data: regionsResponse, isLoading: loadingRegions } = useQuery({
-    queryKey: ["cx-regions"],
+    queryKey: cxKeys.regions,
     queryFn: fetchRegions,
     staleTime: 1000 * 60 * 60,
   });
   const regions = regionsResponse?.regions ?? [];
 
+  // Direcciones existentes del paciente: solo para decidir si esta es la
+  // PRIMERA (entonces sugerimos "Principal"). Sin esto, defaulteábamos
+  // "Principal" siempre, incluso en la 2ª/3ª dirección.
+  const { data: existingAddresses } = useQuery({
+    queryKey: addressKeys.byPerson(personId),
+    queryFn: () => listAddresses(personId),
+    enabled: isOpen && !isEditMode,
+    staleTime: 1000 * 30,
+  });
+  const isFirstAddress = !isEditMode && (existingAddresses?.length ?? 0) === 0;
+
   const form = useForm({
     defaultValues: {
-      label: draft?.label ?? "Principal",
+      label: draft?.label ?? "",
       street: draft?.street ?? "",
       number: draft?.number ?? "",
       supplement: draft?.supplement ?? "",
@@ -97,7 +113,7 @@ export function AddressFormModal({
       const region = regions.find((r) => r.regionId === String(value.region));
       const regionDisplay = region?.regionName ?? String(value.region);
       const communes = await queryClient.fetchQuery({
-        queryKey: ["cx-communes", String(value.region)],
+        queryKey: cxKeys.communes(String(value.region)),
         queryFn: () => fetchCommunes(String(value.region)),
         staleTime: 1000 * 60 * 60,
       });
@@ -136,9 +152,21 @@ export function AddressFormModal({
   // render and never reactively updates.
   const regionValue = useStore(form.store, (state) => String(state.values.region ?? ""));
   const comunaValue = useStore(form.store, (state) => String(state.values.comuna ?? ""));
+  const labelValue = useStore(form.store, (state) => state.values.label);
+
+  // Si es la primera dirección del paciente y aún no escribió etiqueta,
+  // sugerir "Principal" (precargada, editable). En la 2ª+ queda vacía para
+  // que elija una etiqueta común o personalizada.
+  const [labelDefaulted, setLabelDefaulted] = useState(false);
+  useEffect(() => {
+    if (isFirstAddress && !labelDefaulted && labelValue === "") {
+      form.setFieldValue("label", "Principal");
+      setLabelDefaulted(true);
+    }
+  }, [isFirstAddress, labelDefaulted, labelValue, form]);
 
   const { data: communesResponse, isLoading: loadingCommunes } = useQuery({
-    queryKey: ["cx-communes", regionValue],
+    queryKey: cxKeys.communes(regionValue),
     queryFn: () => fetchCommunes(regionValue),
     enabled: regionValue.length > 0,
     staleTime: 1000 * 60 * 60,
@@ -153,7 +181,7 @@ export function AddressFormModal({
   // selecting it overrides the comuna's coverageCode so Chilexpress
   // tarification matches the actual delivery area.
   const { data: subzonesData } = useQuery({
-    queryKey: ["cx-communes-type2", regionValue],
+    queryKey: cxKeys.communesType2(regionValue),
     queryFn: () => fetchCommunes(regionValue, "2"),
     enabled: regionValue.length > 0,
     staleTime: 1000 * 60 * 60,
@@ -180,7 +208,7 @@ export function AddressFormModal({
   const ackBlocking = hasLimits && !limitsAcknowledged;
 
   const { data: streetNumbersData } = useQuery({
-    queryKey: ["cx-street-numbers", pickedStreetId],
+    queryKey: cxKeys.streetNumbers(pickedStreetId),
     queryFn: () => getStreetNumbers(pickedStreetId!),
     enabled: pickedStreetId != null,
     staleTime: 1000 * 60 * 30,
@@ -193,7 +221,7 @@ export function AddressFormModal({
     mutationFn: createAddress,
     onError: (err) => toastError(err instanceof Error ? err.message : "Error al guardar dirección"),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["addresses", personId] });
+      void queryClient.invalidateQueries({ queryKey: addressKeys.byPerson(personId) });
       success("Dirección guardada");
       form.reset();
       onClose();
@@ -205,7 +233,7 @@ export function AddressFormModal({
     onError: (err) =>
       toastError(err instanceof Error ? err.message : "Error al actualizar dirección"),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["addresses", personId] });
+      void queryClient.invalidateQueries({ queryKey: addressKeys.byPerson(personId) });
       success("Dirección actualizada");
       form.reset();
       onClose();
@@ -247,14 +275,33 @@ export function AddressFormModal({
               >
                 <form.Field name="label">
                   {(field) => (
-                    <TextField
+                    <ComboBox
+                      allowsCustomValue
+                      allowsEmptyCollection
                       isRequired
-                      onChange={(v) => field.handleChange(v)}
-                      value={field.state.value}
+                      menuTrigger="focus"
+                      inputValue={field.state.value}
+                      onInputChange={(v) => field.handleChange(v)}
+                      onSelectionChange={(key) => {
+                        if (key != null) field.handleChange(String(key));
+                      }}
                     >
                       <Label>Etiqueta</Label>
-                      <Input placeholder="Casa, Trabajo, ..." />
-                    </TextField>
+                      <ComboBox.InputGroup>
+                        <Input placeholder="Principal, Casa, Trabajo..." />
+                        <ComboBox.Trigger />
+                      </ComboBox.InputGroup>
+                      <ComboBox.Popover>
+                        <ListBox>
+                          {LABEL_PRESETS.map((preset) => (
+                            <ListBox.Item key={preset} id={preset} textValue={preset}>
+                              {preset}
+                              <ListBox.ItemIndicator />
+                            </ListBox.Item>
+                          ))}
+                        </ListBox>
+                      </ComboBox.Popover>
+                    </ComboBox>
                   )}
                 </form.Field>
 
@@ -402,12 +449,16 @@ export function AddressFormModal({
                   </div>
                   <form.Field name="number">
                     {(field) => {
-                      const num = Number(field.state.value);
+                      const raw = field.state.value;
+                      const num = Number(raw);
                       const outOfRange =
                         validNumbers.length > 0 &&
                         Number.isFinite(num) &&
                         num > 0 &&
                         !validNumbers.includes(num);
+                      // Chilexpress FAQ "No hay órdenes generadas": el campo
+                      // numeración solo admite dígitos (texto rompe la API).
+                      const nonNumeric = raw.trim() !== "" && !/^\d+$/.test(raw.trim());
                       return (
                         <TextField
                           isRequired
@@ -415,10 +466,15 @@ export function AddressFormModal({
                           value={field.state.value}
                         >
                           <Label>Número</Label>
-                          <Input placeholder="1234" />
+                          <Input placeholder="1234" inputMode="numeric" />
                           {minNumber != null && maxNumber != null ? (
                             <Description>
                               Rango Chilexpress: {minNumber} – {maxNumber}
+                            </Description>
+                          ) : null}
+                          {nonNumeric ? (
+                            <Description className="text-danger">
+                              Solo dígitos: Chilexpress rechaza letras en la numeración.
                             </Description>
                           ) : null}
                           {outOfRange ? (
@@ -440,6 +496,31 @@ export function AddressFormModal({
                     </TextField>
                   )}
                 </form.Field>
+
+                {/*
+                  Chilexpress FAQ "Cuál es el largo de la dirección que se
+                  muestra en la etiqueta": la API trunca a 47 caracteres entre
+                  calle + número + complemento (queda completo en el sistema
+                  pero la etiqueta impresa pierde el sobrante). Avisamos al
+                  operador antes de guardar para que reescriba si quiere que
+                  la etiqueta quede legible.
+                */}
+                <form.Subscribe
+                  selector={(s) => [s.values.street, s.values.number, s.values.supplement] as const}
+                >
+                  {([street, number, supplement]) => {
+                    const joined =
+                      `${street} ${number}${supplement ? " " + supplement : ""}`.trim();
+                    const len = joined.length;
+                    if (len <= 47) return null;
+                    return (
+                      <p className="rounded-md bg-warning-50 px-3 py-2 text-sm text-warning-700">
+                        Dirección de {len} caracteres — Chilexpress trunca la etiqueta a 47. Se
+                        guardará completa, pero la etiqueta impresa solo mostrará los primeros 47.
+                      </p>
+                    );
+                  }}
+                </form.Subscribe>
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <form.Field name="postalCode">
@@ -540,7 +621,7 @@ function StreetAutocomplete({
   }, [inputValue]);
 
   const { data: streetsResponse, isLoading } = useQuery({
-    queryKey: ["cx-streets", countyName, debounced],
+    queryKey: cxKeys.streets(countyName, debounced),
     queryFn: () => searchStreets({ countyName, query: debounced }),
     enabled: countyName.length > 0 && debounced.trim().length >= 2,
     staleTime: 1000 * 60 * 10,

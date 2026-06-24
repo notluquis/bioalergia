@@ -22,7 +22,7 @@ import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
 import { z } from "zod";
-import { getSessionUser, hasPermission } from "../auth.ts";
+import { getSessionUser, hasPermission } from "../lib/auth.ts";
 import { logError } from "../lib/logger.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
 import {
@@ -30,14 +30,14 @@ import {
   createExpenseService,
   deleteExpenseService,
   generateExpensesFromTemplates,
-  getExpense,
+  getExpenseOrThrow,
   getExpenseStats,
-  linkTransaction,
+  linkTransactionOrThrow,
   listExpenseServices,
   listExpenses,
-  unlinkTransaction,
+  unlinkTransactionOrThrow,
   updateExpense,
-  updateExpenseService,
+  updateExpenseServiceOrThrow,
 } from "../services/expenses.ts";
 import { SuperJSONRPCHandler } from "./superjson.ts";
 
@@ -117,12 +117,7 @@ const expensesORPCRouterBase = {
     .input(detailExpenseInputSchema)
     .output(expenseDetailResponseSchema)
     .handler(async ({ input }) => {
-      const expense = await getExpense(input.publicId);
-
-      if (!expense) {
-        throw new ORPCError("NOT_FOUND", { message: "Expense not found" });
-      }
-
+      const expense = await getExpenseOrThrow(input.publicId);
       return { expense, status: "ok" as const };
     }),
 
@@ -140,12 +135,11 @@ const expensesORPCRouterBase = {
     .input(linkTransactionInputSchema)
     .output(expenseLinkResponseSchema)
     .handler(async ({ input }) => {
-      const result = await linkTransaction(input.publicId, input.transactionId, input.amount);
-
-      if (result === null) {
-        throw new ORPCError("NOT_FOUND", { message: "Expense not found" });
-      }
-
+      const result = await linkTransactionOrThrow(
+        input.publicId,
+        input.transactionId,
+        input.amount
+      );
       return { message: `amountApplied updated to ${result}`, status: "ok" as const };
     }),
 
@@ -183,12 +177,7 @@ const expensesORPCRouterBase = {
     .input(unlinkTransactionInputSchema)
     .output(expenseLinkResponseSchema)
     .handler(async ({ input }) => {
-      const result = await unlinkTransaction(input.publicId, input.transactionId);
-
-      if (result === null) {
-        throw new ORPCError("NOT_FOUND", { message: "Expense not found" });
-      }
-
+      const result = await unlinkTransactionOrThrow(input.publicId, input.transactionId);
       return { message: `amountApplied updated to ${result}`, status: "ok" as const };
     }),
 
@@ -238,12 +227,7 @@ const expensesORPCRouterBase = {
     .input(updateServiceInputSchema)
     .output(expenseServiceDetailResponseSchema)
     .handler(async ({ input }) => {
-      const service = await updateExpenseService(input.id, input.payload);
-
-      if (!service) {
-        throw new ORPCError("NOT_FOUND", { message: "ExpenseService not found" });
-      }
-
+      const service = await updateExpenseServiceOrThrow(input.id, input.payload);
       return { service, status: "ok" as const };
     }),
 };

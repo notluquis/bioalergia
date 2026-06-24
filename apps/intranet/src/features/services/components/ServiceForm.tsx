@@ -1,6 +1,5 @@
 import { Button, Description, Form, Switch } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
-import dayjs from "dayjs";
 import { useEffect, useState } from "react";
 import { z } from "zod";
 import { financeORPCClient } from "@/features/finance/orpc";
@@ -58,7 +57,7 @@ const INITIAL_STATE: ServiceFormState = {
   recurrenceType: "RECURRING",
   reminderDaysBefore: 3,
   serviceType: "BUSINESS",
-  startDate: dayjs().toDate(),
+  startDate: new Date(),
   transactionCategoryId: null,
 };
 
@@ -369,7 +368,13 @@ export function ServiceForm({ initialValues, onCancel, onSubmit, submitLabel }: 
   };
 
   return (
-    <Form className="space-y-6" onSubmit={handleSubmit} validationBehavior="aria">
+    <Form
+      className="space-y-6"
+      onSubmit={(e) => {
+        void handleSubmit(e);
+      }}
+      validationBehavior="aria"
+    >
       <BasicInfoSection
         category={form.category}
         categoryOptions={categoryOptions}

@@ -11,15 +11,13 @@ import {
   TextField,
 } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import dayjs from "dayjs";
-import relativeTime from "dayjs/plugin/relativeTime";
 import { Copy, Key, Shield, UserCog, UserPlus } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/features/auth/hooks/use-auth";
 import { useConfirmDialog } from "@/context/ConfirmDialogContext";
 import { useToast } from "@/context/ToastContext";
-import { fetchRoles } from "@/features/roles/api";
+import { roleKeys } from "@/features/roles/queries";
 import {
   deleteUser,
   deleteUserPasskey,
@@ -33,13 +31,8 @@ import {
 import { AddUserFormContainer } from "@/features/users/components/AddUserFormContainer";
 import { getColumns } from "@/features/users/components/columns";
 import type { User } from "@/features/users/types";
+import { Page } from "@/components/layouts/Page";
 import { getPersonFullName } from "@/lib/person";
-import { PAGE_CONTAINER } from "@/lib/styles";
-
-import "dayjs/locale/es";
-
-dayjs.extend(relativeTime);
-dayjs.locale("es");
 
 type RoleOption = { id: number; name: string };
 type UserDetailsFormState = {
@@ -309,10 +302,7 @@ export function UserManagementPage() {
   });
   const users = useMemo(() => usersData ?? [], [usersData]);
 
-  const { data: rolesData } = useQuery({
-    queryFn: fetchRoles,
-    queryKey: ["roles"],
-  });
+  const { data: rolesData } = useQuery(roleKeys.lists());
   const roles = rolesData ?? [];
 
   // Mutations
@@ -399,7 +389,7 @@ export function UserManagementPage() {
   const filteredUsers = useMemo(() => filterUsersByRole(users, roleFilter), [users, roleFilter]);
 
   return (
-    <div className={PAGE_CONTAINER}>
+    <Page>
       {users.length > 0 && <UserSecurityOverview users={users} />}
 
       {/* User Management Table */}
@@ -499,7 +489,9 @@ export function UserManagementPage() {
         onCancel={() => {
           setEditingUser(null);
         }}
-        onSave={handleSaveRole}
+        onSave={(...args) => {
+          void handleSaveRole(...args);
+        }}
         roles={roles}
         selectedRole={selectedRole}
         setSelectedRole={setSelectedRole}
@@ -550,7 +542,7 @@ export function UserManagementPage() {
           }
         }}
       />
-    </div>
+    </Page>
   );
 }
 
@@ -583,7 +575,7 @@ function UserSecurityOverview({ users }: { users: User[] }) {
       <Card className="shadow-sm">
         <Card.Content className="p-5">
           <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <div className="flex items-center justify-center rounded-full bg-primary/10 text-primary size-12">
               <UserCog size={24} />
             </div>
             <div>
@@ -597,7 +589,7 @@ function UserSecurityOverview({ users }: { users: User[] }) {
       <Card className="shadow-sm">
         <Card.Content className="p-5">
           <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-success/10 text-success">
+            <div className="flex items-center justify-center rounded-full bg-success/10 text-success size-12">
               <Shield size={24} />
             </div>
             <div>
@@ -613,7 +605,7 @@ function UserSecurityOverview({ users }: { users: User[] }) {
       <Card className="shadow-sm">
         <Card.Content className="p-5">
           <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-info/10 text-info">
+            <div className="flex items-center justify-center rounded-full bg-info/10 text-info size-12">
               <Key size={24} />
             </div>
             <div>

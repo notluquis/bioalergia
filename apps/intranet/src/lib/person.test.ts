@@ -58,6 +58,16 @@ describe("toTitleCase", () => {
   it("handles 'y' as particle", () => {
     expect(toTitleCase("ROMEO Y JULIETA")).toBe("Romeo y Julieta");
   });
+
+  it("preserves consecutive whitespace as a single separator token", () => {
+    // The split captures `\s+` runs; double space must survive verbatim (kills
+    // the `\s+`→`\s` and separator-regex mutants).
+    expect(toTitleCase("MARIA  JOSE")).toBe("Maria  Jose");
+  });
+
+  it("capitalizes the word after a hyphen separator", () => {
+    expect(toTitleCase("jose-luis del rio")).toBe("Jose-Luis del Rio");
+  });
 });
 
 describe("getPersonFullName", () => {
@@ -94,6 +104,13 @@ describe("getPersonFullName", () => {
   it("trims whitespace from names", () => {
     expect(getPersonFullName({ names: "  Maria  ", fatherName: "  Castro  " })).toBe(
       "Maria Castro"
+    );
+  });
+
+  it("trims whitespace from motherName specifically", () => {
+    // Kills the `motherName?.trim()` mutant — untrimmed would leak inner spaces.
+    expect(getPersonFullName({ names: "Ana", fatherName: "Perez", motherName: "  Vega  " })).toBe(
+      "Ana Perez Vega"
     );
   });
 });
@@ -168,5 +185,12 @@ describe("extractPersonFromResponse", () => {
   it("returns object directly when person key is null", () => {
     const response = { person: null, names: "Eduardo" };
     expect(extractPersonFromResponse(response)).toEqual({ person: null, names: "Eduardo" });
+  });
+
+  it("returns object directly when person key is undefined", () => {
+    // Kills the `response.person !== undefined` mutant — without that guard it
+    // would unwrap to the undefined person instead of returning the response.
+    const response = { person: undefined, names: "Tomas" };
+    expect(extractPersonFromResponse(response)).toEqual({ person: undefined, names: "Tomas" });
   });
 });

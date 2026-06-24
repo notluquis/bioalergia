@@ -3,19 +3,19 @@
 # ==========================================================================
 # Stage 1: Prune monorepo for intranet
 # ==========================================================================
-FROM node:slim AS pruner
+FROM node:26-slim AS pruner
 WORKDIR /app
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 ENV HUSKY=0
 COPY . .
-RUN npm install -g pnpm@10.32.1
+RUN npm install -g pnpm@11.1.1
 RUN TURBO_TELEMETRY_DISABLED=1 pnpm dlx turbo@2.9.1 prune @finanzas/intranet --docker
 
 # ==========================================================================
 # Stage 2: Base deps
 # ==========================================================================
-FROM node:slim AS base
+FROM node:26-slim AS base
 WORKDIR /app
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
@@ -26,7 +26,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
     && rm -rf /var/lib/apt/lists/*
 
-RUN npm install -g pnpm@10.32.1
+RUN npm install -g pnpm@11.1.1
 
 COPY --from=pruner /app/out/json/ .
 COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
@@ -39,10 +39,24 @@ RUN --mount=type=cache,id=s/31aed601-107c-408b-b13e-96b37282ee93-/pnpm/store,tar
 # ==========================================================================
 FROM base AS build
 ARG VITE_APP_BUILD_TIMESTAMP
+ARG VITE_META_APP_ID
+ARG VITE_META_EMBEDDED_SIGNUP_CONFIG_ID
+ARG VITE_VAPID_PUBLIC_KEY
+# Sentry: VITE_SENTRY_DSN is inlined into the bundle (without it initSentry()
+# no-ops and prod runs with zero error reporting); SENTRY_AUTH_TOKEN gates
+# @sentry/vite-plugin's source-map upload. Railway only forwards service
+# vars into the build stage when a matching ARG is declared here.
+ARG VITE_SENTRY_DSN
+ARG SENTRY_AUTH_TOKEN
 COPY --from=pruner /app/out/full/ .
 ENV CI=true
 ENV TURBO_TELEMETRY_DISABLED=1
 ENV VITE_APP_BUILD_TIMESTAMP=${VITE_APP_BUILD_TIMESTAMP}
+ENV VITE_META_APP_ID=${VITE_META_APP_ID}
+ENV VITE_META_EMBEDDED_SIGNUP_CONFIG_ID=${VITE_META_EMBEDDED_SIGNUP_CONFIG_ID}
+ENV VITE_VAPID_PUBLIC_KEY=${VITE_VAPID_PUBLIC_KEY}
+ENV VITE_SENTRY_DSN=${VITE_SENTRY_DSN}
+ENV SENTRY_AUTH_TOKEN=${SENTRY_AUTH_TOKEN}
 RUN --mount=type=cache,id=s/31aed601-107c-408b-b13e-96b37282ee93-/app/.turbo/cache,target=/app/.turbo/cache \
     pnpm turbo run type-check --filter=@finanzas/intranet
 RUN --mount=type=cache,id=s/31aed601-107c-408b-b13e-96b37282ee93-/app/.turbo/cache,target=/app/.turbo/cache \

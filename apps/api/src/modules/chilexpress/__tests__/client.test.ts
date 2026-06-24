@@ -8,6 +8,7 @@ import {
   getStreetNumbers,
   reprintLabel,
   searchStreets,
+  trackBulkTransportOrders,
   trackTransportOrder,
 } from "../client.ts";
 
@@ -261,12 +262,19 @@ describe("chilexpress client", () => {
   });
 
   it("reprintLabel posts transportOrderNumber + parses label", async () => {
+    // Spec: data.detail[] (array) con label anidado en detail[i].label.labelData.
     fetchSpy.mockReturnValueOnce(
       mockJson({
         statusCode: 0,
         data: {
-          detail: { transportOrderNumber: "OT123", reference: "ref", barcode: "BC1" },
-          label: "BASE64==",
+          detail: [
+            {
+              transportOrderNumber: "OT123",
+              reference: "ref",
+              barcode: "BC1",
+              label: { labelData: "BASE64==", labelType: "Binary" },
+            },
+          ],
         },
       })
     );
@@ -283,20 +291,76 @@ describe("chilexpress client", () => {
   it("trackTransportOrder maps event fields", async () => {
     fetchSpy.mockReturnValueOnce(
       mockJson({
+        statusDescription: "Entregado",
         data: {
-          statusCodeReference: "DLV",
-          statusDescription: "Entregado",
-          events: [{ eventDate: "2026-05-08", eventName: "Entregado", eventLocation: "Conce" }],
+          transportOrderData: {
+            status: "ENTREGADO",
+            locationStatus: "Conce",
+            service: "DHS",
+            product: "ENCOMIENDA",
+            certificateNumber: "555",
+            reference: "BIO-1",
+          },
+          addressData: { address: "Maipu 583", destinationCoveragenCode: "PUDA" },
+          deliveryData: { receptorName: "Juan", deliveryDate: "2026-05-08" },
+          trackingEvents: [
+            {
+              eventDate: "2026-05-08",
+              eventHour: "14:32",
+              description: "PIEZA ENTREGADA A DESTINATARIO",
+              location: "Conce",
+              code: { eventCode: "E", clientEventDescription: "Entregado" },
+            },
+          ],
         },
       })
     );
-    const r = await trackTransportOrder(cfg, "OT123");
+    const r = await trackTransportOrder(cfg, {
+      transportOrderNumber: "OT123",
+      reference: "BIO-1",
+      rut: 96756430,
+      showTrackingEvents: 1,
+    });
     expect(r.statusDescription).toBe("Entregado");
+    expect(r.status).toBe("ENTREGADO");
     expect(r.events[0]).toMatchObject({
       date: "2026-05-08",
-      name: "Entregado",
+      hour: "14:32",
+      description: "PIEZA ENTREGADA A DESTINATARIO",
+      clientDescription: "Entregado",
       location: "Conce",
     });
     expect(fetchSpy.mock.calls[0]?.[0]).toContain("/tracking");
+  });
+
+  it("trackBulkTransportOrders maps each entry via the shared mapper", async () => {
+    fetchSpy.mockReturnValueOnce(
+      mockJson({
+        statusDescription: "OK",
+        data: [
+          {
+            transportOrderData: { status: "ENTREGADO", reference: "BIO-1" },
+            trackingEvents: [{ eventDate: "2026-05-08", description: "ENTREGADO" }],
+          },
+          {
+            transportOrderData: { status: "EN RUTA", reference: "BIO-2" },
+            trackingEvents: [],
+          },
+        ],
+      })
+    );
+    const r = await trackBulkTransportOrders(cfg, {
+      rut: 96756430,
+      showTrackingEvents: true,
+      items: [
+        { transportOrderNumber: "OT1", reference: "BIO-1" },
+        { transportOrderNumber: "OT2", reference: "BIO-2" },
+      ],
+    });
+    expect(r).toHaveLength(2);
+    expect(r[0]).toMatchObject({ status: "ENTREGADO", reference: "BIO-1" });
+    expect(r[0]?.events[0]).toMatchObject({ date: "2026-05-08", description: "ENTREGADO" });
+    expect(r[1]).toMatchObject({ status: "EN RUTA", reference: "BIO-2", events: [] });
+    expect(fetchSpy.mock.calls[0]?.[0]).toContain("/tracking/bulk");
   });
 });

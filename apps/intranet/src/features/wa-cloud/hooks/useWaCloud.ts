@@ -1,5 +1,6 @@
+// oxlint-disable typescript/no-non-null-assertion -- TODO(strict-null): refactor each `!` to invariant() or explicit guard. Tracked in repo-wide non-null cleanup.
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { waCloudORPCClient } from "../orpc";
 
 // Mirror of orpc-client's CSRF cookie reader. Multipart uploads bypass the
@@ -168,7 +169,18 @@ export function useSendSingleProduct() {
   });
 }
 
-// Phone migration between WABAs (request OTP + verify).
+// Phone migration between WABAs (add slot → request OTP → verify →
+// register w/ PIN). Meta sequence: POST /WABA_ID/phone_numbers
+// (migrate_phone_number=true) → /PHONE_NUMBER_ID/request_code →
+// /PHONE_NUMBER_ID/verify_code → /PHONE_NUMBER_ID/register.
+export function useAddMigratingPhone() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Parameters<typeof waCloudORPCClient.addMigratingPhone>[0]) =>
+      waCloudORPCClient.addMigratingPhone(input),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: [...KEY, "accounts"] }),
+  });
+}
 export function useRequestPhoneCode() {
   return useMutation({
     mutationFn: (input: Parameters<typeof waCloudORPCClient.requestPhoneCode>[0]) =>
@@ -180,6 +192,14 @@ export function useVerifyPhoneCode() {
   return useMutation({
     mutationFn: (input: Parameters<typeof waCloudORPCClient.verifyPhoneCode>[0]) =>
       waCloudORPCClient.verifyPhoneCode(input),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: [...KEY, "accounts"] }),
+  });
+}
+export function useDeregisterPhone() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Parameters<typeof waCloudORPCClient.deregisterPhone>[0]) =>
+      waCloudORPCClient.deregisterPhone(input),
     onSuccess: () => void qc.invalidateQueries({ queryKey: [...KEY, "accounts"] }),
   });
 }
@@ -289,6 +309,18 @@ export function useMarkRead() {
   });
 }
 
+export function useSetMute() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { conversationId: number; mutedUntil: string | null }) =>
+      waCloudORPCClient.setMute(input),
+    onSuccess: (_, vars) => {
+      void qc.invalidateQueries({ queryKey: [...KEY, "conversation", vars.conversationId] });
+      void qc.invalidateQueries({ queryKey: [...KEY, "conversations"] });
+    },
+  });
+}
+
 export function useUpdateContact() {
   const qc = useQueryClient();
   return useMutation({
@@ -374,6 +406,44 @@ export function useSendSnippet() {
       void qc.invalidateQueries({ queryKey: [...KEY, "conversation", vars.conversationId] });
       void qc.invalidateQueries({ queryKey: [...KEY, "snippets"] });
     },
+  });
+}
+
+// WhatsApp-style stickers: a per-account tray that auto-fills "recientes" as
+// stickers are sent and "guardados" when a received sticker is starred.
+export function useSavedStickers(accountId: number | undefined, tab: "recientes" | "guardados") {
+  return useQuery({
+    queryKey: [...KEY, "saved-stickers", accountId, tab],
+    enabled: Boolean(accountId),
+    queryFn: () => waCloudORPCClient.listSavedStickers({ accountId: accountId!, tab }),
+    staleTime: 30_000,
+  });
+}
+export function useSendSavedSticker() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Parameters<typeof waCloudORPCClient.sendSavedSticker>[0]) =>
+      waCloudORPCClient.sendSavedSticker(input),
+    onSuccess: (_, vars) => {
+      void qc.invalidateQueries({ queryKey: [...KEY, "conversation", vars.conversationId] });
+      void qc.invalidateQueries({ queryKey: [...KEY, "saved-stickers"] });
+    },
+  });
+}
+export function useSaveSticker() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Parameters<typeof waCloudORPCClient.saveSticker>[0]) =>
+      waCloudORPCClient.saveSticker(input),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: [...KEY, "saved-stickers"] }),
+  });
+}
+export function useUnsaveSticker() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Parameters<typeof waCloudORPCClient.unsaveSticker>[0]) =>
+      waCloudORPCClient.unsaveSticker(input),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: [...KEY, "saved-stickers"] }),
   });
 }
 
@@ -620,6 +690,37 @@ export function useSendMedia() {
   });
 }
 
+export function useForwardMessage() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Parameters<typeof waCloudORPCClient.forwardMessage>[0]) =>
+      waCloudORPCClient.forwardMessage(input),
+    onSuccess: (_, vars) => {
+      void qc.invalidateQueries({
+        queryKey: [...KEY, "conversation", vars.targetConversationId],
+      });
+      void qc.invalidateQueries({ queryKey: [...KEY, "conversations"] });
+    },
+  });
+}
+
+// Turn a failed upload Response into a short, human Spanish message. Gateways
+// (Railway/Caddy) answer 5xx with a full HTML error page — never surface that
+// raw HTML in a toast. Prefer a JSON `{error}` body, else map by status.
+async function uploadErrorMessage(res: Response): Promise<string> {
+  const ct = res.headers.get("content-type") ?? "";
+  if (ct.includes("application/json")) {
+    const j = (await res.json().catch(() => null)) as { error?: string; message?: string } | null;
+    const msg = j?.error ?? j?.message;
+    if (msg) return msg;
+  }
+  if (res.status === 413) return "El archivo es demasiado grande.";
+  if (res.status === 415) return "Tipo de archivo no soportado.";
+  if (res.status === 401 || res.status === 403) return "Sesión expirada. Recarga la página.";
+  if (res.status >= 500) return "El servidor no está disponible. Intenta de nuevo en un momento.";
+  return `No se pudo subir el archivo (${res.status}).`;
+}
+
 export async function uploadWaMedia(
   file: File,
   phoneNumberId: number
@@ -634,8 +735,7 @@ export async function uploadWaMedia(
     headers: csrfHeaders(),
   });
   if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`Upload failed (${res.status}): ${text.slice(0, 200)}`);
+    throw new Error(await uploadErrorMessage(res));
   }
   return res.json();
 }
@@ -695,6 +795,9 @@ export function useScheduleMessage() {
       waCloudORPCClient.scheduleMessage(input),
     onSuccess: (_, vars) => {
       void qc.invalidateQueries({ queryKey: [...KEY, "scheduled", vars.conversationId] });
+      // "scheduled-all" (global view) is a disjoint sibling key, not covered by
+      // the per-conversation prefix above — invalidate it explicitly.
+      void qc.invalidateQueries({ queryKey: [...KEY, "scheduled-all"] });
     },
   });
 }
@@ -712,7 +815,11 @@ export function useCancelScheduled() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: number) => waCloudORPCClient.cancelScheduled({ id }),
-    onSuccess: () => void qc.invalidateQueries({ queryKey: [...KEY, "scheduled"] }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: [...KEY, "scheduled"] });
+      // Plus the disjoint global view (sibling key, not a prefix match above).
+      void qc.invalidateQueries({ queryKey: [...KEY, "scheduled-all"] });
+    },
   });
 }
 
@@ -817,6 +924,42 @@ export function useSetTyping() {
   return useMutation({
     mutationFn: (conversationId: number) => waCloudORPCClient.setTyping({ conversationId }),
   });
+}
+
+// Collision detection for the shared inbox: subscribes to the SSE "typing"
+// event (which now carries the typer's identity) and exposes the OTHER agent
+// currently composing, so the header can warn "Andrea está respondiendo…".
+// Ignores our own typing and auto-expires after 6s of silence.
+export function useTypingPresence(
+  conversationId: number | undefined,
+  currentUserId: number | undefined
+): { userId: number; userName: string } | null {
+  const [typing, setTyping] = useState<{ userId: number; userName: string } | null>(null);
+  useEffect(() => {
+    if (!conversationId) return;
+    const es = new EventSource(`/api/wa-cloud/sse/${conversationId}`, { withCredentials: true });
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    es.addEventListener("typing", (e) => {
+      try {
+        const data = JSON.parse((e as MessageEvent).data) as {
+          userId?: number;
+          userName?: string;
+        };
+        if (!data.userId || (currentUserId && data.userId === currentUserId)) return;
+        setTyping({ userId: data.userId, userName: data.userName ?? "Alguien del equipo" });
+        if (timer) clearTimeout(timer);
+        timer = setTimeout(() => setTyping(null), 6000);
+      } catch {
+        // ignore malformed events
+      }
+    });
+    return () => {
+      es.close();
+      if (timer) clearTimeout(timer);
+      setTyping(null);
+    };
+  }, [conversationId, currentUserId]);
+  return typing;
 }
 
 export function useConversationAnalytics(

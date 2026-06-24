@@ -1,9 +1,6 @@
-import dayjs from "dayjs";
-import isoWeek from "dayjs/plugin/isoWeek";
+import { addDays, diffDays, isoWeekday, today, weekday } from "@/lib/dates";
 
-dayjs.extend(isoWeek);
-
-import type { CalendarFilters } from "../types";
+import type { CalendarFilters, CalendarSearchParams } from "../types";
 
 export const unique = (values: string[]) =>
   [...new Set(values)].toSorted((a, b) => a.localeCompare(b));
@@ -64,31 +61,90 @@ export const computeDefaultFilters = (settings: {
   const configuredMax =
     Number.isFinite(defaultMax) && defaultMax > 0 ? Math.min(Math.floor(defaultMax), 365) : 28;
   // Default to ±2 weeks from today for faster initial load
-  const defaultFrom = dayjs().subtract(2, "week");
-  const defaultTo = dayjs().add(2, "week");
-  const startDate = dayjs(syncStart);
-  const from = startDate.isValid() && startDate.isAfter(defaultFrom) ? startDate : defaultFrom;
-  const maxForward = dayjs().add(lookahead, "day");
-  const toCandidate = defaultTo.isAfter(maxForward) ? maxForward : defaultTo;
-  const spanDays = Math.max(1, toCandidate.diff(from, "day") + 1);
+  const todayStr = today();
+  const defaultFrom = addDays(todayStr, -14);
+  const defaultTo = addDays(todayStr, 14);
+  const startValid = /^\d{4}-\d{2}-\d{2}$/.test(syncStart);
+  // ISO "YYYY-MM-DD" strings compare lexicographically == chronologically.
+  const from = startValid && syncStart > defaultFrom ? syncStart : defaultFrom;
+  const maxForward = addDays(todayStr, lookahead);
+  const toCandidate = defaultTo > maxForward ? maxForward : defaultTo;
+  const spanDays = Math.max(1, diffDays(toCandidate, from) + 1);
   const maxDays = Math.min(Math.max(spanDays, configuredMax), 365);
   return {
     calendarIds: [],
     categories: [],
-    from: from.format("YYYY-MM-DD"),
+    from,
     maxDays,
     search: "",
-    to: toCandidate.format("YYYY-MM-DD"),
+    to: toCandidate,
   };
 };
 
-export function getScheduleDefaultRange() {
-  const now = dayjs();
-  // If it's Sunday, jump to the next week's Monday
-  const base = now.day() === 0 ? now.add(1, "day") : now;
-  const start = base.isoWeekday(1);
+/**
+ * Resolves effective calendar filters from URL search params layered over a
+ * set of defaults (Source of Truth: URL > Defaults). A `date` param expands to
+ * a window of `maxDays` centered on that date. Shared by the calendar hook AND
+ * the route loaders so the prefetched query key matches what the component
+ * fetches (a divergent loader key wastes the prefetch).
+ */
+export function deriveEffectiveFilters(
+  search: CalendarSearchParams,
+  filters: CalendarFilters
+): CalendarFilters {
+  const dateParam = search.date && /^\d{4}-\d{2}-\d{2}$/.test(search.date) ? search.date : null;
+  const maxDaysRaw = search.maxDays ?? filters.maxDays;
+  const maxDays =
+    Number.isFinite(maxDaysRaw) && maxDaysRaw > 0 ? Math.min(Math.floor(maxDaysRaw), 120) : 31;
+
+  const dateWindow = dateParam
+    ? (() => {
+        const half = Math.floor((maxDays - 1) / 2);
+        const from = addDays(dateParam, -half);
+        const to = addDays(dateParam, maxDays - half - 1);
+        return { from, to };
+      })()
+    : null;
+
+  const routeFrom = search.from ?? (dateWindow ? dateWindow.from : filters.from);
+  const routeTo = search.to ?? (dateWindow ? dateWindow.to : filters.to);
+
   return {
-    from: start.format("YYYY-MM-DD"),
-    to: start.add(5, "day").format("YYYY-MM-DD"),
+    beneficiaryRut: search.beneficiaryRut ?? filters.beneficiaryRut,
+    calendarIds: search.calendarId ?? filters.calendarIds,
+    categories: search.category?.length ? search.category : filters.categories,
+    clinicalSeriesId: search.clinicalSeriesId ?? filters.clinicalSeriesId,
+    from: routeFrom,
+    maxDays,
+    patientName: search.patientName ?? filters.patientName,
+    patientRut: search.patientRut ?? filters.patientRut,
+    search: search.search ?? filters.search,
+    seriesKind: search.seriesKind ?? filters.seriesKind,
+    seriesStatus: search.seriesStatus ?? filters.seriesStatus,
+    to: routeTo,
+  };
+}
+
+/**
+ * One-call filter builder: defaults from `settings`, then URL overrides.
+ * Use in route loaders (`buildCalendarFilters(search, {})` — settings aren't
+ * loader-available, the empty-settings defaults match the hook for the common
+ * case) and anywhere the calendar query filters are derived.
+ */
+export function buildCalendarFilters(
+  search: CalendarSearchParams,
+  settings: Parameters<typeof computeDefaultFilters>[0]
+): CalendarFilters {
+  return deriveEffectiveFilters(search, computeDefaultFilters(settings));
+}
+
+export function getScheduleDefaultRange() {
+  const now = today();
+  // If it's Sunday, jump to the next week's Monday
+  const base = weekday(now) === 0 ? addDays(now, 1) : now;
+  const start = addDays(base, -(isoWeekday(base) - 1));
+  return {
+    from: start,
+    to: addDays(start, 5),
   };
 }

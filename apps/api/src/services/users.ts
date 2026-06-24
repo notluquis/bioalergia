@@ -1,84 +1,260 @@
-/**
- * User Service for Hono API
- * User lookup and role management
- */
-
 import { db } from "@finanzas/db";
+import type {
+  updateOwnProfileSchema,
+  updateStatusSchema,
+  updateUserProfileSchema,
+} from "@finanzas/orpc-contracts/users";
+import { sql } from "kysely";
+import type { z } from "zod";
+import { DomainError } from "../lib/errors.ts";
+import { normalizeRut } from "../lib/rut.ts";
 
-export async function findUserByEmail(email: string) {
-  const normalizedEmail = email.toLowerCase().trim();
-  const rows = await db.$queryRaw<Array<{ id: number }>>`
-    SELECT u.id
-    FROM users u
-    JOIN people p ON p.id = u.person_id
-    WHERE lower(coalesce(nullif(u.login_email, ''), p.email)) = lower(${normalizedEmail})
-    LIMIT 1
-  `;
+// Lógica de negocio de usuarios, fuera de los handlers oRPC. Los servicios
+// validan y lanzan DomainError (mapeado a HTTP por orpc/error.ts::toORPCError
+// vía el SuperJSONRPCHandler); los handlers quedan finos. Mantener el
+// db.$transaction acá (service layer, contexto de tipos liviano) evita el
+// TS2321 "Excessive stack depth" del TransactionClientContract profundo.
 
-  const userId = rows[0]?.id;
-  if (!userId) {
+type UpdateUserProfilePayload = z.infer<typeof updateUserProfileSchema>;
+type UpdateOwnProfilePayload = z.infer<typeof updateOwnProfileSchema>;
+type UserStatus = z.infer<typeof updateStatusSchema>["status"];
+
+export function normalizeEmail(value: string): string {
+  return value.toLowerCase().trim();
+}
+
+export function toNullableText(value: null | string | undefined): null | string {
+  if (typeof value !== "string") {
     return null;
   }
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
 
-  return await db.user.findUnique({
+// Nombre para mostrar de un operador (p.ej. "Andrea está respondiendo…" en la
+// bandeja compartida de WhatsApp). Una sola query: arma el nombre desde
+// person.names (+ apellidos), y si no hay persona/nombre cae al local-part del
+// email provisto por la sesión. Nunca lanza: best-effort para hints de UI.
+export async function resolveUserDisplayName(
+  userId: number,
+  fallbackEmail: string
+): Promise<string> {
+  const fallback = fallbackEmail.split("@")[0]?.trim() || `Usuario ${userId}`;
+  const user = await db.user.findUnique({
     where: { id: userId },
-    include: {
-      person: true,
-      roles: { include: { role: true } },
-    },
+    select: { person: { select: { names: true, fatherName: true, motherName: true } } },
   });
+  if (!user?.person) return fallback;
+  const full = [user.person.names, user.person.fatherName, user.person.motherName]
+    .filter((part): part is string => typeof part === "string" && part.trim().length > 0)
+    .join(" ")
+    .trim();
+  return full.length > 0 ? full : fallback;
 }
 
-export async function findUserById(id: number) {
-  return await db.user.findUnique({
-    where: { id },
-    include: {
-      person: true,
-      roles: { include: { role: true } },
-    },
-  });
+// Busca un usuario cuyo login efectivo (login_email, o el email de la persona si
+// aquel es vacío) coincide, excluyendo opcionalmente un userId.
+export async function findUserByEffectiveLoginEmail(
+  email: string,
+  excludeUserId?: number
+): Promise<{ id: number } | null> {
+  // login_email gana si no es vacío; si no, cae a person.email (case-insensitive).
+  // Dentro del sql`` fragment las columnas son físicas (snake_case); el builder
+  // usa nombres de modelo camelCase. Espeja orpc/auth.ts::findUserByLoginIdentifier.
+  let query = db.$qb
+    .selectFrom("User as u")
+    .innerJoin("Person as p", "p.id", "u.personId")
+    .select("u.id as id")
+    .where(sql<boolean>`lower(coalesce(nullif(u.login_email, ''), p.email)) = lower(${email})`)
+    .limit(1);
+  if (excludeUserId) {
+    query = query.where("u.id", "!=", excludeUserId);
+  }
+  const row = await query.executeTakeFirst();
+  return row ?? null;
 }
 
-export async function updateUserMfa(userId: number, secret: string | null, enabled: boolean) {
-  return await db.user.update({
+// Edición admin de perfil (admin tool): valida unicidad de email/RUT/login y
+// persiste persona + empleado + flags en una transacción.
+export async function updateUserProfile(
+  userId: number,
+  payload: UpdateUserProfilePayload
+): Promise<void> {
+  const targetUser = await db.user.findUnique({
     where: { id: userId },
-    data: { mfaSecret: secret, mfaEnabled: enabled },
+    include: { person: { include: { employee: true } } },
   });
-}
-
-export function resolveUserRole(user: { roles?: Array<{ role?: { name: string } }> }): string[] {
-  if (user.roles && Array.isArray(user.roles)) {
-    return user.roles.map((r) => r.role?.name).filter((r): r is string => Boolean(r));
-  }
-  return [];
-}
-
-export async function assignUserRole(userId: number, roleName: string) {
-  const role = await db.role.findUnique({ where: { name: roleName } });
-  if (!role) {
-    throw new Error(`Rol '${roleName}' no encontrado.`);
+  if (!targetUser) {
+    throw new DomainError("NOT_FOUND", "Usuario no encontrado");
   }
 
-  // Remove existing roles
-  await db.userRoleAssignment.deleteMany({ where: { userId } });
+  const notificationEmailInput = payload.notificationEmail ?? payload.email;
+  if (!notificationEmailInput) {
+    throw new DomainError("BAD_REQUEST", "Email de notificación requerido");
+  }
 
-  // Assign new role
-  await db.userRoleAssignment.create({
-    data: { userId, roleId: role.id },
-  });
+  const normalizedNotificationEmail = normalizeEmail(notificationEmailInput);
+  const normalizedLoginEmail = payload.loginEmail ? normalizeEmail(payload.loginEmail) : null;
+  const explicitLoginEmail =
+    normalizedLoginEmail && normalizedLoginEmail !== normalizedNotificationEmail
+      ? normalizedLoginEmail
+      : null;
+  const effectiveLoginEmail = explicitLoginEmail ?? normalizedNotificationEmail;
+  const normalizedRut = normalizeRut(payload.rut);
+  if (!normalizedRut) {
+    throw new DomainError("BAD_REQUEST", "RUT inválido");
+  }
 
-  return role;
-}
+  const [conflictingEmail, conflictingRut, conflictingLogin] = await Promise.all([
+    db.person.findFirst({
+      where: { email: normalizedNotificationEmail, NOT: { id: targetUser.personId } },
+      select: { id: true },
+    }),
+    db.person.findFirst({
+      where: { rut: normalizedRut, NOT: { id: targetUser.personId } },
+      select: { id: true },
+    }),
+    findUserByEffectiveLoginEmail(effectiveLoginEmail, userId),
+  ]);
 
-export async function findUsersByRoleIds(roleIds: number[]) {
-  return await db.user.findMany({
-    where: {
-      roles: {
-        some: {
-          roleId: { in: roleIds },
-        },
+  if (conflictingEmail) {
+    throw new DomainError("CONFLICT", "El correo de notificación ya está en uso por otro usuario");
+  }
+  if (conflictingRut) {
+    throw new DomainError("CONFLICT", "El RUT ya está en uso por otro usuario");
+  }
+  if (conflictingLogin) {
+    throw new DomainError("CONFLICT", "El correo de login ya está en uso");
+  }
+
+  await db.$transaction(async (tx) => {
+    await tx.person.update({
+      where: { id: targetUser.personId },
+      data: {
+        email: normalizedNotificationEmail,
+        fatherName: toNullableText(payload.fatherName),
+        motherName: toNullableText(payload.motherName),
+        names: payload.names.trim(),
+        phone: toNullableText(payload.phone),
+        rut: normalizedRut,
       },
-    },
-    include: { person: true },
+    });
+
+    await tx.employee.upsert({
+      where: { personId: targetUser.personId },
+      create: {
+        personId: targetUser.personId,
+        position: payload.position.trim(),
+        department: toNullableText(payload.department),
+        startDate: targetUser.person.employee?.startDate ?? new Date(),
+        status: targetUser.person.employee?.status ?? "ACTIVE",
+        bankName: toNullableText(payload.bankName),
+        bankAccountType: toNullableText(payload.bankAccountType),
+        bankAccountNumber: toNullableText(payload.bankAccountNumber),
+      },
+      update: {
+        position: payload.position.trim(),
+        department: toNullableText(payload.department),
+        bankName: toNullableText(payload.bankName),
+        bankAccountType: toNullableText(payload.bankAccountType),
+        bankAccountNumber: toNullableText(payload.bankAccountNumber),
+      },
+    });
+
+    if (typeof payload.mfaEnforced === "boolean") {
+      await tx.user.update({
+        where: { id: userId },
+        data: { mfaEnforced: payload.mfaEnforced },
+      });
+    }
+
+    await tx.user.update({
+      where: { id: userId },
+      data: { loginEmail: explicitLoginEmail },
+    });
+  });
+}
+
+// Self-service (cuenta propia): no toca email/rut/mfa; position solo en create.
+export async function updateOwnProfile(
+  userId: number,
+  payload: UpdateOwnProfilePayload
+): Promise<void> {
+  const user = await db.user.findUnique({
+    where: { id: userId },
+    include: { person: { include: { employee: true } } },
+  });
+  if (!user || !user.person) {
+    throw new DomainError("NOT_FOUND", "Usuario no encontrado");
+  }
+
+  const normalizedNotificationEmail = normalizeEmail(user.person.email ?? "");
+  const normalizedLoginEmail = payload.loginEmail ? normalizeEmail(payload.loginEmail) : null;
+  const explicitLoginEmail =
+    normalizedLoginEmail && normalizedLoginEmail !== normalizedNotificationEmail
+      ? normalizedLoginEmail
+      : null;
+  const effectiveLoginEmail = explicitLoginEmail ?? normalizedNotificationEmail;
+
+  if (effectiveLoginEmail) {
+    const conflictingLogin = await findUserByEffectiveLoginEmail(effectiveLoginEmail, userId);
+    if (conflictingLogin) {
+      throw new DomainError("CONFLICT", "El correo de login ya está en uso");
+    }
+  }
+
+  await db.$transaction(async (tx) => {
+    await tx.person.update({
+      where: { id: user.personId },
+      data: {
+        names: payload.names.trim(),
+        fatherName: toNullableText(payload.fatherName),
+        motherName: toNullableText(payload.motherName),
+        phone: toNullableText(payload.phone),
+      },
+    });
+
+    await tx.employee.upsert({
+      where: { personId: user.personId },
+      create: {
+        personId: user.personId,
+        position: user.person.employee?.position ?? "Por definir",
+        startDate: user.person.employee?.startDate ?? new Date(),
+        status: user.person.employee?.status ?? "ACTIVE",
+        bankName: toNullableText(payload.bankName),
+        bankAccountType: toNullableText(payload.bankAccountType),
+        bankAccountNumber: toNullableText(payload.bankAccountNumber),
+      },
+      update: {
+        bankName: toNullableText(payload.bankName),
+        bankAccountType: toNullableText(payload.bankAccountType),
+        bankAccountNumber: toNullableText(payload.bankAccountNumber),
+      },
+    });
+
+    await tx.user.update({
+      where: { id: userId },
+      data: { loginEmail: explicitLoginEmail },
+    });
+  });
+}
+
+// Cambio de estado de usuario (incrementa sessionVersion → invalida sesiones;
+// limpia MFA/passkeys al volver a PENDING_SETUP). El guard de "no tu propia
+// cuenta" queda en el handler (necesita el id del solicitante).
+export async function updateUserStatus(userId: number, status: UserStatus): Promise<void> {
+  await db.$transaction(async (tx) => {
+    await tx.user.update({
+      where: { id: userId },
+      data: {
+        status,
+        sessionVersion: { increment: 1 },
+        ...(status === "PENDING_SETUP" ? { mfaEnabled: false, mfaSecret: null } : {}),
+      },
+    });
+
+    if (status === "PENDING_SETUP") {
+      await tx.passkey.deleteMany({ where: { userId } });
+    }
   });
 }

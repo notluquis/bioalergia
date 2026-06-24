@@ -1,29 +1,30 @@
 import { db } from "@finanzas/db";
 import { Hono } from "hono";
-import { doctoraliaScraperApiToken } from "../config.ts";
+import { timingSafeEqual } from "node:crypto";
+import { doctoraliaScraperApiToken } from "../lib/config.ts";
 import type { DoctoraliaCalendarResponse } from "../lib/doctoralia/doctoralia-calendar-types.ts";
 import { logError, logEvent } from "../lib/logger.ts";
 import { doctoraliaCalendarSyncService } from "../services/doctoralia-calendar.ts";
 import { consumeDoctoraliaScraperForceRun } from "../services/doctoralia-scraper-run-control.ts";
+import {
+  decodeStoredCookies,
+  encodeStoredCookies,
+  type StoredCookie,
+} from "../lib/doctoralia/cookie-store-codec.ts";
 
 export const doctoraliaScraperRoutes = new Hono();
 
-type StoredCookie = {
-  name: string;
-  value: string;
-  domain?: string;
-  path?: string;
-  expires?: number;
-};
-
 const DEFAULT_LABEL = "default";
 
+// Comparación timing-safe (golden 2026): `===` filtra timing del token.
 function bearerMatches(header: string | undefined | null): boolean {
-  if (!doctoraliaScraperApiToken) return false;
-  if (!header) return false;
+  if (!doctoraliaScraperApiToken || !header) return false;
   const m = header.match(/^Bearer\s+(.+)$/i);
   if (!m) return false;
-  return m[1].trim() === doctoraliaScraperApiToken;
+  const a = Buffer.from(m[1].trim());
+  const b = Buffer.from(doctoraliaScraperApiToken);
+  if (a.length !== b.length) return false;
+  return timingSafeEqual(a, b);
 }
 
 doctoraliaScraperRoutes.use("*", async (c, next) => {
@@ -44,7 +45,7 @@ doctoraliaScraperRoutes.get("/cookies", async (c) => {
     return c.json({ error: "not_found", label }, 404);
   }
 
-  const cookies = (store.cookiesJson as unknown as StoredCookie[]) ?? [];
+  const cookies = decodeStoredCookies(store.cookiesJson);
 
   await db.doctoraliaCookieStore.update({
     where: { id: store.id },
@@ -78,15 +79,16 @@ doctoraliaScraperRoutes.post("/cookies", async (c) => {
   }
 
   try {
+    const encrypted = encodeStoredCookies(parsed.cookies);
     const store = await db.doctoraliaCookieStore.upsert({
       where: { label: parsed.label },
       create: {
         label: parsed.label,
-        cookiesJson: parsed.cookies,
+        cookiesJson: encrypted,
         lastUsedAt: new Date(),
       },
       update: {
-        cookiesJson: parsed.cookies,
+        cookiesJson: encrypted,
         lastUsedAt: new Date(),
       },
     });
@@ -100,7 +102,12 @@ doctoraliaScraperRoutes.post("/cookies", async (c) => {
     return c.json({ status: "ok", label: store.label, count: parsed.cookies.length });
   } catch (err) {
     logError("doctoralia.scraper.cookies.update_failed", err);
-    return c.json({ error: "update_failed" }, 500);
+    // Exponer el mensaje real (endpoint interno con token) → diagnosticar sin
+    // tener que escarbar logs del API. Si el sanitize no alcanzó, acá se ve.
+    return c.json(
+      { error: "update_failed", detail: err instanceof Error ? err.message : String(err) },
+      500
+    );
   }
 });
 
@@ -188,14 +195,18 @@ function parseCookiesBody(body: unknown): { label: string; cookies: StoredCookie
     typeof raw.label === "string" && raw.label.trim() ? raw.label.trim() : DEFAULT_LABEL;
   const cookies = raw.cookies;
   if (!Array.isArray(cookies)) return null;
+  // Postgres jsonb rechaza null bytes y chars de control en strings -> upsert 500.
+  // Las cookies de browser (datadog, tokens) pueden traerlos. Sanitizar.
+  const stripCtrl = (s: string): string =>
+    [...s].filter((ch) => ch.charCodeAt(0) > 31 && ch.charCodeAt(0) !== 127).join("");
   const normalized: StoredCookie[] = [];
   for (const c of cookies) {
     if (!c || typeof c !== "object") continue;
     const obj = c as Record<string, unknown>;
     if (typeof obj.name !== "string" || typeof obj.value !== "string") continue;
     normalized.push({
-      name: obj.name,
-      value: obj.value,
+      name: stripCtrl(obj.name),
+      value: stripCtrl(obj.value),
       domain: typeof obj.domain === "string" ? obj.domain : undefined,
       path: typeof obj.path === "string" ? obj.path : undefined,
       expires: typeof obj.expires === "number" ? obj.expires : undefined,

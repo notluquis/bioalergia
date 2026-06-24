@@ -1,4 +1,5 @@
-import { Button, Card, Chip, Modal, Spinner } from "@heroui/react";
+import { Button, Card, Chip, Modal } from "@heroui/react";
+import { WaSettingsSkeleton } from "../components/shared/Skeletons";
 import {
   Check,
   Copy,
@@ -15,11 +16,11 @@ import {
 import { useState } from "react";
 import { TextInput } from "@/features/outreach/components/FormField";
 import { toast } from "@/lib/toast-interceptor";
-import { CommerceCatalogCard } from "../components/CommerceCatalogCard";
-import { ConversationalAutomationCard } from "../components/ConversationalAutomationCard";
-import { EmbeddedSignupButton } from "../components/EmbeddedSignupButton";
-import { PhoneMigrationCard } from "../components/PhoneMigrationCard";
-import { PhoneToolsModal } from "../components/PhoneToolsModal";
+import { CommerceCatalogCard } from "../components/settings/CommerceCatalogCard";
+import { ConversationalAutomationCard } from "../components/settings/ConversationalAutomationCard";
+import { EmbeddedSignupButton } from "../components/settings/EmbeddedSignupButton";
+import { PhoneMigrationCard } from "../components/settings/PhoneMigrationCard";
+import { PhoneToolsModal } from "../components/modals/PhoneToolsModal";
 import {
   useAccounts,
   useDeleteAccount,
@@ -45,11 +46,7 @@ export function WaCloudSettingsPage() {
   const [createOpen, setCreateOpen] = useState(false);
 
   if (accounts.isLoading || !accounts.data) {
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <Spinner />
-      </div>
-    );
+    return <WaSettingsSkeleton />;
   }
 
   const webhookBase =
@@ -57,13 +54,16 @@ export function WaCloudSettingsPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 p-6">
-      <div className="flex justify-end gap-2">
+      <div className="flex flex-wrap justify-end gap-2">
+        <EmbeddedSignupButton variant="coexistence" />
         <EmbeddedSignupButton />
         <Button onPress={() => setCreateOpen(true)}>
           <Plus size={16} />
           Nueva cuenta WABA
         </Button>
       </div>
+
+      <CoexistenceNotice />
 
       <WebhookCard url={webhookBase} />
 
@@ -83,6 +83,42 @@ export function WaCloudSettingsPage() {
 
       <CreateAccountModal isOpen={createOpen} onClose={() => setCreateOpen(false)} />
     </div>
+  );
+}
+
+function CoexistenceNotice() {
+  return (
+    <Card>
+      <Card.Header>
+        <div className="flex items-center gap-2 text-sm font-medium">
+          <ShieldCheck size={16} className="text-warning-600" />
+          Coexistence — requisitos previos
+        </div>
+      </Card.Header>
+      <Card.Content className="space-y-2 text-default-600 text-sm">
+        <ul className="list-disc space-y-1 pl-5">
+          <li>
+            App WhatsApp Business <strong>v2.24.17 o superior</strong> en el celular del usuario.
+          </li>
+          <li>El número debe permanecer en la app; no se desregistra del SIM.</li>
+          <li>
+            Throughput limitado a <strong>5 mensajes/seg</strong> (vs. tier estándar de Cloud API).
+          </li>
+          <li>
+            Historial: hasta <strong>6 meses</strong> sincronizan vía webhook <code>history</code>.
+          </li>
+          <li>
+            El operador debe abrir la app al menos <strong>cada 13 días</strong> para mantener la
+            sincronización.
+          </li>
+          <li>
+            Mensajes salientes desde el celular llegan a Cloud API vía <code>message_echoes</code>{" "}
+            (ya soportado).
+          </li>
+          <li>No disponible en EU/EEA.</li>
+        </ul>
+      </Card.Content>
+    </Card>
   );
 }
 
@@ -106,7 +142,13 @@ function WebhookCard({ url }: { url: string }) {
       <Card.Content>
         <div className="flex items-center gap-2 rounded-lg bg-default-100 p-2">
           <code className="flex-1 truncate px-2 font-mono text-xs">{url}</code>
-          <Button size="sm" variant={copied ? "secondary" : "outline"} onPress={copy}>
+          <Button
+            size="sm"
+            variant={copied ? "secondary" : "outline"}
+            onPress={() => {
+              void copy();
+            }}
+          >
             {copied ? <Check size={14} /> : <Copy size={14} />}
             {copied ? "Copiado" : "Copiar"}
           </Button>
@@ -396,7 +438,9 @@ function CredentialsModal({
                       <Button
                         size="sm"
                         variant="secondary"
-                        onPress={() => saveLabel(p.id, p.phoneNumberId, p.displayPhoneNumber)}
+                        onPress={() => {
+                          void saveLabel(p.id, p.phoneNumberId, p.displayPhoneNumber);
+                        }}
                       >
                         Guardar
                       </Button>
@@ -410,7 +454,12 @@ function CredentialsModal({
                 <X size={14} />
                 Cancelar
               </Button>
-              <Button onPress={save} isPending={upsert.isPending}>
+              <Button
+                onPress={() => {
+                  void save();
+                }}
+                isPending={upsert.isPending}
+              >
                 <Check size={14} />
                 Guardar credenciales
               </Button>
@@ -496,7 +545,9 @@ function PhoneAddModal({
                 Cancelar
               </Button>
               <Button
-                onPress={save}
+                onPress={() => {
+                  void save();
+                }}
                 isPending={upPhone.isPending}
                 isDisabled={!phoneNumberId || !displayPhone}
               >
@@ -606,7 +657,13 @@ function CreateAccountModal({ isOpen, onClose }: { isOpen: boolean; onClose: () 
               >
                 Cancelar
               </Button>
-              <Button onPress={save} isPending={upsert.isPending} isDisabled={!draft.wabaId}>
+              <Button
+                onPress={() => {
+                  void save();
+                }}
+                isPending={upsert.isPending}
+                isDisabled={!draft.wabaId}
+              >
                 <Plus size={14} />
                 Crear cuenta
               </Button>

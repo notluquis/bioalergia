@@ -1,6 +1,6 @@
 import { Chip, Skeleton, Tooltip } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
-import dayjs from "dayjs";
+import { formatChile } from "@/lib/dates";
 import { useCan } from "@/hooks/use-can";
 import { systemQueries } from "@/features/system/queries";
 import type { RailwayDeploymentStatus, RailwayDeploymentTarget } from "@/features/system/types";
@@ -49,14 +49,14 @@ function statusLabel(status: RailwayDeploymentStatus) {
 function formatRelativeAge(date: Date | null) {
   if (!date) return "sin hora";
 
-  const minutes = Math.max(0, dayjs().diff(dayjs(date), "minute"));
+  const minutes = Math.max(0, Math.floor((Date.now() - new Date(date).getTime()) / 60_000));
   if (minutes < 1) return "recién";
   if (minutes < 60) return `hace ${minutes} min`;
 
-  const hours = Math.max(0, dayjs().diff(dayjs(date), "hour"));
+  const hours = Math.max(0, Math.floor((Date.now() - new Date(date).getTime()) / 3_600_000));
   if (hours < 24) return `hace ${hours} h`;
 
-  const days = Math.max(0, dayjs().diff(dayjs(date), "day"));
+  const days = Math.max(0, Math.floor((Date.now() - new Date(date).getTime()) / 86_400_000));
   return `hace ${days} d`;
 }
 
@@ -119,7 +119,7 @@ export function DeploymentStatusChip({ compact = false }: Readonly<DeploymentSta
   const color = summaryColor(targets, configured, errorMessage);
 
   const content = (
-    <Chip color={color} size={compact ? "sm" : "md"} variant="soft">
+    <Chip color={color} size={compact ? "sm" : "md"} variant="primary">
       {label}
     </Chip>
   );
@@ -133,7 +133,7 @@ export function DeploymentStatusChip({ compact = false }: Readonly<DeploymentSta
     );
   }
 
-  const checkedAt = data?.checkedAt ? dayjs(data.checkedAt).tz().format("DD-MM-YYYY HH:mm") : null;
+  const checkedAt = data?.checkedAt ? formatChile(data.checkedAt, "DD-MM-YYYY HH:mm") : null;
   const activeTargets = targets.filter((target) => isActiveStatus(target.status));
   const problemTargets = targets.filter((target) => isProblemStatus(target.status));
   const stableTargets = targets.filter(

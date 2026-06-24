@@ -8,7 +8,7 @@ import { EventEmitter } from "node:events";
 export type WaConversationEvent =
   | { kind: "message"; messageId: number; direction: "INBOUND" | "OUTBOUND"; ts: number }
   | { kind: "status"; metaMessageId: string; status: string; ts: number }
-  | { kind: "typing"; ts: number }
+  | { kind: "typing"; ts: number; userId: number; userName: string }
   | { kind: "reaction"; metaMessageId: string; emoji: string; ts: number }
   | { kind: "deleted"; metaMessageId: string; ts: number };
 

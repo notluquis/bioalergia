@@ -2,9 +2,23 @@ import { Button, Card, Label, ListBox, Select } from "@heroui/react";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import type { AnyRoute } from "@tanstack/react-router";
 import { useRouter } from "@tanstack/react-router";
-import { Plus, RotateCw, Shield } from "lucide-react";
+import {
+  Calendar as CalendarIcon,
+  FileText,
+  Heart,
+  MessageSquare,
+  Package,
+  Plus,
+  Plug,
+  RotateCw,
+  Settings as SettingsIcon,
+  Shield,
+  Stethoscope,
+  Users,
+  Wallet,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/features/auth/hooks/use-auth";
 import { useToast } from "@/context/ToastContext";
 import {
   sendUnmappedSubjectsTelemetry,
@@ -54,7 +68,11 @@ export function RolesSettingsPage() {
     },
     onSuccess: () => {
       toast.success("Permisos sincronizados con el sistema");
-      void queryClient.invalidateQueries({ queryKey: ["roles"] });
+      // syncPermissions() rebuilds the permission CATALOG and may shift role
+      // rows. roleKeys.all is the shared root, so one invalidation cascades to
+      // both the roles list and the permission catalog (prefix match) — no way
+      // to forget one and reproduce the stale-table bug.
+      void queryClient.invalidateQueries({ queryKey: roleKeys.all });
     },
   });
 
@@ -65,10 +83,11 @@ export function RolesSettingsPage() {
   } = useMutation({
     mutationFn: updateRolePermissions,
     onMutate: async ({ roleId, permissionIds }) => {
-      await queryClient.cancelQueries({ queryKey: ["roles"] });
-      const previousRoles = queryClient.getQueryData<Role[]>(["roles"]);
+      const listKey = roleKeys.lists().queryKey;
+      await queryClient.cancelQueries({ queryKey: listKey });
+      const previousRoles = queryClient.getQueryData<Role[]>(listKey);
 
-      queryClient.setQueryData<Role[]>(["roles"], (old: Role[] | undefined) =>
+      queryClient.setQueryData<Role[]>(listKey, (old: Role[] | undefined) =>
         optimisticUpdateRole(old, roleId, permissionIds)
       );
 
@@ -77,11 +96,11 @@ export function RolesSettingsPage() {
     onError: (_err, _newTodo, context) => {
       toast.error("Error al actualizar permisos. Inténtalo de nuevo.");
       if (context?.previousRoles) {
-        queryClient.setQueryData(["roles"], context.previousRoles);
+        queryClient.setQueryData(roleKeys.lists().queryKey, context.previousRoles);
       }
     },
     onSettled: () => {
-      void queryClient.invalidateQueries({ queryKey: ["roles"] });
+      void queryClient.invalidateQueries({ queryKey: roleKeys.all });
     },
   });
 
@@ -217,11 +236,11 @@ export function RolesSettingsPage() {
                   syncMutation.mutate();
                 }}
               >
-                <RotateCw className={cn("h-4 w-4", isSyncing && "")} />
+                <RotateCw className={cn("size-4", isSyncing && "")} />
               </Button>
 
               <Button size="sm" variant="primary" className="gap-2" onPress={handleCreateRole}>
-                <Plus className="h-4 w-4" />
+                <Plus className="size-4" />
                 <span>Nuevo rol</span>
               </Button>
             </div>
@@ -256,7 +275,7 @@ export function RolesSettingsPage() {
           onClose={() => {
             setIsRoleModalOpen(false);
           }}
-          role={selectedRole}
+          roleData={selectedRole}
         />
       )}
 
@@ -335,38 +354,167 @@ function processNavSections(
     })
     .filter((section) => section.items.length > 0);
 
-  // 3. Find permissions NOT used in nav sections (System/Technical permissions)
+  // 3. Categorise permissions NOT used in nav sections by domain so the
+  // admin sees logical buckets ("Clínica", "Finanzas", "Comunicaciones"…)
+  // instead of one flat "Otros Permisos de Sistema" wall of names.
+  // Golden-2026 RBAC UI: group by feature/domain, then by subject —
+  // mirrors how Auth0, AWS IAM and Linear lay out permission matrices.
   const technicalPermissions = allPermissions.filter((p) => !usedPermissionIds.has(p.id));
 
-  // For now, show all remaining permissions in a "System" section if any
   if (technicalPermissions.length > 0) {
-    // Group by subject to make it readable
-    const groupedBySubject = new Map<string, Permission[]>();
+    // Bucket by categorised subject. The category function keys off the
+    // PascalCase subject name and uses substring patterns — adding a
+    // new subject just needs one line in CATEGORY_RULES.
+    const buckets = new Map<string, Map<string, Permission[]>>();
     for (const p of technicalPermissions) {
-      const existing = groupedBySubject.get(p.subject) || [];
-      groupedBySubject.set(p.subject, [...existing, p]);
+      const category = categorizeSubject(p.subject);
+      let categoryBucket = buckets.get(category);
+      if (!categoryBucket) {
+        categoryBucket = new Map();
+        buckets.set(category, categoryBucket);
+      }
+      const subjectBucket = categoryBucket.get(p.subject) ?? [];
+      subjectBucket.push(p);
+      categoryBucket.set(p.subject, subjectBucket);
     }
 
-    const systemItems: MatrixItem[] = Array.from(groupedBySubject.entries()).map(
-      ([subject, perms]) => {
-        return {
-          icon: Shield, // Default icon for system permissions
-          label: `${subject} (Sistema)`,
+    // Stable, opinionated section order — top-of-mind clinical work
+    // first, then admin/system stuff. Categories not in this list fall
+    // through to the bottom alphabetically.
+    const sectionOrder = [
+      "Clínica",
+      "Informes y documentos",
+      "Pacientes",
+      "Agenda",
+      "Comunicaciones",
+      "Operaciones",
+      "Finanzas",
+      "DTE / Facturación",
+      "RRHH",
+      "Integraciones",
+      "Configuración",
+      "Sistema y seguridad",
+      "Otros",
+    ];
+    const orderedCategories = Array.from(buckets.keys()).sort((a, b) => {
+      const ai = sectionOrder.indexOf(a);
+      const bi = sectionOrder.indexOf(b);
+      if (ai === -1 && bi === -1) return a.localeCompare(b);
+      if (ai === -1) return 1;
+      if (bi === -1) return -1;
+      return ai - bi;
+    });
+
+    for (const category of orderedCategories) {
+      const categoryBucket = buckets.get(category);
+      if (!categoryBucket) continue;
+      const icon = CATEGORY_ICONS[category] ?? Shield;
+      const items: MatrixItem[] = Array.from(categoryBucket.entries())
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([subject, perms]) => ({
+          icon,
+          label: subject,
           permissionIds: perms.map((p) => p.id),
           relatedPermissions: perms,
-        };
-      }
-    );
-
-    mappedSections.push({
-      title: "Otros Permisos de Sistema",
-      items: systemItems,
-      permissionIds: technicalPermissions.map((p) => p.id),
-    });
+        }));
+      mappedSections.push({
+        title: category,
+        items,
+        permissionIds: items.flatMap((i) => i.permissionIds),
+      });
+    }
   }
 
   return mappedSections;
 }
+
+// ── Permission-category mapping ──────────────────────────────────────
+//
+// `categorizeSubject` returns the section bucket for a permission whose
+// `subject` (a PascalCase model name like `ExamReportReaction` or
+// `WhatsappBusinessLabel`) isn't surfaced by the nav. The rules are
+// ordered: the first matching pattern wins. Add new subjects by either
+// extending an existing pattern or appending a new `{ category, test }`
+// block — there's no manual subject-by-subject map to keep in sync.
+
+const CATEGORY_RULES: { category: string; test: (subject: string) => boolean }[] = [
+  // Most-specific patterns first (Wa* / Whatsapp* before everything).
+  {
+    category: "Comunicaciones",
+    test: (s) => /^(Wa|Whatsapp|Baileys|Outreach|PatientCampaign|PushSubscription)/i.test(s),
+  },
+  // Doctoralia is an integration but high-frequency clinical — own group.
+  {
+    category: "Integraciones",
+    test: (s) => /^(Doctoralia|Haulmer|MercadoPago|ProviderCredential)/i.test(s),
+  },
+  { category: "DTE / Facturación", test: (s) => /^(DTE|EventDte)/i.test(s) },
+  {
+    category: "Informes y documentos",
+    test: (s) =>
+      /^(ExamReport|ConclusionTemplate|MedicalCertificate|Report|PatientAttachment|BulkData)/i.test(
+        s
+      ),
+  },
+  { category: "Agenda", test: (s) => /^(Calendar|Event|Service)/i.test(s) },
+  { category: "Clínica", test: (s) => /^(Clinical|Consultation|AbandonmentContact)/i.test(s) },
+  { category: "Pacientes", test: (s) => /^(Patient|Person|Address)/i.test(s) },
+  {
+    category: "Operaciones",
+    test: (s) =>
+      /^(Shipment|CommonSupply|SupplyRequest|Inventory|Office|ProductionBalance|DailyProductionBalance)/i.test(
+        s
+      ),
+  },
+  {
+    category: "RRHH",
+    test: (s) =>
+      /^(Employee|Timesheet|TimesheetAudit|TimesheetList|Attendance|AttendanceAdmin|AttendanceMark|Compensation)/i.test(
+        s
+      ),
+  },
+  {
+    category: "Finanzas",
+    test: (s) =>
+      /^(Transaction|Expense|Budget|Counterpart|Balance|DailyBalance|ReleaseTransaction|Settlement|WithdrawTransaction|PersonalCredit|UtilityAccount|UtilityBillSnapshot|Loan|BankAccount)/i.test(
+        s
+      ),
+  },
+  {
+    category: "Configuración",
+    test: (s) => /^(ClinicSettings|Setting|Holiday|Tax|ServiceTemplate)$|^Setting/i.test(s),
+  },
+  {
+    category: "Sistema y seguridad",
+    test: (s) =>
+      /^(User|Role|Permission|Passkey|AuditLog|DebugToken|Backup|SyncLog|SecurityAlertState|Dashboard)/i.test(
+        s
+      ),
+  },
+];
+
+function categorizeSubject(subject: string): string {
+  for (const rule of CATEGORY_RULES) {
+    if (rule.test(subject)) return rule.category;
+  }
+  return "Otros";
+}
+
+const CATEGORY_ICONS: Record<string, typeof Shield> = {
+  Clínica: Stethoscope,
+  "Informes y documentos": FileText,
+  Pacientes: Heart,
+  Agenda: CalendarIcon,
+  Comunicaciones: MessageSquare,
+  Operaciones: Package,
+  Finanzas: Wallet,
+  "DTE / Facturación": Wallet,
+  RRHH: Users,
+  Integraciones: Plug,
+  Configuración: SettingsIcon,
+  "Sistema y seguridad": Shield,
+  Otros: Shield,
+};
 
 function getUnmappedSubjects(allPermissions: Permission[], usedPermissionIds: Set<number>) {
   const subjects = new Set<string>();

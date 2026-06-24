@@ -19,7 +19,7 @@ const PATHS_CONTACTO = [
   "/",
 ];
 
-const EMAIL_REGEX = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g;
+const EMAIL_REGEX = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
 const PHONE_CL_REGEX = /(?:\+?56\s?)?(?:9\s?\d{4}\s?\d{4}|[2-9]\d{8}|[2-9]\s?\d{4}\s?\d{4})/g;
 
 const EMAIL_DENY = [
@@ -49,9 +49,9 @@ const EMAIL_PRIORITY = [
 ];
 
 const SOCIAL_PATTERNS = {
-  linkedin: /linkedin\.com\/(company|in)\/[a-zA-Z0-9._\-]+/g,
+  linkedin: /linkedin\.com\/(company|in)\/[a-zA-Z0-9._-]+/g,
   instagram: /instagram\.com\/[a-zA-Z0-9._]+/g,
-  facebook: /facebook\.com\/[a-zA-Z0-9._\-]+/g,
+  facebook: /facebook\.com\/[a-zA-Z0-9._-]+/g,
   twitter: /(?:twitter|x)\.com\/[a-zA-Z0-9_]+/g,
 };
 
@@ -82,7 +82,7 @@ function cleanEmails(emails: string[]): string[] {
 
 function cleanPhones(phones: string[]): string[] {
   const cleaned = phones
-    .map((p) => p.replace(/[\s\-]/g, "").replace(/^\+?56/, "+56"))
+    .map((p) => p.replace(/[\s-]/g, "").replace(/^\+?56/, "+56"))
     .filter((p) => /^\+?56\d{8,9}$/.test(p) || /^\d{8,9}$/.test(p));
   return Array.from(new Set(cleaned));
 }

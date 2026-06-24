@@ -1,3 +1,4 @@
+// oxlint-disable typescript/no-non-null-assertion -- TODO(strict-null): refactor each `!` to invariant() or explicit guard. Tracked in repo-wide non-null cleanup.
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { clinicalRecordsORPCClient } from "../orpc";
 
@@ -44,6 +45,88 @@ export function useRejectClinicalRecordImport() {
     mutationFn: (input: { id: string; notes?: string }) =>
       clinicalRecordsORPCClient.rejectImport(input),
     onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
+  });
+}
+
+export function useStartBulkReprocess() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { maxImports?: number }) =>
+      clinicalRecordsORPCClient.startBulkReprocess(input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
+  });
+}
+
+export function useBulkJobStatus(jobId: string | null) {
+  return useQuery({
+    queryKey: [...KEY, "bulk-job", jobId],
+    enabled: Boolean(jobId),
+    queryFn: () => clinicalRecordsORPCClient.getBulkJob({ jobId: jobId! }),
+    refetchInterval: (query) => {
+      const job = query.state.data?.job;
+      if (!job) return false;
+      if (job.status === "completed" || job.status === "failed" || job.status === "cancelled") {
+        return false;
+      }
+      return 1500;
+    },
+  });
+}
+
+export function useActiveBulkJob() {
+  return useQuery({
+    queryKey: [...KEY, "active-bulk-job"],
+    queryFn: () => clinicalRecordsORPCClient.getActiveBulkJob({}),
+    refetchInterval: (query) => {
+      const job = query.state.data?.job;
+      if (!job) return 5000;
+      if (job.status === "completed" || job.status === "failed" || job.status === "cancelled") {
+        return 30_000;
+      }
+      return 1500;
+    },
+  });
+}
+
+export function useCancelBulkJob() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (jobId: string) => clinicalRecordsORPCClient.cancelBulkJob({ jobId }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
+  });
+}
+
+export function useApproveClinicalRecordImports() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { items: Array<{ id: string; patientId: number }>; notes?: string }) =>
+      clinicalRecordsORPCClient.approveImports(input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
+  });
+}
+
+export function useRejectClinicalRecordImports() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { ids: string[]; notes?: string }) =>
+      clinicalRecordsORPCClient.rejectImports(input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
+  });
+}
+
+export function useStartAutoApprove() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { minScore: number }) => clinicalRecordsORPCClient.startAutoApprove(input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
+  });
+}
+
+export function useClinicalRecordAnalytics(input: { dateFrom?: string; dateTo?: string }) {
+  return useQuery({
+    queryKey: [...KEY, "analytics", input],
+    queryFn: () => clinicalRecordsORPCClient.analytics(input),
+    staleTime: 60_000,
   });
 }
 

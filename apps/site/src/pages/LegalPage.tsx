@@ -9,7 +9,7 @@ export function LegalPage({ document }: { document: LegalDocument }) {
       <main className="grid gap-8">
         <section className="grid gap-6 xl:grid-cols-[0.72fr_0.28fr] xl:items-start">
           <Card className="overflow-hidden border border-border bg-(--surface)/92 shadow-[0_24px_80px_rgba(0,0,0,0.14)] backdrop-blur">
-            <Card.Content className="space-y-6 px-5 py-6 sm:px-7 sm:py-7">
+            <Card.Content className="space-y-6 px-5 py-6 sm:p-7">
               <div className="flex flex-wrap gap-2">
                 {document.chips.map((chip) => (
                   <Chip key={chip} variant="soft">
@@ -99,9 +99,9 @@ export function LegalPage({ document }: { document: LegalDocument }) {
                 key={section.id}
                 className="scroll-mt-28 border border-border bg-(--surface)/90 shadow-[0_18px_55px_rgba(0,0,0,0.10)] backdrop-blur"
               >
-                <Card.Content className="space-y-4 px-5 py-5 sm:px-6">
+                <Card.Content className="space-y-4 sm:px-6 p-5">
                   <div className="flex items-start gap-3">
-                    <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-(--accent-2)/10 font-semibold text-(--accent-2) text-sm">
+                    <div className="mt-0.5 flex shrink-0 items-center justify-center rounded-full bg-(--accent-2)/10 font-semibold text-(--accent-2) text-sm size-8">
                       {index + 1}
                     </div>
                     <div className="space-y-3">

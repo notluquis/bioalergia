@@ -49,7 +49,8 @@ export async function uploadCertificateToDrive(
   filepath: string,
   filename: string,
   metadata: Record<string, unknown>,
-  pdfHash: string
+  pdfHash: string,
+  certificateType = "medical"
 ): Promise<{ fileId: string; webViewLink: string | null }> {
   try {
     const drive = await getDriveClient();
@@ -64,7 +65,7 @@ export async function uploadCertificateToDrive(
             description: JSON.stringify(metadata),
             appProperties: {
               pdfHash,
-              certificateType: "medical",
+              certificateType,
             },
           },
           media: {
