@@ -129,9 +129,14 @@ export const occCustodyEventSchema = z.object({
 });
 
 // ── Inputs ───────────────────────────────────────────────────────────
+// SEUDÓNIMO por defecto: el create NO acepta personId. Ligar a PII exige consent
+// IDENTITY_LINK (linkSubjectIdentity).
 export const createOccSubjectInputSchema = z.object({
   subjectCode: z.string().min(1).max(80),
-  personId: z.number().int().nullable().optional(),
+});
+export const linkSubjectIdentityInputSchema = z.object({
+  subjectId: z.number().int(),
+  personId: z.number().int(),
 });
 export const createOccOrderInputSchema = z.object({
   subjectId: z.number().int(),
@@ -217,6 +222,10 @@ export const occupationalTestingContract = {
   createSubject: oc
     .route({ method: "POST", path: "/subjects" })
     .input(createOccSubjectInputSchema)
+    .output(occSubjectResponseSchema),
+  linkSubjectIdentity: oc
+    .route({ method: "POST", path: "/subjects/link-identity" })
+    .input(linkSubjectIdentityInputSchema)
     .output(occSubjectResponseSchema),
   createOrder: oc
     .route({ method: "POST", path: "/orders" })

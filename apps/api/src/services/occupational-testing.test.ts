@@ -27,8 +27,11 @@ vi.mock("@finanzas/db", () => ({ db: mockDb }));
 
 import { DomainError } from "../lib/errors.ts";
 import {
+  addCustodyEvent,
   createOrder,
+  createSubject,
   discloseToEmployer,
+  linkSubjectIdentity,
   recordConfirmatory,
   recordMedicalReview,
   recordScreening,
@@ -130,7 +133,12 @@ describe("G3 — confirmatorio sobre el mismo espécimen", () => {
       screening: { outcome: "PRESUMPTIVE_POSITIVE" },
       confirmatory: null,
     });
-    mockDb.occSample.findUnique.mockResolvedValueOnce({ id: 10, orderId: 1 });
+    mockDb.occSample.findUnique.mockResolvedValueOnce({
+      id: 10,
+      orderId: 1,
+      kind: "MUESTRA",
+      primaryAliquotOf: null,
+    });
     mockDb.occConfirmatoryResult.create.mockResolvedValueOnce({ id: 1 });
     await recordConfirmatory({
       orderId: 1,
@@ -142,6 +150,61 @@ describe("G3 — confirmatorio sobre el mismo espécimen", () => {
     expect(mockDb.occTestOrder.update).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ status: "MEDICAL_REVIEW" }) })
     );
+  });
+});
+
+describe("Codex P1 — custodia: muestra debe pertenecer al order", () => {
+  it("sampleId de otra orden → BAD_REQUEST", async () => {
+    mockDb.occTestOrder.findUnique.mockResolvedValueOnce({ id: 1 });
+    mockDb.occSample.findUnique.mockResolvedValueOnce({ id: 10, orderId: 999 });
+    await expect(
+      addCustodyEvent({ orderId: 1, sampleId: 10, action: "RECEIVE" }, 5)
+    ).rejects.toBeInstanceOf(DomainError);
+    expect(mockDb.occCustodyEvent.create).not.toHaveBeenCalled();
+  });
+});
+
+describe("Codex P1 — G3 confirmatorio NO sobre la contramuestra", () => {
+  it("muestra CONTRAMUESTRA del mismo order → BAD_REQUEST", async () => {
+    mockDb.occTestOrder.findUnique.mockResolvedValueOnce({
+      id: 1,
+      screening: { outcome: "PRESUMPTIVE_POSITIVE" },
+      confirmatory: null,
+    });
+    mockDb.occSample.findUnique.mockResolvedValueOnce({
+      id: 10,
+      orderId: 1,
+      kind: "CONTRAMUESTRA",
+      primaryAliquotOf: null,
+    });
+    await expect(
+      recordConfirmatory({
+        orderId: 1,
+        method: "GC_MS",
+        sampleId: 10,
+        analytes: [],
+        outcome: "POSITIVE",
+      })
+    ).rejects.toBeInstanceOf(DomainError);
+    expect(mockDb.occConfirmatoryResult.create).not.toHaveBeenCalled();
+  });
+});
+
+describe("Codex P2 — sujeto seudónimo: link a PII gateado", () => {
+  it("createSubject no persiste personId", async () => {
+    mockDb.occTestSubject.findUnique.mockResolvedValueOnce(null);
+    mockDb.occTestSubject.create.mockResolvedValueOnce({ id: 1, subjectCode: "ABC" });
+    await createSubject({ subjectCode: "ABC" });
+    expect(mockDb.occTestSubject.create).toHaveBeenCalledWith({
+      data: { subjectCode: "ABC" },
+    });
+  });
+
+  it("linkSubjectIdentity sin consent IDENTITY_LINK vivo → FORBIDDEN", async () => {
+    mockDb.occTestSubject.findUnique.mockResolvedValueOnce({ id: 1 });
+    mockDb.occConsent.findFirst.mockResolvedValueOnce(null);
+    await expect(linkSubjectIdentity(1, 42)).rejects.toBeInstanceOf(DomainError);
+    expect(mockDb.occTestSubject.update).not.toHaveBeenCalled();
   });
 });
 

@@ -54,14 +54,39 @@ export function serializeSubject(s: SubjectRow) {
   return { id: s.id, subjectCode: s.subjectCode, personId: s.personId, createdAt: s.createdAt };
 }
 
-export async function createSubject(input: { subjectCode: string; personId?: number | null }) {
+export async function createSubject(input: { subjectCode: string }) {
   const code = input.subjectCode.trim();
   if (!code) throw new DomainError("BAD_REQUEST", "subjectCode requerido");
   const existing = await db.occTestSubject.findUnique({ where: { subjectCode: code } });
   if (existing) throw new DomainError("CONFLICT", "subjectCode ya existe");
-  return db.occTestSubject.create({
-    data: { subjectCode: code, personId: input.personId ?? null },
+  // SEUDÓNIMO por defecto: NO se acepta personId en la creación. El link a PII
+  // exige consent IDENTITY_LINK vivo (ver linkSubjectIdentity).
+  return db.occTestSubject.create({ data: { subjectCode: code } });
+}
+
+/**
+ * Liga el sujeto a un Person (PII) — gateado: exige un consent IDENTITY_LINK
+ * concedido y vivo en alguna orden del sujeto. Sin él, el sujeto permanece
+ * seudónimo. (Codex P2: createSubject ya no persiste personId sin gate.)
+ */
+export async function linkSubjectIdentity(subjectId: number, personId: number) {
+  const subject = await db.occTestSubject.findUnique({ where: { id: subjectId } });
+  if (!subject) throw new DomainError("NOT_FOUND", "Sujeto no encontrado");
+  const consent = await db.occConsent.findFirst({
+    where: {
+      purpose: "IDENTITY_LINK",
+      granted: true,
+      revokedAt: null,
+      order: { subjectId },
+    },
   });
+  if (!consent) {
+    throw new DomainError(
+      "FORBIDDEN",
+      "El link a identidad requiere un consentimiento IDENTITY_LINK vivo del sujeto."
+    );
+  }
+  return db.occTestSubject.update({ where: { id: subjectId }, data: { personId } });
 }
 
 // ── Orden de testeo ──────────────────────────────────────────────────
@@ -160,6 +185,15 @@ export async function addCustodyEvent(
 ) {
   const order = await db.occTestOrder.findUnique({ where: { id: input.orderId } });
   if (!order) throw new DomainError("NOT_FOUND", "Orden no encontrada");
+  // Codex P1: el FK solo prueba que la muestra existe, no que sea de esta orden.
+  // Verificar pertenencia evita contaminar el timeline append-only con eventos
+  // de muestras ajenas.
+  if (input.sampleId != null) {
+    const sample = await db.occSample.findUnique({ where: { id: input.sampleId } });
+    if (!sample || sample.orderId !== input.orderId) {
+      throw new DomainError("BAD_REQUEST", "La muestra no pertenece a esta orden.");
+    }
+  }
   return db.occCustodyEvent.create({
     data: {
       orderId: input.orderId,
@@ -257,12 +291,26 @@ export async function recordConfirmatory(input: {
     );
   }
   if (order.confirmatory) throw new DomainError("CONFLICT", "El confirmatorio ya fue registrado");
-  // G3: la muestra confirmada debe pertenecer al MISMO order (linaje primario).
+  // G3: el confirmatorio corre sobre el espécimen PRIMARIO tamizado — la MUESTRA
+  // (o una alícuota de ella), NUNCA la contramuestra (sellada para contra-análisis)
+  // ni una muestra ajena (Codex P1: acotar el linaje, no "cualquier muestra del order").
   const sample = await db.occSample.findUnique({ where: { id: input.sampleId } });
   if (!sample || sample.orderId !== input.orderId) {
     throw new DomainError(
       "BAD_REQUEST",
-      "El confirmatorio debe correr sobre una muestra de la misma orden (espécimen primario)."
+      "El confirmatorio debe correr sobre una muestra de la misma orden."
+    );
+  }
+  let isPrimaryLineage = sample.kind === "MUESTRA";
+  if (!isPrimaryLineage && sample.primaryAliquotOf != null) {
+    const parent = await db.occSample.findUnique({ where: { id: sample.primaryAliquotOf } });
+    isPrimaryLineage =
+      parent != null && parent.orderId === input.orderId && parent.kind === "MUESTRA";
+  }
+  if (!isPrimaryLineage) {
+    throw new DomainError(
+      "BAD_REQUEST",
+      "El confirmatorio debe correr sobre la muestra primaria o su alícuota, no la contramuestra."
     );
   }
   const result = await db.occConfirmatoryResult.create({

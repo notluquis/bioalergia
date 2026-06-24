@@ -4,6 +4,7 @@ import {
   createOccOrderInputSchema,
   createOccSubjectInputSchema,
   discloseToEmployerInputSchema,
+  linkSubjectIdentityInputSchema,
   listOccOrdersInputSchema,
   occCustodyEventResponseSchema,
   occOkResponseSchema,
@@ -34,6 +35,7 @@ import {
   createSubject,
   discloseToEmployer,
   getOrderDetail,
+  linkSubjectIdentity,
   listOrders,
   recordConfirmatory,
   recordConsent,
@@ -138,6 +140,15 @@ const occupationalTestingRouterBase = {
     .output(occSubjectResponseSchema)
     .handler(async ({ input }) => {
       const subject = await createSubject(input);
+      return { subject: serializeSubject(subject) };
+    }),
+
+  linkSubjectIdentity: writer
+    .route({ method: "POST", path: "/subjects/link-identity", tags: ["OccTesting"] })
+    .input(linkSubjectIdentityInputSchema)
+    .output(occSubjectResponseSchema)
+    .handler(async ({ input }) => {
+      const subject = await linkSubjectIdentity(input.subjectId, input.personId);
       return { subject: serializeSubject(subject) };
     }),
 
