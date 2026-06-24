@@ -225,6 +225,11 @@ jobs:
       - run: pnpm turbo run build --filter=@finanzas/db --filter=@finanzas/social-render
       - run: pnpm -F @finanzas/db db:push
       - run: pnpm -F @finanzas/db seed:synthetic
+      # Create the base "Socio" role + the permission catalog (a fresh db:push
+      # DB has neither — prod makes them via the admin UI). Without this
+      # seed-e2e-user exits 3 on the missing role → empty creds → every authed
+      # spec skips vacuously.
+      - run: node apps/api/scripts/seed-e2e-rbac.ts
 
       # Seed the dedicated E2E user (random password each run) and export the
       # printed creds so the authed specs actually log in. Without this the
