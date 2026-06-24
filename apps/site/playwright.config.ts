@@ -27,7 +27,7 @@ const chromium = devices["Desktop Chrome"];
  * served by `vite preview` on :4173 — or against E2E_BASE_URL when supplied.
  *
  * NOTE: this config is NOT wired into any GitHub workflow. The repo's e2e CI
- * jobs (quality.yml `e2e-and-a11y`, e2e-hermetic.yml) target apps/intranet
+ * jobs (quality.yml `e2e-and-a11y`) target apps/intranet
  * only. Adding this is additive and cannot affect those jobs. To wire it into
  * CI later, add a job that builds the workspace + runs `pnpm -F @finanzas/site
  * exec playwright test` (build is required because preview serves dist/).

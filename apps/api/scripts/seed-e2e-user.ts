@@ -171,6 +171,8 @@ await ensureAssignment(readOnlyRole.id);
 
 await db.destroy();
 
-// Last line: machine-readable. Anything before this is human noise.
-console.log(`EMAIL=${EMAIL}`);
-console.log(`PASS=${password}`);
+// Last line: machine-readable, SINGLE line (the CI steps parse it with
+// `tail -1`, so EMAIL + PASS must share one line — two lines dropped EMAIL and
+// left E2E_USER empty, silently skipping every authed spec). Anything before
+// this is human noise.
+console.log(`EMAIL=${EMAIL} PASS=${password}`);

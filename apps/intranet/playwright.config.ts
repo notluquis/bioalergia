@@ -16,7 +16,7 @@ const AUTHED_URL = process.env.E2E_BASE_URL ?? PREVIEW_URL;
 // data, never prod/PHI. The preview server proxies /api → 127.0.0.1:4000.
 const HERMETIC = !process.env.E2E_BASE_URL && Boolean(process.env.DATABASE_URL);
 // Layer-3 DB read-only role (defense in depth). When CI provisions the
-// `e2e_readonly` Postgres role (see e2e-hermetic.yml + quality.yml) it
+// `e2e_readonly` Postgres role (see quality.yml `e2e-and-a11y`) it
 // exports DATABASE_URL_READONLY; the booted api connects with it so every
 // write except the narrow login/session carve-out is rejected AT THE DB.
 // Falls back to DATABASE_URL when unset (local hermetic runs stay full-RW).
