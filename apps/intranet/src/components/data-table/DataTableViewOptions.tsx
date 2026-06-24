@@ -36,9 +36,9 @@ export function DataTableViewOptions<TData>({ table }: DataTableViewOptionsProps
 
   return (
     <Dropdown>
-      <Dropdown.Trigger className="button button--sm button--outline ml-auto h-8">
-        <Settings2 className="mr-2 size-4" aria-hidden />
-        Columnas
+      <Dropdown.Trigger className="button button--sm button--outline ml-auto inline-flex h-8 items-center gap-2 whitespace-nowrap px-3 leading-none">
+        <Settings2 className="size-4 shrink-0" aria-hidden />
+        <span>Columnas</span>
       </Dropdown.Trigger>
       <Dropdown.Popover className="min-w-55" placement="bottom end">
         <div className="border-default-200/60 border-b p-2">

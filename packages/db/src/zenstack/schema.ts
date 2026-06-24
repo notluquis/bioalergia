@@ -147,6 +147,12 @@ export class SchemaType implements SchemaDef {
                     type: "ConsentRecord",
                     array: true,
                     relation: { opposite: "person" }
+                },
+                occTestSubjects: {
+                    name: "occTestSubjects",
+                    type: "OccTestSubject",
+                    array: true,
+                    relation: { opposite: "person" }
                 }
             },
             attributes: [
@@ -10037,6 +10043,12 @@ export class SchemaType implements SchemaDef {
                     type: "ReminderSchedule",
                     array: true,
                     relation: { opposite: "patient" }
+                },
+                allergyDiaryEntries: {
+                    name: "allergyDiaryEntries",
+                    type: "AllergyDiaryEntry",
+                    array: true,
+                    relation: { opposite: "patient" }
                 }
             },
             attributes: [
@@ -10153,6 +10165,147 @@ export class SchemaType implements SchemaDef {
             idFields: ["id"],
             uniqueFields: {
                 id: { type: "Int" }
+            }
+        },
+        AllergyDiaryEntry: {
+            name: "AllergyDiaryEntry",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                patientId: {
+                    name: "patientId",
+                    type: "Int",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("patient_id") }] }] as readonly AttributeApplication[],
+                    foreignKeyFor: [
+                        "patient"
+                    ] as readonly string[]
+                },
+                entryDate: {
+                    name: "entryDate",
+                    type: "DateTime",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("entry_date") }] }, { name: "@db.Date" }] as readonly AttributeApplication[]
+                },
+                sneezing: {
+                    name: "sneezing",
+                    type: "Int",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }] as readonly AttributeApplication[],
+                    default: 0 as FieldDefault
+                },
+                rhinorrhea: {
+                    name: "rhinorrhea",
+                    type: "Int",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }] as readonly AttributeApplication[],
+                    default: 0 as FieldDefault
+                },
+                nasalItching: {
+                    name: "nasalItching",
+                    type: "Int",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("nasal_itching") }] }] as readonly AttributeApplication[],
+                    default: 0 as FieldDefault
+                },
+                nasalCongestion: {
+                    name: "nasalCongestion",
+                    type: "Int",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("nasal_congestion") }] }] as readonly AttributeApplication[],
+                    default: 0 as FieldDefault
+                },
+                eyeItchingRedness: {
+                    name: "eyeItchingRedness",
+                    type: "Int",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("eye_itching_redness") }] }] as readonly AttributeApplication[],
+                    default: 0 as FieldDefault
+                },
+                eyeWatering: {
+                    name: "eyeWatering",
+                    type: "Int",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("eye_watering") }] }] as readonly AttributeApplication[],
+                    default: 0 as FieldDefault
+                },
+                medAntihistamine: {
+                    name: "medAntihistamine",
+                    type: "Boolean",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("med_antihistamine") }] }] as readonly AttributeApplication[],
+                    default: false as FieldDefault
+                },
+                medIntranasalSteroid: {
+                    name: "medIntranasalSteroid",
+                    type: "Boolean",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("med_intranasal_steroid") }] }] as readonly AttributeApplication[],
+                    default: false as FieldDefault
+                },
+                medOralSteroid: {
+                    name: "medOralSteroid",
+                    type: "Boolean",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("med_oral_steroid") }] }] as readonly AttributeApplication[],
+                    default: false as FieldDefault
+                },
+                dSS: {
+                    name: "dSS",
+                    type: "Float",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("d_ss") }] }] as readonly AttributeApplication[]
+                },
+                dMS: {
+                    name: "dMS",
+                    type: "Int",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("d_ms") }] }] as readonly AttributeApplication[]
+                },
+                csms: {
+                    name: "csms",
+                    type: "Float"
+                },
+                isComplete: {
+                    name: "isComplete",
+                    type: "Boolean",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(true) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("is_complete") }] }] as readonly AttributeApplication[],
+                    default: true as FieldDefault
+                },
+                notes: {
+                    name: "notes",
+                    type: "String",
+                    optional: true
+                },
+                enteredBy: {
+                    name: "enteredBy",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("entered_by") }] }] as readonly AttributeApplication[]
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                patient: {
+                    name: "patient",
+                    type: "Patient",
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("patientId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "allergyDiaryEntries", fields: ["patientId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            attributes: [
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read,create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@unique", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("patientId"), ExpressionUtils.field("entryDate")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("patientId"), ExpressionUtils.field("entryDate")]) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("allergy_diary_entries") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                patientId_entryDate: { patientId: { type: "Int" }, entryDate: { type: "DateTime" } }
             }
         },
         Shipment: {
@@ -11070,6 +11223,12 @@ export class SchemaType implements SchemaDef {
                     type: "Quote",
                     array: true,
                     relation: { opposite: "company" }
+                },
+                occupationalPrograms: {
+                    name: "occupationalPrograms",
+                    type: "OccupationalProgram",
+                    array: true,
+                    relation: { opposite: "company" }
                 }
             },
             attributes: [
@@ -11931,6 +12090,964 @@ export class SchemaType implements SchemaDef {
                 { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("ReactivoLeadStatus", [ExpressionUtils.field("status")]) }] },
                 { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("createdAt")]) }] },
                 { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("occupational_leads") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        OccupationalProgram: {
+            name: "OccupationalProgram",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                companyId: {
+                    name: "companyId",
+                    type: "Int",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("company_id") }] }] as readonly AttributeApplication[],
+                    foreignKeyFor: [
+                        "company"
+                    ] as readonly string[]
+                },
+                sector: {
+                    name: "sector",
+                    type: "OccupationalSector",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("GENERAL") }] }] as readonly AttributeApplication[],
+                    default: "GENERAL" as FieldDefault
+                },
+                testingScope: {
+                    name: "testingScope",
+                    type: "OccupationalTestingScope",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("BOTH") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("testing_scope") }] }] as readonly AttributeApplication[],
+                    default: "BOTH" as FieldDefault
+                },
+                status: {
+                    name: "status",
+                    type: "OccupationalProgramStatus",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("DRAFT") }] }] as readonly AttributeApplication[],
+                    default: "DRAFT" as FieldDefault
+                },
+                riohsAttested: {
+                    name: "riohsAttested",
+                    type: "Boolean",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("riohs_attested") }] }] as readonly AttributeApplication[],
+                    default: false as FieldDefault
+                },
+                riohsClauseRef: {
+                    name: "riohsClauseRef",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("riohs_clause_ref") }] }] as readonly AttributeApplication[]
+                },
+                riohsAttestedAt: {
+                    name: "riohsAttestedAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("riohs_attested_at") }] }] as readonly AttributeApplication[]
+                },
+                riohsAttestedBy: {
+                    name: "riohsAttestedBy",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("riohs_attested_by") }] }] as readonly AttributeApplication[]
+                },
+                workerConsentBasis: {
+                    name: "workerConsentBasis",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("worker_consent_basis") }] }] as readonly AttributeApplication[]
+                },
+                notes: {
+                    name: "notes",
+                    type: "String",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                company: {
+                    name: "company",
+                    type: "Company",
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("companyId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "occupationalPrograms", fields: ["companyId"], references: ["id"], onDelete: "Cascade" }
+                },
+                testBatches: {
+                    name: "testBatches",
+                    type: "OccupationalTestBatch",
+                    array: true,
+                    relation: { opposite: "program" }
+                },
+                testOrders: {
+                    name: "testOrders",
+                    type: "OccTestOrder",
+                    array: true,
+                    relation: { opposite: "program" }
+                }
+            },
+            attributes: [
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read,create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("companyId")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("OccupationalProgramStatus", [ExpressionUtils.field("status")]) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("occupational_programs") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        OccupationalTestBatch: {
+            name: "OccupationalTestBatch",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                programId: {
+                    name: "programId",
+                    type: "Int",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("program_id") }] }] as readonly AttributeApplication[],
+                    foreignKeyFor: [
+                        "program"
+                    ] as readonly string[]
+                },
+                batchDate: {
+                    name: "batchDate",
+                    type: "DateTime",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("batch_date") }] }, { name: "@db.Date" }] as readonly AttributeApplication[]
+                },
+                totalTested: {
+                    name: "totalTested",
+                    type: "Int",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("total_tested") }] }] as readonly AttributeApplication[],
+                    default: 0 as FieldDefault
+                },
+                passedCount: {
+                    name: "passedCount",
+                    type: "Int",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("passed_count") }] }] as readonly AttributeApplication[],
+                    default: 0 as FieldDefault
+                },
+                presumptivePositiveCount: {
+                    name: "presumptivePositiveCount",
+                    type: "Int",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("presumptive_positive_count") }] }] as readonly AttributeApplication[],
+                    default: 0 as FieldDefault
+                },
+                notes: {
+                    name: "notes",
+                    type: "String",
+                    optional: true
+                },
+                createdBy: {
+                    name: "createdBy",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_by") }] }] as readonly AttributeApplication[]
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                program: {
+                    name: "program",
+                    type: "OccupationalProgram",
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("programId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "testBatches", fields: ["programId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            attributes: [
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read,create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("programId"), ExpressionUtils.field("batchDate")]) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("occupational_test_batches") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        OccTestSubject: {
+            name: "OccTestSubject",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                subjectCode: {
+                    name: "subjectCode",
+                    type: "String",
+                    unique: true,
+                    attributes: [{ name: "@unique" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("subject_code") }] }] as readonly AttributeApplication[]
+                },
+                personId: {
+                    name: "personId",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("person_id") }] }] as readonly AttributeApplication[],
+                    foreignKeyFor: [
+                        "person"
+                    ] as readonly string[]
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                person: {
+                    name: "person",
+                    type: "Person",
+                    optional: true,
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("personId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("SetNull") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "occTestSubjects", fields: ["personId"], references: ["id"], onDelete: "SetNull" }
+                },
+                orders: {
+                    name: "orders",
+                    type: "OccTestOrder",
+                    array: true,
+                    relation: { opposite: "subject" }
+                }
+            },
+            attributes: [
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read,create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("personId")]) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("occ_test_subjects") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                subjectCode: { type: "String" }
+            }
+        },
+        OccTestOrder: {
+            name: "OccTestOrder",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                subjectId: {
+                    name: "subjectId",
+                    type: "Int",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("subject_id") }] }] as readonly AttributeApplication[],
+                    foreignKeyFor: [
+                        "subject"
+                    ] as readonly string[]
+                },
+                programId: {
+                    name: "programId",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("program_id") }] }] as readonly AttributeApplication[],
+                    foreignKeyFor: [
+                        "program"
+                    ] as readonly string[]
+                },
+                companyId: {
+                    name: "companyId",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("company_id") }] }] as readonly AttributeApplication[]
+                },
+                testingReason: {
+                    name: "testingReason",
+                    type: "OccTestingReason",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("testing_reason") }] }] as readonly AttributeApplication[]
+                },
+                requestSource: {
+                    name: "requestSource",
+                    type: "OccRequestSource",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("request_source") }] }] as readonly AttributeApplication[]
+                },
+                regulatoryBasis: {
+                    name: "regulatoryBasis",
+                    type: "OccRegulatoryBasis",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("regulatory_basis") }] }] as readonly AttributeApplication[]
+                },
+                mandateType: {
+                    name: "mandateType",
+                    type: "OccMandateType",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("mandate_type") }] }] as readonly AttributeApplication[]
+                },
+                riohsClauseRef: {
+                    name: "riohsClauseRef",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("riohs_clause_ref") }] }] as readonly AttributeApplication[]
+                },
+                status: {
+                    name: "status",
+                    type: "OccOrderStatus",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("DRAFT") }] }] as readonly AttributeApplication[],
+                    default: "DRAFT" as FieldDefault
+                },
+                finalResult: {
+                    name: "finalResult",
+                    type: "OccFinalResult",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("PENDING") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("final_result") }] }] as readonly AttributeApplication[],
+                    default: "PENDING" as FieldDefault
+                },
+                refusalFlag: {
+                    name: "refusalFlag",
+                    type: "Boolean",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("refusal_flag") }] }] as readonly AttributeApplication[],
+                    default: false as FieldDefault
+                },
+                notes: {
+                    name: "notes",
+                    type: "String",
+                    optional: true
+                },
+                createdBy: {
+                    name: "createdBy",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_by") }] }] as readonly AttributeApplication[]
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                lastEntryAt: {
+                    name: "lastEntryAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("last_entry_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                subject: {
+                    name: "subject",
+                    type: "OccTestSubject",
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("subjectId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "orders", fields: ["subjectId"], references: ["id"], onDelete: "Cascade" }
+                },
+                program: {
+                    name: "program",
+                    type: "OccupationalProgram",
+                    optional: true,
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("programId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("SetNull") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "testOrders", fields: ["programId"], references: ["id"], onDelete: "SetNull" }
+                },
+                samples: {
+                    name: "samples",
+                    type: "OccSample",
+                    array: true,
+                    relation: { opposite: "order" }
+                },
+                custodyEvents: {
+                    name: "custodyEvents",
+                    type: "OccCustodyEvent",
+                    array: true,
+                    relation: { opposite: "order" }
+                },
+                consents: {
+                    name: "consents",
+                    type: "OccConsent",
+                    array: true,
+                    relation: { opposite: "order" }
+                },
+                screening: {
+                    name: "screening",
+                    type: "OccScreeningResult",
+                    optional: true,
+                    relation: { opposite: "order" }
+                },
+                confirmatory: {
+                    name: "confirmatory",
+                    type: "OccConfirmatoryResult",
+                    optional: true,
+                    relation: { opposite: "order" }
+                },
+                medicalReview: {
+                    name: "medicalReview",
+                    type: "OccMedicalReview",
+                    optional: true,
+                    relation: { opposite: "order" }
+                },
+                disclosures: {
+                    name: "disclosures",
+                    type: "OccDisclosure",
+                    array: true,
+                    relation: { opposite: "order" }
+                }
+            },
+            attributes: [
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read,create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("subjectId")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("programId")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("OccOrderStatus", [ExpressionUtils.field("status")]) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("occ_test_orders") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        OccSample: {
+            name: "OccSample",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                orderId: {
+                    name: "orderId",
+                    type: "Int",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("order_id") }] }] as readonly AttributeApplication[],
+                    foreignKeyFor: [
+                        "order"
+                    ] as readonly string[]
+                },
+                kind: {
+                    name: "kind",
+                    type: "OccSampleKind"
+                },
+                containerCode: {
+                    name: "containerCode",
+                    type: "String",
+                    unique: true,
+                    attributes: [{ name: "@unique" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("container_code") }] }] as readonly AttributeApplication[]
+                },
+                matrix: {
+                    name: "matrix",
+                    type: "OccMatrix",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("ORINA") }] }] as readonly AttributeApplication[],
+                    default: "ORINA" as FieldDefault
+                },
+                sealId: {
+                    name: "sealId",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("seal_id") }] }] as readonly AttributeApplication[]
+                },
+                sealIntact: {
+                    name: "sealIntact",
+                    type: "Boolean",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(true) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("seal_intact") }] }] as readonly AttributeApplication[],
+                    default: true as FieldDefault
+                },
+                primaryAliquotOf: {
+                    name: "primaryAliquotOf",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("primary_aliquot_of") }] }] as readonly AttributeApplication[]
+                },
+                validity: {
+                    name: "validity",
+                    type: "Json",
+                    optional: true
+                },
+                storedTempC: {
+                    name: "storedTempC",
+                    type: "Float",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("stored_temp_c") }] }] as readonly AttributeApplication[]
+                },
+                destroyedAt: {
+                    name: "destroyedAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("destroyed_at") }] }] as readonly AttributeApplication[]
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                order: {
+                    name: "order",
+                    type: "OccTestOrder",
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("orderId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "samples", fields: ["orderId"], references: ["id"], onDelete: "Cascade" }
+                },
+                custodyEvents: {
+                    name: "custodyEvents",
+                    type: "OccCustodyEvent",
+                    array: true,
+                    relation: { opposite: "sample" }
+                }
+            },
+            attributes: [
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read,create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("orderId")]) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("occ_samples") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                containerCode: { type: "String" }
+            }
+        },
+        OccCustodyEvent: {
+            name: "OccCustodyEvent",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                orderId: {
+                    name: "orderId",
+                    type: "Int",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("order_id") }] }] as readonly AttributeApplication[],
+                    foreignKeyFor: [
+                        "order"
+                    ] as readonly string[]
+                },
+                sampleId: {
+                    name: "sampleId",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("sample_id") }] }] as readonly AttributeApplication[],
+                    foreignKeyFor: [
+                        "sample"
+                    ] as readonly string[]
+                },
+                action: {
+                    name: "action",
+                    type: "OccCustodyAction"
+                },
+                actorId: {
+                    name: "actorId",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("actor_id") }] }] as readonly AttributeApplication[]
+                },
+                actorRole: {
+                    name: "actorRole",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("actor_role") }] }] as readonly AttributeApplication[]
+                },
+                signatureRef: {
+                    name: "signatureRef",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("signature_ref") }] }] as readonly AttributeApplication[]
+                },
+                sealIntact: {
+                    name: "sealIntact",
+                    type: "Boolean",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("seal_intact") }] }] as readonly AttributeApplication[]
+                },
+                location: {
+                    name: "location",
+                    type: "String",
+                    optional: true
+                },
+                notes: {
+                    name: "notes",
+                    type: "String",
+                    optional: true
+                },
+                occurredAt: {
+                    name: "occurredAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("occurred_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                order: {
+                    name: "order",
+                    type: "OccTestOrder",
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("orderId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "custodyEvents", fields: ["orderId"], references: ["id"], onDelete: "Cascade" }
+                },
+                sample: {
+                    name: "sample",
+                    type: "OccSample",
+                    optional: true,
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("sampleId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("SetNull") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "custodyEvents", fields: ["sampleId"], references: ["id"], onDelete: "SetNull" }
+                }
+            },
+            attributes: [
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read,create") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("orderId")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("sampleId")]) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("occ_custody_events") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        OccScreeningResult: {
+            name: "OccScreeningResult",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                orderId: {
+                    name: "orderId",
+                    type: "Int",
+                    unique: true,
+                    attributes: [{ name: "@unique" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("order_id") }] }] as readonly AttributeApplication[],
+                    foreignKeyFor: [
+                        "order"
+                    ] as readonly string[]
+                },
+                method: {
+                    name: "method",
+                    type: "String",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("inmunoensayo") }] }] as readonly AttributeApplication[],
+                    default: "inmunoensayo" as FieldDefault
+                },
+                panel: {
+                    name: "panel",
+                    type: "Json"
+                },
+                outcome: {
+                    name: "outcome",
+                    type: "OccScreeningOutcome"
+                },
+                labId: {
+                    name: "labId",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("lab_id") }] }] as readonly AttributeApplication[]
+                },
+                reportedAt: {
+                    name: "reportedAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("reported_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                order: {
+                    name: "order",
+                    type: "OccTestOrder",
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("orderId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "screening", fields: ["orderId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            attributes: [
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read,create,update") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("occ_screening_results") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                orderId: { type: "Int" }
+            }
+        },
+        OccConfirmatoryResult: {
+            name: "OccConfirmatoryResult",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                orderId: {
+                    name: "orderId",
+                    type: "Int",
+                    unique: true,
+                    attributes: [{ name: "@unique" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("order_id") }] }] as readonly AttributeApplication[],
+                    foreignKeyFor: [
+                        "order"
+                    ] as readonly string[]
+                },
+                method: {
+                    name: "method",
+                    type: "OccConfirmMethod"
+                },
+                sampleId: {
+                    name: "sampleId",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("sample_id") }] }] as readonly AttributeApplication[]
+                },
+                analytes: {
+                    name: "analytes",
+                    type: "Json"
+                },
+                outcome: {
+                    name: "outcome",
+                    type: "OccConfirmOutcome"
+                },
+                confirmingLabId: {
+                    name: "confirmingLabId",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("confirming_lab_id") }] }] as readonly AttributeApplication[]
+                },
+                isoAccredited: {
+                    name: "isoAccredited",
+                    type: "Boolean",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("iso_accredited") }] }] as readonly AttributeApplication[],
+                    default: false as FieldDefault
+                },
+                reportedAt: {
+                    name: "reportedAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("reported_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                order: {
+                    name: "order",
+                    type: "OccTestOrder",
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("orderId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "confirmatory", fields: ["orderId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            attributes: [
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read,create,update") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("occ_confirmatory_results") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                orderId: { type: "Int" }
+            }
+        },
+        OccMedicalReview: {
+            name: "OccMedicalReview",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                orderId: {
+                    name: "orderId",
+                    type: "Int",
+                    unique: true,
+                    attributes: [{ name: "@unique" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("order_id") }] }] as readonly AttributeApplication[],
+                    foreignKeyFor: [
+                        "order"
+                    ] as readonly string[]
+                },
+                reviewerId: {
+                    name: "reviewerId",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("reviewer_id") }] }] as readonly AttributeApplication[]
+                },
+                declaredMeds: {
+                    name: "declaredMeds",
+                    type: "Json",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("declared_meds") }] }] as readonly AttributeApplication[]
+                },
+                decision: {
+                    name: "decision",
+                    type: "OccReviewDecision"
+                },
+                rationale: {
+                    name: "rationale",
+                    type: "String"
+                },
+                reviewedAt: {
+                    name: "reviewedAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("reviewed_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                order: {
+                    name: "order",
+                    type: "OccTestOrder",
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("orderId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "medicalReview", fields: ["orderId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            attributes: [
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read,create") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("occ_medical_reviews") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                orderId: { type: "Int" }
+            }
+        },
+        OccConsent: {
+            name: "OccConsent",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                orderId: {
+                    name: "orderId",
+                    type: "Int",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("order_id") }] }] as readonly AttributeApplication[],
+                    foreignKeyFor: [
+                        "order"
+                    ] as readonly string[]
+                },
+                purpose: {
+                    name: "purpose",
+                    type: "OccConsentPurpose"
+                },
+                granted: {
+                    name: "granted",
+                    type: "Boolean",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] }] as readonly AttributeApplication[],
+                    default: false as FieldDefault
+                },
+                scope: {
+                    name: "scope",
+                    type: "Json",
+                    optional: true
+                },
+                grantedAt: {
+                    name: "grantedAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("granted_at") }] }] as readonly AttributeApplication[]
+                },
+                revokedAt: {
+                    name: "revokedAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("revoked_at") }] }] as readonly AttributeApplication[]
+                },
+                evidenceRef: {
+                    name: "evidenceRef",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("evidence_ref") }] }] as readonly AttributeApplication[]
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                order: {
+                    name: "order",
+                    type: "OccTestOrder",
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("orderId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "consents", fields: ["orderId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            attributes: [
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read,create,update") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("orderId"), ExpressionUtils.field("purpose")]) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("occ_consents") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        OccDisclosure: {
+            name: "OccDisclosure",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                orderId: {
+                    name: "orderId",
+                    type: "Int",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("order_id") }] }] as readonly AttributeApplication[],
+                    foreignKeyFor: [
+                        "order"
+                    ] as readonly string[]
+                },
+                audience: {
+                    name: "audience",
+                    type: "OccDisclosureAudience"
+                },
+                payloadKind: {
+                    name: "payloadKind",
+                    type: "OccDisclosurePayload"
+                },
+                consentId: {
+                    name: "consentId",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("consent_id") }] }] as readonly AttributeApplication[]
+                },
+                releasedBy: {
+                    name: "releasedBy",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("released_by") }] }] as readonly AttributeApplication[]
+                },
+                releasedAt: {
+                    name: "releasedAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("released_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                order: {
+                    name: "order",
+                    type: "OccTestOrder",
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("orderId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "disclosures", fields: ["orderId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            attributes: [
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read,create") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("orderId")]) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("occ_disclosures") }] }
             ] as readonly AttributeApplication[],
             idFields: ["id"],
             uniqueFields: {
@@ -20631,6 +21748,175 @@ export class SchemaType implements SchemaDef {
                 OTRO: "OTRO"
             }
         },
+        OccupationalProgramStatus: {
+            name: "OccupationalProgramStatus",
+            values: {
+                DRAFT: "DRAFT",
+                ACTIVE: "ACTIVE",
+                SUSPENDED: "SUSPENDED"
+            }
+        },
+        OccupationalTestingScope: {
+            name: "OccupationalTestingScope",
+            values: {
+                DRUGS: "DRUGS",
+                ALCOHOL: "ALCOHOL",
+                BOTH: "BOTH"
+            }
+        },
+        OccTestingReason: {
+            name: "OccTestingReason",
+            values: {
+                PRE_EMPLEO: "PRE_EMPLEO",
+                PERIODICO: "PERIODICO",
+                ALEATORIO: "ALEATORIO",
+                POST_ACCIDENTE: "POST_ACCIDENTE",
+                SOSPECHA_RAZONABLE: "SOSPECHA_RAZONABLE",
+                RETORNO: "RETORNO",
+                CONTROL_POLICIAL: "CONTROL_POLICIAL",
+                OTRO: "OTRO"
+            }
+        },
+        OccRequestSource: {
+            name: "OccRequestSource",
+            values: {
+                ORDEN_MEDICA: "ORDEN_MEDICA",
+                SOLICITUD_EMPLEADOR: "SOLICITUD_EMPLEADOR",
+                ORDEN_JUDICIAL: "ORDEN_JUDICIAL",
+                SUPERVISOR_FAENA: "SUPERVISOR_FAENA"
+            }
+        },
+        OccRegulatoryBasis: {
+            name: "OccRegulatoryBasis",
+            values: {
+                DS_132_ART_40: "DS_132_ART_40",
+                RIOHS: "RIOHS",
+                LEY_18290: "LEY_18290",
+                DS_44_PROGRAMA: "DS_44_PROGRAMA",
+                POLITICA_EMPRESA: "POLITICA_EMPRESA"
+            }
+        },
+        OccMandateType: {
+            name: "OccMandateType",
+            values: {
+                MANDATED_BY_LAW: "MANDATED_BY_LAW",
+                PERMITTED_VIA_RIOHS: "PERMITTED_VIA_RIOHS",
+                COMPANY_POLICY: "COMPANY_POLICY"
+            }
+        },
+        OccOrderStatus: {
+            name: "OccOrderStatus",
+            values: {
+                DRAFT: "DRAFT",
+                CONSENT_PENDING: "CONSENT_PENDING",
+                COLLECTED: "COLLECTED",
+                IN_TRANSIT: "IN_TRANSIT",
+                RECEIVED: "RECEIVED",
+                SCREENING: "SCREENING",
+                PRESUMPTIVE_POSITIVE: "PRESUMPTIVE_POSITIVE",
+                CONFIRMATION_PENDING: "CONFIRMATION_PENDING",
+                MEDICAL_REVIEW: "MEDICAL_REVIEW",
+                RESULTED: "RESULTED",
+                INVALID: "INVALID",
+                CANCELLED: "CANCELLED"
+            }
+        },
+        OccFinalResult: {
+            name: "OccFinalResult",
+            values: {
+                PENDING: "PENDING",
+                NEGATIVE: "NEGATIVE",
+                POSITIVE: "POSITIVE",
+                NEGATIVE_MEDICALLY_EXPLAINED: "NEGATIVE_MEDICALLY_EXPLAINED",
+                INVALID: "INVALID"
+            }
+        },
+        OccSampleKind: {
+            name: "OccSampleKind",
+            values: {
+                MUESTRA: "MUESTRA",
+                CONTRAMUESTRA: "CONTRAMUESTRA"
+            }
+        },
+        OccMatrix: {
+            name: "OccMatrix",
+            values: {
+                ORINA: "ORINA",
+                SANGRE: "SANGRE",
+                SALIVA: "SALIVA",
+                ALIENTO: "ALIENTO"
+            }
+        },
+        OccCustodyAction: {
+            name: "OccCustodyAction",
+            values: {
+                COLLECT: "COLLECT",
+                SPLIT: "SPLIT",
+                SEAL: "SEAL",
+                DONOR_VERIFY: "DONOR_VERIFY",
+                HANDOFF: "HANDOFF",
+                TRANSPORT: "TRANSPORT",
+                RECEIVE: "RECEIVE",
+                SEAL_CHECK: "SEAL_CHECK",
+                ALIQUOT: "ALIQUOT",
+                STORE: "STORE",
+                DESTROY: "DESTROY"
+            }
+        },
+        OccScreeningOutcome: {
+            name: "OccScreeningOutcome",
+            values: {
+                NEGATIVE: "NEGATIVE",
+                PRESUMPTIVE_POSITIVE: "PRESUMPTIVE_POSITIVE"
+            }
+        },
+        OccConfirmMethod: {
+            name: "OccConfirmMethod",
+            values: {
+                GC_MS: "GC_MS",
+                LC_MS_MS: "LC_MS_MS"
+            }
+        },
+        OccConfirmOutcome: {
+            name: "OccConfirmOutcome",
+            values: {
+                NEGATIVE: "NEGATIVE",
+                POSITIVE: "POSITIVE"
+            }
+        },
+        OccReviewDecision: {
+            name: "OccReviewDecision",
+            values: {
+                CONFIRMED_POSITIVE: "CONFIRMED_POSITIVE",
+                EXPLAINED_BY_RX: "EXPLAINED_BY_RX"
+            }
+        },
+        OccConsentPurpose: {
+            name: "OccConsentPurpose",
+            values: {
+                TEST: "TEST",
+                EMPLOYER_DISCLOSURE: "EMPLOYER_DISCLOSURE",
+                SUBSTANCE_LEVEL_DISCLOSURE: "SUBSTANCE_LEVEL_DISCLOSURE",
+                IDENTITY_LINK: "IDENTITY_LINK"
+            }
+        },
+        OccDisclosureAudience: {
+            name: "OccDisclosureAudience",
+            values: {
+                WORKER: "WORKER",
+                EMPLOYER: "EMPLOYER",
+                JUDICIAL: "JUDICIAL"
+            }
+        },
+        OccDisclosurePayload: {
+            name: "OccDisclosurePayload",
+            values: {
+                AGGREGATE: "AGGREGATE",
+                FITNESS_OUTCOME: "FITNESS_OUTCOME",
+                SUBSTANCE_DETAIL: "SUBSTANCE_DETAIL",
+                FULL_RESULT: "FULL_RESULT"
+            }
+        },
         DTEType: {
             name: "DTEType",
             values: {
@@ -21152,7 +22438,10 @@ export class SchemaType implements SchemaDef {
                 BUK: "BUK",
                 HIREFRONT: "HIREFRONT",
                 CORNERSTONE: "CORNERSTONE",
-                PANDAPE: "PANDAPE"
+                PANDAPE: "PANDAPE",
+                COMPUTRABAJO: "COMPUTRABAJO",
+                EIGHTFOLD: "EIGHTFOLD",
+                MINISITE: "MINISITE"
             },
             attributes: [
                 { name: "@@schema", args: [{ name: "map", value: ExpressionUtils.literal("personal") }] }

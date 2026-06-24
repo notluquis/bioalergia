@@ -417,11 +417,23 @@
       "import": "./dist/karin.js",
       "default": "./dist/karin.js"
     },
+    "./occupational-testing": {
+      "development": "./src/occupational-testing.ts",
+      "types": "./dist/occupational-testing.d.ts",
+      "import": "./dist/occupational-testing.js",
+      "default": "./dist/occupational-testing.js"
+    },
     "./adherence": {
       "development": "./src/adherence.ts",
       "types": "./dist/adherence.d.ts",
       "import": "./dist/adherence.js",
       "default": "./dist/adherence.js"
+    },
+    "./allergy-diary": {
+      "development": "./src/allergy-diary.ts",
+      "types": "./dist/allergy-diary.d.ts",
+      "import": "./dist/allergy-diary.js",
+      "default": "./dist/allergy-diary.js"
     },
     "./clinical-allergens": {
       "development": "./src/clinical-allergens.ts",

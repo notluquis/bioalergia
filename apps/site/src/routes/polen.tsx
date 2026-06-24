@@ -2,6 +2,7 @@ import type { PollenLevel as ApiPollenLevel } from "@finanzas/orpc-contracts/pol
 import { Breadcrumbs, Card, Chip, Link, Separator } from "@heroui/react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { Leaf } from "lucide-react";
 
 import { BookingCta } from "@/components/BookingCta";
 import { ContentLoading } from "@/components/ContentState";
@@ -87,6 +88,10 @@ function PollenLiveWidget() {
   });
 
   const liveToday = data?.provenance.grass === "live" ? data.grassForecast[0] : undefined;
+  // Google omite `indexInfo` fuera de temporada (gramíneas no polinizan en
+  // invierno) → upi/colorHex null. No es UPI 0, es "sin actividad medible hoy":
+  // se muestra neutro, sin el color de acento.
+  const liveHasIndex = !!liveToday && liveToday.upi !== null;
   const calendarGrass = data?.calendar.find((t) => t.type === "GRASS");
   const todayYmd = new Date().toLocaleDateString("en-CA");
 
@@ -110,13 +115,20 @@ function PollenLiveWidget() {
           {/* Hero: gramíneas hoy — en vivo (UPI 0–5) o estimación del mes */}
           <Card className="rounded-3xl" variant="default">
             <Card.Content className="flex flex-col gap-5 py-6 sm:flex-row sm:items-center">
-              {liveToday ? (
+              {liveHasIndex ? (
                 <span
                   aria-hidden="true"
                   className="flex size-20 shrink-0 items-center justify-center rounded-full font-semibold text-3xl text-white"
                   style={{ backgroundColor: liveToday.colorHex ?? "var(--accent)" }}
                 >
-                  {liveToday.upi ?? "–"}
+                  {liveToday.upi}
+                </span>
+              ) : liveToday ? (
+                <span
+                  aria-hidden="true"
+                  className="flex size-20 shrink-0 items-center justify-center rounded-full bg-(--surface-2) text-(--ink-muted)"
+                >
+                  <Leaf className="size-8" />
                 </span>
               ) : (
                 <span
@@ -129,10 +141,10 @@ function PollenLiveWidget() {
               <div className="grid gap-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-semibold text-(--ink) text-lg">Gramíneas hoy</span>
-                  {liveToday ? (
+                  {liveHasIndex ? (
                     <>
                       <Chip size="sm" variant="primary">
-                        {liveToday.category ?? `Índice ${liveToday.upi ?? "–"}`}
+                        {liveToday.category ?? `Índice ${liveToday.upi}`}
                       </Chip>
                       {liveToday.inSeason ? (
                         <Chip color="warning" size="sm" variant="soft">
@@ -140,6 +152,10 @@ function PollenLiveWidget() {
                         </Chip>
                       ) : null}
                     </>
+                  ) : liveToday ? (
+                    <Chip color="default" size="sm" variant="soft">
+                      Sin actividad
+                    </Chip>
                   ) : calendarGrass ? (
                     <>
                       <Chip color={API_LEVEL_COLOR[calendarGrass.level]} size="sm" variant="soft">
@@ -152,10 +168,12 @@ function PollenLiveWidget() {
                   ) : null}
                 </div>
                 <p className="max-w-2xl text-(--ink-muted) text-sm leading-relaxed">
-                  {liveToday?.indexDescription ??
-                    (liveToday
-                      ? "Índice de polen de gramíneas (0–5) para hoy en Concepción."
-                      : "El pronóstico en vivo de gramíneas no está disponible ahora. Mostramos el nivel estimado del mes según el calendario polínico de la zona.")}
+                  {liveHasIndex
+                    ? (liveToday.indexDescription ??
+                      "Índice de polen de gramíneas (0–5) para hoy en Concepción.")
+                    : liveToday
+                      ? "Hoy no hay actividad polínica de gramíneas en Concepción. Las gramíneas polinizan de septiembre a marzo (peak noviembre–enero); fuera de ese período Google no reporta un índice."
+                      : "El pronóstico en vivo de gramíneas no está disponible ahora. Mostramos el nivel estimado del mes según el calendario polínico de la zona."}
                 </p>
                 {liveToday && data?.updatedAt ? (
                   <span className="text-(--ink-muted) text-xs">
@@ -185,14 +203,25 @@ function PollenLiveWidget() {
                               day: "numeric",
                             })}
                       </span>
-                      <span
-                        aria-hidden="true"
-                        className="flex size-9 items-center justify-center rounded-full font-semibold text-sm text-white"
-                        style={{ backgroundColor: day.colorHex ?? "var(--accent)" }}
-                      >
-                        {day.upi ?? "–"}
+                      {day.upi !== null ? (
+                        <span
+                          aria-hidden="true"
+                          className="flex size-9 items-center justify-center rounded-full font-semibold text-sm text-white"
+                          style={{ backgroundColor: day.colorHex ?? "var(--accent)" }}
+                        >
+                          {day.upi}
+                        </span>
+                      ) : (
+                        <span
+                          aria-hidden="true"
+                          className="flex size-9 items-center justify-center rounded-full border border-(--border) font-medium text-(--ink-muted) text-sm"
+                        >
+                          –
+                        </span>
+                      )}
+                      <span className="text-(--ink-muted) text-xs">
+                        {day.category ?? "Sin act."}
                       </span>
-                      <span className="text-(--ink-muted) text-xs">{day.category ?? "—"}</span>
                     </div>
                   );
                 })}

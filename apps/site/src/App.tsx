@@ -156,7 +156,7 @@ export function App() {
           — productos seleccionados, envío a todo Chile vía Chilexpress →
         </span>
       </a>
-      <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-10 px-4 pt-6 pb-14 sm:px-6 md:gap-12 lg:gap-16 lg:px-8">
+      <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-10 px-4 pt-2 pb-14 sm:px-6 md:gap-12 lg:gap-16 lg:px-8">
         <header className="sticky top-2 z-50 sm:top-3">
           <div className="rounded-2xl border border-border bg-(--surface)/90 shadow-[0_20px_60px_rgba(0,0,0,0.16)] backdrop-blur sm:rounded-3xl">
             <div className="hidden flex-wrap items-center justify-between gap-3 border-border border-b px-4 py-2 text-(--ink-muted) text-xs md:flex lg:px-5">

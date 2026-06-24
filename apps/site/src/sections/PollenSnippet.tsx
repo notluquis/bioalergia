@@ -24,8 +24,11 @@ export function PollenSnippet() {
   const liveGrass = data?.provenance.grass === "live" ? data.grassForecast[0] : undefined;
   const calendarGrass = data?.calendar.find((t) => t.type === "GRASS");
 
+  // Google omite el índice fuera de temporada (upi null) → "sin actividad", no "–".
   const summary = liveGrass
-    ? { label: liveGrass.category ?? "Gramíneas", value: String(liveGrass.upi ?? "–") }
+    ? liveGrass.upi !== null
+      ? { label: liveGrass.category ?? "Gramíneas", value: String(liveGrass.upi) }
+      : { label: "Gramíneas", value: "sin actividad" }
     : calendarGrass
       ? { label: "Gramíneas", value: LEVEL_LABEL[calendarGrass.level] ?? "—" }
       : null;

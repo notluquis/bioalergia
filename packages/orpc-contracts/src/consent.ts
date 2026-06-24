@@ -14,6 +14,10 @@ export const consentPurposeSchema = z.enum([
   // Recordatorios de adherencia SCIT/SLIT — propósito distinto de marketing
   // (gate del envío en services/adherence-reminders.ts).
   "ADHERENCE_REMINDER",
+  // eDiary de síntomas (P2) — recolección de datos sensibles de salud +
+  // scoring automatizado (CSMS). Gate EIPD (docs/EIPD_EDIARY.md). Granularidad
+  // por finalidad: registro clínico (este) separable del scoring/comunicaciones.
+  "SYMPTOM_DIARY",
 ]);
 
 export const consentChannelSchema = z.enum([
