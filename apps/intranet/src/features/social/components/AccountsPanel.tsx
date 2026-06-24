@@ -203,10 +203,12 @@ export function AccountsPanel() {
           isDisabled={settingsQuery.isLoading || updateSettings.isPending}
           onChange={(realMode) => void handleToggleReal(realMode)}
         >
-          <Switch.Control>
-            <Switch.Thumb />
-          </Switch.Control>
-          <Switch.Content>Publicación real</Switch.Content>
+          <Switch.Content>
+            <Switch.Control>
+              <Switch.Thumb />
+            </Switch.Control>
+            Publicación real
+          </Switch.Content>
         </Switch>
       </section>
 

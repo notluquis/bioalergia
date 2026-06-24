@@ -124,11 +124,11 @@ function ToggleRow({
 }) {
   return (
     <Switch isSelected={isSelected} onChange={onChange}>
-      <Switch.Control>
-        <Switch.Thumb />
-      </Switch.Control>
       <Switch.Content>
-        <Label className="cursor-pointer text-sm">{label}</Label>
+        <Switch.Control>
+          <Switch.Thumb />
+        </Switch.Control>
+        <span className="cursor-pointer text-sm">{label}</span>
       </Switch.Content>
     </Switch>
   );

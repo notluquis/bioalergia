@@ -963,9 +963,11 @@ function UpdateSelectionCard({
           slot="selection"
           variant="secondary"
         >
-          <Checkbox.Control>
-            <Checkbox.Indicator />
-          </Checkbox.Control>
+          <Checkbox.Content>
+            <Checkbox.Control>
+              <Checkbox.Indicator />
+            </Checkbox.Control>
+          </Checkbox.Content>
         </Checkbox>
       ),
       header: () => (
@@ -979,9 +981,11 @@ function UpdateSelectionCard({
           slot="selection"
           variant="secondary"
         >
-          <Checkbox.Control>
-            <Checkbox.Indicator />
-          </Checkbox.Control>
+          <Checkbox.Content>
+            <Checkbox.Control>
+              <Checkbox.Indicator />
+            </Checkbox.Control>
+          </Checkbox.Content>
         </Checkbox>
       ),
       id: "select",

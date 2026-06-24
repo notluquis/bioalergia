@@ -335,9 +335,11 @@ function DataTableContent<TData>({
             {selectionEnabled && (
               <Table.Cell className="pr-0">
                 <Checkbox aria-label="Seleccionar fila" slot="selection" variant="secondary">
-                  <Checkbox.Control>
-                    <Checkbox.Indicator />
-                  </Checkbox.Control>
+                  <Checkbox.Content>
+                    <Checkbox.Control>
+                      <Checkbox.Indicator />
+                    </Checkbox.Control>
+                  </Checkbox.Content>
                 </Checkbox>
               </Table.Cell>
             )}
@@ -411,9 +413,11 @@ function DataTableContent<TData>({
           {selectionEnabled && (
             <Table.Column className="pr-0" id="__selection__" minWidth={40}>
               <Checkbox aria-label="Seleccionar todo" slot="selection">
-                <Checkbox.Control>
-                  <Checkbox.Indicator />
-                </Checkbox.Control>
+                <Checkbox.Content>
+                  <Checkbox.Control>
+                    <Checkbox.Indicator />
+                  </Checkbox.Control>
+                </Checkbox.Content>
               </Checkbox>
             </Table.Column>
           )}

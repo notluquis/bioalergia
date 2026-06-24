@@ -178,10 +178,12 @@ export function CampaignFormModal({ isOpen, onClose, campaign }: Readonly<Campai
                       isSelected={field.state.value}
                       onChange={(selected) => field.handleChange(selected)}
                     >
-                      <Switch.Control>
-                        <Switch.Thumb />
-                      </Switch.Control>
-                      <Switch.Content>Campaña activa</Switch.Content>
+                      <Switch.Content>
+                        <Switch.Control>
+                          <Switch.Thumb />
+                        </Switch.Control>
+                        Campaña activa
+                      </Switch.Content>
                     </Switch>
                   )}
                 </form.Field>

@@ -232,10 +232,12 @@ export function CreatePostModal({ isOpen, onClose }: Readonly<CreatePostModalPro
                                   field.handleChange(() => next);
                                 }}
                               >
-                                <Checkbox.Control>
-                                  <Checkbox.Indicator />
-                                </Checkbox.Control>
-                                <Checkbox.Content>{opt.label}</Checkbox.Content>
+                                <Checkbox.Content>
+                                  <Checkbox.Control>
+                                    <Checkbox.Indicator />
+                                  </Checkbox.Control>
+                                  {opt.label}
+                                </Checkbox.Content>
                               </Checkbox>
                             );
                           })}

@@ -547,10 +547,10 @@ export function AddressFormModal({
                       isSelected={field.state.value}
                       onChange={(value) => field.handleChange(value)}
                     >
-                      <Checkbox.Control>
-                        <Checkbox.Indicator />
-                      </Checkbox.Control>
                       <Checkbox.Content>
+                        <Checkbox.Control>
+                          <Checkbox.Indicator />
+                        </Checkbox.Control>
                         <Label>Marcar como dirección principal</Label>
                       </Checkbox.Content>
                     </Checkbox>
@@ -791,10 +791,10 @@ function ComunaLimitsAlert({
           onChange={onAcknowledge}
           variant="secondary"
         >
-          <Checkbox.Control>
-            <Checkbox.Indicator />
-          </Checkbox.Control>
           <Checkbox.Content>
+            <Checkbox.Control>
+              <Checkbox.Indicator />
+            </Checkbox.Control>
             <Label>Entiendo y deseo continuar con esta comuna</Label>
           </Checkbox.Content>
         </Checkbox>

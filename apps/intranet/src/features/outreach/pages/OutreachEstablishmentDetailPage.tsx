@@ -324,10 +324,12 @@ export function OutreachEstablishmentDetailPage() {
                 isSelected={contactDraft.esPrincipal}
                 onChange={(v) => setContactDraft((d) => ({ ...d, esPrincipal: v }))}
               >
-                <Checkbox.Control>
-                  <Checkbox.Indicator />
-                </Checkbox.Control>
-                <Checkbox.Content>Contacto principal</Checkbox.Content>
+                <Checkbox.Content>
+                  <Checkbox.Control>
+                    <Checkbox.Indicator />
+                  </Checkbox.Control>
+                  Contacto principal
+                </Checkbox.Content>
               </Checkbox>
               <div className="md:col-span-2">
                 <Button type="submit" variant="primary" size="sm">

@@ -35,6 +35,15 @@ describe("RolePermissionCheckbox", () => {
     expect(onChange).toHaveBeenCalledTimes(1);
   });
 
+  it("keeps the visual control inside the clickable content", () => {
+    const { container } = render(
+      <RolePermissionCheckbox ariaLabel="x" isSelected={false} onChange={vi.fn<() => void>()} />
+    );
+    expect(
+      container.querySelector('[data-slot="checkbox-content"] [data-slot="checkbox-control"]')
+    ).toBeInTheDocument();
+  });
+
   it("does not call onChange when disabled", async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();

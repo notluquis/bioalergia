@@ -347,10 +347,10 @@ export function ClinicalRecordsReviewPage() {
             isSelected={allSelected}
             onChange={() => toggleAll()}
           >
-            <Checkbox.Control>
-              <Checkbox.Indicator />
-            </Checkbox.Control>
             <Checkbox.Content>
+              <Checkbox.Control>
+                <Checkbox.Indicator />
+              </Checkbox.Control>
               <Label>Seleccionar visibles ({pendingItems.length})</Label>
             </Checkbox.Content>
           </Checkbox>
@@ -405,9 +405,11 @@ export function ClinicalRecordsReviewPage() {
                         onChange={() => toggleOne(it.id)}
                         className="mt-0.5"
                       >
-                        <Checkbox.Control>
-                          <Checkbox.Indicator />
-                        </Checkbox.Control>
+                        <Checkbox.Content>
+                          <Checkbox.Control>
+                            <Checkbox.Indicator />
+                          </Checkbox.Control>
+                        </Checkbox.Content>
                       </Checkbox>
                     )}
                     <div className="min-w-0 flex-1">

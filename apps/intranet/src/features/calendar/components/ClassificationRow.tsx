@@ -229,9 +229,11 @@ export function ClassificationRow({
                         onChange={field.handleChange}
                         variant="secondary"
                       >
-                        <Checkbox.Control>
-                          <Checkbox.Indicator />
-                        </Checkbox.Control>
+                        <Checkbox.Content>
+                          <Checkbox.Control>
+                            <Checkbox.Indicator />
+                          </Checkbox.Control>
+                        </Checkbox.Content>
                       </Checkbox>
                       <span className="text-sm">{testSubtypeChoices[0] ?? "Test cutáneo"}</span>
                     </div>
@@ -259,9 +261,11 @@ export function ClassificationRow({
                         }}
                         variant="secondary"
                       >
-                        <Checkbox.Control>
-                          <Checkbox.Indicator />
-                        </Checkbox.Control>
+                        <Checkbox.Content>
+                          <Checkbox.Control>
+                            <Checkbox.Indicator />
+                          </Checkbox.Control>
+                        </Checkbox.Content>
                       </Checkbox>
                       <span className="text-sm">{testSubtypeChoices[1] ?? "Test de parche"}</span>
                     </div>
@@ -283,9 +287,11 @@ export function ClassificationRow({
                         onChange={field.handleChange}
                         variant="secondary"
                       >
-                        <Checkbox.Control>
-                          <Checkbox.Indicator />
-                        </Checkbox.Control>
+                        <Checkbox.Content>
+                          <Checkbox.Control>
+                            <Checkbox.Indicator />
+                          </Checkbox.Control>
+                        </Checkbox.Content>
                       </Checkbox>
                       <span className="text-sm">{patchReadingChoices[0] ?? "1ra lectura"}</span>
                     </div>
@@ -307,9 +313,11 @@ export function ClassificationRow({
                         onChange={field.handleChange}
                         variant="secondary"
                       >
-                        <Checkbox.Control>
-                          <Checkbox.Indicator />
-                        </Checkbox.Control>
+                        <Checkbox.Content>
+                          <Checkbox.Control>
+                            <Checkbox.Indicator />
+                          </Checkbox.Control>
+                        </Checkbox.Content>
                       </Checkbox>
                       <span className="text-sm">{patchReadingChoices[1] ?? "2da lectura"}</span>
                     </div>
@@ -331,9 +339,11 @@ export function ClassificationRow({
                         onChange={field.handleChange}
                         variant="secondary"
                       >
-                        <Checkbox.Control>
-                          <Checkbox.Indicator />
-                        </Checkbox.Control>
+                        <Checkbox.Content>
+                          <Checkbox.Control>
+                            <Checkbox.Indicator />
+                          </Checkbox.Control>
+                        </Checkbox.Content>
                       </Checkbox>
                       <span className="text-sm">{patchReadingChoices[2] ?? "3ra lectura"}</span>
                     </div>
@@ -401,9 +411,11 @@ export function ClassificationRow({
                     onChange={field.handleChange}
                     variant="secondary"
                   >
-                    <Checkbox.Control>
-                      <Checkbox.Indicator />
-                    </Checkbox.Control>
+                    <Checkbox.Content>
+                      <Checkbox.Control>
+                        <Checkbox.Indicator />
+                      </Checkbox.Control>
+                    </Checkbox.Content>
                   </Checkbox>
                   <span className="text-sm">
                     {isNoShowLocked ? "No asistió / no llegó" : "Asistió / llegó"}

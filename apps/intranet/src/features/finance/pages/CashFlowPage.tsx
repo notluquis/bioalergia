@@ -2510,10 +2510,10 @@ export function CashFlowPage() {
                             isSelected={showNonAccountableMovements}
                             onChange={setShowNonAccountableMovements}
                           >
-                            <Switch.Control>
-                              <Switch.Thumb />
-                            </Switch.Control>
                             <Switch.Content>
+                              <Switch.Control>
+                                <Switch.Thumb />
+                              </Switch.Control>
                               <Label className="text-xs text-default-600">No contabilizables</Label>
                             </Switch.Content>
                           </Switch>
@@ -2522,10 +2522,10 @@ export function CashFlowPage() {
                             isSelected={showOnlyUncategorizedMovements}
                             onChange={setShowOnlyUncategorizedMovements}
                           >
-                            <Switch.Control>
-                              <Switch.Thumb />
-                            </Switch.Control>
                             <Switch.Content>
+                              <Switch.Control>
+                                <Switch.Thumb />
+                              </Switch.Control>
                               <Label className="text-xs text-default-600">Solo sin categoría</Label>
                             </Switch.Content>
                           </Switch>
@@ -2890,10 +2890,10 @@ export function CashFlowPage() {
                             isSelected={newCategoryIsNonAccountable}
                             onChange={(value) => setNewCategoryIsNonAccountable(value)}
                           >
-                            <Switch.Control>
-                              <Switch.Thumb />
-                            </Switch.Control>
                             <Switch.Content>
+                              <Switch.Control>
+                                <Switch.Thumb />
+                              </Switch.Control>
                               <Label>No contabilizable</Label>
                             </Switch.Content>
                           </Switch>
@@ -2941,10 +2941,10 @@ export function CashFlowPage() {
                                         setEditingCategoryIsNonAccountable(value)
                                       }
                                     >
-                                      <Switch.Control>
-                                        <Switch.Thumb />
-                                      </Switch.Control>
                                       <Switch.Content>
+                                        <Switch.Control>
+                                          <Switch.Thumb />
+                                        </Switch.Control>
                                         <Label>No contabilizable</Label>
                                       </Switch.Content>
                                     </Switch>
@@ -3087,10 +3087,10 @@ export function CashFlowPage() {
                           isSelected={newCompensationIsActive}
                           onChange={(value) => setNewCompensationIsActive(value)}
                         >
-                          <Switch.Control>
-                            <Switch.Thumb />
-                          </Switch.Control>
                           <Switch.Content>
+                            <Switch.Control>
+                              <Switch.Thumb />
+                            </Switch.Control>
                             <Label>Activo</Label>
                           </Switch.Content>
                         </Switch>
