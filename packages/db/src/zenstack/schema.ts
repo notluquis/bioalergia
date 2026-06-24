@@ -21042,7 +21042,8 @@ export class SchemaType implements SchemaDef {
                 BUK: "BUK",
                 HIREFRONT: "HIREFRONT",
                 CORNERSTONE: "CORNERSTONE",
-                PANDAPE: "PANDAPE"
+                PANDAPE: "PANDAPE",
+                COMPUTRABAJO: "COMPUTRABAJO"
             },
             attributes: [
                 { name: "@@schema", args: [{ name: "map", value: ExpressionUtils.literal("personal") }] }

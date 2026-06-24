@@ -6154,6 +6154,7 @@ enum JobSourceKind {
   HIREFRONT
   CORNERSTONE
   PANDAPE
+  COMPUTRABAJO
 
   @@schema("personal")
 }
