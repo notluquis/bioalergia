@@ -16,46 +16,6 @@ const CLP = new Intl.NumberFormat("es-CL", {
 
 type PriceRow = { name: string; category: string; unit: string; priceClp: number; notes: string | null };
 
-// Fallback estático (precios.md) — se usa solo si la lista en DB viene vacía,
-// para que la página nunca quede en blanco.
-const FALLBACK_ITEMS: PriceRow[] = [
-  {
-    name: "Consulta médica de alergología",
-    category: "Consultas",
-    unit: "Por consulta",
-    priceClp: 60_000,
-    notes: null,
-  },
-  {
-    name: "Test cutáneo (prick test)",
-    category: "Estudios",
-    unit: "Por sesión",
-    priceClp: 40_000,
-    notes: null,
-  },
-  {
-    name: "Prick-by-prick",
-    category: "Estudios",
-    unit: "Por sesión",
-    priceClp: 40_000,
-    notes: null,
-  },
-  {
-    name: "Test de parche",
-    category: "Estudios",
-    unit: "Por estudio (serie + lecturas)",
-    priceClp: 80_000,
-    notes: "Incluye la aplicación de la serie y las lecturas de seguimiento del estudio.",
-  },
-  {
-    name: "Inmunoterapia",
-    category: "Tratamientos",
-    unit: "Por alérgeno",
-    priceClp: 60_000,
-    notes: "El costo total del esquema depende del número de alérgenos prescritos por el médico.",
-  },
-];
-
 const NOTES = [
   "Los valores corresponden a atención particular y pueden actualizarse. La versión vigente es la exhibida en el establecimiento.",
   "La inmunoterapia se cobra por alérgeno; el costo total de un esquema depende del número de alérgenos prescritos por el médico.",
@@ -102,8 +62,7 @@ function PreciosPage() {
     queryFn: () => publicClinicClient.priceList(),
   });
 
-  const apiItems = query.data?.items ?? [];
-  const items: PriceRow[] = apiItems.length > 0 ? apiItems : FALLBACK_ITEMS;
+  const items: PriceRow[] = query.data?.items ?? [];
   const groups = groupByCategory(items);
   const updatedAt = query.data?.updatedAt ?? null;
 
@@ -148,6 +107,26 @@ function PreciosPage() {
           <Spinner size="sm" />
           Cargando lista de precios…
         </div>
+      ) : query.isError ? (
+        <Card className="rounded-3xl" variant="secondary">
+          <Card.Content className="grid gap-2 py-6">
+            <span className="font-medium text-(--ink)">No pudimos cargar la lista de precios</span>
+            <span className="text-(--ink-muted) text-sm leading-relaxed">
+              Vuelve a intentarlo en unos minutos o escríbenos a contacto@bioalergia.cl para
+              consultar los aranceles vigentes.
+            </span>
+          </Card.Content>
+        </Card>
+      ) : items.length === 0 ? (
+        <Card className="rounded-3xl" variant="secondary">
+          <Card.Content className="grid gap-2 py-6">
+            <span className="font-medium text-(--ink)">Lista de precios en actualización</span>
+            <span className="text-(--ink-muted) text-sm leading-relaxed">
+              Estamos actualizando los aranceles. Escríbenos a contacto@bioalergia.cl o llámanos para
+              conocer los valores vigentes.
+            </span>
+          </Card.Content>
+        </Card>
       ) : (
         <Section title="Prestaciones y valores">
           <div className="grid gap-6 md:grid-cols-2">
