@@ -6649,6 +6649,7 @@ enum JobSourceKind {
   COMPUTRABAJO
   EIGHTFOLD
   MINISITE
+  CDOHR
 
   @@schema("personal")
 }

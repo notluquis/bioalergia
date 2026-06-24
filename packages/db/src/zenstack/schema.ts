@@ -22441,7 +22441,8 @@ export class SchemaType implements SchemaDef {
                 PANDAPE: "PANDAPE",
                 COMPUTRABAJO: "COMPUTRABAJO",
                 EIGHTFOLD: "EIGHTFOLD",
-                MINISITE: "MINISITE"
+                MINISITE: "MINISITE",
+                CDOHR: "CDOHR"
             },
             attributes: [
                 { name: "@@schema", args: [{ name: "map", value: ExpressionUtils.literal("personal") }] }
