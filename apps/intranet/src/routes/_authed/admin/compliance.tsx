@@ -5,6 +5,7 @@ import {
   ClipboardCheck,
   ClipboardList,
   Database,
+  FileSpreadsheet,
   Fingerprint,
   LayoutDashboard,
   ListChecks,
@@ -22,6 +23,7 @@ import { ComplaintsPage } from "@/features/complaints/pages/ComplaintsPage";
 import { ConsentPage } from "@/features/consent/pages/ConsentPage";
 import { DataRightsPage } from "@/features/data-rights/pages/DataRightsPage";
 import { KarinPage } from "@/features/karin/pages/KarinPage";
+import { OperationalRegistersPage } from "@/features/operational-registers/pages/OperationalRegistersPage";
 import { ProcessingActivitiesPage } from "@/features/processing-activities/pages/ProcessingActivitiesPage";
 import { RetentionPoliciesPage } from "@/features/settings/pages/RetentionPoliciesPage";
 import { SecurityAlertsPage } from "@/features/settings/pages/SecurityAlertsPage";
@@ -55,6 +57,7 @@ const tabKey = z.enum([
   "brechas",
   "reclamos",
   "karin",
+  "registros",
   "retencion",
   "alertas",
 ]);
@@ -143,6 +146,10 @@ function ComplianceHostPage() {
               <ShieldAlert size={14} /> Denuncias Karin
               <Tabs.Indicator />
             </Tabs.Tab>
+            <Tabs.Tab id="registros">
+              <FileSpreadsheet size={14} /> Registros operativos
+              <Tabs.Indicator />
+            </Tabs.Tab>
             <Tabs.Tab id="retencion">
               <Database size={14} /> Retención
               <Tabs.Indicator />
@@ -176,6 +183,13 @@ function ComplianceHostPage() {
           {isTabMounted("karin") ? (
             <ProtectedTab action="read" subject="KarinReport">
               <KarinPage />
+            </ProtectedTab>
+          ) : null}
+        </Tabs.Panel>
+        <Tabs.Panel id="registros" className="pt-2">
+          {isTabMounted("registros") ? (
+            <ProtectedTab action="read" subject="OperationalRegister">
+              <OperationalRegistersPage />
             </ProtectedTab>
           ) : null}
         </Tabs.Panel>

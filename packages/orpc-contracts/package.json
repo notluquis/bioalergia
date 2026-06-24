@@ -417,6 +417,12 @@
       "import": "./dist/karin.js",
       "default": "./dist/karin.js"
     },
+    "./operational-registers": {
+      "development": "./src/operational-registers.ts",
+      "types": "./dist/operational-registers.d.ts",
+      "import": "./dist/operational-registers.js",
+      "default": "./dist/operational-registers.js"
+    },
     "./occupational-testing": {
       "development": "./src/occupational-testing.ts",
       "types": "./dist/occupational-testing.d.ts",

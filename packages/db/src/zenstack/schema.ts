@@ -5214,6 +5214,86 @@ export class SchemaType implements SchemaDef {
                 id: { type: "String" }
             }
         },
+        OperationalRegister: {
+            name: "OperationalRegister",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("cuid") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("cuid") as FieldDefault
+                },
+                registerType: {
+                    name: "registerType",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("register_type") }] }] as readonly AttributeApplication[]
+                },
+                occurredAt: {
+                    name: "occurredAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("occurred_at") }] }] as readonly AttributeApplication[]
+                },
+                summary: {
+                    name: "summary",
+                    type: "String"
+                },
+                data: {
+                    name: "data",
+                    type: "Json"
+                },
+                status: {
+                    name: "status",
+                    type: "String",
+                    optional: true
+                },
+                dueAt: {
+                    name: "dueAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("due_at") }] }] as readonly AttributeApplication[]
+                },
+                attachmentUrl: {
+                    name: "attachmentUrl",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("attachment_url") }] }] as readonly AttributeApplication[]
+                },
+                signedBy: {
+                    name: "signedBy",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("signed_by") }] }] as readonly AttributeApplication[]
+                },
+                recordedBy: {
+                    name: "recordedBy",
+                    type: "Int",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("recorded_by") }] }] as readonly AttributeApplication[]
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    attributes: [{ name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }] as readonly AttributeApplication[]
+                }
+            },
+            attributes: [
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,read,update") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("registerType"), ExpressionUtils.field("occurredAt")]) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("operational_registers") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" }
+            }
+        },
         FoliatedBookEntry: {
             name: "FoliatedBookEntry",
             fields: {
