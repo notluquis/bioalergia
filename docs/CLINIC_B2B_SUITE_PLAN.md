@@ -9,12 +9,12 @@ aerobiología Biobío) + plan por feature. Rama base: `feat/clinic-b2b-suite`.
 |---|---|---|---|
 | P1 — Páginas de condiciones (SEO) + micro-quizzes | M | ✅ HECHO | Validación clínica del alergólogo antes de publicar |
 | shared-pricing — precios por cliente | L | ⏳ pendiente | Tests de @@allow por cuenta |
-| shared-productdoc — IFU/SDS/CoA en R2 | M | ⏳ pendiente | SDS/IFU SIEMPRE públicos |
-| P3 — Widget polen (Google grass + calendario árboles/malezas) | M | ⏳ pendiente | **`GOOGLE_POLLEN_API_KEY` (tú)** + Maps ToS cache diario |
-| shared-reminder — scheduler adherencia (graphile-worker) | M | ⏳ pendiente | Ley 21.719 consent por canal |
+| shared-productdoc — IFU/SDS/CoA en R2 | M | ✅ HECHO (#50) | SDS/IFU SIEMPRE públicos (bucket público → solo PUBLIC) |
+| P3 — Widget polen (Google grass + calendario árboles/malezas) | M | ✅ HECHO | Habilitar Pollen API en GCP (reusa `GOOGLE_PLACES_API_KEY`) |
+| shared-reminder — scheduler adherencia (graphile-worker) | M | ✅ HECHO (#47) | Ley 21.719 consent por canal (gate en service) |
 | B2B portal (login-to-see-price, RFQ cart, cuenta/reorden, capacitaciones) | XL | ⏳ pendiente | depende de shared-pricing/productdoc |
-| P2 — Adherencia SCIT/SLIT + eDiary (CSMS) | L | ⏳ pendiente | **EIPD + sign-off alergólogo**; copy seguridad no descartable |
-| P7 — Salud ocupacional B2B (drogas/alcohol) | XL | ⏳ pendiente | **Revisión legal BLOQUEANTE** (ver abajo) |
+| P2 — Adherencia SCIT/SLIT + eDiary (CSMS) | L | 🟡 PARCIAL | Adherencia ✅ (#47). eDiary: backend CSMS + vista clínico ✅; **borrador EIPD escrito** (docs/EIPD_EDIARY.md); FALTA firma EIPD + sign-off alergólogo + PWA self-service paciente (gate go-live) |
+| P7 — Salud ocupacional B2B (drogas/alcohol) | XL | 🟡 PARCIAL | Stage-A landing+leads ✅. Stage-B SEGURO ✅ (gate RIOHS + resultado agregado k-anon). **DIFERIDO tras sign-off legal**: resultado individual + cadena custodia + confirmatorio GC-MS + EIPD ocupacional |
 
 ## Secuencia recomendada
 

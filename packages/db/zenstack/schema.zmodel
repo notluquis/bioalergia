@@ -3040,6 +3040,7 @@ model Patient {
   complaints          Complaint[]
   clinicalConsents    ClinicalConsent[]
   reminderSchedules   ReminderSchedule[]
+  allergyDiaryEntries AllergyDiaryEntry[]
 
   @@deny('all', auth() == null)
   @@allow('read', auth().status == 'ACTIVE')
@@ -3092,6 +3093,47 @@ model ReminderSchedule {
   @@index([status, runAt])
   @@index([patientId])
   @@map("reminder_schedules")
+}
+
+// eDiary de síntomas (P2, CSMS golden EAACI/Pfaar). Una entrada por paciente y
+// día. Los 6 síntomas se puntúan 0–3; los escalones de medicación de rescate
+// son booleanos. dSS/dMS/csms se COMPUTAN server-side (services/allergy-diary.ts)
+// y se persisten solo para velocidad de consulta — nunca se confían del cliente.
+// Dato sensible de salud: la recolección directa del paciente está gateada por
+// EIPD (docs/EIPD_EDIARY.md) + consent purpose SYMPTOM_DIARY.
+model AllergyDiaryEntry {
+  id                Int      @id @default(autoincrement())
+  patientId         Int      @map("patient_id")
+  entryDate         DateTime @map("entry_date") @db.Date
+  // 6 síntomas (4 nasales + 2 oculares), cada uno 0–3
+  sneezing          Int      @default(0)
+  rhinorrhea        Int      @default(0)
+  nasalItching      Int      @default(0) @map("nasal_itching")
+  nasalCongestion   Int      @default(0) @map("nasal_congestion")
+  eyeItchingRedness Int      @default(0) @map("eye_itching_redness")
+  eyeWatering       Int      @default(0) @map("eye_watering")
+  // Escalones de medicación de rescate (dMS = mayor escalón usado)
+  medAntihistamine     Boolean @default(false) @map("med_antihistamine")    // step 1
+  medIntranasalSteroid Boolean @default(false) @map("med_intranasal_steroid") // step 2
+  medOralSteroid       Boolean @default(false) @map("med_oral_steroid")      // step 3
+  // Computados server-side
+  dSS               Float    @map("d_ss")  // Σ6 síntomas / 6 → 0–3
+  dMS               Int      @map("d_ms")  // mayor escalón → 0–3
+  csms              Float                  // dSS + dMS → 0–6
+  isComplete        Boolean  @default(true) @map("is_complete")
+  notes             String?
+  enteredBy         Int?     @map("entered_by") // staff que registró (null = paciente)
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @default(now()) @updatedAt @map("updated_at")
+
+  patient           Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+
+  @@unique([patientId, entryDate])
+  @@index([patientId, entryDate])
+  @@map("allergy_diary_entries")
 }
 
 model Shipment {
@@ -3358,6 +3400,7 @@ model Company {
 
   contacts      CompanyContact[]
   quotes        Quote[]
+  occupationalPrograms OccupationalProgram[]
 
   @@deny('all', auth() == null)
   @@allow('read', auth().status == 'ACTIVE')
@@ -3658,6 +3701,84 @@ model OccupationalLead {
   @@index([status])
   @@index([createdAt])
   @@map("occupational_leads")
+}
+
+// ── Salud ocupacional P7 stage-B (incremento SEGURO) ─────────────────
+// Solo lo que NO cruza el gate legal bloqueante (ver docs/CLINIC_B2B_SUITE_PLAN.md
+// §gates P7 + research golden-2026):
+//  - Gate de atestación RIOHS: un programa NO puede activarse sin que el cliente
+//    declare la cláusula RIOHS (CdT Art. 5/153/154/154 bis/184; DT Ord. 3032/47).
+//  - Resultado AGREGADO/despersonalizado (apto/no apto poblacional) con supresión
+//    por cohorte mínima — NUNCA resultado individual.
+// DIFERIDO tras sign-off legal (NO modelado aquí): resultado individual,
+// cadena de custodia, tamizaje presuntivo→confirmatorio GC-MS, divulgación
+// individual al empleador (Art. 154 bis + consentimiento expreso separado),
+// EIPD ocupacional. Esos requieren un modelo distinto bajo gate LEGAL_SIGNOFF.
+enum OccupationalProgramStatus {
+  DRAFT
+  ACTIVE
+  SUSPENDED
+}
+
+enum OccupationalTestingScope {
+  DRUGS
+  ALCOHOL
+  BOTH
+}
+
+model OccupationalProgram {
+  id              Int                       @id @default(autoincrement())
+  companyId       Int                       @map("company_id")
+  sector          OccupationalSector        @default(GENERAL)
+  testingScope    OccupationalTestingScope  @default(BOTH) @map("testing_scope")
+  status          OccupationalProgramStatus @default(DRAFT)
+  // Gate RIOHS (bloqueante para ACTIVE — se valida en el service).
+  riohsAttested   Boolean                   @default(false) @map("riohs_attested")
+  riohsClauseRef  String?                   @map("riohs_clause_ref") // referencia/cita de la cláusula
+  riohsAttestedAt DateTime?                 @map("riohs_attested_at")
+  riohsAttestedBy Int?                      @map("riohs_attested_by")
+  // Declaración del modelo de consentimiento del trabajador (Art. 154 bis):
+  // por defecto la divulgación al empleador es agregada/despersonalizada.
+  workerConsentBasis String?                @map("worker_consent_basis")
+  notes           String?
+  createdAt       DateTime                  @default(now()) @map("created_at")
+  updatedAt       DateTime                  @default(now()) @updatedAt @map("updated_at")
+
+  company         Company                   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  testBatches     OccupationalTestBatch[]
+
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([companyId])
+  @@index([status])
+  @@map("occupational_programs")
+}
+
+// Resultado AGREGADO de un lote de testeo. Sin PHI individual. La supresión por
+// cohorte mínima (k-anonimato) se aplica en el serializer del service: si
+// totalTested < umbral, se marca `suppressed` y no se exponen los conteos.
+model OccupationalTestBatch {
+  id                       Int      @id @default(autoincrement())
+  programId                Int      @map("program_id")
+  batchDate                DateTime @map("batch_date") @db.Date
+  totalTested              Int      @default(0) @map("total_tested")
+  passedCount              Int      @default(0) @map("passed_count")
+  // Presuntivos a confirmar (NUNCA un positivo final — confirmación GC-MS es
+  // un modelo diferido). Se reporta como "pendiente de confirmación".
+  presumptivePositiveCount Int      @default(0) @map("presumptive_positive_count")
+  notes                    String?
+  createdBy                Int?     @map("created_by")
+  createdAt                DateTime @default(now()) @map("created_at")
+  updatedAt                DateTime @default(now()) @updatedAt @map("updated_at")
+
+  program                  OccupationalProgram @relation(fields: [programId], references: [id], onDelete: Cascade)
+
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([programId, batchDate])
+  @@map("occupational_test_batches")
 }
 
 // ============================================================

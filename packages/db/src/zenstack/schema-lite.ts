@@ -8150,6 +8150,12 @@ export class SchemaType implements SchemaDef {
                     type: "ReminderSchedule",
                     array: true,
                     relation: { opposite: "patient" }
+                },
+                allergyDiaryEntries: {
+                    name: "allergyDiaryEntries",
+                    type: "AllergyDiaryEntry",
+                    array: true,
+                    relation: { opposite: "patient" }
                 }
             },
             idFields: ["id"],
@@ -8240,6 +8246,121 @@ export class SchemaType implements SchemaDef {
             idFields: ["id"],
             uniqueFields: {
                 id: { type: "Int" }
+            }
+        },
+        AllergyDiaryEntry: {
+            name: "AllergyDiaryEntry",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                patientId: {
+                    name: "patientId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "patient"
+                    ] as readonly string[]
+                },
+                entryDate: {
+                    name: "entryDate",
+                    type: "DateTime"
+                },
+                sneezing: {
+                    name: "sneezing",
+                    type: "Int",
+                    default: 0 as FieldDefault
+                },
+                rhinorrhea: {
+                    name: "rhinorrhea",
+                    type: "Int",
+                    default: 0 as FieldDefault
+                },
+                nasalItching: {
+                    name: "nasalItching",
+                    type: "Int",
+                    default: 0 as FieldDefault
+                },
+                nasalCongestion: {
+                    name: "nasalCongestion",
+                    type: "Int",
+                    default: 0 as FieldDefault
+                },
+                eyeItchingRedness: {
+                    name: "eyeItchingRedness",
+                    type: "Int",
+                    default: 0 as FieldDefault
+                },
+                eyeWatering: {
+                    name: "eyeWatering",
+                    type: "Int",
+                    default: 0 as FieldDefault
+                },
+                medAntihistamine: {
+                    name: "medAntihistamine",
+                    type: "Boolean",
+                    default: false as FieldDefault
+                },
+                medIntranasalSteroid: {
+                    name: "medIntranasalSteroid",
+                    type: "Boolean",
+                    default: false as FieldDefault
+                },
+                medOralSteroid: {
+                    name: "medOralSteroid",
+                    type: "Boolean",
+                    default: false as FieldDefault
+                },
+                dSS: {
+                    name: "dSS",
+                    type: "Float"
+                },
+                dMS: {
+                    name: "dMS",
+                    type: "Int"
+                },
+                csms: {
+                    name: "csms",
+                    type: "Float"
+                },
+                isComplete: {
+                    name: "isComplete",
+                    type: "Boolean",
+                    default: true as FieldDefault
+                },
+                notes: {
+                    name: "notes",
+                    type: "String",
+                    optional: true
+                },
+                enteredBy: {
+                    name: "enteredBy",
+                    type: "Int",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                patient: {
+                    name: "patient",
+                    type: "Patient",
+                    relation: { opposite: "allergyDiaryEntries", fields: ["patientId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                patientId_entryDate: { patientId: { type: "Int" }, entryDate: { type: "DateTime" } }
             }
         },
         Shipment: {
@@ -8992,6 +9113,12 @@ export class SchemaType implements SchemaDef {
                     type: "Quote",
                     array: true,
                     relation: { opposite: "company" }
+                },
+                occupationalPrograms: {
+                    name: "occupationalPrograms",
+                    type: "OccupationalProgram",
+                    array: true,
+                    relation: { opposite: "company" }
                 }
             },
             idFields: ["id"],
@@ -9700,6 +9827,162 @@ export class SchemaType implements SchemaDef {
                     type: "DateTime",
                     updatedAt: true,
                     default: ExpressionUtils.call("now") as FieldDefault
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        OccupationalProgram: {
+            name: "OccupationalProgram",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                companyId: {
+                    name: "companyId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "company"
+                    ] as readonly string[]
+                },
+                sector: {
+                    name: "sector",
+                    type: "OccupationalSector",
+                    default: "GENERAL" as FieldDefault
+                },
+                testingScope: {
+                    name: "testingScope",
+                    type: "OccupationalTestingScope",
+                    default: "BOTH" as FieldDefault
+                },
+                status: {
+                    name: "status",
+                    type: "OccupationalProgramStatus",
+                    default: "DRAFT" as FieldDefault
+                },
+                riohsAttested: {
+                    name: "riohsAttested",
+                    type: "Boolean",
+                    default: false as FieldDefault
+                },
+                riohsClauseRef: {
+                    name: "riohsClauseRef",
+                    type: "String",
+                    optional: true
+                },
+                riohsAttestedAt: {
+                    name: "riohsAttestedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                riohsAttestedBy: {
+                    name: "riohsAttestedBy",
+                    type: "Int",
+                    optional: true
+                },
+                workerConsentBasis: {
+                    name: "workerConsentBasis",
+                    type: "String",
+                    optional: true
+                },
+                notes: {
+                    name: "notes",
+                    type: "String",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                company: {
+                    name: "company",
+                    type: "Company",
+                    relation: { opposite: "occupationalPrograms", fields: ["companyId"], references: ["id"], onDelete: "Cascade" }
+                },
+                testBatches: {
+                    name: "testBatches",
+                    type: "OccupationalTestBatch",
+                    array: true,
+                    relation: { opposite: "program" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        OccupationalTestBatch: {
+            name: "OccupationalTestBatch",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                programId: {
+                    name: "programId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "program"
+                    ] as readonly string[]
+                },
+                batchDate: {
+                    name: "batchDate",
+                    type: "DateTime"
+                },
+                totalTested: {
+                    name: "totalTested",
+                    type: "Int",
+                    default: 0 as FieldDefault
+                },
+                passedCount: {
+                    name: "passedCount",
+                    type: "Int",
+                    default: 0 as FieldDefault
+                },
+                presumptivePositiveCount: {
+                    name: "presumptivePositiveCount",
+                    type: "Int",
+                    default: 0 as FieldDefault
+                },
+                notes: {
+                    name: "notes",
+                    type: "String",
+                    optional: true
+                },
+                createdBy: {
+                    name: "createdBy",
+                    type: "Int",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                program: {
+                    name: "program",
+                    type: "OccupationalProgram",
+                    relation: { opposite: "testBatches", fields: ["programId"], references: ["id"], onDelete: "Cascade" }
                 }
             },
             idFields: ["id"],
@@ -16906,6 +17189,22 @@ export class SchemaType implements SchemaDef {
                 CONSTRUCCION: "CONSTRUCCION",
                 GENERAL: "GENERAL",
                 OTRO: "OTRO"
+            }
+        },
+        OccupationalProgramStatus: {
+            name: "OccupationalProgramStatus",
+            values: {
+                DRAFT: "DRAFT",
+                ACTIVE: "ACTIVE",
+                SUSPENDED: "SUSPENDED"
+            }
+        },
+        OccupationalTestingScope: {
+            name: "OccupationalTestingScope",
+            values: {
+                DRUGS: "DRUGS",
+                ALCOHOL: "ALCOHOL",
+                BOTH: "BOTH"
             }
         },
         DTEType: {

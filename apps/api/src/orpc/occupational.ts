@@ -1,9 +1,19 @@
 import {
+  attestRiohsInputSchema,
   createOccupationalLeadInputSchema,
   createOccupationalLeadResponseSchema,
+  createOccupationalProgramInputSchema,
+  createTestBatchInputSchema,
+  listTestBatchesInputSchema,
   occupationalLeadListResponseSchema,
   occupationalLeadResponseSchema,
+  occupationalProgramListResponseSchema,
+  occupationalProgramResponseSchema,
+  occupationalTestBatchListResponseSchema,
+  occupationalTestBatchResponseSchema,
+  setProgramStatusInputSchema,
   updateOccupationalLeadStatusInputSchema,
+  updateOccupationalProgramInputSchema,
 } from "@finanzas/orpc-contracts/occupational";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
@@ -14,10 +24,19 @@ import { getSessionUser, hasPermission } from "../lib/auth.ts";
 import { logError } from "../lib/logger.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
 import {
+  attestRiohs,
   createOccupationalLead,
+  createProgram,
+  createTestBatch,
   listOccupationalLeads,
+  listPrograms,
+  listTestBatches,
+  serializeBatch,
   serializeOccupationalLead,
+  serializeProgram,
+  setProgramStatus,
   updateOccupationalLeadStatus,
+  updateProgram,
 } from "../services/occupational.ts";
 import { SuperJSONRPCHandler } from "./superjson.ts";
 
@@ -69,6 +88,69 @@ const occupationalRouterBase = {
     .handler(async ({ input }) => {
       const lead = await updateOccupationalLeadStatus(input.id, input.status);
       return { lead: serializeOccupationalLead(lead) };
+    }),
+
+  // ── Programa ocupacional (stage-B seguro; gate RIOHS) ──────────────
+  listPrograms: readLeads
+    .route({ method: "GET", path: "/programs", tags: ["Occupational"] })
+    .output(occupationalProgramListResponseSchema)
+    .handler(async () => {
+      const programs = await listPrograms();
+      return { programs: programs.map((p) => serializeProgram(p)) };
+    }),
+
+  createProgram: writeLeads
+    .route({ method: "POST", path: "/programs", tags: ["Occupational"] })
+    .input(createOccupationalProgramInputSchema)
+    .output(occupationalProgramResponseSchema)
+    .handler(async ({ input }) => {
+      const program = await createProgram(input);
+      return { program: serializeProgram(program) };
+    }),
+
+  updateProgram: writeLeads
+    .route({ method: "POST", path: "/programs/{id}", tags: ["Occupational"] })
+    .input(updateOccupationalProgramInputSchema)
+    .output(occupationalProgramResponseSchema)
+    .handler(async ({ input }) => {
+      const program = await updateProgram(input);
+      return { program: serializeProgram(program) };
+    }),
+
+  attestRiohs: writeLeads
+    .route({ method: "POST", path: "/programs/{id}/attest-riohs", tags: ["Occupational"] })
+    .input(attestRiohsInputSchema)
+    .output(occupationalProgramResponseSchema)
+    .handler(async ({ input, context }) => {
+      const program = await attestRiohs(input.id, input.riohsClauseRef, context.user.id ?? null);
+      return { program: serializeProgram(program) };
+    }),
+
+  setProgramStatus: writeLeads
+    .route({ method: "POST", path: "/programs/{id}/status", tags: ["Occupational"] })
+    .input(setProgramStatusInputSchema)
+    .output(occupationalProgramResponseSchema)
+    .handler(async ({ input }) => {
+      const program = await setProgramStatus(input.id, input.status);
+      return { program: serializeProgram(program) };
+    }),
+
+  listTestBatches: readLeads
+    .route({ method: "POST", path: "/programs/batches/list", tags: ["Occupational"] })
+    .input(listTestBatchesInputSchema)
+    .output(occupationalTestBatchListResponseSchema)
+    .handler(async ({ input }) => {
+      const batches = await listTestBatches(input.programId);
+      return { batches: batches.map((b) => serializeBatch(b)) };
+    }),
+
+  createTestBatch: writeLeads
+    .route({ method: "POST", path: "/programs/batches", tags: ["Occupational"] })
+    .input(createTestBatchInputSchema)
+    .output(occupationalTestBatchResponseSchema)
+    .handler(async ({ input, context }) => {
+      const batch = await createTestBatch(input, context.user.id ?? null);
+      return { batch: serializeBatch(batch) };
     }),
 };
 

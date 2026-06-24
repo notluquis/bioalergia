@@ -51,6 +51,7 @@ import { Route as AuthedSettingsReactivosCatalogRouteImport } from "./routes/_au
 import { Route as AuthedSettingsQuotesCatalogRouteImport } from "./routes/_authed/settings/quotes-catalog"
 import { Route as AuthedSettingsProcessingActivitiesRouteImport } from "./routes/_authed/settings/processing-activities"
 import { Route as AuthedSettingsPriceListRouteImport } from "./routes/_authed/settings/price-list"
+import { Route as AuthedSettingsOccupationalRouteImport } from "./routes/_authed/settings/occupational"
 import { Route as AuthedSettingsNoticiasRouteImport } from "./routes/_authed/settings/noticias"
 import { Route as AuthedSettingsImmunotherapyRouteImport } from "./routes/_authed/settings/immunotherapy"
 import { Route as AuthedSettingsHaulmerRouteImport } from "./routes/_authed/settings/haulmer"
@@ -321,6 +322,12 @@ const AuthedSettingsPriceListRoute = AuthedSettingsPriceListRouteImport.update({
   path: "/price-list",
   getParentRoute: () => AuthedSettingsRoute,
 } as any)
+const AuthedSettingsOccupationalRoute =
+  AuthedSettingsOccupationalRouteImport.update({
+    id: "/occupational",
+    path: "/occupational",
+    getParentRoute: () => AuthedSettingsRoute,
+  } as any)
 const AuthedSettingsNoticiasRoute = AuthedSettingsNoticiasRouteImport.update({
   id: "/noticias",
   path: "/noticias",
@@ -688,6 +695,7 @@ export interface FileRoutesByFullPath {
   "/settings/haulmer": typeof AuthedSettingsHaulmerRoute
   "/settings/immunotherapy": typeof AuthedSettingsImmunotherapyRoute
   "/settings/noticias": typeof AuthedSettingsNoticiasRoute
+  "/settings/occupational": typeof AuthedSettingsOccupationalRoute
   "/settings/price-list": typeof AuthedSettingsPriceListRoute
   "/settings/processing-activities": typeof AuthedSettingsProcessingActivitiesRoute
   "/settings/quotes-catalog": typeof AuthedSettingsQuotesCatalogRoute
@@ -779,6 +787,7 @@ export interface FileRoutesByTo {
   "/settings/haulmer": typeof AuthedSettingsHaulmerRoute
   "/settings/immunotherapy": typeof AuthedSettingsImmunotherapyRoute
   "/settings/noticias": typeof AuthedSettingsNoticiasRoute
+  "/settings/occupational": typeof AuthedSettingsOccupationalRoute
   "/settings/price-list": typeof AuthedSettingsPriceListRoute
   "/settings/processing-activities": typeof AuthedSettingsProcessingActivitiesRoute
   "/settings/quotes-catalog": typeof AuthedSettingsQuotesCatalogRoute
@@ -879,6 +888,7 @@ export interface FileRoutesById {
   "/_authed/settings/haulmer": typeof AuthedSettingsHaulmerRoute
   "/_authed/settings/immunotherapy": typeof AuthedSettingsImmunotherapyRoute
   "/_authed/settings/noticias": typeof AuthedSettingsNoticiasRoute
+  "/_authed/settings/occupational": typeof AuthedSettingsOccupationalRoute
   "/_authed/settings/price-list": typeof AuthedSettingsPriceListRoute
   "/_authed/settings/processing-activities": typeof AuthedSettingsProcessingActivitiesRoute
   "/_authed/settings/quotes-catalog": typeof AuthedSettingsQuotesCatalogRoute
@@ -979,6 +989,7 @@ export interface FileRouteTypes {
     | "/settings/haulmer"
     | "/settings/immunotherapy"
     | "/settings/noticias"
+    | "/settings/occupational"
     | "/settings/price-list"
     | "/settings/processing-activities"
     | "/settings/quotes-catalog"
@@ -1070,6 +1081,7 @@ export interface FileRouteTypes {
     | "/settings/haulmer"
     | "/settings/immunotherapy"
     | "/settings/noticias"
+    | "/settings/occupational"
     | "/settings/price-list"
     | "/settings/processing-activities"
     | "/settings/quotes-catalog"
@@ -1169,6 +1181,7 @@ export interface FileRouteTypes {
     | "/_authed/settings/haulmer"
     | "/_authed/settings/immunotherapy"
     | "/_authed/settings/noticias"
+    | "/_authed/settings/occupational"
     | "/_authed/settings/price-list"
     | "/_authed/settings/processing-activities"
     | "/_authed/settings/quotes-catalog"
@@ -1505,6 +1518,13 @@ declare module "@tanstack/react-router" {
       path: "/price-list"
       fullPath: "/settings/price-list"
       preLoaderRoute: typeof AuthedSettingsPriceListRouteImport
+      parentRoute: typeof AuthedSettingsRoute
+    }
+    "/_authed/settings/occupational": {
+      id: "/_authed/settings/occupational"
+      path: "/occupational"
+      fullPath: "/settings/occupational"
+      preLoaderRoute: typeof AuthedSettingsOccupationalRouteImport
       parentRoute: typeof AuthedSettingsRoute
     }
     "/_authed/settings/noticias": {
@@ -2083,6 +2103,7 @@ interface AuthedSettingsRouteChildren {
   AuthedSettingsHaulmerRoute: typeof AuthedSettingsHaulmerRoute
   AuthedSettingsImmunotherapyRoute: typeof AuthedSettingsImmunotherapyRoute
   AuthedSettingsNoticiasRoute: typeof AuthedSettingsNoticiasRoute
+  AuthedSettingsOccupationalRoute: typeof AuthedSettingsOccupationalRoute
   AuthedSettingsPriceListRoute: typeof AuthedSettingsPriceListRoute
   AuthedSettingsProcessingActivitiesRoute: typeof AuthedSettingsProcessingActivitiesRoute
   AuthedSettingsQuotesCatalogRoute: typeof AuthedSettingsQuotesCatalogRoute
@@ -2104,6 +2125,7 @@ const AuthedSettingsRouteChildren: AuthedSettingsRouteChildren = {
   AuthedSettingsHaulmerRoute: AuthedSettingsHaulmerRoute,
   AuthedSettingsImmunotherapyRoute: AuthedSettingsImmunotherapyRoute,
   AuthedSettingsNoticiasRoute: AuthedSettingsNoticiasRoute,
+  AuthedSettingsOccupationalRoute: AuthedSettingsOccupationalRoute,
   AuthedSettingsPriceListRoute: AuthedSettingsPriceListRoute,
   AuthedSettingsProcessingActivitiesRoute:
     AuthedSettingsProcessingActivitiesRoute,
