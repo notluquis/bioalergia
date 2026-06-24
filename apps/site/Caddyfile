@@ -24,14 +24,18 @@
 		# Force HTTPS for a year incl. subdomains (matches intranet/Caddyfile).
 		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
 
-		# CSP rollout — REPORT-ONLY first (golden 2026 / web.dev retrofit method).
-		# This site embeds revenue-critical third parties on a STATIC serve (no
-		# per-request nonce infra): MercadoPago Brick (checkout), Google Ads gtag
-		# (inline init script in index.html), PostHog, the Doctoralia/docplanner
-		# booking widget. An enforcing CSP with any missing origin silently breaks
-		# payments/ads, so we ship Report-Only to collect real violations, then
-		# promote to enforcing (rename the header to `Content-Security-Policy`)
-		# after a clean test-checkout console.
+		# CSP — ENFORCING (promovido desde Report-Only tras consola limpia, golden
+		# 2026 / web.dev retrofit method). Report-Only sin `report-to` no protegía
+		# ni reportaba (solo spam de consola: "policy will have no effect" +
+		# "frame-ancestors ignored in report-only"); enforcing sí protege y calla
+		# ambos warnings. Las violaciones reportadas (widget certificado Doctoralia,
+		# beacon doubleclick) ya están en el allowlist de abajo.
+		#
+		# OJO revenue-critical: este site embebe terceros de pago (MercadoPago Brick
+		# checkout, Google Ads gtag inline, PostHog, widget Doctoralia). Si falta un
+		# origen, enforcing lo ROMPE en silencio. MercadoPago no publica CSP oficial:
+		# validar el checkout en vivo (network panel) tras cada deploy. Si algo se
+		# cae, volver a `Content-Security-Policy-Report-Only` mientras se ajusta.
 		#
 		# 'unsafe-inline' in script-src/style-src is required here and cannot be
 		# dropped without nonce infra: index.html has an inline gtag init block,
@@ -53,7 +57,7 @@
 		#   Doctoralia:          platform.docplanner.com (widget de reserva) +
 		#     widgets.doctoralia.cl (frame del widget de certificado en la home).
 		#   Fonts:               fonts.googleapis.com (css) + fonts.gstatic.com.
-		Content-Security-Policy-Report-Only "default-src 'self'; script-src 'self' 'unsafe-inline' https://sdk.mercadopago.com https://*.mercadopago.com https://*.mlstatic.com https://www.googletagmanager.com https://www.google.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://*.i.posthog.com https://platform.docplanner.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://api.mercadopago.com https://*.mercadopago.com https://*.mlstatic.com https://*.i.posthog.com https://*.google-analytics.com https://www.googletagmanager.com https://www.google.com https://www.googleadservices.com https://*.doubleclick.net https://platform.docplanner.com; frame-src 'self' https://*.mercadopago.com https://platform.docplanner.com https://www.doctoralia.cl https://widgets.doctoralia.cl https://td.doubleclick.net https://www.google.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://sdk.mercadopago.com https://*.mercadopago.com https://*.mlstatic.com https://www.googletagmanager.com https://www.google.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://*.i.posthog.com https://platform.docplanner.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://api.mercadopago.com https://*.mercadopago.com https://*.mlstatic.com https://*.i.posthog.com https://*.google-analytics.com https://www.googletagmanager.com https://www.google.com https://www.googleadservices.com https://*.doubleclick.net https://platform.docplanner.com; frame-src 'self' https://*.mercadopago.com https://platform.docplanner.com https://www.doctoralia.cl https://widgets.doctoralia.cl https://td.doubleclick.net https://www.google.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
 	}
 
 	# Allow embedding public brand assets (signature + clinic logo) from
