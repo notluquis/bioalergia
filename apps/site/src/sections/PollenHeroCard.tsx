@@ -33,18 +33,29 @@ export function PollenHeroCard() {
   if (!data) return null;
 
   const liveToday = data.provenance.grass === "live" ? data.grassForecast[0] : undefined;
+  // Google omite `indexInfo` cuando no hay polen medible (gramíneas fuera de
+  // temporada, p.ej. invierno) → upi/colorHex llegan null. Eso NO es "0", es
+  // "sin actividad hoy": lo mostramos neutro, no con el color de acento.
+  const liveHasIndex = !!liveToday && liveToday.upi !== null;
   const calendarGrass = data.calendar.find((t) => t.type === "GRASS");
 
   return (
     <Card className="rounded-2xl" variant="secondary">
       <Card.Content className="flex items-center gap-4 py-4">
-        {liveToday ? (
+        {liveHasIndex ? (
           <span
             aria-hidden="true"
             className="flex size-12 shrink-0 items-center justify-center rounded-full font-semibold text-lg text-white"
             style={{ backgroundColor: liveToday.colorHex ?? "var(--accent)" }}
           >
-            {liveToday.upi ?? "–"}
+            {liveToday.upi}
+          </span>
+        ) : liveToday ? (
+          <span
+            aria-hidden="true"
+            className="flex size-12 shrink-0 items-center justify-center rounded-full bg-(--surface-2) font-medium text-(--ink-muted) text-xs"
+          >
+            Sin
           </span>
         ) : (
           <span
@@ -57,9 +68,13 @@ export function PollenHeroCard() {
         <div className="grid gap-0.5">
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-medium text-(--ink) text-sm">Polen hoy · Concepción</span>
-            {liveToday ? (
+            {liveHasIndex ? (
               <Chip size="sm" variant="primary">
-                Gramíneas: {liveToday.category ?? liveToday.upi ?? "–"}
+                Gramíneas: {liveToday.category ?? liveToday.upi}
+              </Chip>
+            ) : liveToday ? (
+              <Chip color="default" size="sm" variant="soft">
+                Gramíneas: sin actividad
               </Chip>
             ) : calendarGrass ? (
               <Chip color={LEVEL_COLOR[calendarGrass.level]} size="sm" variant="soft">
