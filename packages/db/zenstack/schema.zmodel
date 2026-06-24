@@ -1503,6 +1503,38 @@ model KarinReport {
   @@map("karin_reports")
 }
 
+// Registros operativos / sanitarios que la clínica debe mantener para la SEREMI
+// (DS 283, BIO-RG-001, REAS DS 6/2009, DS 44/2024). Un único modelo cubre los 7
+// tipos de registro; los campos específicos por tipo viven en `data` (Json).
+// Sólo NONCONFORMITY usa `status` (OPEN | IN_PROGRESS | CLOSED) y `dueAt` (plazo
+// CAPA). El gating fino se aplica en el router oRPC (subject CASL dedicado
+// `OperationalRegister`), igual que Karin / reactivos.
+model OperationalRegister {
+  id            String    @id @default(cuid())
+  // COLD_CHAIN | REAS | TRAINING | EPP_DELIVERY | OMPP | R_AIT | NONCONFORMITY
+  registerType  String    @map("register_type")
+  occurredAt    DateTime  @map("occurred_at")
+  summary       String
+  data          Json
+  // Sólo NONCONFORMITY: OPEN | IN_PROGRESS | CLOSED
+  status        String?
+  // Plazo CAPA (sólo NONCONFORMITY)
+  dueAt         DateTime? @map("due_at")
+  attachmentUrl String?   @map("attachment_url")
+  // Firmante (OMPP / entrega EPP)
+  signedBy      String?   @map("signed_by")
+  recordedBy    Int       @map("recorded_by")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  @@deny('all', auth() == null)
+  // Política a nivel de fila: sesión ACTIVA. El gating fino por subject CASL
+  // `OperationalRegister` se aplica en el router oRPC.
+  @@allow('create,read,update', auth().status == 'ACTIVE')
+  @@index([registerType, occurredAt])
+  @@map("operational_registers")
+}
+
 // #11 — Libros foliados electrónicos (procedimientos / reclamos / inspecciones).
 model FoliatedBookEntry {
   id        String   @id @default(cuid())

@@ -107,6 +107,10 @@ export { pollenContract, type PollenContract } from "./pollen.ts";
 export { occupationalContract, type OccupationalContract } from "./occupational.ts";
 export { karinContract, type KarinContract } from "./karin.ts";
 export {
+  operationalRegistersContract,
+  type OperationalRegistersContract,
+} from "./operational-registers.ts";
+export {
   occupationalTestingContract,
   type OccupationalTestingContract,
 } from "./occupational-testing.ts";

@@ -4305,6 +4305,71 @@ export class SchemaType implements SchemaDef {
                 id: { type: "String" }
             }
         },
+        OperationalRegister: {
+            name: "OperationalRegister",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true,
+                    default: ExpressionUtils.call("cuid") as FieldDefault
+                },
+                registerType: {
+                    name: "registerType",
+                    type: "String"
+                },
+                occurredAt: {
+                    name: "occurredAt",
+                    type: "DateTime"
+                },
+                summary: {
+                    name: "summary",
+                    type: "String"
+                },
+                data: {
+                    name: "data",
+                    type: "Json"
+                },
+                status: {
+                    name: "status",
+                    type: "String",
+                    optional: true
+                },
+                dueAt: {
+                    name: "dueAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                attachmentUrl: {
+                    name: "attachmentUrl",
+                    type: "String",
+                    optional: true
+                },
+                signedBy: {
+                    name: "signedBy",
+                    type: "String",
+                    optional: true
+                },
+                recordedBy: {
+                    name: "recordedBy",
+                    type: "Int"
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" }
+            }
+        },
         FoliatedBookEntry: {
             name: "FoliatedBookEntry",
             fields: {

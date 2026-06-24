@@ -60,6 +60,7 @@ export type BreachIncident = $ModelResult<$Schema, "BreachIncident">;
 export type PriceListItem = $ModelResult<$Schema, "PriceListItem">;
 export type Complaint = $ModelResult<$Schema, "Complaint">;
 export type KarinReport = $ModelResult<$Schema, "KarinReport">;
+export type OperationalRegister = $ModelResult<$Schema, "OperationalRegister">;
 export type FoliatedBookEntry = $ModelResult<$Schema, "FoliatedBookEntry">;
 export type ProcessingActivity = $ModelResult<$Schema, "ProcessingActivity">;
 export type ConsentRecord = $ModelResult<$Schema, "ConsentRecord">;
