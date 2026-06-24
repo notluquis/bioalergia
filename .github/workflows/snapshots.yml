@@ -86,10 +86,6 @@ jobs:
       - run: pnpm turbo run build --filter=@finanzas/orpc-contracts --filter=@finanzas/db --filter=@finanzas/social-render
       - run: pnpm -F @finanzas/db db:push
       - run: pnpm -F @finanzas/db seed:synthetic
-      # Base "Socio" role + permission catalog (a fresh db:push DB has neither).
-      # Without this seed-e2e-user exits 3 → empty creds → route-snapshots would
-      # render the logged-out UI.
-      - run: node apps/api/scripts/seed-e2e-rbac.ts
 
       # Seed the dedicated E2E user (random password each run) and export the
       # printed creds so the authed snapshot routes actually log in. Replaces the
