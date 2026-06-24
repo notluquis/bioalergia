@@ -2,6 +2,7 @@ import type { PollenLevel as ApiPollenLevel } from "@finanzas/orpc-contracts/pol
 import { Breadcrumbs, Card, Chip, Link, Separator } from "@heroui/react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { Leaf } from "lucide-react";
 
 import { BookingCta } from "@/components/BookingCta";
 import { ContentLoading } from "@/components/ContentState";
@@ -125,9 +126,9 @@ function PollenLiveWidget() {
               ) : liveToday ? (
                 <span
                   aria-hidden="true"
-                  className="flex size-20 shrink-0 items-center justify-center rounded-full bg-(--surface-2) font-medium text-(--ink-muted) text-sm"
+                  className="flex size-20 shrink-0 items-center justify-center rounded-full bg-(--surface-2) text-(--ink-muted)"
                 >
-                  Sin
+                  <Leaf className="size-8" />
                 </span>
               ) : (
                 <span
