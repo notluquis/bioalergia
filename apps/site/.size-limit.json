@@ -18,12 +18,6 @@
     "gzip": true
   },
   {
-    "name": "compose shared chunk (React Aria compose utils) — measured 12.43 kB gzip 2026-06; budget = ~13% headroom",
-    "path": ["dist/assets/compose-*.js"],
-    "limit": "14 KB",
-    "gzip": true
-  },
-  {
     "name": "PrimaryNav shared chunk (site header nav) — measured 10.04 kB gzip 2026-06; budget = ~15% headroom",
     "path": ["dist/assets/PrimaryNav-*.js"],
     "limit": "11.5 KB",

@@ -75,15 +75,20 @@ function RegistroPage() {
             <Input type="password" placeholder="Mínimo 8 caracteres" autoComplete="new-password" />
           </TextField>
           <Checkbox isSelected={terms} onChange={setTerms}>
-            Acepto los{" "}
-            <Link className="underline" to="/legal/$slug" params={{ slug: "terms" }}>
-              términos
-            </Link>{" "}
-            y{" "}
-            <Link className="underline" to="/legal/$slug" params={{ slug: "privacy" }}>
-              política de privacidad
-            </Link>
-            .
+            <Checkbox.Content>
+              <Checkbox.Control>
+                <Checkbox.Indicator />
+              </Checkbox.Control>
+              Acepto los{" "}
+              <Link className="underline" to="/legal/$slug" params={{ slug: "terms" }}>
+                términos
+              </Link>{" "}
+              y{" "}
+              <Link className="underline" to="/legal/$slug" params={{ slug: "privacy" }}>
+                política de privacidad
+              </Link>
+              .
+            </Checkbox.Content>
           </Checkbox>
           {error && (
             <Alert status="danger">

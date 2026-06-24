@@ -172,7 +172,12 @@ function MiCuentaAddresses() {
               <Input />
             </TextField>
             <Checkbox isSelected={form.isPrimary} onChange={(v) => set("isPrimary", v)}>
-              Marcar como dirección principal
+              <Checkbox.Content>
+                <Checkbox.Control>
+                  <Checkbox.Indicator />
+                </Checkbox.Control>
+                Marcar como dirección principal
+              </Checkbox.Content>
             </Checkbox>
             {upsert.isError && (
               <Alert status="danger">

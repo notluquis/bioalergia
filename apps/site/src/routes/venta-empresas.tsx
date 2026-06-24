@@ -330,7 +330,12 @@ function LeadForm({ vitrinaItems }: { vitrinaItems: ReactivoVitrinaItemDto[] }) 
                     key={item.id}
                     onChange={(isSelected) => toggleProduct(item.name, isSelected)}
                   >
-                    {item.name}
+                    <Checkbox.Content>
+                      <Checkbox.Control>
+                        <Checkbox.Indicator />
+                      </Checkbox.Control>
+                      {item.name}
+                    </Checkbox.Content>
                   </Checkbox>
                 ))}
               </div>

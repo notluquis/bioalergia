@@ -29,8 +29,11 @@ const config: StorybookConfig = {
   staticDirs: ["../public"],
   // Storybook 10.4: git-based sidebar filtering (new/modified/affected).
   // Layered on top of Chromatic — useful local-only signal to scope work
-  // to stories touched on the current branch.
-  features: { changeDetection: true },
+  // to stories touched on the current branch. OFF under Chromatic: its
+  // headless story extractor crashes ("checkGlobals is not defined" →
+  // "Failed to extract stories") on the preview-side git/global probe this
+  // feature injects. Same IS_CHROMATIC gate as addon-vitest above.
+  features: { changeDetection: !process.env.IS_CHROMATIC },
   viteFinal: async (baseConfig) =>
     mergeConfig(baseConfig, {
       plugins: [tailwindcss()],
