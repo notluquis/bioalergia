@@ -39,6 +39,13 @@ export function SiteFooter() {
             asistencial.
           </p>
           <p className="text-(--ink-muted) text-sm">{contactInfo.address}</p>
+          <p className="text-(--ink-muted) text-sm">RUT {legalOwner.rut}</p>
+          <p className="text-(--ink-muted) text-sm">
+            Director Técnico: {legalOwner.directorName}
+            {contactInfo.superintendenciaNumber
+              ? ` · Registro Superintendencia de Salud N° ${contactInfo.superintendenciaNumber}`
+              : ""}
+          </p>
         </div>
 
         <div className="space-y-2">
@@ -122,12 +129,6 @@ export function SiteFooter() {
           </div>
         </div>
       )}
-
-      {contactInfo.superintendenciaNumber ? (
-        <p className="mt-4 text-(--ink-muted) text-xs">
-          Registro Superintendencia de Salud N° {contactInfo.superintendenciaNumber}
-        </p>
-      ) : null}
 
       <div className="mt-6 flex flex-col gap-2 border-border border-t pt-4 text-(--ink-muted) text-xs sm:flex-row sm:items-center sm:justify-between">
         <span>

@@ -59,6 +59,7 @@ export type DataRightsRequest = $ModelResult<$Schema, "DataRightsRequest">;
 export type BreachIncident = $ModelResult<$Schema, "BreachIncident">;
 export type PriceListItem = $ModelResult<$Schema, "PriceListItem">;
 export type Complaint = $ModelResult<$Schema, "Complaint">;
+export type KarinReport = $ModelResult<$Schema, "KarinReport">;
 export type FoliatedBookEntry = $ModelResult<$Schema, "FoliatedBookEntry">;
 export type ProcessingActivity = $ModelResult<$Schema, "ProcessingActivity">;
 export type ConsentRecord = $ModelResult<$Schema, "ConsentRecord">;

@@ -28,6 +28,7 @@ import { medicationsOpenAPIHandler, medicationsORPCHandler } from "./orpc/medica
 import { verificationOpenAPIHandler, verificationORPCHandler } from "./orpc/verification.ts";
 import { immunotherapyOpenAPIHandler, immunotherapyORPCHandler } from "./orpc/immunotherapy.ts";
 import { quotesOpenAPIHandler, quotesORPCHandler } from "./orpc/quotes.ts";
+import { publicClinicORPCHandler } from "./orpc/public-clinic.ts";
 import { reactivosOpenAPIHandler, reactivosORPCHandler } from "./orpc/reactivos.ts";
 import { pollenOpenAPIHandler, pollenORPCHandler } from "./orpc/pollen.ts";
 import { occupationalOpenAPIHandler, occupationalORPCHandler } from "./orpc/occupational.ts";
@@ -117,6 +118,7 @@ import { priceListORPCHandler } from "./orpc/price-list.ts";
 import { dataRightsORPCHandler } from "./orpc/data-rights.ts";
 import { breachIncidentsORPCHandler } from "./orpc/breach-incidents.ts";
 import { complaintsORPCHandler } from "./orpc/complaints.ts";
+import { karinORPCHandler } from "./orpc/karin.ts";
 import { securityAlertsORPCHandler } from "./orpc/security-alerts.ts";
 import { processingActivitiesORPCHandler } from "./orpc/processing-activities.ts";
 import { consentORPCHandler } from "./orpc/consent.ts";
@@ -1024,6 +1026,28 @@ app.use("/api/orpc/reactivos/rpc/*", async (c, next) => {
   return next();
 });
 
+// Superficie pública de la clínica (precios a la vista + formularios de
+// reclamos / derechos del titular / contacto). Los POST públicos comparten el
+// mismo rate-limit por IP que los leads (5/min/IP + honeypot + CSRF same-origin).
+app.use("/api/orpc/public-clinic/rpc/createComplaint", reactivosLeadRateLimiter);
+app.use("/api/orpc/public-clinic/rpc/createDataRightsRequest", reactivosLeadRateLimiter);
+app.use("/api/orpc/public-clinic/rpc/createContact", reactivosLeadRateLimiter);
+// Denuncia pública Ley Karin: mismo rate-limit por IP (honeypot + CSRF same-origin).
+app.use("/api/orpc/karin/rpc/createReport", reactivosLeadRateLimiter);
+
+app.use("/api/orpc/public-clinic/rpc/*", async (c, next) => {
+  const { matched, response } = await publicClinicORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/public-clinic/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
 app.use("/api/orpc/pollen/rpc/*", async (c, next) => {
   const { matched, response } = await pollenORPCHandler.handle(createHonoORPCRequest(c), {
     prefix: "/api/orpc/pollen/rpc",
@@ -1800,6 +1824,19 @@ app.use("/api/orpc/breach-incidents/rpc/*", async (c, next) => {
 app.use("/api/orpc/complaints/rpc/*", async (c, next) => {
   const { matched, response } = await complaintsORPCHandler.handle(createHonoORPCRequest(c), {
     prefix: "/api/orpc/complaints/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
+app.use("/api/orpc/karin/rpc/*", async (c, next) => {
+  const { matched, response } = await karinORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/karin/rpc",
     context: { hono: c },
   });
 

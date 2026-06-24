@@ -1,4 +1,4 @@
-import { Breadcrumbs, Card, Link } from "@heroui/react";
+import { Alert, Breadcrumbs, Card, Link } from "@heroui/react";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { BookingCta } from "@/components/BookingCta";
@@ -57,6 +57,28 @@ function ServiciosPage() {
             </Card.Content>
           </Card>
         ))}
+      </section>
+
+      <section className="grid gap-4">
+        <h2 className="font-semibold text-(--ink) text-2xl">Horario y atención</h2>
+        <Card className="rounded-3xl" variant="secondary">
+          <Card.Header className="gap-2">
+            <Card.Title className="text-lg">Horario de atención</Card.Title>
+            <Card.Description className="text-(--ink-muted) leading-relaxed">
+              Lunes a sábado, 10:00 a 17:00. Atención con cita previa.
+            </Card.Description>
+          </Card.Header>
+          <Card.Content className="pb-6">
+            <Alert status="warning">
+              <Alert.Content>
+                <Alert.Description>
+                  Bioalergia no es un servicio de urgencia. Ante una emergencia llama al SAMU 131 o
+                  acude al servicio de urgencia más cercano.
+                </Alert.Description>
+              </Alert.Content>
+            </Alert>
+          </Card.Content>
+        </Card>
       </section>
 
       <section className="grid gap-4">
