@@ -293,10 +293,22 @@ jobs:
           retention-days: 7
 
   lighthouse:
-    name: lighthouse-ci (perf budgets)
+    # desktop + mobile as a 2-way matrix → PARALLEL jobs instead of two
+    # sequential lhci passes in one job (was 225s + 223s ≈ 8m42s; now the slower
+    # of the two ≈ 4.5m). Each matrix leg boots its own vite preview on :4173 on
+    # its own runner, so there's no port clash. Mobile is `warn`-only; desktop
+    # gates on perf+a11y (errors) — fail-fast:false so one leg can't cancel the
+    # other (and a flaky mobile run never kills the gating desktop run).
+    name: lighthouse-ci (${{ matrix.lh.form }})
     needs: changes
     if: needs.changes.outputs.intranet == 'true'
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        lh:
+          - { form: desktop, script: "audit:perf" }
+          - { form: mobile, script: "audit:perf:mobile" }
     steps:
       - uses: actions/checkout@v6
       - uses: pnpm/action-setup@v6
@@ -314,26 +326,16 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Build intranet (preview target)
         run: pnpm turbo run build --filter=@finanzas/intranet
-      - name: Run Lighthouse CI
-        env:
-          CHROME_PATH: ${{ steps.setup-chrome.outputs.chrome-path }}
-          # Posts the report as a GitHub commit status check + PR
-          # comment when the LHCI GitHub App is installed on the repo
-          # (https://github.com/apps/lighthouse-ci). Token comes from
-          # the app at install time. Without the secret the LHCI run
-          # still completes; only the status check is skipped.
-          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
-        run: pnpm -F @finanzas/intranet audit:perf
-      - name: Run Lighthouse CI (mobile emulation)
-        # Mobile is Lighthouse's default form factor and what matters most for
-        # a PWA on phones. Public /login only — authed routes stay OFF until a
-        # staging DB exists (auditing prod patient pages = PHI in reports; see
-        # lhci-puppeteer-login.cjs). Perf assertions are `warn` to avoid flaky
-        # gating on emulated-mobile throttling.
+      - name: Run Lighthouse CI (${{ matrix.lh.form }})
+        # Public /login only — authed routes stay OFF until a staging DB exists
+        # (auditing prod patient pages = PHI in reports; see
+        # lhci-puppeteer-login.cjs). Posts a GitHub status check + PR comment via
+        # the LHCI GitHub App when LHCI_GITHUB_APP_TOKEN is set; without it the
+        # run still completes, only the status check is skipped.
         env:
           CHROME_PATH: ${{ steps.setup-chrome.outputs.chrome-path }}
           LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
-        run: pnpm -F @finanzas/intranet audit:perf:mobile
+        run: pnpm -F @finanzas/intranet ${{ matrix.lh.script }}
 
   site-e2e-a11y:
     name: site playwright + axe (gating)
@@ -386,10 +388,20 @@ jobs:
           retention-days: 7
 
   site-lighthouse:
-    name: site lighthouse-ci (perf budgets)
+    # desktop + mobile as a 2-way matrix → PARALLEL jobs (was two sequential
+    # lhci passes ≈ 12m19s for 12 URLs × 2 form-factors; now the slower leg
+    # ≈ 6m). Each leg boots its own vite preview on its own runner. NON-GATING:
+    # all assertions are `warn` (public routes only, no PHI/auth).
+    name: site lighthouse-ci (${{ matrix.lh.form }})
     needs: changes
     if: needs.changes.outputs.site == 'true'
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        lh:
+          - { form: desktop, script: "audit:perf" }
+          - { form: mobile, script: "audit:perf:mobile" }
     steps:
       - uses: actions/checkout@v6
       - uses: pnpm/action-setup@v6
@@ -409,21 +421,11 @@ jobs:
         # Build workspace deps + the site; lhci's startServerCommand runs
         # `vite preview` against the produced dist for the public routes.
         run: pnpm turbo run build --filter=@finanzas/site
-      - name: Run Lighthouse CI
-        # NON-GATING: perf assertions in lighthouserc.json are `warn` to avoid
-        # flaky failures on CI throttling. Public routes only (no PHI/auth).
+      - name: Run Lighthouse CI (${{ matrix.lh.form }})
         env:
           CHROME_PATH: ${{ steps.setup-chrome.outputs.chrome-path }}
           LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
-        run: pnpm -F @finanzas/site audit:perf
-      - name: Run Lighthouse CI (mobile emulation)
-        # NON-GATING: mobile form-factor audit of the same public routes. All
-        # assertions in lighthouserc.mobile.json are `warn` to avoid flaky
-        # gating on emulated-mobile throttling. Public routes only (no PHI/auth).
-        env:
-          CHROME_PATH: ${{ steps.setup-chrome.outputs.chrome-path }}
-          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
-        run: pnpm -F @finanzas/site audit:perf:mobile
+        run: pnpm -F @finanzas/site ${{ matrix.lh.script }}
 
   site-coverage:
     name: site vitest coverage (gating)
