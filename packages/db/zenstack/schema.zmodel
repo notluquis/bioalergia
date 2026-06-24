@@ -6276,6 +6276,8 @@ enum JobSourceKind {
   CORNERSTONE
   PANDAPE
   COMPUTRABAJO
+  EIGHTFOLD
+  MINISITE
 
   @@schema("personal")
 }

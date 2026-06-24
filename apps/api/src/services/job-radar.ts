@@ -16,6 +16,8 @@ import { fetchAshbyJobs } from "../modules/job-radar/ashby.ts";
 import { fetchBciJobs } from "../modules/job-radar/bci.ts";
 import { fetchBukJobs } from "../modules/job-radar/buk.ts";
 import { fetchComputrabajoJobs } from "../modules/job-radar/computrabajo.ts";
+import { fetchEightfoldJobs } from "../modules/job-radar/eightfold.ts";
+import { fetchMinisiteJobs } from "../modules/job-radar/minisite.ts";
 import { fetchCornerstoneJobs } from "../modules/job-radar/cornerstone.ts";
 import { fetchGenomaworkJobs } from "../modules/job-radar/genomawork.ts";
 import { fetchHirefrontJobs } from "../modules/job-radar/hirefront.ts";
@@ -256,6 +258,20 @@ function sourceFromRow(kind: string, identifier: string, keywords: string[]): Jo
         company: identifier,
         label: `computrabajo:${identifier}`,
         fetch: () => fetchComputrabajoJobs(identifier),
+      };
+    case "EIGHTFOLD":
+      return {
+        source: "eightfold",
+        company: identifier.split(":")[0] ?? identifier,
+        label: `eightfold:${identifier.split(":")[0] ?? identifier}`,
+        fetch: () => fetchEightfoldJobs(identifier),
+      };
+    case "MINISITE":
+      return {
+        source: "minisite",
+        company: identifier,
+        label: `minisite:${identifier}`,
+        fetch: () => fetchMinisiteJobs(identifier),
       };
     // MUEVETE (grupo Falabella) NO es fila: es toggle global `config.muevete`
     // (como BCI/GetOnBoard), porque es una fuente única que agrega todas las
@@ -965,7 +981,9 @@ export type JobSourceKindDTO =
   | "HIREFRONT"
   | "CORNERSTONE"
   | "PANDAPE"
-  | "COMPUTRABAJO";
+  | "COMPUTRABAJO"
+  | "EIGHTFOLD"
+  | "MINISITE";
 
 export async function listJobSources() {
   return db.jobSource.findMany({ orderBy: [{ kind: "asc" }, { identifier: "asc" }] });
