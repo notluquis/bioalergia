@@ -225,6 +225,10 @@ jobs:
       - run: pnpm turbo run build --filter=@finanzas/db --filter=@finanzas/social-render
       - run: pnpm -F @finanzas/db db:push
       - run: pnpm -F @finanzas/db seed:synthetic
+      # Base "Socio" role + permission catalog (a fresh db:push DB has neither —
+      # prod makes them via the admin UI). Without this seed-e2e-user exits 3 on
+      # the missing role → empty creds → every authed spec skips vacuously.
+      - run: node apps/api/scripts/seed-e2e-rbac.ts
 
       # Seed the dedicated E2E user (random password each run) and export the
       # printed creds so the authed specs actually log in. Without this the
@@ -238,23 +242,14 @@ jobs:
           echo "E2E_USER=$E2E_USER" >> "$GITHUB_ENV"
           echo "E2E_PASS=$E2E_PASS" >> "$GITHUB_ENV"
 
-      # Layer-3 DB read-only role (hermetic only, defense in depth). The
-      # writes above (db:push, seed:synthetic, seed-e2e-user) ran as the
-      # full-access `e2e` superuser. From here the api Playwright boots
-      # connects as `e2e_readonly`: SELECT everywhere, a narrow column-level
-      # UPDATE on the auth-bookkeeping columns of `users` (keeps login's
-      # session/lockout stamp working), and INSERT on audit_logs. Every
-      # other mutation is rejected at the DB. graphile-worker is off so no
-      # background writer fights the role. Non-blocking job.
-      - name: Create e2e_readonly DB role + export readonly URL
-        run: |
-          E2E_RO_PASS="$(openssl rand -base64 32 | tr -d '=+/' | head -c 32)"
-          echo "::add-mask::$E2E_RO_PASS"
-          psql "$DATABASE_URL" \
-            -v ON_ERROR_STOP=1 \
-            -v pw="$E2E_RO_PASS" \
-            -f apps/api/scripts/setup-postgres-readonly-role.sql
-          echo "DATABASE_URL_READONLY=postgres://e2e_readonly:${E2E_RO_PASS}@localhost:5432/bioalergia_e2e" >> "$GITHUB_ENV"
+      # NOTE: the api boots as the full-RW `e2e` superuser (DATABASE_URL), NOT a
+      # read-only DB role. The old `e2e_readonly` role (column-level grants) was
+      # REMOVED — login MUST write `users` (lastActivityAt / lockout / session)
+      # and the narrow grant denied it ("permission denied for table users"),
+      # which made every authed spec's worker-login fail → 178 specs skipped.
+      # Mutation safety here is BY CONSTRUCTION (ephemeral synthetic DB, no PHI,
+      # destroyed with the job) plus the network-layer read-only guard in
+      # fixtures.ts — the DB-level guard was redundant (and login-breaking).
 
       - name: Build intranet (preview server target)
         run: pnpm turbo run build --filter=@finanzas/intranet
