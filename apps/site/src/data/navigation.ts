@@ -20,7 +20,7 @@ export const primaryNav: NavLink[] = [
   { label: "Noticias", href: "/noticias" },
   { label: "Equipo", href: "/equipo" },
   { label: "Venta empresas", href: "/venta-empresas" },
-  { label: "Contacto", href: "/#contacto" },
+  { label: "Contacto", href: "/contacto" },
   { label: "Tienda", href: "/tienda", accent: true },
   { label: "Mi cuenta", href: "/mi-cuenta", accent: true },
 ];
@@ -33,4 +33,8 @@ export const secondaryNav: NavLink[] = [
   { label: "Preguntas frecuentes", href: "/#faq" },
   { label: "Salud ocupacional", href: "/salud-ocupacional" },
   { label: "Compromiso social", href: "/compromiso-social" },
+  { label: "Precios", href: "/precios" },
+  { label: "Derechos y deberes", href: "/derechos-deberes" },
+  { label: "Reclamos", href: "/reclamos" },
+  { label: "Ejercicio de derechos", href: "/derechos" },
 ];

@@ -6,6 +6,7 @@ import type { CatalogContract } from "@finanzas/orpc-contracts/catalog";
 import type { CheckoutContract } from "@finanzas/orpc-contracts/checkout";
 import type { OccupationalContract } from "@finanzas/orpc-contracts/occupational";
 import type { PollenContract } from "@finanzas/orpc-contracts/pollen";
+import type { PublicClinicContract } from "@finanzas/orpc-contracts/public-clinic";
 import type { ReactivosContract } from "@finanzas/orpc-contracts/reactivos";
 import type { SiteAuthContract } from "@finanzas/orpc-contracts/site-auth";
 import type { SiteContentContract } from "@finanzas/orpc-contracts/site-content";
@@ -59,3 +60,9 @@ export const pollenClient = createORPCClient(siteSuperJSONLink, {
 export const occupationalClient = createORPCClient(siteSuperJSONLink, {
   path: ["api", "orpc", "occupational", "rpc"],
 }) as ContractRouterClient<OccupationalContract>;
+
+// Superficie pública de la clínica: precios a la vista + formularios de
+// reclamos / derechos del titular / contacto. Todo público sin auth.
+export const publicClinicClient = createORPCClient(siteSuperJSONLink, {
+  path: ["api", "orpc", "public-clinic", "rpc"],
+}) as ContractRouterClient<PublicClinicContract>;

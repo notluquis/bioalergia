@@ -333,6 +333,12 @@
       "import": "./dist/price-list.js",
       "default": "./dist/price-list.js"
     },
+    "./public-clinic": {
+      "development": "./src/public-clinic.ts",
+      "types": "./dist/public-clinic.d.ts",
+      "import": "./dist/public-clinic.js",
+      "default": "./dist/public-clinic.js"
+    },
     "./data-rights": {
       "development": "./src/data-rights.ts",
       "types": "./dist/data-rights.d.ts",

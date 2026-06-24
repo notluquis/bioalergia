@@ -159,6 +159,138 @@ export async function sendReactivoLeadNotification(args: {
   });
 }
 
+// Fecha legible es-CL para los avisos internos (plazos legales).
+function fmtDate(d: Date): string {
+  return new Intl.DateTimeFormat("es-CL", { dateStyle: "long" }).format(d);
+}
+
+function notifyTable(rows: Array<[string, string]>): string {
+  return rows
+    .map(
+      ([k, v]) =>
+        `<tr><td style="padding:6px 12px;color:#6b7280;vertical-align:top;white-space:nowrap">${k}</td><td style="padding:6px 12px;font-weight:500">${esc(v)}</td></tr>`
+    )
+    .join("");
+}
+
+/**
+ * #6 — Reclamo público (Decreto 35/2012): avisa al equipo que llegó un reclamo
+ * desde el sitio. Interno (sin unsubscribe). Datos del formulario público → se
+ * escapan al renderizar. El plazo legal de respuesta va destacado.
+ */
+export async function sendPublicComplaintNotification(args: {
+  to: string;
+  complaint: {
+    id: string;
+    complainantName: string;
+    contact: string | null;
+    category: string | null;
+    description: string;
+    dueAt: Date;
+  };
+}): Promise<EmailSendResult> {
+  const c = args.complaint;
+  const rows: Array<[string, string]> = [
+    ["Nombre", c.complainantName],
+    ["Contacto", c.contact || "—"],
+    ["Categoría", c.category || "—"],
+    ["Responder antes de", fmtDate(c.dueAt)],
+    ["Reclamo", c.description],
+  ];
+  const html = shell(
+    "Nuevo reclamo desde el sitio",
+    `<p>Llegó un reclamo a través del formulario público (Decreto 35/2012). Plazo legal de respuesta: <strong>15 días hábiles</strong>.</p>
+     <table style="border-collapse:collapse;width:100%;background:#f9fafb;border-radius:8px">${notifyTable(rows)}</table>
+     <p style="margin-top:16px"><a href="${appUrl()}/admin/compliance?tab=reclamos" style="color:#0e64b7">Ver en la bandeja de reclamos</a></p>`
+  );
+  return sendEmail({
+    to: args.to,
+    subject: `Nuevo reclamo — ${c.complainantName}`,
+    html,
+    text: rows.map(([k, v]) => `${k}: ${v}`).join("\n"),
+    idempotencyKey: `public-complaint/${c.id}`,
+  });
+}
+
+/**
+ * #7 — Ejercicio de derechos del titular (Ley 21.719): avisa al delegado que
+ * llegó una solicitud (acceso/rectificación/etc.). Incluye el tipo y el plazo
+ * de 30 días corridos. El equipo debe verificar identidad antes de responder.
+ */
+export async function sendPublicDataRightsNotification(args: {
+  to: string;
+  request: {
+    id: string;
+    type: string;
+    requesterName: string;
+    requesterEmail: string | null;
+    requesterRut: string | null;
+    dueAt: Date;
+    notes: string | null;
+  };
+}): Promise<EmailSendResult> {
+  const r = args.request;
+  const typeLabels: Record<string, string> = {
+    ACCESS: "Acceso",
+    RECTIFICATION: "Rectificación",
+    DELETION: "Supresión",
+    PORTABILITY: "Portabilidad",
+    OPPOSITION: "Oposición",
+    BLOCKING: "Bloqueo",
+  };
+  const rows: Array<[string, string]> = [
+    ["Derecho ejercido", typeLabels[r.type] ?? r.type],
+    ["Solicitante", r.requesterName],
+    ["Email", r.requesterEmail || "—"],
+    ["RUT", r.requesterRut || "—"],
+    ["Responder antes de", fmtDate(r.dueAt)],
+    ["Detalle", r.notes || "—"],
+  ];
+  const html = shell(
+    "Nueva solicitud de derechos del titular",
+    `<p>Llegó una solicitud de derechos del titular (Ley 21.719) desde el sitio. <strong>Verifica la identidad del solicitante</strong> antes de responder. Plazo: 30 días corridos (prorrogable una vez).</p>
+     <table style="border-collapse:collapse;width:100%;background:#f9fafb;border-radius:8px">${notifyTable(rows)}</table>
+     <p style="margin-top:16px"><a href="${appUrl()}/admin/compliance?tab=derechos" style="color:#0e64b7">Ver en la bandeja de derechos</a></p>`
+  );
+  return sendEmail({
+    to: args.to,
+    subject: `Solicitud de derechos (${typeLabels[r.type] ?? r.type}) — ${r.requesterName}`,
+    html,
+    text: rows.map(([k, v]) => `${k}: ${v}`).join("\n"),
+    idempotencyKey: `public-datarights/${r.id}`,
+  });
+}
+
+/**
+ * #8 — Contacto general: reenvía el mensaje del formulario público al equipo. No
+ * se persiste (minimización Ley 21.719); este correo ES el registro. Reply-To
+ * apunta al remitente para responder directo.
+ */
+export async function sendPublicContactNotification(args: {
+  to: string;
+  contact: { name: string; email: string; phone: string | null; message: string };
+}): Promise<EmailSendResult> {
+  const c = args.contact;
+  const rows: Array<[string, string]> = [
+    ["Nombre", c.name],
+    ["Email", c.email],
+    ["Teléfono", c.phone || "—"],
+    ["Mensaje", c.message],
+  ];
+  const html = shell(
+    "Nuevo mensaje de contacto",
+    `<p>Llegó un mensaje desde el formulario de contacto del sitio:</p>
+     <table style="border-collapse:collapse;width:100%;background:#f9fafb;border-radius:8px">${notifyTable(rows)}</table>`
+  );
+  return sendEmail({
+    to: args.to,
+    replyTo: c.email,
+    subject: `Contacto web — ${c.name}`,
+    html,
+    text: rows.map(([k, v]) => `${k}: ${v}`).join("\n"),
+  });
+}
+
 /**
  * #2 — Honorarios: send the monthly summary email with the PDF attached.
  */
