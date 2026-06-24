@@ -67,9 +67,7 @@ export async function fetchMinisiteJobs(identifier: string): Promise<RawJob[]> {
         company: host,
         externalId,
         title,
-        url: seoPath
-          ? `https://${host}/postulaciones/${seoPath}`
-          : `https://${host}/#ofertas-laborales`,
+        url: seoPath ? `https://${host}/${seoPath}` : `https://${host}/#ofertas-laborales`,
         department: asString(src.position),
         location: asString(src.city) ?? asString(src.company_location),
         remote: null,
