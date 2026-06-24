@@ -46,11 +46,14 @@
 		#     validate against the live checkout network panel before enforcing.
 		#   Google Ads gtag:    www.googletagmanager.com, www.google.com,
 		#     www.googleadservices.com, googleads.g.doubleclick.net,
-		#     *.google-analytics.com (conversion beacons).
+		#     *.google-analytics.com (conversion beacons). connect-src
+		#     *.doubleclick.net cubre el collect de conversión gtag
+		#     (ad.doubleclick.net/ccm/s/collect, googleads/td subdominios).
 		#   PostHog (us cloud):  *.i.posthog.com (ingest us.i + assets us-assets).
-		#   Doctoralia widget:   platform.docplanner.com.
+		#   Doctoralia:          platform.docplanner.com (widget de reserva) +
+		#     widgets.doctoralia.cl (frame del widget de certificado en la home).
 		#   Fonts:               fonts.googleapis.com (css) + fonts.gstatic.com.
-		Content-Security-Policy-Report-Only "default-src 'self'; script-src 'self' 'unsafe-inline' https://sdk.mercadopago.com https://*.mercadopago.com https://*.mlstatic.com https://www.googletagmanager.com https://www.google.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://*.i.posthog.com https://platform.docplanner.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://api.mercadopago.com https://*.mercadopago.com https://*.mlstatic.com https://*.i.posthog.com https://*.google-analytics.com https://www.googletagmanager.com https://www.google.com https://www.googleadservices.com https://platform.docplanner.com; frame-src 'self' https://*.mercadopago.com https://platform.docplanner.com https://www.doctoralia.cl https://td.doubleclick.net https://www.google.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+		Content-Security-Policy-Report-Only "default-src 'self'; script-src 'self' 'unsafe-inline' https://sdk.mercadopago.com https://*.mercadopago.com https://*.mlstatic.com https://www.googletagmanager.com https://www.google.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://*.i.posthog.com https://platform.docplanner.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://api.mercadopago.com https://*.mercadopago.com https://*.mlstatic.com https://*.i.posthog.com https://*.google-analytics.com https://www.googletagmanager.com https://www.google.com https://www.googleadservices.com https://*.doubleclick.net https://platform.docplanner.com; frame-src 'self' https://*.mercadopago.com https://platform.docplanner.com https://www.doctoralia.cl https://widgets.doctoralia.cl https://td.doubleclick.net https://www.google.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
 	}
 
 	# Allow embedding public brand assets (signature + clinic logo) from
