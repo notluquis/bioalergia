@@ -5,7 +5,7 @@
  *   - Patient data (RUT, names, diagnoses, clinical notes) renders across
  *     many routes. We default to maximum masking and stripping so nothing
  *     leaves the browser unless we explicitly opt in.
- *   - `sendDefaultPii: false` keeps IPs / cookies / headers off events.
+ *   - `dataCollection` keeps IPs / cookies / headers off events.
  *   - Replay: text + inputs masked, media blocked, network details disabled.
  *   - Path segments after PHI-bearing route prefixes are scrubbed to `[id]`.
  *   - The Replay integration is *lazy-loaded* (only when a DSN is set and
@@ -55,7 +55,14 @@ export function initSentry(): void {
     tracesSampleRate: 0.1,
     replaysSessionSampleRate: 0, // off by default
     replaysOnErrorSampleRate: 1.0, // 100% of sessions that hit an error
-    sendDefaultPii: false,
+    dataCollection: {
+      userInfo: false,
+      cookies: false,
+      httpHeaders: { request: false, response: false },
+      httpBodies: [],
+      queryParams: false,
+      genAI: { inputs: false, outputs: false },
+    },
     integrations: [Sentry.browserTracingIntegration()],
     beforeBreadcrumb(breadcrumb) {
       if (breadcrumb.data && typeof breadcrumb.data.url === "string") {

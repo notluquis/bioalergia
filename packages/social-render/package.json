@@ -28,11 +28,11 @@
   },
   "dependencies": {
     "@resvg/resvg-js": "^2.6.2",
-    "satori": "^0.12.2"
+    "satori": "^0.26.0"
   },
   "devDependencies": {
-    "@types/node": "^25.9.2",
-    "tsdown": "^0.22.2",
+    "@types/node": "^26.0.0",
+    "tsdown": "^0.22.3",
     "typescript": "^6.0.3"
   },
   "engines": {

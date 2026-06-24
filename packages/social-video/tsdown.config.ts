@@ -19,12 +19,14 @@ export default defineConfig({
   clean: true,
   sourcemap: true,
   outDir: "dist",
-  external: [
-    "@remotion/bundler",
-    "@remotion/renderer",
-    "@remotion/cli",
-    "remotion",
-    "react",
-    "react-dom",
-  ],
+  deps: {
+    neverBundle: [
+      "@remotion/bundler",
+      "@remotion/renderer",
+      "@remotion/cli",
+      "remotion",
+      "react",
+      "react-dom",
+    ],
+  },
 });

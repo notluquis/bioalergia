@@ -15,5 +15,5 @@ export default defineConfig({
   clean: true,
   sourcemap: true,
   outDir: "dist",
-  external: ["satori", "@resvg/resvg-js"],
+  deps: { neverBundle: ["satori", "@resvg/resvg-js"] },
 });

@@ -14,7 +14,7 @@ ENV PATH="$PNPM_HOME:$PATH"
 ENV HUSKY=0
 COPY . .
 RUN npm install -g pnpm@11.1.1
-RUN TURBO_TELEMETRY_DISABLED=1 pnpm dlx turbo@2.9.1 prune @finanzas/doctoralia-scraper --docker
+RUN TURBO_TELEMETRY_DISABLED=1 pnpm dlx turbo@2.10.0 prune @finanzas/doctoralia-scraper --docker
 
 # ============================================================================
 # STAGE 2: Base — install deps for pruned workspace

@@ -1,5 +1,4 @@
 import { db } from "@finanzas/db";
-import type { InventoryMovementWhereInput } from "@finanzas/db/input";
 import { DomainError } from "../lib/errors.ts";
 
 export async function listInventoryCategories() {
@@ -83,14 +82,8 @@ export async function listInventoryMovements(params: {
   search?: string;
   to?: string;
 }) {
-  const where: InventoryMovementWhereInput = {};
-
-  if (params.itemId !== undefined) {
-    where.itemId = params.itemId;
-  }
-
+  const createdAt: { gte?: Date; lte?: Date } = {};
   if (params.from !== undefined || params.to !== undefined) {
-    const createdAt: { gte?: Date; lte?: Date } = {};
     if (params.from !== undefined) {
       const fromDate = new Date(params.from);
       if (!Number.isNaN(fromDate.getTime())) {
@@ -103,20 +96,23 @@ export async function listInventoryMovements(params: {
         createdAt.lte = toDate;
       }
     }
-    if (createdAt.gte !== undefined || createdAt.lte !== undefined) {
-      where.createdAt = createdAt;
-    }
   }
 
-  if (params.search !== undefined && params.search.trim().length > 0) {
-    const q = params.search.trim();
-    where.item = {
-      OR: [
-        { name: { contains: q, mode: "insensitive" as const } },
-        { description: { contains: q, mode: "insensitive" as const } },
-      ],
-    };
-  }
+  const q = params.search?.trim();
+  const where = {
+    ...(params.itemId !== undefined ? { itemId: params.itemId } : {}),
+    ...(createdAt.gte !== undefined || createdAt.lte !== undefined ? { createdAt } : {}),
+    ...(q
+      ? {
+          item: {
+            OR: [
+              { name: { contains: q, mode: "insensitive" as const } },
+              { description: { contains: q, mode: "insensitive" as const } },
+            ],
+          },
+        }
+      : {}),
+  };
 
   // Fetch limit+1 to compute nextCursor without an extra query.
   const take = params.limit + 1;

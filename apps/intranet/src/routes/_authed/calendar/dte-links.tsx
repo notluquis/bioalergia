@@ -1,9 +1,7 @@
 import { formatChile } from "@/lib/dates";
-import { createFileRoute, getRouteApi } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { requirePermission } from "@/lib/authz/route-guards";
 import { z } from "zod";
-
-const routeApi = getRouteApi("/_authed/calendar/dte-links");
 
 const dteLinksSearchSchema = z
   .object({
@@ -35,7 +33,7 @@ export const Route = createFileRoute("/_authed/calendar/dte-links")({
   loader: ({ location }) => {
     const parsed = dteLinksSearchSchema.parse(location.search);
     // eslint-disable-next-line @typescript-eslint/only-throw-error
-    throw routeApi.redirect({
+    throw redirect({
       to: "/finanzas/dte-analytics",
       search: {
         page: parsed.page,

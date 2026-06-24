@@ -14,15 +14,15 @@
   },
   "dependencies": {
     "dotenv": "^17.4.2",
-    "imapflow": "^1.3.6",
-    "impit": "^0.14.1",
-    "playwright": "^1.60.0",
+    "imapflow": "^1.4.2",
+    "impit": "^0.14.2",
+    "playwright": "^1.61.1",
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@types/node": "^25.9.2",
+    "@types/node": "^26.0.0",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.8"
+    "vitest": "^4.1.9"
   },
   "engines": {
     "node": ">=26"

@@ -10,7 +10,6 @@ import {
   type ServiceStatus,
   type ServiceType,
 } from "@finanzas/db";
-import type { ServiceInclude } from "@finanzas/db/input";
 import { Decimal } from "decimal.js";
 import { DomainError } from "../lib/errors.ts";
 import { dbDateToISO, dbDateToMs, isoToDbDate } from "../lib/time.ts";
@@ -50,10 +49,10 @@ type ServiceUpdatePayload = Partial<ServicePayload>;
 
 const toDecimal = (value: number) => new Decimal(value);
 
-const serviceInclude: ServiceInclude = {
+const serviceInclude = {
   counterpart: true,
   transactionCategory: true,
-};
+} as const;
 
 export async function listServices() {
   return await db.service.findMany({

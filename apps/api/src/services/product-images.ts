@@ -1,5 +1,5 @@
 import { db } from "@finanzas/db";
-import sharp from "sharp";
+import sharp, { type Sharp } from "sharp";
 import { DomainError } from "../lib/errors.ts";
 import { deleteR2Objects, putR2Object, r2KeyFromCdnUrl } from "../modules/cloudflare/r2.ts";
 
@@ -18,13 +18,13 @@ const FORMATS = [
     col: "srcset",
     ext: "webp",
     mime: "image/webp",
-    run: (s: sharp.Sharp) => s.webp({ quality: 80 }),
+    run: (s: Sharp) => s.webp({ quality: 80 }),
   },
   {
     col: "avifSrcset",
     ext: "avif",
     mime: "image/avif",
-    run: (s: sharp.Sharp) => s.avif({ quality: 55 }),
+    run: (s: Sharp) => s.avif({ quality: 55 }),
   },
 ] as const;
 
@@ -41,6 +41,9 @@ export async function processProductImageVariants(imageId: number): Promise<void
   if (!res.ok) throw new Error(`No se pudo leer el original (${res.status})`);
   const input = Buffer.from(await res.arrayBuffer());
   const meta = await sharp(input).metadata();
+  if (meta.mediaType && !meta.mediaType.startsWith("image/")) {
+    throw new Error(`Archivo no es una imagen (${meta.mediaType})`);
+  }
   if (!meta.width || !meta.height) throw new Error("Imagen sin dimensiones");
 
   const cap = Math.min(meta.width, 1600);

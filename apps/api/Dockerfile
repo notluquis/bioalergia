@@ -13,7 +13,7 @@ ENV HUSKY=0
 COPY . .
 RUN npm install -g pnpm@11.1.1
 # Use pnpm dlx to avoid npm interpreting pnpm-only .npmrc keys during Docker builds.
-RUN TURBO_TELEMETRY_DISABLED=1 pnpm dlx turbo@2.9.1 prune @finanzas/api --docker
+RUN TURBO_TELEMETRY_DISABLED=1 pnpm dlx turbo@2.10.0 prune @finanzas/api --docker
 
 # ============================================================================
 # STAGE 2: Base - Install dependencies for pruned workspace
