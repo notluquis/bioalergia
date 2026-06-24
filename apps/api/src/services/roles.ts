@@ -1,13 +1,12 @@
 import { db, schema } from "@finanzas/db";
-import type { RoleUncheckedCreateInput, RoleUncheckedUpdateInput } from "@finanzas/db/input";
 import { DomainError } from "../lib/errors.ts";
 import { filterSafePermissions } from "../lib/permission-validator.ts";
 import { getSetting, updateSetting } from "./settings.ts";
 
-// Patrón ZenStack v3.7 golden: usar los Unchecked*Input directos (no
-// NonNullable<Args["data"]>, que es XOR y no se puede re-narrow → TS2345).
-type RoleCreateInput = RoleUncheckedCreateInput;
-type RoleUpdateInput = RoleUncheckedUpdateInput;
+type RolePayload = {
+  description?: string | null;
+  name: string;
+};
 export interface RoleMapping {
   app_role: string;
   employee_role: string;
@@ -28,7 +27,7 @@ export async function listRoles() {
   });
 }
 
-export async function createRole(data: RoleCreateInput) {
+export async function createRole(data: RolePayload) {
   const existing = await db.role.findFirst({
     where: { name: { equals: data.name, mode: "insensitive" as const } },
   });
@@ -40,7 +39,7 @@ export async function createRole(data: RoleCreateInput) {
   });
 }
 
-export async function updateRole(id: number, data: RoleUpdateInput) {
+export async function updateRole(id: number, data: Partial<RolePayload>) {
   if (data.name) {
     const existing = await db.role.findFirst({
       where: {

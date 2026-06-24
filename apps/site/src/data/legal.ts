@@ -32,11 +32,14 @@ export interface LegalDocument {
 
 export const legalOwner = {
   address: contactInfo.address,
-  companyName: "DR. JOSÉ MANUÉL MARTÍNEZ Y COMPAÑIA LIMITADA",
+  companyName: "DR. JOSÉ MANUEL MARTÍNEZ Y COMPAÑÍA LIMITADA",
   country: "Chile",
   email: contactInfo.email,
   privacyEmail: contactInfo.email,
   supportEmail: contactInfo.email,
+  rut: "76.406.172-1",
+  directorName: "Dr. José Manuel Martínez Martínez",
+  dpoName: "Lucas Matías Pulgar Escobar",
 };
 
 const lastUpdated = "4 de abril de 2026";
@@ -49,15 +52,16 @@ export const legalDocuments: Record<LegalDocumentKey, LegalDocument> = {
     eyebrow: "Política de Privacidad",
     highlights: [
       { label: "Responsable", value: legalOwner.companyName },
+      { label: "Delegado de datos", value: legalOwner.dpoName },
       { label: "Contacto", value: legalOwner.privacyEmail },
-      { label: "Jurisdicción", value: legalOwner.country },
-      { label: "Datos sensibles", value: "Tratamiento restringido" },
+      { label: "Datos sensibles", value: "Salud (Ley 21.719)" },
     ],
     lastUpdated,
     references: [
       {
-        href: "https://www.bcn.cl/leychile/navegar?idNorma=141599",
-        label: "Ley Nº 19.628 sobre protección de la vida privada",
+        href: "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+        label: "Ley Nº 21.719 sobre protección y tratamiento de datos personales",
+        note: "Su entrada en vigencia general fue fijada para el 1 de diciembre de 2026.",
       },
       {
         href: "https://www.bcn.cl/leychile/navegar?idNorma=1039348",
@@ -68,113 +72,118 @@ export const legalDocuments: Record<LegalDocumentKey, LegalDocument> = {
         label: "Decreto Nº 41 del Ministerio de Salud sobre ficha clínica",
       },
       {
-        href: "https://www.bcn.cl/balance-legislativo/detalle/ficha_LEY_21719_2024-12-13",
-        label: "Ley Nº 21.719, publicada el 13 de diciembre de 2024",
-        note: "Su entrada en vigencia general fue fijada para el 1 de diciembre de 2026.",
+        href: "/derechos",
+        label: "Canal de ejercicio de derechos del titular",
+        note: "Acceso, rectificación, supresión, oposición, portabilidad y bloqueo.",
       },
     ],
     sections: [
       {
-        id: "responsable",
+        id: "objetivo-responsable",
         paragraphs: [
-          `${legalOwner.companyName}, con domicilio de referencia en ${legalOwner.address}, es responsable del tratamiento de los datos personales recabados a través de bioalergia.cl y de los canales digitales vinculados desde este sitio.`,
-          "Esta política aplica al sitio web, formularios y medios de contacto publicados en el sitio, derivaciones a agenda online, comunicaciones por correo electrónico o WhatsApp iniciadas desde estos canales, y registros técnicos necesarios para operar y proteger la plataforma.",
+          `Bioalergia trata datos personales relativos a la salud, que son datos sensibles y están sujetos al régimen más estricto de la Ley Nº 21.719. Esta política rige la forma en que se recolectan, usan, resguardan y conservan, y los derechos de las personas titulares. La vigencia plena de la ley es el 1 de diciembre de 2026.`,
+          `El responsable del tratamiento es ${legalOwner.companyName}, RUT ${legalOwner.rut}, domiciliado en ${legalOwner.address}.`,
+          `Delegado de protección de datos: ${legalOwner.dpoName} (administración), quien coordina la aplicación de esta política y atiende las solicitudes de los titulares.`,
         ],
-        title: "1. Responsable y alcance",
+        title: "1. Objetivo y responsable",
       },
       {
-        id: "datos-que-tratamos",
-        bullets: [
-          "Datos de identificación y contacto, como nombre, teléfono, correo electrónico y otros datos que tú nos entregues.",
-          "Datos de agenda o coordinación, como fecha solicitada, especialidad, profesional, canal de contacto preferido y antecedentes necesarios para gestionar tu atención.",
-          "Datos de salud o datos sensibles sólo cuando tú los proporciones o cuando sean necesarios para la coordinación, continuidad o seguridad de la atención.",
-          "Datos técnicos y de navegación, como dirección IP, navegador, dispositivo, cookies estrictamente necesarias y eventos básicos de seguridad o analítica.",
+        id: "datos-que-se-tratan",
+        paragraphs: [
+          "El establecimiento trata datos de identificación y contacto de los pacientes y datos relativos a su salud (anamnesis, antecedentes, resultados de pruebas de alergia y tratamientos). Estos últimos son datos sensibles.",
         ],
-        title: "2. Datos que podemos tratar",
+        title: "2. Datos que se tratan",
       },
       {
-        id: "finalidades-y-bases",
+        id: "finalidad-base",
         paragraphs: [
-          "Tratamos datos para responder consultas, coordinar horas, confirmar o reprogramar atenciones, dar continuidad operativa a la relación asistencial, resguardar seguridad clínica y administrativa, y cumplir obligaciones legales y regulatorias aplicables en Chile.",
-          "Cuando el tratamiento involucra datos de salud, aplicamos un estándar reforzado de necesidad, confidencialidad y minimización. Cuando el canal sea WhatsApp u otro servicio de terceros, además respetamos las reglas del proveedor sobre consentimiento y ventanas de conversación.",
-          "La política está redactada considerando la Ley Nº 19.628 y la Ley Nº 20.584, y preparada para converger con el marco reforzado de la Ley Nº 21.719 una vez que entre en vigencia general.",
+          "La finalidad principal del tratamiento es la atención de salud de la persona: el diagnóstico, el tratamiento y el seguimiento alergológico, así como el cumplimiento de las obligaciones legales del prestador. El tratamiento con fines de atención de salud se ampara en la base de licitud sanitaria que la ley contempla para los datos de salud.",
+          "Cualquier uso distinto del de la atención (por ejemplo, comunicaciones no asistenciales) requiere el consentimiento expreso del titular.",
         ],
-        title: "3. Finalidades y bases de tratamiento",
+        title: "3. Finalidad y base de licitud",
       },
       {
-        id: "datos-sensibles",
+        id: "principios",
         paragraphs: [
-          "Los datos relativos a salud, antecedentes clínicos y otra información sensible se tratan con acceso restringido y sólo para fines compatibles con la atención, coordinación, continuidad asistencial, cumplimiento normativo, seguridad del paciente o protección jurídica de la prestación.",
-          "No comercializamos datos de salud ni los utilizamos para perfiles publicitarios incompatibles con su finalidad original.",
+          "El tratamiento se rige por los principios de licitud y lealtad, finalidad, proporcionalidad, calidad, responsabilidad, seguridad, transparencia e información, y confidencialidad. Los datos se recolectan con fines específicos y no se tratan de manera incompatible con ellos.",
         ],
-        title: "4. Datos sensibles y reserva clínica",
-      },
-      {
-        id: "comparticion",
-        bullets: [
-          "Prestadores tecnológicos que alojan, transmiten o protegen la infraestructura digital del sitio y sus comunicaciones.",
-          "Plataformas de agenda o mensajería cuando tú decidas interactuar por esos medios.",
-          "Asesores, proveedores y encargados que necesiten acceso acotado para prestar el servicio bajo deberes de confidencialidad y seguridad.",
-          "Autoridades u organismos competentes cuando exista obligación legal, regulatoria o judicial.",
-        ],
-        paragraphs: [
-          "Cuando un proveedor opere fuera de Chile, exigimos resguardos contractuales y organizacionales razonables acordes al tipo de datos y al riesgo involucrado.",
-        ],
-        title: "5. Comunicación a terceros y encargados",
-      },
-      {
-        id: "conservacion",
-        paragraphs: [
-          "Conservamos los datos sólo por el tiempo necesario para cumplir la finalidad informada, resguardar continuidad operativa, atender requerimientos legales o regulatorios, mantener evidencia de consentimientos o resolver contingencias de seguridad y auditoría.",
-          "Si ciertos antecedentes forman parte de registros clínicos o administrativos sujetos a conservación obligatoria, podremos bloquear, restringir o archivar su tratamiento en vez de eliminarlos inmediatamente.",
-        ],
-        title: "6. Conservación y eliminación",
+        title: "4. Principios",
       },
       {
         id: "derechos",
         bullets: [
-          "Solicitar acceso a tus datos.",
-          "Pedir rectificación o actualización cuando sean inexactos, incompletos o estén desactualizados.",
-          "Solicitar supresión, bloqueo u oposición cuando corresponda legalmente.",
-          "Revocar consentimientos opcionales y pedir el cese de comunicaciones no esenciales.",
-          "Solicitar portabilidad o medidas equivalentes cuando el marco legal aplicable así lo permita.",
+          "Acceso: conocer qué datos suyos tratamos y obtener una copia.",
+          "Rectificación: corregir datos inexactos o incompletos.",
+          "Supresión: solicitar la eliminación de sus datos cuando proceda.",
+          "Oposición: oponerse a un tratamiento determinado de sus datos.",
+          "Portabilidad: recibir sus datos en un formato estructurado y de uso común.",
+          "Bloqueo: suspender temporalmente el tratamiento de un dato.",
         ],
         paragraphs: [
-          `Para ejercer estos derechos, escríbenos a ${legalOwner.privacyEmail}. Podemos solicitar antecedentes razonables para verificar identidad, representación o alcance del requerimiento.`,
+          "Toda persona titular puede ejercer ante el establecimiento los derechos de acceso, rectificación, supresión, oposición, portabilidad y bloqueo de sus datos personales.",
         ],
-        title: "7. Derechos de los titulares",
+        title: "5. Derechos de las personas titulares",
+      },
+      {
+        id: "como-ejercerlos",
+        paragraphs: [
+          `La solicitud se presenta ante el delegado de protección de datos, por escrito o al correo ${legalOwner.privacyEmail}, identificando al titular y el derecho que ejerce. También puede usar el formulario en línea en la página de ejercicio de derechos.`,
+          "El establecimiento responde dentro de treinta días corridos contados desde el ingreso de la solicitud, plazo que puede prorrogarse por una sola vez hasta por treinta días corridos adicionales. El ejercicio de los derechos de rectificación, supresión y oposición es siempre gratuito; el derecho de acceso es gratuito al menos una vez por trimestre. Si la solicitud es rechazada o no se responde, el titular puede reclamar ante la Agencia de Protección de Datos Personales dentro del plazo de treinta días hábiles.",
+          "Límite por ficha clínica: la supresión no procede cuando la conservación del dato es necesaria para cumplir una obligación legal, como ocurre con la ficha clínica, que debe conservarse por quince años. En esos casos puede proceder el bloqueo en lugar de la supresión.",
+        ],
+        title: "6. Cómo ejercer sus derechos",
       },
       {
         id: "seguridad",
         paragraphs: [
-          "Aplicamos medidas técnicas, organizacionales y contractuales razonables según la criticidad del canal y la naturaleza de los datos, incluyendo control de acceso, separación de entornos, registros operativos, validación de integridad, revisión de incidentes y deberes de confidencialidad.",
-          "Ningún sistema conectado a internet puede garantizar riesgo cero, pero trabajamos bajo un criterio de minimización, necesidad y mejora continua.",
+          "El establecimiento aplica medidas de seguridad apropiadas para proteger los datos frente a su pérdida, filtración, daño accidental o destrucción: control de acceso por usuario y contraseña, perfiles diferenciados, registro de accesos, cifrado en reposo y en tránsito, respaldos periódicos y deber de confidencialidad del personal. Las medidas se documentan y se revisan periódicamente.",
         ],
-        title: "8. Seguridad de la información",
+        title: "7. Medidas de seguridad",
       },
       {
-        id: "cookies",
+        id: "encargados",
         paragraphs: [
-          "El sitio utiliza cookies y tecnologías equivalentes para operar funcionalidades básicas, medir rendimiento y mantener seguridad. No utilizamos este sitio para perfilar condiciones de salud con fines publicitarios incompatibles con la relación asistencial.",
-          "Puedes gestionar cookies desde tu navegador, aunque algunas funciones podrían degradarse si bloqueas componentes estrictamente necesarios.",
+          "Cuando un tercero trata datos por cuenta del establecimiento (por ejemplo, el proveedor de alojamiento del sistema de fichas), actúa como encargado de tratamiento. La relación se regula por un contrato escrito (acuerdo de tratamiento de datos), conforme al artículo 15 bis de la Ley Nº 21.719. El encargado solo trata los datos según las instrucciones del establecimiento, no puede delegar el encargo sin autorización escrita y debe aplicar las mismas medidas de seguridad y de notificación de vulneraciones.",
+          "Caso del alojamiento: el sistema de fichas se aloja en un proveedor de infraestructura tecnológica. El establecimiento suscribe con dicho proveedor el acuerdo de tratamiento de datos correspondiente y conserva la evidencia de sus certificaciones de seguridad.",
         ],
-        title: "9. Cookies y medición",
+        title: "8. Encargados de tratamiento",
       },
       {
-        id: "contacto-y-cambios",
+        id: "transferencia-internacional",
         paragraphs: [
-          `Si tienes preguntas sobre privacidad, escríbenos a ${legalOwner.privacyEmail}.`,
-          "Podemos actualizar esta política para reflejar cambios operativos, normativos o de seguridad. La versión vigente será siempre la publicada en esta URL con su fecha de actualización.",
+          "Si el proveedor de alojamiento almacena los datos fuera de Chile, se configura una transferencia internacional de datos. Esta es lícita cuando el país de destino cuenta con una decisión de adecuación, o cuando entre el establecimiento y el receptor existen garantías adecuadas, por ejemplo cláusulas contractuales que las contengan (artículos 27 y 28 de la Ley Nº 21.719). El establecimiento verifica la región de almacenamiento del proveedor, prefiere una región con un marco de protección adecuado y documenta la base que habilita la transferencia.",
         ],
-        title: "10. Contacto y cambios",
+        title: "9. Transferencia internacional",
+      },
+      {
+        id: "brechas",
+        paragraphs: [
+          "Ante una vulneración de las medidas de seguridad que afecte datos personales, el establecimiento la registra, evalúa su alcance, adopta medidas de contención y la notifica a la Agencia de Protección de Datos Personales. Por tratarse de datos sensibles de salud, la vulneración se comunica también a las personas titulares afectadas cuando corresponda.",
+        ],
+        title: "10. Vulneraciones de seguridad (brechas)",
+      },
+      {
+        id: "conservacion",
+        paragraphs: [
+          "Los datos de la ficha clínica se conservan por el plazo legal de quince años desde la última prestación. Cumplido el fin del tratamiento o el plazo legal, los datos se suprimen o se anonimizan de forma segura. Esta política no duplica los plazos que ya rigen por la Ley Nº 20.584 y el Reglamento de Ficha Clínica, sino que se superpone como capa de protección de datos.",
+        ],
+        title: "11. Conservación",
+      },
+      {
+        id: "plan-adecuacion",
+        paragraphs: [
+          "Antes del 1 de diciembre de 2026, el establecimiento publica esta política, implementa el procedimiento de ejercicio de derechos, documenta sus medidas de seguridad, define el protocolo de notificación de vulneraciones, suscribe los acuerdos de encargado con sus proveedores y revisa las instrucciones que dicte la Agencia de Protección de Datos Personales.",
+          "Esta política rige desde su aprobación y se revisa al menos una vez al año, o antes si cambia la normativa o las instrucciones de la Agencia.",
+        ],
+        title: "12. Plan de adecuación y vigencia",
       },
     ],
     seoDescription:
-      "Política de Privacidad de Bioalergia para bioalergia.cl y sus canales digitales, redactada para el marco chileno de datos personales y salud.",
-    seoTitle: "Política de Privacidad | Bioalergia",
+      "Política de Protección de Datos Personales de Bioalergia conforme a la Ley Nº 21.719: tratamiento de datos sensibles de salud, derechos del titular, seguridad, encargados y conservación de la ficha clínica.",
+    seoTitle: "Política de Protección de Datos | Bioalergia",
     summary:
-      "Describe cómo Bioalergia trata datos personales y datos de salud en bioalergia.cl y en los canales digitales vinculados al sitio, bajo un estándar compatible con el marco chileno aplicable.",
-    title: "Privacidad y protección de datos",
+      "Describe cómo Bioalergia trata los datos personales y los datos sensibles de salud de sus pacientes conforme a la Ley Nº 21.719, los derechos de las personas titulares y las medidas de seguridad aplicadas.",
+    title: "Política de Protección de Datos Personales",
   },
   terms: {
     canonicalPath: "/terms",

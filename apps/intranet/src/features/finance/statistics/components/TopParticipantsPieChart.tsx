@@ -36,7 +36,9 @@ export function TopParticipantsPieChart({ data }: TopParticipantsPieChartProps) 
           label={(entry) => entry.name}
           labelLine={false}
           outerRadius={80}
-          shape={(props, index) => <Sector {...props} fill={COLORS[index % COLORS.length]} />}
+          shape={(props, index) => (
+            <Sector {...props} fill={COLORS[Number(index ?? 0) % COLORS.length] ?? COLORS[0]} />
+          )}
         />
         <Tooltip
           contentStyle={{

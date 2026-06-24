@@ -8,7 +8,7 @@
 // parallel @opentelemetry/sdk-node pipeline.
 //
 // PHI-safe defaults for a Chilean clinical SaaS:
-//   - sendDefaultPii: false        → never auto-collect IPs / cookies / headers
+//   - dataCollection               → keeps PII categories off by default
 //   - PgInstrumentation default    → enhancedDatabaseReporting is OFF, so bound
 //                                    parameter VALUES (where the PHI lives in a
 //                                    parameterized query) are never attached to
@@ -95,7 +95,14 @@ if (dsn) {
     environment: process.env.NODE_ENV ?? "development",
     release: process.env.RAILWAY_GIT_COMMIT_SHA,
     tracesSampler,
-    sendDefaultPii: false,
+    dataCollection: {
+      userInfo: false,
+      cookies: false,
+      httpHeaders: { request: false, response: false },
+      httpBodies: [],
+      queryParams: false,
+      genAI: { inputs: false, outputs: false },
+    },
     // Sentry's OTel distro already instruments http/fetch. We add pg here so
     // Kysely / ZenStack / graphile-worker queries (all via node-postgres) emit
     // DB spans. enhancedDatabaseReporting stays at its default (false) so bound

@@ -63,6 +63,7 @@ model Person {
   addresses  Address[]
   companyContacts CompanyContact[]
   consentRecords  ConsentRecord[]
+  occTestSubjects OccTestSubject[]
 
   // Access policies
   @@deny('all', auth() == null)
@@ -1463,6 +1464,43 @@ model Complaint {
   @@allow('create,read,update', auth().status == 'ACTIVE')
   @@index([status, dueAt])
   @@map("complaints")
+}
+
+// Canal de denuncia Ley Karin (Ley 21.643 + Decreto 21/2024). Recibe denuncias
+// IDENTIFICADAS de acoso laboral, acoso sexual o violencia en el trabajo (Anexo A).
+// Acceso MÁS restringido que el resto de cumplimiento: sólo el receptor Karin /
+// admin pueden leer/gestionar (subject CASL dedicado `KarinReport`). Plazos del
+// procedimiento: resguardo inmediato (resguardoDueAt), remisión a la Inspección
+// del Trabajo en 3 días hábiles (remitirDueAt) e investigación en 30 días
+// hábiles (investigationDueAt), computados desde la recepción.
+model KarinReport {
+  id                String    @id @default(cuid())
+  // ACOSO_LABORAL | ACOSO_SEXUAL | VIOLENCIA
+  reportType        String    @map("report_type")
+  reporterName      String    @map("reporter_name")
+  reporterRut       String?   @map("reporter_rut")
+  reporterContact   String?   @map("reporter_contact")
+  reportedPerson    String?   @map("reported_person")
+  description       String
+  occurredAt        DateTime? @map("occurred_at")
+  // RECIBIDA | EN_RESGUARDO | REMITIDA_DT | EN_INVESTIGACION | CERRADA
+  status            String    @default("RECIBIDA")
+  receivedAt        DateTime  @default(now()) @map("received_at")
+  resguardoDueAt    DateTime  @map("resguardo_due_at")
+  remitirDueAt      DateTime  @map("remitir_due_at")
+  investigationDueAt DateTime @map("investigation_due_at")
+  resolution        String?
+  handledBy         Int?      @map("handled_by")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  @@deny('all', auth() == null)
+  // Acceso restringido: la política a nivel de fila exige sesión ACTIVA; el
+  // gating fino por receptor Karin se aplica en el router oRPC (subject CASL
+  // `KarinReport`), igual que reactivos/occupational gatean en el handler.
+  @@allow('create,read,update', auth().status == 'ACTIVE')
+  @@index([status, remitirDueAt])
+  @@map("karin_reports")
 }
 
 // #11 — Libros foliados electrónicos (procedimientos / reclamos / inspecciones).
@@ -3746,6 +3784,7 @@ model OccupationalProgram {
 
   company         Company                   @relation(fields: [companyId], references: [id], onDelete: Cascade)
   testBatches     OccupationalTestBatch[]
+  testOrders      OccTestOrder[]
 
   @@deny('all', auth() == null)
   @@allow('read,create,update,delete', auth().status == 'ACTIVE')
@@ -3779,6 +3818,338 @@ model OccupationalTestBatch {
 
   @@index([programId, batchDate])
   @@map("occupational_test_batches")
+}
+
+// ── Salud ocupacional P7 stage-C (resultado INDIVIDUAL, compliance-by-design) ─
+// Diseño derivado de investigación legal primaria (ISP "Tamizaje de Drogas de
+// Abuso en Orina" Res.0250-2024; DT Ord.3032/47; Ley 20.584 Art.13 + DS41 Art.11;
+// CdT Art.154 bis; Ley 21.719). Hard gates en services/occupational-testing.ts:
+//  1. Sin POSITIVO sin confirmatorio GC-MS/LC-MS-MS (tamizaje = solo presuntivo).
+//  2. Sin divulgación individual al empleador sin consentimiento SEPARADO.
+//  3. Confirmación referencia el MISMO espécimen primario tamizado.
+//  4. CustodyEvent append-only (cadena de custodia inviolable).
+//  5. Consentimiento de testeo ≠ consentimiento de divulgación (filas distintas).
+//  6. Retención 15 años desde la última entrada (ficha clínica, Ley 20.584).
+// Sujeto SEUDONIMIZADO por defecto (código de barra, sin RUT en el envase).
+enum OccTestingReason {
+  PRE_EMPLEO
+  PERIODICO
+  ALEATORIO
+  POST_ACCIDENTE
+  SOSPECHA_RAZONABLE
+  RETORNO
+  CONTROL_POLICIAL
+  OTRO
+}
+
+enum OccRequestSource {
+  ORDEN_MEDICA
+  SOLICITUD_EMPLEADOR
+  ORDEN_JUDICIAL
+  SUPERVISOR_FAENA
+}
+
+enum OccRegulatoryBasis {
+  DS_132_ART_40
+  RIOHS
+  LEY_18290
+  DS_44_PROGRAMA
+  POLITICA_EMPRESA
+}
+
+enum OccMandateType {
+  MANDATED_BY_LAW
+  PERMITTED_VIA_RIOHS
+  COMPANY_POLICY
+}
+
+enum OccOrderStatus {
+  DRAFT
+  CONSENT_PENDING
+  COLLECTED
+  IN_TRANSIT
+  RECEIVED
+  SCREENING
+  PRESUMPTIVE_POSITIVE
+  CONFIRMATION_PENDING
+  MEDICAL_REVIEW
+  RESULTED
+  INVALID
+  CANCELLED
+}
+
+enum OccFinalResult {
+  PENDING
+  NEGATIVE
+  POSITIVE
+  NEGATIVE_MEDICALLY_EXPLAINED
+  INVALID
+}
+
+enum OccSampleKind {
+  MUESTRA
+  CONTRAMUESTRA
+}
+
+enum OccMatrix {
+  ORINA
+  SANGRE
+  SALIVA
+  ALIENTO
+}
+
+enum OccCustodyAction {
+  COLLECT
+  SPLIT
+  SEAL
+  DONOR_VERIFY
+  HANDOFF
+  TRANSPORT
+  RECEIVE
+  SEAL_CHECK
+  ALIQUOT
+  STORE
+  DESTROY
+}
+
+enum OccScreeningOutcome {
+  NEGATIVE
+  PRESUMPTIVE_POSITIVE
+}
+
+enum OccConfirmMethod {
+  GC_MS
+  LC_MS_MS
+}
+
+enum OccConfirmOutcome {
+  NEGATIVE
+  POSITIVE
+}
+
+enum OccReviewDecision {
+  CONFIRMED_POSITIVE
+  EXPLAINED_BY_RX
+}
+
+enum OccConsentPurpose {
+  TEST
+  EMPLOYER_DISCLOSURE
+  SUBSTANCE_LEVEL_DISCLOSURE
+  IDENTITY_LINK
+}
+
+enum OccDisclosureAudience {
+  WORKER
+  EMPLOYER
+  JUDICIAL
+}
+
+enum OccDisclosurePayload {
+  AGGREGATE
+  FITNESS_OUTCOME
+  SUBSTANCE_DETAIL
+  FULL_RESULT
+}
+
+// Sujeto seudónimo: el envase lleva `subjectCode` (barra), NUNCA nombre/RUT
+// (ISP §5.5). El link a Person (PII) queda null salvo consent IDENTITY_LINK.
+model OccTestSubject {
+  id          Int             @id @default(autoincrement())
+  subjectCode String          @unique @map("subject_code")
+  personId    Int?            @map("person_id")
+  createdAt   DateTime        @default(now()) @map("created_at")
+
+  person      Person?         @relation(fields: [personId], references: [id], onDelete: SetNull)
+  orders      OccTestOrder[]
+
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+  @@index([personId])
+  @@map("occ_test_subjects")
+}
+
+model OccTestOrder {
+  id              Int                @id @default(autoincrement())
+  subjectId       Int                @map("subject_id")
+  programId       Int?               @map("program_id")
+  companyId       Int?               @map("company_id")
+  testingReason   OccTestingReason   @map("testing_reason")
+  requestSource   OccRequestSource   @map("request_source")
+  regulatoryBasis OccRegulatoryBasis @map("regulatory_basis")
+  mandateType     OccMandateType     @map("mandate_type")
+  riohsClauseRef  String?            @map("riohs_clause_ref")
+  status          OccOrderStatus     @default(DRAFT)
+  finalResult     OccFinalResult     @default(PENDING) @map("final_result")
+  refusalFlag     Boolean            @default(false) @map("refusal_flag")
+  notes           String?
+  createdBy       Int?               @map("created_by")
+  createdAt       DateTime           @default(now()) @map("created_at")
+  // Reloj de retención (15 años desde la última entrada — DS41 Art.11).
+  lastEntryAt     DateTime           @default(now()) @updatedAt @map("last_entry_at")
+
+  subject         OccTestSubject     @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  program         OccupationalProgram? @relation(fields: [programId], references: [id], onDelete: SetNull)
+  samples         OccSample[]
+  custodyEvents   OccCustodyEvent[]
+  consents        OccConsent[]
+  screening       OccScreeningResult?
+  confirmatory    OccConfirmatoryResult?
+  medicalReview   OccMedicalReview?
+  disclosures     OccDisclosure[]
+
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+  @@index([subjectId])
+  @@index([programId])
+  @@index([status])
+  @@map("occ_test_orders")
+}
+
+// Muestra + contramuestra (split obligatorio ISP §5.5). La contramuestra queda
+// sellada/congelada para contra-análisis (muestra B).
+model OccSample {
+  id               Int           @id @default(autoincrement())
+  orderId          Int           @map("order_id")
+  kind             OccSampleKind
+  containerCode    String        @unique @map("container_code")
+  matrix           OccMatrix     @default(ORINA)
+  sealId           String?       @map("seal_id")
+  sealIntact       Boolean       @default(true) @map("seal_intact")
+  // El confirmatorio debe correr sobre alícuota del primario tamizado (ISP §5.6).
+  primaryAliquotOf Int?          @map("primary_aliquot_of")
+  validity         Json?         // { volumeMl, ph (4.5-9), tempC (32-37), appearance }
+  storedTempC      Float?        @map("stored_temp_c")
+  destroyedAt      DateTime?     @map("destroyed_at")
+  createdAt        DateTime      @default(now()) @map("created_at")
+
+  order            OccTestOrder  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  custodyEvents    OccCustodyEvent[]
+
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+  @@index([orderId])
+  @@map("occ_samples")
+}
+
+// Cadena de custodia: append-only (sin update/delete a nivel de service).
+model OccCustodyEvent {
+  id           Int              @id @default(autoincrement())
+  orderId      Int              @map("order_id")
+  sampleId     Int?             @map("sample_id")
+  action       OccCustodyAction
+  actorId      Int?             @map("actor_id")
+  actorRole    String?          @map("actor_role")
+  signatureRef String?          @map("signature_ref")
+  sealIntact   Boolean?         @map("seal_intact")
+  location     String?
+  notes        String?
+  occurredAt   DateTime         @default(now()) @map("occurred_at")
+
+  order        OccTestOrder     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  sample       OccSample?       @relation(fields: [sampleId], references: [id], onDelete: SetNull)
+
+  @@deny('all', auth() == null)
+  @@allow('read,create', auth().status == 'ACTIVE')
+  @@index([orderId])
+  @@index([sampleId])
+  @@map("occ_custody_events")
+}
+
+// Tamizaje: SOLO NEGATIVE o PRESUMPTIVE_POSITIVE — nunca "positivo".
+model OccScreeningResult {
+  id         Int                 @id @default(autoincrement())
+  orderId    Int                 @unique @map("order_id")
+  method     String              @default("inmunoensayo")
+  // [{ analyte, cutoffNgMl, source: SAMHSA|EWDTS, outcome }]
+  panel      Json
+  outcome    OccScreeningOutcome
+  labId      String?             @map("lab_id")
+  reportedAt DateTime            @default(now()) @map("reported_at")
+
+  order      OccTestOrder        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@deny('all', auth() == null)
+  @@allow('read,create,update', auth().status == 'ACTIVE')
+  @@map("occ_screening_results")
+}
+
+// Confirmatorio: método GC_MS/LC_MS_MS obligatorio (enum). Cutoffs validados
+// por el laboratorio (no fijados por ISP) → se capturan como dato.
+model OccConfirmatoryResult {
+  id              Int               @id @default(autoincrement())
+  orderId         Int               @unique @map("order_id")
+  method          OccConfirmMethod
+  sampleId        Int?              @map("sample_id")
+  // [{ analyte, confirmCutoffNgMl, quantNgMl, outcome }]
+  analytes        Json
+  outcome         OccConfirmOutcome
+  confirmingLabId String?           @map("confirming_lab_id")
+  isoAccredited   Boolean           @default(false) @map("iso_accredited")
+  reportedAt      DateTime          @default(now()) @map("reported_at")
+
+  order           OccTestOrder      @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@deny('all', auth() == null)
+  @@allow('read,create,update', auth().status == 'ACTIVE')
+  @@map("occ_confirmatory_results")
+}
+
+// Revisión médica: BEST-PRACTICE (no estatutaria en Chile). Un clínico contrasta
+// el positivo confirmado contra la medicación declarada (campo custodia ISP #8).
+model OccMedicalReview {
+  id           Int               @id @default(autoincrement())
+  orderId      Int               @unique @map("order_id")
+  reviewerId   Int?              @map("reviewer_id")
+  declaredMeds Json?             @map("declared_meds")
+  decision     OccReviewDecision
+  rationale    String
+  reviewedAt   DateTime          @default(now()) @map("reviewed_at")
+
+  order        OccTestOrder      @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@deny('all', auth() == null)
+  @@allow('read,create', auth().status == 'ACTIVE')
+  @@map("occ_medical_reviews")
+}
+
+// Consentimientos SEPARADOS por finalidad (Ley 21.719 Art.16; bundling prohibido).
+model OccConsent {
+  id          Int               @id @default(autoincrement())
+  orderId     Int               @map("order_id")
+  purpose     OccConsentPurpose
+  granted     Boolean           @default(false)
+  scope       Json?             // EMPLOYER_DISCLOSURE: { fitnessOnly | substanceDetail }
+  grantedAt   DateTime?         @map("granted_at")
+  revokedAt   DateTime?         @map("revoked_at")
+  evidenceRef String?           @map("evidence_ref")
+  createdAt   DateTime          @default(now()) @map("created_at")
+
+  order       OccTestOrder      @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@deny('all', auth() == null)
+  @@allow('read,create,update', auth().status == 'ACTIVE')
+  @@index([orderId, purpose])
+  @@map("occ_consents")
+}
+
+// Proyección de divulgación: el empleador SOLO lee por aquí, nunca el resultado
+// crudo. Individual al empleador exige consent EMPLOYER_DISCLOSURE vivo.
+model OccDisclosure {
+  id          Int                  @id @default(autoincrement())
+  orderId     Int                  @map("order_id")
+  audience    OccDisclosureAudience
+  payloadKind OccDisclosurePayload
+  consentId   Int?                 @map("consent_id")
+  releasedBy  Int?                 @map("released_by")
+  releasedAt  DateTime             @default(now()) @map("released_at")
+
+  order       OccTestOrder         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@deny('all', auth() == null)
+  @@allow('read,create', auth().status == 'ACTIVE')
+  @@index([orderId])
+  @@map("occ_disclosures")
 }
 
 // ============================================================
@@ -6278,6 +6649,7 @@ enum JobSourceKind {
   COMPUTRABAJO
   EIGHTFOLD
   MINISITE
+  CDOHR
 
   @@schema("personal")
 }

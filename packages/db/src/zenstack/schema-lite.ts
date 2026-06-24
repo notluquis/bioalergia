@@ -133,6 +133,12 @@ export class SchemaType implements SchemaDef {
                     type: "ConsentRecord",
                     array: true,
                     relation: { opposite: "person" }
+                },
+                occTestSubjects: {
+                    name: "occTestSubjects",
+                    type: "OccTestSubject",
+                    array: true,
+                    relation: { opposite: "person" }
                 }
             },
             idFields: ["id"],
@@ -4203,6 +4209,95 @@ export class SchemaType implements SchemaDef {
                     type: "Patient",
                     optional: true,
                     relation: { opposite: "complaints", fields: ["patientId"], references: ["id"], onDelete: "SetNull" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" }
+            }
+        },
+        KarinReport: {
+            name: "KarinReport",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true,
+                    default: ExpressionUtils.call("cuid") as FieldDefault
+                },
+                reportType: {
+                    name: "reportType",
+                    type: "String"
+                },
+                reporterName: {
+                    name: "reporterName",
+                    type: "String"
+                },
+                reporterRut: {
+                    name: "reporterRut",
+                    type: "String",
+                    optional: true
+                },
+                reporterContact: {
+                    name: "reporterContact",
+                    type: "String",
+                    optional: true
+                },
+                reportedPerson: {
+                    name: "reportedPerson",
+                    type: "String",
+                    optional: true
+                },
+                description: {
+                    name: "description",
+                    type: "String"
+                },
+                occurredAt: {
+                    name: "occurredAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                status: {
+                    name: "status",
+                    type: "String",
+                    default: "RECIBIDA" as FieldDefault
+                },
+                receivedAt: {
+                    name: "receivedAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                resguardoDueAt: {
+                    name: "resguardoDueAt",
+                    type: "DateTime"
+                },
+                remitirDueAt: {
+                    name: "remitirDueAt",
+                    type: "DateTime"
+                },
+                investigationDueAt: {
+                    name: "investigationDueAt",
+                    type: "DateTime"
+                },
+                resolution: {
+                    name: "resolution",
+                    type: "String",
+                    optional: true
+                },
+                handledBy: {
+                    name: "handledBy",
+                    type: "Int",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true
                 }
             },
             idFields: ["id"],
@@ -9916,6 +10011,12 @@ export class SchemaType implements SchemaDef {
                     type: "OccupationalTestBatch",
                     array: true,
                     relation: { opposite: "program" }
+                },
+                testOrders: {
+                    name: "testOrders",
+                    type: "OccTestOrder",
+                    array: true,
+                    relation: { opposite: "program" }
                 }
             },
             idFields: ["id"],
@@ -9983,6 +10084,636 @@ export class SchemaType implements SchemaDef {
                     name: "program",
                     type: "OccupationalProgram",
                     relation: { opposite: "testBatches", fields: ["programId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        OccTestSubject: {
+            name: "OccTestSubject",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                subjectCode: {
+                    name: "subjectCode",
+                    type: "String",
+                    unique: true
+                },
+                personId: {
+                    name: "personId",
+                    type: "Int",
+                    optional: true,
+                    foreignKeyFor: [
+                        "person"
+                    ] as readonly string[]
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                person: {
+                    name: "person",
+                    type: "Person",
+                    optional: true,
+                    relation: { opposite: "occTestSubjects", fields: ["personId"], references: ["id"], onDelete: "SetNull" }
+                },
+                orders: {
+                    name: "orders",
+                    type: "OccTestOrder",
+                    array: true,
+                    relation: { opposite: "subject" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                subjectCode: { type: "String" }
+            }
+        },
+        OccTestOrder: {
+            name: "OccTestOrder",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                subjectId: {
+                    name: "subjectId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "subject"
+                    ] as readonly string[]
+                },
+                programId: {
+                    name: "programId",
+                    type: "Int",
+                    optional: true,
+                    foreignKeyFor: [
+                        "program"
+                    ] as readonly string[]
+                },
+                companyId: {
+                    name: "companyId",
+                    type: "Int",
+                    optional: true
+                },
+                testingReason: {
+                    name: "testingReason",
+                    type: "OccTestingReason"
+                },
+                requestSource: {
+                    name: "requestSource",
+                    type: "OccRequestSource"
+                },
+                regulatoryBasis: {
+                    name: "regulatoryBasis",
+                    type: "OccRegulatoryBasis"
+                },
+                mandateType: {
+                    name: "mandateType",
+                    type: "OccMandateType"
+                },
+                riohsClauseRef: {
+                    name: "riohsClauseRef",
+                    type: "String",
+                    optional: true
+                },
+                status: {
+                    name: "status",
+                    type: "OccOrderStatus",
+                    default: "DRAFT" as FieldDefault
+                },
+                finalResult: {
+                    name: "finalResult",
+                    type: "OccFinalResult",
+                    default: "PENDING" as FieldDefault
+                },
+                refusalFlag: {
+                    name: "refusalFlag",
+                    type: "Boolean",
+                    default: false as FieldDefault
+                },
+                notes: {
+                    name: "notes",
+                    type: "String",
+                    optional: true
+                },
+                createdBy: {
+                    name: "createdBy",
+                    type: "Int",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                lastEntryAt: {
+                    name: "lastEntryAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                subject: {
+                    name: "subject",
+                    type: "OccTestSubject",
+                    relation: { opposite: "orders", fields: ["subjectId"], references: ["id"], onDelete: "Cascade" }
+                },
+                program: {
+                    name: "program",
+                    type: "OccupationalProgram",
+                    optional: true,
+                    relation: { opposite: "testOrders", fields: ["programId"], references: ["id"], onDelete: "SetNull" }
+                },
+                samples: {
+                    name: "samples",
+                    type: "OccSample",
+                    array: true,
+                    relation: { opposite: "order" }
+                },
+                custodyEvents: {
+                    name: "custodyEvents",
+                    type: "OccCustodyEvent",
+                    array: true,
+                    relation: { opposite: "order" }
+                },
+                consents: {
+                    name: "consents",
+                    type: "OccConsent",
+                    array: true,
+                    relation: { opposite: "order" }
+                },
+                screening: {
+                    name: "screening",
+                    type: "OccScreeningResult",
+                    optional: true,
+                    relation: { opposite: "order" }
+                },
+                confirmatory: {
+                    name: "confirmatory",
+                    type: "OccConfirmatoryResult",
+                    optional: true,
+                    relation: { opposite: "order" }
+                },
+                medicalReview: {
+                    name: "medicalReview",
+                    type: "OccMedicalReview",
+                    optional: true,
+                    relation: { opposite: "order" }
+                },
+                disclosures: {
+                    name: "disclosures",
+                    type: "OccDisclosure",
+                    array: true,
+                    relation: { opposite: "order" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        OccSample: {
+            name: "OccSample",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                orderId: {
+                    name: "orderId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "order"
+                    ] as readonly string[]
+                },
+                kind: {
+                    name: "kind",
+                    type: "OccSampleKind"
+                },
+                containerCode: {
+                    name: "containerCode",
+                    type: "String",
+                    unique: true
+                },
+                matrix: {
+                    name: "matrix",
+                    type: "OccMatrix",
+                    default: "ORINA" as FieldDefault
+                },
+                sealId: {
+                    name: "sealId",
+                    type: "String",
+                    optional: true
+                },
+                sealIntact: {
+                    name: "sealIntact",
+                    type: "Boolean",
+                    default: true as FieldDefault
+                },
+                primaryAliquotOf: {
+                    name: "primaryAliquotOf",
+                    type: "Int",
+                    optional: true
+                },
+                validity: {
+                    name: "validity",
+                    type: "Json",
+                    optional: true
+                },
+                storedTempC: {
+                    name: "storedTempC",
+                    type: "Float",
+                    optional: true
+                },
+                destroyedAt: {
+                    name: "destroyedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                order: {
+                    name: "order",
+                    type: "OccTestOrder",
+                    relation: { opposite: "samples", fields: ["orderId"], references: ["id"], onDelete: "Cascade" }
+                },
+                custodyEvents: {
+                    name: "custodyEvents",
+                    type: "OccCustodyEvent",
+                    array: true,
+                    relation: { opposite: "sample" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                containerCode: { type: "String" }
+            }
+        },
+        OccCustodyEvent: {
+            name: "OccCustodyEvent",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                orderId: {
+                    name: "orderId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "order"
+                    ] as readonly string[]
+                },
+                sampleId: {
+                    name: "sampleId",
+                    type: "Int",
+                    optional: true,
+                    foreignKeyFor: [
+                        "sample"
+                    ] as readonly string[]
+                },
+                action: {
+                    name: "action",
+                    type: "OccCustodyAction"
+                },
+                actorId: {
+                    name: "actorId",
+                    type: "Int",
+                    optional: true
+                },
+                actorRole: {
+                    name: "actorRole",
+                    type: "String",
+                    optional: true
+                },
+                signatureRef: {
+                    name: "signatureRef",
+                    type: "String",
+                    optional: true
+                },
+                sealIntact: {
+                    name: "sealIntact",
+                    type: "Boolean",
+                    optional: true
+                },
+                location: {
+                    name: "location",
+                    type: "String",
+                    optional: true
+                },
+                notes: {
+                    name: "notes",
+                    type: "String",
+                    optional: true
+                },
+                occurredAt: {
+                    name: "occurredAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                order: {
+                    name: "order",
+                    type: "OccTestOrder",
+                    relation: { opposite: "custodyEvents", fields: ["orderId"], references: ["id"], onDelete: "Cascade" }
+                },
+                sample: {
+                    name: "sample",
+                    type: "OccSample",
+                    optional: true,
+                    relation: { opposite: "custodyEvents", fields: ["sampleId"], references: ["id"], onDelete: "SetNull" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        OccScreeningResult: {
+            name: "OccScreeningResult",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                orderId: {
+                    name: "orderId",
+                    type: "Int",
+                    unique: true,
+                    foreignKeyFor: [
+                        "order"
+                    ] as readonly string[]
+                },
+                method: {
+                    name: "method",
+                    type: "String",
+                    default: "inmunoensayo" as FieldDefault
+                },
+                panel: {
+                    name: "panel",
+                    type: "Json"
+                },
+                outcome: {
+                    name: "outcome",
+                    type: "OccScreeningOutcome"
+                },
+                labId: {
+                    name: "labId",
+                    type: "String",
+                    optional: true
+                },
+                reportedAt: {
+                    name: "reportedAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                order: {
+                    name: "order",
+                    type: "OccTestOrder",
+                    relation: { opposite: "screening", fields: ["orderId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                orderId: { type: "Int" }
+            }
+        },
+        OccConfirmatoryResult: {
+            name: "OccConfirmatoryResult",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                orderId: {
+                    name: "orderId",
+                    type: "Int",
+                    unique: true,
+                    foreignKeyFor: [
+                        "order"
+                    ] as readonly string[]
+                },
+                method: {
+                    name: "method",
+                    type: "OccConfirmMethod"
+                },
+                sampleId: {
+                    name: "sampleId",
+                    type: "Int",
+                    optional: true
+                },
+                analytes: {
+                    name: "analytes",
+                    type: "Json"
+                },
+                outcome: {
+                    name: "outcome",
+                    type: "OccConfirmOutcome"
+                },
+                confirmingLabId: {
+                    name: "confirmingLabId",
+                    type: "String",
+                    optional: true
+                },
+                isoAccredited: {
+                    name: "isoAccredited",
+                    type: "Boolean",
+                    default: false as FieldDefault
+                },
+                reportedAt: {
+                    name: "reportedAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                order: {
+                    name: "order",
+                    type: "OccTestOrder",
+                    relation: { opposite: "confirmatory", fields: ["orderId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                orderId: { type: "Int" }
+            }
+        },
+        OccMedicalReview: {
+            name: "OccMedicalReview",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                orderId: {
+                    name: "orderId",
+                    type: "Int",
+                    unique: true,
+                    foreignKeyFor: [
+                        "order"
+                    ] as readonly string[]
+                },
+                reviewerId: {
+                    name: "reviewerId",
+                    type: "Int",
+                    optional: true
+                },
+                declaredMeds: {
+                    name: "declaredMeds",
+                    type: "Json",
+                    optional: true
+                },
+                decision: {
+                    name: "decision",
+                    type: "OccReviewDecision"
+                },
+                rationale: {
+                    name: "rationale",
+                    type: "String"
+                },
+                reviewedAt: {
+                    name: "reviewedAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                order: {
+                    name: "order",
+                    type: "OccTestOrder",
+                    relation: { opposite: "medicalReview", fields: ["orderId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                orderId: { type: "Int" }
+            }
+        },
+        OccConsent: {
+            name: "OccConsent",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                orderId: {
+                    name: "orderId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "order"
+                    ] as readonly string[]
+                },
+                purpose: {
+                    name: "purpose",
+                    type: "OccConsentPurpose"
+                },
+                granted: {
+                    name: "granted",
+                    type: "Boolean",
+                    default: false as FieldDefault
+                },
+                scope: {
+                    name: "scope",
+                    type: "Json",
+                    optional: true
+                },
+                grantedAt: {
+                    name: "grantedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                revokedAt: {
+                    name: "revokedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                evidenceRef: {
+                    name: "evidenceRef",
+                    type: "String",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                order: {
+                    name: "order",
+                    type: "OccTestOrder",
+                    relation: { opposite: "consents", fields: ["orderId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        OccDisclosure: {
+            name: "OccDisclosure",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                orderId: {
+                    name: "orderId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "order"
+                    ] as readonly string[]
+                },
+                audience: {
+                    name: "audience",
+                    type: "OccDisclosureAudience"
+                },
+                payloadKind: {
+                    name: "payloadKind",
+                    type: "OccDisclosurePayload"
+                },
+                consentId: {
+                    name: "consentId",
+                    type: "Int",
+                    optional: true
+                },
+                releasedBy: {
+                    name: "releasedBy",
+                    type: "Int",
+                    optional: true
+                },
+                releasedAt: {
+                    name: "releasedAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                order: {
+                    name: "order",
+                    type: "OccTestOrder",
+                    relation: { opposite: "disclosures", fields: ["orderId"], references: ["id"], onDelete: "Cascade" }
                 }
             },
             idFields: ["id"],
@@ -17207,6 +17938,159 @@ export class SchemaType implements SchemaDef {
                 BOTH: "BOTH"
             }
         },
+        OccTestingReason: {
+            name: "OccTestingReason",
+            values: {
+                PRE_EMPLEO: "PRE_EMPLEO",
+                PERIODICO: "PERIODICO",
+                ALEATORIO: "ALEATORIO",
+                POST_ACCIDENTE: "POST_ACCIDENTE",
+                SOSPECHA_RAZONABLE: "SOSPECHA_RAZONABLE",
+                RETORNO: "RETORNO",
+                CONTROL_POLICIAL: "CONTROL_POLICIAL",
+                OTRO: "OTRO"
+            }
+        },
+        OccRequestSource: {
+            name: "OccRequestSource",
+            values: {
+                ORDEN_MEDICA: "ORDEN_MEDICA",
+                SOLICITUD_EMPLEADOR: "SOLICITUD_EMPLEADOR",
+                ORDEN_JUDICIAL: "ORDEN_JUDICIAL",
+                SUPERVISOR_FAENA: "SUPERVISOR_FAENA"
+            }
+        },
+        OccRegulatoryBasis: {
+            name: "OccRegulatoryBasis",
+            values: {
+                DS_132_ART_40: "DS_132_ART_40",
+                RIOHS: "RIOHS",
+                LEY_18290: "LEY_18290",
+                DS_44_PROGRAMA: "DS_44_PROGRAMA",
+                POLITICA_EMPRESA: "POLITICA_EMPRESA"
+            }
+        },
+        OccMandateType: {
+            name: "OccMandateType",
+            values: {
+                MANDATED_BY_LAW: "MANDATED_BY_LAW",
+                PERMITTED_VIA_RIOHS: "PERMITTED_VIA_RIOHS",
+                COMPANY_POLICY: "COMPANY_POLICY"
+            }
+        },
+        OccOrderStatus: {
+            name: "OccOrderStatus",
+            values: {
+                DRAFT: "DRAFT",
+                CONSENT_PENDING: "CONSENT_PENDING",
+                COLLECTED: "COLLECTED",
+                IN_TRANSIT: "IN_TRANSIT",
+                RECEIVED: "RECEIVED",
+                SCREENING: "SCREENING",
+                PRESUMPTIVE_POSITIVE: "PRESUMPTIVE_POSITIVE",
+                CONFIRMATION_PENDING: "CONFIRMATION_PENDING",
+                MEDICAL_REVIEW: "MEDICAL_REVIEW",
+                RESULTED: "RESULTED",
+                INVALID: "INVALID",
+                CANCELLED: "CANCELLED"
+            }
+        },
+        OccFinalResult: {
+            name: "OccFinalResult",
+            values: {
+                PENDING: "PENDING",
+                NEGATIVE: "NEGATIVE",
+                POSITIVE: "POSITIVE",
+                NEGATIVE_MEDICALLY_EXPLAINED: "NEGATIVE_MEDICALLY_EXPLAINED",
+                INVALID: "INVALID"
+            }
+        },
+        OccSampleKind: {
+            name: "OccSampleKind",
+            values: {
+                MUESTRA: "MUESTRA",
+                CONTRAMUESTRA: "CONTRAMUESTRA"
+            }
+        },
+        OccMatrix: {
+            name: "OccMatrix",
+            values: {
+                ORINA: "ORINA",
+                SANGRE: "SANGRE",
+                SALIVA: "SALIVA",
+                ALIENTO: "ALIENTO"
+            }
+        },
+        OccCustodyAction: {
+            name: "OccCustodyAction",
+            values: {
+                COLLECT: "COLLECT",
+                SPLIT: "SPLIT",
+                SEAL: "SEAL",
+                DONOR_VERIFY: "DONOR_VERIFY",
+                HANDOFF: "HANDOFF",
+                TRANSPORT: "TRANSPORT",
+                RECEIVE: "RECEIVE",
+                SEAL_CHECK: "SEAL_CHECK",
+                ALIQUOT: "ALIQUOT",
+                STORE: "STORE",
+                DESTROY: "DESTROY"
+            }
+        },
+        OccScreeningOutcome: {
+            name: "OccScreeningOutcome",
+            values: {
+                NEGATIVE: "NEGATIVE",
+                PRESUMPTIVE_POSITIVE: "PRESUMPTIVE_POSITIVE"
+            }
+        },
+        OccConfirmMethod: {
+            name: "OccConfirmMethod",
+            values: {
+                GC_MS: "GC_MS",
+                LC_MS_MS: "LC_MS_MS"
+            }
+        },
+        OccConfirmOutcome: {
+            name: "OccConfirmOutcome",
+            values: {
+                NEGATIVE: "NEGATIVE",
+                POSITIVE: "POSITIVE"
+            }
+        },
+        OccReviewDecision: {
+            name: "OccReviewDecision",
+            values: {
+                CONFIRMED_POSITIVE: "CONFIRMED_POSITIVE",
+                EXPLAINED_BY_RX: "EXPLAINED_BY_RX"
+            }
+        },
+        OccConsentPurpose: {
+            name: "OccConsentPurpose",
+            values: {
+                TEST: "TEST",
+                EMPLOYER_DISCLOSURE: "EMPLOYER_DISCLOSURE",
+                SUBSTANCE_LEVEL_DISCLOSURE: "SUBSTANCE_LEVEL_DISCLOSURE",
+                IDENTITY_LINK: "IDENTITY_LINK"
+            }
+        },
+        OccDisclosureAudience: {
+            name: "OccDisclosureAudience",
+            values: {
+                WORKER: "WORKER",
+                EMPLOYER: "EMPLOYER",
+                JUDICIAL: "JUDICIAL"
+            }
+        },
+        OccDisclosurePayload: {
+            name: "OccDisclosurePayload",
+            values: {
+                AGGREGATE: "AGGREGATE",
+                FITNESS_OUTCOME: "FITNESS_OUTCOME",
+                SUBSTANCE_DETAIL: "SUBSTANCE_DETAIL",
+                FULL_RESULT: "FULL_RESULT"
+            }
+        },
         DTEType: {
             name: "DTEType",
             values: {
@@ -17731,7 +18615,8 @@ export class SchemaType implements SchemaDef {
                 PANDAPE: "PANDAPE",
                 COMPUTRABAJO: "COMPUTRABAJO",
                 EIGHTFOLD: "EIGHTFOLD",
-                MINISITE: "MINISITE"
+                MINISITE: "MINISITE",
+                CDOHR: "CDOHR"
             },
             attributes: [
                 { name: "@@schema", args: [{ name: "map", value: ExpressionUtils.literal("personal") }] }

@@ -13,6 +13,8 @@ import { Route as VentaEmpresasRouteImport } from './routes/venta-empresas'
 import { Route as ServiciosRouteImport } from './routes/servicios'
 import { Route as SaludOcupacionalRouteImport } from './routes/salud-ocupacional'
 import { Route as RegistroRouteImport } from './routes/registro'
+import { Route as ReclamosRouteImport } from './routes/reclamos'
+import { Route as PreciosRouteImport } from './routes/precios'
 import { Route as PolenRouteImport } from './routes/polen'
 import { Route as MiCuentaRouteImport } from './routes/mi-cuenta'
 import { Route as LoginRouteImport } from './routes/login'
@@ -20,6 +22,10 @@ import { Route as InmunoterapiaRouteImport } from './routes/inmunoterapia'
 import { Route as ExamenesRouteImport } from './routes/examenes'
 import { Route as EresAlergicoRouteImport } from './routes/eres-alergico'
 import { Route as EquipoRouteImport } from './routes/equipo'
+import { Route as DerechosDeberesRouteImport } from './routes/derechos-deberes'
+import { Route as DerechosRouteImport } from './routes/derechos'
+import { Route as DenunciasRouteImport } from './routes/denuncias'
+import { Route as ContactoRouteImport } from './routes/contacto'
 import { Route as CompromisoSocialRouteImport } from './routes/compromiso-social'
 import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as CarritoRouteImport } from './routes/carrito'
@@ -64,6 +70,16 @@ const RegistroRoute = RegistroRouteImport.update({
   path: '/registro',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ReclamosRoute = ReclamosRouteImport.update({
+  id: '/reclamos',
+  path: '/reclamos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PreciosRoute = PreciosRouteImport.update({
+  id: '/precios',
+  path: '/precios',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PolenRoute = PolenRouteImport.update({
   id: '/polen',
   path: '/polen',
@@ -97,6 +113,26 @@ const EresAlergicoRoute = EresAlergicoRouteImport.update({
 const EquipoRoute = EquipoRouteImport.update({
   id: '/equipo',
   path: '/equipo',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DerechosDeberesRoute = DerechosDeberesRouteImport.update({
+  id: '/derechos-deberes',
+  path: '/derechos-deberes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DerechosRoute = DerechosRouteImport.update({
+  id: '/derechos',
+  path: '/derechos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DenunciasRoute = DenunciasRouteImport.update({
+  id: '/denuncias',
+  path: '/denuncias',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContactoRoute = ContactoRouteImport.update({
+  id: '/contacto',
+  path: '/contacto',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CompromisoSocialRoute = CompromisoSocialRouteImport.update({
@@ -222,6 +258,10 @@ export interface FileRoutesByFullPath {
   '/carrito': typeof CarritoRoute
   '/checkout': typeof CheckoutRoute
   '/compromiso-social': typeof CompromisoSocialRoute
+  '/contacto': typeof ContactoRoute
+  '/denuncias': typeof DenunciasRoute
+  '/derechos': typeof DerechosRoute
+  '/derechos-deberes': typeof DerechosDeberesRoute
   '/equipo': typeof EquipoRoute
   '/eres-alergico': typeof EresAlergicoRoute
   '/examenes': typeof ExamenesRoute
@@ -229,6 +269,8 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/mi-cuenta': typeof MiCuentaRouteWithChildren
   '/polen': typeof PolenRoute
+  '/precios': typeof PreciosRoute
+  '/reclamos': typeof ReclamosRoute
   '/registro': typeof RegistroRoute
   '/salud-ocupacional': typeof SaludOcupacionalRoute
   '/servicios': typeof ServiciosRoute
@@ -258,12 +300,18 @@ export interface FileRoutesByTo {
   '/carrito': typeof CarritoRoute
   '/checkout': typeof CheckoutRoute
   '/compromiso-social': typeof CompromisoSocialRoute
+  '/contacto': typeof ContactoRoute
+  '/denuncias': typeof DenunciasRoute
+  '/derechos': typeof DerechosRoute
+  '/derechos-deberes': typeof DerechosDeberesRoute
   '/equipo': typeof EquipoRoute
   '/eres-alergico': typeof EresAlergicoRoute
   '/examenes': typeof ExamenesRoute
   '/inmunoterapia': typeof InmunoterapiaRoute
   '/login': typeof LoginRoute
   '/polen': typeof PolenRoute
+  '/precios': typeof PreciosRoute
+  '/reclamos': typeof ReclamosRoute
   '/registro': typeof RegistroRoute
   '/salud-ocupacional': typeof SaludOcupacionalRoute
   '/servicios': typeof ServiciosRoute
@@ -294,6 +342,10 @@ export interface FileRoutesById {
   '/carrito': typeof CarritoRoute
   '/checkout': typeof CheckoutRoute
   '/compromiso-social': typeof CompromisoSocialRoute
+  '/contacto': typeof ContactoRoute
+  '/denuncias': typeof DenunciasRoute
+  '/derechos': typeof DerechosRoute
+  '/derechos-deberes': typeof DerechosDeberesRoute
   '/equipo': typeof EquipoRoute
   '/eres-alergico': typeof EresAlergicoRoute
   '/examenes': typeof ExamenesRoute
@@ -301,6 +353,8 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/mi-cuenta': typeof MiCuentaRouteWithChildren
   '/polen': typeof PolenRoute
+  '/precios': typeof PreciosRoute
+  '/reclamos': typeof ReclamosRoute
   '/registro': typeof RegistroRoute
   '/salud-ocupacional': typeof SaludOcupacionalRoute
   '/servicios': typeof ServiciosRoute
@@ -332,6 +386,10 @@ export interface FileRouteTypes {
     | '/carrito'
     | '/checkout'
     | '/compromiso-social'
+    | '/contacto'
+    | '/denuncias'
+    | '/derechos'
+    | '/derechos-deberes'
     | '/equipo'
     | '/eres-alergico'
     | '/examenes'
@@ -339,6 +397,8 @@ export interface FileRouteTypes {
     | '/login'
     | '/mi-cuenta'
     | '/polen'
+    | '/precios'
+    | '/reclamos'
     | '/registro'
     | '/salud-ocupacional'
     | '/servicios'
@@ -368,12 +428,18 @@ export interface FileRouteTypes {
     | '/carrito'
     | '/checkout'
     | '/compromiso-social'
+    | '/contacto'
+    | '/denuncias'
+    | '/derechos'
+    | '/derechos-deberes'
     | '/equipo'
     | '/eres-alergico'
     | '/examenes'
     | '/inmunoterapia'
     | '/login'
     | '/polen'
+    | '/precios'
+    | '/reclamos'
     | '/registro'
     | '/salud-ocupacional'
     | '/servicios'
@@ -403,6 +469,10 @@ export interface FileRouteTypes {
     | '/carrito'
     | '/checkout'
     | '/compromiso-social'
+    | '/contacto'
+    | '/denuncias'
+    | '/derechos'
+    | '/derechos-deberes'
     | '/equipo'
     | '/eres-alergico'
     | '/examenes'
@@ -410,6 +480,8 @@ export interface FileRouteTypes {
     | '/login'
     | '/mi-cuenta'
     | '/polen'
+    | '/precios'
+    | '/reclamos'
     | '/registro'
     | '/salud-ocupacional'
     | '/servicios'
@@ -440,6 +512,10 @@ export interface RootRouteChildren {
   CarritoRoute: typeof CarritoRoute
   CheckoutRoute: typeof CheckoutRoute
   CompromisoSocialRoute: typeof CompromisoSocialRoute
+  ContactoRoute: typeof ContactoRoute
+  DenunciasRoute: typeof DenunciasRoute
+  DerechosRoute: typeof DerechosRoute
+  DerechosDeberesRoute: typeof DerechosDeberesRoute
   EquipoRoute: typeof EquipoRoute
   EresAlergicoRoute: typeof EresAlergicoRoute
   ExamenesRoute: typeof ExamenesRoute
@@ -447,6 +523,8 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   MiCuentaRoute: typeof MiCuentaRouteWithChildren
   PolenRoute: typeof PolenRoute
+  PreciosRoute: typeof PreciosRoute
+  ReclamosRoute: typeof ReclamosRoute
   RegistroRoute: typeof RegistroRoute
   SaludOcupacionalRoute: typeof SaludOcupacionalRoute
   ServiciosRoute: typeof ServiciosRoute
@@ -492,6 +570,20 @@ declare module '@tanstack/react-router' {
       path: '/registro'
       fullPath: '/registro'
       preLoaderRoute: typeof RegistroRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reclamos': {
+      id: '/reclamos'
+      path: '/reclamos'
+      fullPath: '/reclamos'
+      preLoaderRoute: typeof ReclamosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/precios': {
+      id: '/precios'
+      path: '/precios'
+      fullPath: '/precios'
+      preLoaderRoute: typeof PreciosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/polen': {
@@ -541,6 +633,34 @@ declare module '@tanstack/react-router' {
       path: '/equipo'
       fullPath: '/equipo'
       preLoaderRoute: typeof EquipoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/derechos-deberes': {
+      id: '/derechos-deberes'
+      path: '/derechos-deberes'
+      fullPath: '/derechos-deberes'
+      preLoaderRoute: typeof DerechosDeberesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/derechos': {
+      id: '/derechos'
+      path: '/derechos'
+      fullPath: '/derechos'
+      preLoaderRoute: typeof DerechosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/denuncias': {
+      id: '/denuncias'
+      path: '/denuncias'
+      fullPath: '/denuncias'
+      preLoaderRoute: typeof DenunciasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contacto': {
+      id: '/contacto'
+      path: '/contacto'
+      fullPath: '/contacto'
+      preLoaderRoute: typeof ContactoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/compromiso-social': {
@@ -746,6 +866,10 @@ const rootRouteChildren: RootRouteChildren = {
   CarritoRoute: CarritoRoute,
   CheckoutRoute: CheckoutRoute,
   CompromisoSocialRoute: CompromisoSocialRoute,
+  ContactoRoute: ContactoRoute,
+  DenunciasRoute: DenunciasRoute,
+  DerechosRoute: DerechosRoute,
+  DerechosDeberesRoute: DerechosDeberesRoute,
   EquipoRoute: EquipoRoute,
   EresAlergicoRoute: EresAlergicoRoute,
   ExamenesRoute: ExamenesRoute,
@@ -753,6 +877,8 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   MiCuentaRoute: MiCuentaRouteWithChildren,
   PolenRoute: PolenRoute,
+  PreciosRoute: PreciosRoute,
+  ReclamosRoute: ReclamosRoute,
   RegistroRoute: RegistroRoute,
   SaludOcupacionalRoute: SaludOcupacionalRoute,
   ServiciosRoute: ServiciosRoute,

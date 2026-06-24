@@ -145,6 +145,7 @@ export const jobSourceKindSchema = z.enum([
   "COMPUTRABAJO",
   "EIGHTFOLD",
   "MINISITE",
+  "CDOHR",
 ]);
 
 export const jobSourceSchema = z

@@ -333,6 +333,12 @@
       "import": "./dist/price-list.js",
       "default": "./dist/price-list.js"
     },
+    "./public-clinic": {
+      "development": "./src/public-clinic.ts",
+      "types": "./dist/public-clinic.d.ts",
+      "import": "./dist/public-clinic.js",
+      "default": "./dist/public-clinic.js"
+    },
     "./data-rights": {
       "development": "./src/data-rights.ts",
       "types": "./dist/data-rights.d.ts",
@@ -404,6 +410,18 @@
       "types": "./dist/occupational.d.ts",
       "import": "./dist/occupational.js",
       "default": "./dist/occupational.js"
+    },
+    "./karin": {
+      "development": "./src/karin.ts",
+      "types": "./dist/karin.d.ts",
+      "import": "./dist/karin.js",
+      "default": "./dist/karin.js"
+    },
+    "./occupational-testing": {
+      "development": "./src/occupational-testing.ts",
+      "types": "./dist/occupational-testing.d.ts",
+      "import": "./dist/occupational-testing.js",
+      "default": "./dist/occupational-testing.js"
     },
     "./adherence": {
       "development": "./src/adherence.ts",
@@ -500,11 +518,11 @@
     "type-check": "tsgo --build"
   },
   "dependencies": {
-    "@orpc/contract": "^1.14.5",
+    "@orpc/contract": "^1.14.6",
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@types/node": "^25.9.2",
+    "@types/node": "^26.0.0",
     "typescript": "^6.0.3"
   },
   "engines": {

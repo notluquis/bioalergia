@@ -136,7 +136,7 @@ export function DistributionChart({ reportData }: DistributionChartProps) {
               shape={(props, idx) => (
                 <Sector
                   {...props}
-                  fill={chartColors[idx % chartColors.length]}
+                  fill={chartColors[Number(idx ?? 0) % chartColors.length] ?? chartColors[0]}
                   stroke="var(--default-200)"
                   strokeWidth={2}
                 />

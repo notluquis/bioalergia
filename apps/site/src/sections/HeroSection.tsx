@@ -27,7 +27,7 @@ export function HeroSection({ onBook }: HeroSectionProps) {
     posthog?.capture("doctoralia_link_click", { location: "hero_section" });
   };
   return (
-    <section className="grid gap-10 lg:grid-cols-[1.05fr_0.95fr]" id="inicio">
+    <section className="grid items-start gap-10 lg:grid-cols-[1.05fr_0.95fr]" id="inicio">
       <div className="flex flex-col gap-6" style={{ animation: "floatIn 0.8s ease-out" }}>
         <div className="flex flex-wrap gap-2">
           {badges.map((badge) => (
@@ -78,14 +78,14 @@ export function HeroSection({ onBook }: HeroSectionProps) {
             </Card>
           ))}
         </div>
-        <div className="mt-auto">
-          <Suspense fallback={null}>
-            <PollenHeroCard />
-          </Suspense>
-        </div>
+        <Suspense fallback={null}>
+          <PollenHeroCard />
+        </Suspense>
       </div>
       <div className="lg:pl-4" style={{ animation: "floatIn 0.9s ease-out" }}>
-        <Suspense fallback={<div className="h-96 animate-pulse rounded-lg bg-gray-200" />}>
+        <Suspense
+          fallback={<div className="min-h-[25rem] animate-pulse rounded-3xl bg-(--surface-2)" />}
+        >
           <DoctoraliaBookingWidget />
         </Suspense>
       </div>

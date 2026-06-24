@@ -12,6 +12,13 @@ name: snapshots
 #      `apps/intranet/e2e/<spec>.spec.ts-snapshots/`.
 #   3. Reviewer approves the PNG diff in the PR.
 #
+# HERMETIC + PHI-FREE: baselines are rendered against an EPHEMERAL,
+# synthetically-seeded Postgres (faker.seed(20260601), see
+# packages/db/scripts/seed-synthetic.ts) with a locally-booted api(:4000) +
+# preview(:4173) — NEVER prod. This is what route-snapshots.spec.ts requires:
+# deterministic, PHI-free screenshots. (Previously this job hit prod via
+# E2E_BASE_URL/secrets; that was the last prod-authed run and is now gone.)
+#
 # Single source of truth: every baseline is Linux-rendered.
 # Reference: https://playwright.dev/docs/test-snapshots
 
@@ -36,6 +43,27 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    env:
+      # Ephemeral DB — destroyed with the job. NEVER prod. Setting DATABASE_URL
+      # (and leaving E2E_BASE_URL unset) makes playwright.config.ts boot a local
+      # HERMETIC api+preview against this throwaway Postgres.
+      DATABASE_URL: postgres://e2e:e2e@localhost:5432/bioalergia_e2e
+      NODE_ENV: test
+      CI: "true"
+      DISABLE_QUEUE_RUNNER: "true"
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: e2e
+          POSTGRES_PASSWORD: e2e
+          POSTGRES_DB: bioalergia_e2e
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v6
         with:
@@ -44,11 +72,32 @@ jobs:
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v6
         with: { node-version: "${{ env.NODE_VERSION }}", cache: pnpm }
-      # Turbo remote cache ($0, GitHub Actions Cache backend) → intranet build
-      # HITs the cache instead of cold-compiling. SHA-pinned 3rd-party action.
+      # Turbo remote cache ($0, GitHub Actions Cache backend) → the dist builds
+      # below HIT the cache instead of cold-compiling. SHA-pinned 3rd-party action.
       - name: Turbo remote cache
         uses: rharkor/caching-for-turbo@75f8ebf4a43d2c60b23bc2a27082cfea94ffdad9 # v2.5.0
       - run: pnpm install --frozen-lockfile
+
+      # Dist the api/intranet need before the hermetic boot, via turbo (cache HIT):
+      #   - orpc-contracts: api imports it at runtime (ERR_MODULE_NOT_FOUND otherwise).
+      #   - db: .mjs the api/intranet import.
+      #   - social-render: api importa su dist .mjs al bootear nativo.
+      # Fresh schema via db push (throwaway DB) + synthetic faker data.
+      - run: pnpm turbo run build --filter=@finanzas/orpc-contracts --filter=@finanzas/db --filter=@finanzas/social-render
+      - run: pnpm -F @finanzas/db db:push
+      - run: pnpm -F @finanzas/db seed:synthetic
+
+      # Seed the dedicated E2E user (random password each run) and export the
+      # printed creds so the authed snapshot routes actually log in. Replaces the
+      # old prod E2E_USER/E2E_PASS secrets.
+      - name: Seed E2E user + export creds
+        run: |
+          CREDS=$(node apps/api/scripts/seed-e2e-user.ts | tail -1)
+          E2E_USER=$(printf '%s' "$CREDS" | sed -n 's/.*EMAIL=\([^ ]*\).*/\1/p')
+          E2E_PASS=$(printf '%s' "$CREDS" | sed -n 's/.*PASS=\([^ ]*\).*/\1/p')
+          echo "::add-mask::$E2E_PASS"
+          echo "E2E_USER=$E2E_USER" >> "$GITHUB_ENV"
+          echo "E2E_PASS=$E2E_PASS" >> "$GITHUB_ENV"
 
       - name: Build intranet (preview server target)
         run: pnpm turbo run build --filter=@finanzas/intranet
@@ -70,16 +119,15 @@ jobs:
         if: steps.pw-cache.outputs.cache-hit != 'true'
         run: pnpm -F @finanzas/intranet exec playwright install chromium webkit
 
-      - name: Update snapshots
+      - name: Update snapshots (hermetic)
+        # No E2E_BASE_URL → HERMETIC=true (DATABASE_URL is set) → playwright boots
+        # a local api(:4000)+preview(:4173) against the ephemeral synthetic DB.
+        # E2E_USER/E2E_PASS come from the seed step ($GITHUB_ENV), not prod secrets.
         env:
-          CI: "true"
-          # Opt route-snapshots.spec into the run. Quality-gates'
-          # audit:e2e leaves this unset so missing baselines don't
-          # fail the regular CI; only this workflow regenerates them.
+          # Opt route-snapshots.spec into the run. Quality-gates' audit:e2e
+          # leaves this unset so missing baselines don't fail the regular CI;
+          # only this workflow regenerates them.
           RUN_SNAPSHOTS: "true"
-          E2E_USER: ${{ secrets.E2E_USER }}
-          E2E_PASS: ${{ secrets.E2E_PASS }}
-          E2E_BASE_URL: ${{ secrets.E2E_BASE_URL }}
         run: |
           if [ -n "${{ inputs.grep }}" ]; then
             pnpm -F @finanzas/intranet exec playwright test --update-snapshots --grep "${{ inputs.grep }}"

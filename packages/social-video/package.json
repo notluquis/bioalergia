@@ -2,13 +2,13 @@
   "name": "@finanzas/social-video",
   "version": "0.0.1",
   "private": true,
-  "type": "module",
-  "main": "./dist/render.mjs",
-  "types": "./dist/render.d.mts",
   "files": [
     "dist",
     "src"
   ],
+  "type": "module",
+  "main": "./dist/render.mjs",
+  "types": "./dist/render.d.mts",
   "exports": {
     ".": {
       "types": "./dist/render.d.mts",
@@ -26,19 +26,19 @@
   },
   "dependencies": {
     "@finanzas/social-render": "workspace:*",
-    "@remotion/bundler": "^4.0.400",
-    "@remotion/cli": "^4.0.400",
-    "@remotion/google-fonts": "^4.0.400",
-    "@remotion/renderer": "^4.0.400",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
-    "remotion": "^4.0.400"
+    "@remotion/bundler": "^4.0.482",
+    "@remotion/cli": "^4.0.482",
+    "@remotion/google-fonts": "^4.0.482",
+    "@remotion/renderer": "^4.0.482",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "remotion": "^4.0.482"
   },
   "devDependencies": {
-    "@types/node": "^25.9.2",
-    "@types/react": "^19.2.0",
-    "@types/react-dom": "^19.2.0",
-    "tsdown": "^0.22.2",
+    "@types/node": "^26.0.0",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "tsdown": "^0.22.3",
     "typescript": "^6.0.3"
   },
   "engines": {

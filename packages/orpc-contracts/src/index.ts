@@ -81,6 +81,7 @@ export * from "./supplies.ts";
 export { servicesContract, type ServicesContract } from "./services.ts";
 export * from "./settings.ts";
 export { priceListContract, type PriceListContract } from "./price-list.ts";
+export { publicClinicContract, type PublicClinicContract } from "./public-clinic.ts";
 export { dataRightsContract, type DataRightsContract } from "./data-rights.ts";
 export { breachIncidentsContract, type BreachIncidentsContract } from "./breach-incidents.ts";
 export { complaintsContract, type ComplaintsContract } from "./complaints.ts";
@@ -104,6 +105,11 @@ export * from "./wa-cloud.ts";
 export { reactivosContract, type ReactivosContract } from "./reactivos.ts";
 export { pollenContract, type PollenContract } from "./pollen.ts";
 export { occupationalContract, type OccupationalContract } from "./occupational.ts";
+export { karinContract, type KarinContract } from "./karin.ts";
+export {
+  occupationalTestingContract,
+  type OccupationalTestingContract,
+} from "./occupational-testing.ts";
 export { adherenceContract, type AdherenceContract } from "./adherence.ts";
 export { allergyDiaryContract, type AllergyDiaryContract } from "./allergy-diary.ts";
 export { productDocumentsContract, type ProductDocumentsContract } from "./product-documents.ts";

@@ -1,6 +1,5 @@
 import type { AttachmentType } from "@finanzas/db";
 import { db } from "@finanzas/db";
-import type { PatientWhereInput } from "@finanzas/db/input";
 import { Decimal } from "decimal.js";
 import { Hono } from "hono";
 import { sql } from "kysely";
@@ -61,6 +60,9 @@ const patientsRoutes = new Hono<{
 }>();
 
 patientsRoutes.use("*", requireSession);
+
+type PatientFindManyArgs = NonNullable<Parameters<typeof db.patient.findMany>[0]>;
+type PatientWhere = PatientFindManyArgs["where"];
 
 const normalizeSourceRut = (value: string) => {
   const normalized = normalizeRut(value);
@@ -546,7 +548,7 @@ export async function getPatientDetail(patientId: number) {
   };
 }
 
-export async function listPatients(where: PatientWhereInput) {
+export async function listPatients(where: PatientWhere) {
   return db.patient.findMany({
     where,
     include: { person: true },
@@ -668,8 +670,7 @@ export async function getPatientSkinTests(patientId: number) {
 patientsRoutes.get("/", requirePermission("read", "Patient"), async (c) => {
   const { q } = c.req.query();
 
-  // Build where clause using type-safe PatientWhereInput
-  const where: PatientWhereInput = q
+  const where: PatientWhere = q
     ? {
         person: {
           OR: [

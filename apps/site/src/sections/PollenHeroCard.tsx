@@ -1,6 +1,7 @@
 import type { PollenLevel } from "@finanzas/orpc-contracts/pollen";
 import { Card, Chip, Link } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
+import { CalendarDays, Leaf } from "lucide-react";
 
 import { pollenClient } from "@/lib/orpc-client";
 
@@ -39,6 +40,13 @@ export function PollenHeroCard() {
   const liveHasIndex = !!liveToday && liveToday.upi !== null;
   const calendarGrass = data.calendar.find((t) => t.type === "GRASS");
 
+  // El "por qué" de cada estado, para que el usuario entienda qué ve.
+  const why = liveHasIndex
+    ? null
+    : liveToday
+      ? "Fuera de temporada: las gramíneas polinizan de septiembre a marzo."
+      : "Estimación del mes (sin dato en vivo ahora).";
+
   return (
     <Card className="rounded-2xl" variant="secondary">
       <Card.Content className="flex items-center gap-4 py-4">
@@ -53,16 +61,16 @@ export function PollenHeroCard() {
         ) : liveToday ? (
           <span
             aria-hidden="true"
-            className="flex size-12 shrink-0 items-center justify-center rounded-full bg-(--surface-2) font-medium text-(--ink-muted) text-xs"
+            className="flex size-12 shrink-0 items-center justify-center rounded-full bg-(--surface-2) text-(--ink-muted)"
           >
-            Sin
+            <Leaf className="size-5" />
           </span>
         ) : (
           <span
             aria-hidden="true"
-            className="flex size-12 shrink-0 items-center justify-center rounded-full border-2 border-(--border) border-dashed font-medium text-(--ink-muted) text-xs"
+            className="flex size-12 shrink-0 items-center justify-center rounded-full border-2 border-(--border) border-dashed text-(--ink-muted)"
           >
-            Est.
+            <CalendarDays className="size-5" />
           </span>
         )}
         <div className="grid gap-0.5">
@@ -82,6 +90,7 @@ export function PollenHeroCard() {
               </Chip>
             ) : null}
           </div>
+          {why ? <span className="text-(--ink-muted) text-xs leading-snug">{why}</span> : null}
           <Link className="font-medium text-(--accent) text-xs" href="/polen">
             Ver pronóstico de polen
             <Link.Icon />

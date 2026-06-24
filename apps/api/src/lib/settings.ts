@@ -35,6 +35,8 @@ export type AppSettings = {
   emailReplyTo: string;
   // Destinatario de avisos de leads B2B (vitrina /venta-empresas → "Quiero reactivos").
   reactivoLeadsEmail: string;
+  // Buzón restringido del canal de denuncias Ley Karin (Ley 21.643).
+  karinReportsEmail: string;
 };
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -68,6 +70,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   emailBroadcastFrom: "Bioalergia <novedades@send.bioalergia.cl>",
   emailReplyTo: "contacto@bioalergia.cl",
   reactivoLeadsEmail: "contacto@bioalergia.cl",
+  karinReportsEmail: "denuncias@bioalergia.cl",
 };
 
 const SETTINGS_KEY_MAP: Record<keyof AppSettings, string> = {
@@ -101,6 +104,7 @@ const SETTINGS_KEY_MAP: Record<keyof AppSettings, string> = {
   emailBroadcastFrom: "email.broadcastFrom",
   emailReplyTo: "email.replyTo",
   reactivoLeadsEmail: "reactivos.leadsEmail",
+  karinReportsEmail: "karin.reportsEmail",
 };
 
 export function settingsKeyToDbKey(key: keyof AppSettings): string {
