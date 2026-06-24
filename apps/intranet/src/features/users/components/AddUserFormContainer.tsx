@@ -486,10 +486,10 @@ function SecuritySection({ form }: Pick<AddUserFormCardProps, "form">) {
         <form.Field name="mfaEnforced">
           {(field) => (
             <Checkbox isSelected={field.state.value} onChange={field.handleChange}>
-              <Checkbox.Control>
-                <Checkbox.Indicator />
-              </Checkbox.Control>
               <Checkbox.Content>
+                <Checkbox.Control>
+                  <Checkbox.Indicator />
+                </Checkbox.Control>
                 <Label>Forzar passkey o MFA</Label>
               </Checkbox.Content>
             </Checkbox>

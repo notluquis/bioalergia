@@ -42,10 +42,10 @@ export function PatientEmailOptInToggle({
         isDisabled={mutation.isPending || noEmail}
         onChange={(v) => void handleChange(v)}
       >
-        <Switch.Control>
-          <Switch.Thumb />
-        </Switch.Control>
         <Switch.Content>
+          <Switch.Control>
+            <Switch.Thumb />
+          </Switch.Control>
           <span className="flex items-center gap-1.5 text-sm">
             {optIn ? <Mail size={14} /> : <MailX size={14} />}
             Correos de novedades

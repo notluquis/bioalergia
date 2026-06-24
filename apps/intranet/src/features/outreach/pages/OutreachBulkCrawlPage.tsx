@@ -84,22 +84,28 @@ export function OutreachBulkCrawlPage() {
             onValueChange={(v) => setLimit(Number.parseInt(v || "20", 10))}
           />
           <Checkbox isSelected={soloSinEmail} onChange={setSoloSinEmail}>
-            <Checkbox.Control>
-              <Checkbox.Indicator />
-            </Checkbox.Control>
-            <Checkbox.Content>Solo sin email</Checkbox.Content>
+            <Checkbox.Content>
+              <Checkbox.Control>
+                <Checkbox.Indicator />
+              </Checkbox.Control>
+              Solo sin email
+            </Checkbox.Content>
           </Checkbox>
           <Checkbox isSelected={soloConWebsite} onChange={setSoloConWebsite}>
-            <Checkbox.Control>
-              <Checkbox.Indicator />
-            </Checkbox.Control>
-            <Checkbox.Content>Solo con website</Checkbox.Content>
+            <Checkbox.Content>
+              <Checkbox.Control>
+                <Checkbox.Indicator />
+              </Checkbox.Control>
+              Solo con website
+            </Checkbox.Content>
           </Checkbox>
           <Checkbox isSelected={saltarRecientes} onChange={setSaltarRecientes}>
-            <Checkbox.Control>
-              <Checkbox.Indicator />
-            </Checkbox.Control>
-            <Checkbox.Content>Saltar crawled últimos 7d</Checkbox.Content>
+            <Checkbox.Content>
+              <Checkbox.Control>
+                <Checkbox.Indicator />
+              </Checkbox.Control>
+              Saltar crawled últimos 7d
+            </Checkbox.Content>
           </Checkbox>
         </Card.Content>
       </Card>

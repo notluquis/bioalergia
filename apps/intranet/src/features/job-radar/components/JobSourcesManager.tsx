@@ -141,17 +141,17 @@ export function JobSourcesManager() {
                       className="min-w-0 flex-1"
                       onChange={(enabled) => toggle.mutate({ id: s.id, enabled })}
                     >
-                      <Switch.Control>
-                        <Switch.Thumb />
-                      </Switch.Control>
                       <Switch.Content className="min-w-0">
-                        <Label
+                        <Switch.Control>
+                          <Switch.Thumb />
+                        </Switch.Control>
+                        <span
                           className={`cursor-pointer truncate text-sm ${
                             s.enabled ? "text-foreground" : "text-default-400"
                           }`}
                         >
                           {s.label ?? s.identifier}
-                        </Label>
+                        </span>
                       </Switch.Content>
                     </Switch>
                     <Button

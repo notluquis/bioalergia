@@ -283,10 +283,12 @@ export function OutreachEstablishmentsPage() {
             />
           </div>
           <Checkbox isSelected={soloConEmail} onChange={setSoloConEmail}>
-            <Checkbox.Control>
-              <Checkbox.Indicator />
-            </Checkbox.Control>
-            <Checkbox.Content>Solo con email</Checkbox.Content>
+            <Checkbox.Content>
+              <Checkbox.Control>
+                <Checkbox.Indicator />
+              </Checkbox.Control>
+              Solo con email
+            </Checkbox.Content>
           </Checkbox>
 
           {selected.size > 0 && (

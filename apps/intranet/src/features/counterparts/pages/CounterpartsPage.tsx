@@ -856,9 +856,11 @@ function UnassignedPayoutAccountsTable({
           slot="selection"
           variant="secondary"
         >
-          <Checkbox.Control>
-            <Checkbox.Indicator />
-          </Checkbox.Control>
+          <Checkbox.Content>
+            <Checkbox.Control>
+              <Checkbox.Indicator />
+            </Checkbox.Control>
+          </Checkbox.Content>
         </Checkbox>
       ),
       header: () => (
@@ -883,9 +885,11 @@ function UnassignedPayoutAccountsTable({
           slot="selection"
           variant="secondary"
         >
-          <Checkbox.Control>
-            <Checkbox.Indicator />
-          </Checkbox.Control>
+          <Checkbox.Content>
+            <Checkbox.Control>
+              <Checkbox.Indicator />
+            </Checkbox.Control>
+          </Checkbox.Content>
         </Checkbox>
       ),
       id: "select",

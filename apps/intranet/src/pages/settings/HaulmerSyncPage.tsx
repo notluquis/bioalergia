@@ -914,10 +914,10 @@ export function HaulmerSyncPage() {
                     onChange={setSyncSalesSelected}
                     variant="secondary"
                   >
-                    <Checkbox.Control>
-                      <Checkbox.Indicator />
-                    </Checkbox.Control>
                     <Checkbox.Content>
+                      <Checkbox.Control>
+                        <Checkbox.Indicator />
+                      </Checkbox.Control>
                       <Label className="cursor-pointer" htmlFor="sync-sales-checkbox">
                         Ventas
                       </Label>
@@ -930,10 +930,10 @@ export function HaulmerSyncPage() {
                     onChange={setSyncPurchasesSelected}
                     variant="secondary"
                   >
-                    <Checkbox.Control>
-                      <Checkbox.Indicator />
-                    </Checkbox.Control>
                     <Checkbox.Content>
+                      <Checkbox.Control>
+                        <Checkbox.Indicator />
+                      </Checkbox.Control>
                       <Label className="cursor-pointer" htmlFor="sync-purchases-checkbox">
                         Compras
                       </Label>

@@ -2142,10 +2142,10 @@ export function ClinicalSeriesView() {
                           >
                             {({ isSelected }: { isSelected: boolean }) => (
                               <>
-                                <Switch.Control>
-                                  <Switch.Thumb />
-                                </Switch.Control>
                                 <Switch.Content>
+                                  <Switch.Control>
+                                    <Switch.Thumb />
+                                  </Switch.Control>
                                   <Label className="text-sm text-foreground-600 cursor-pointer">
                                     {isSelected ? "Solo con test" : "Todos"}
                                   </Label>
@@ -2865,10 +2865,10 @@ function DuplicatesModal({
                               }}
                               className="flex items-start gap-3 px-3 py-2.5 border-b border-surface-200 last:border-b-0 hover:bg-surface-100 transition-colors w-full"
                             >
-                              <Checkbox.Control className="mt-0.5 shrink-0">
-                                <Checkbox.Indicator />
-                              </Checkbox.Control>
                               <Checkbox.Content className="flex-1 min-w-0">
+                                <Checkbox.Control className="mt-0.5 shrink-0">
+                                  <Checkbox.Indicator />
+                                </Checkbox.Control>
                                 <Label
                                   htmlFor={`dup-${dup.sourceId}`}
                                   className="flex flex-col gap-0.5 cursor-pointer w-full"
@@ -3018,10 +3018,10 @@ function RebuildModal({
                 Se reasignarán todos los eventos clínicos a sus series correspondientes.
               </p>
               <Checkbox id="auto-merge" isSelected={autoMerge} onChange={setAutoMerge}>
-                <Checkbox.Control>
-                  <Checkbox.Indicator />
-                </Checkbox.Control>
                 <Checkbox.Content>
+                  <Checkbox.Control>
+                    <Checkbox.Indicator />
+                  </Checkbox.Control>
                   <Label htmlFor="auto-merge" className="text-sm cursor-pointer">
                     Fusionar series duplicadas
                   </Label>

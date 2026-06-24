@@ -975,10 +975,10 @@ export function SkinTestImportPanel() {
                   }}
                   variant="secondary"
                 >
-                  <Checkbox.Control>
-                    <Checkbox.Indicator />
-                  </Checkbox.Control>
                   <Checkbox.Content>
+                    <Checkbox.Control>
+                      <Checkbox.Indicator />
+                    </Checkbox.Control>
                     <Label>Seleccionar visibles ({visibleDiscoveredItems.length})</Label>
                   </Checkbox.Content>
                 </Checkbox>
@@ -1154,9 +1154,11 @@ function SkinTestImportRow({
                 onChange={onSelectionChange}
                 variant="secondary"
               >
-                <Checkbox.Control>
-                  <Checkbox.Indicator />
-                </Checkbox.Control>
+                <Checkbox.Content>
+                  <Checkbox.Control>
+                    <Checkbox.Indicator />
+                  </Checkbox.Control>
+                </Checkbox.Content>
               </Checkbox>
             )}
             <FileSpreadsheet size={16} className="text-foreground-400" />

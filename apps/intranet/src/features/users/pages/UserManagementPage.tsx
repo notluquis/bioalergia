@@ -824,10 +824,12 @@ function EditUserDetailsModalContent({
                         onChange("mfaEnforced", value);
                       }}
                     >
-                      <Switch.Control>
-                        <Switch.Thumb />
-                      </Switch.Control>
-                      <Switch.Content>Forzar MFA/Passkey al iniciar sesión</Switch.Content>
+                      <Switch.Content>
+                        <Switch.Control>
+                          <Switch.Thumb />
+                        </Switch.Control>
+                        Forzar MFA/Passkey al iniciar sesión
+                      </Switch.Content>
                     </Switch>
                   </div>
                 </div>

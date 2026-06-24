@@ -181,10 +181,10 @@ export function EmailPrescriptionModal({ isOpen, onOpenChange, prescription }: P
                         onChange={setSaveEmail}
                         className="mt-2 flex gap-2"
                       >
-                        <Checkbox.Control>
-                          <Checkbox.Indicator />
-                        </Checkbox.Control>
                         <Checkbox.Content>
+                          <Checkbox.Control>
+                            <Checkbox.Indicator />
+                          </Checkbox.Control>
                           Guardar este correo en el perfil del paciente
                         </Checkbox.Content>
                       </Checkbox>

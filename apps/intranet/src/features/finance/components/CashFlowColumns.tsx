@@ -219,9 +219,11 @@ export const columns: ColumnDef<CashFlowTransaction>[] = [
     enableSorting: false,
     header: () => (
       <Checkbox aria-label="Seleccionar movimientos de la página actual" slot="selection">
-        <Checkbox.Control>
-          <Checkbox.Indicator />
-        </Checkbox.Control>
+        <Checkbox.Content>
+          <Checkbox.Control>
+            <Checkbox.Indicator />
+          </Checkbox.Control>
+        </Checkbox.Content>
       </Checkbox>
     ),
     cell: ({ row }) => (
@@ -230,9 +232,11 @@ export const columns: ColumnDef<CashFlowTransaction>[] = [
         slot="selection"
         variant="secondary"
       >
-        <Checkbox.Control>
-          <Checkbox.Indicator />
-        </Checkbox.Control>
+        <Checkbox.Content>
+          <Checkbox.Control>
+            <Checkbox.Indicator />
+          </Checkbox.Control>
+        </Checkbox.Content>
       </Checkbox>
     ),
     maxSize: 44,

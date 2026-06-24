@@ -35,6 +35,42 @@ const rules = [
 
 const findings = [];
 
+function findMatchingRootEnd(source, kind, start) {
+  const tagPattern = new RegExp(
+    `</?${kind}\\b[^>]*>|<${kind}\\.[A-Z][^>]*>|</${kind}\\.[A-Z][^>]*>`,
+    "g"
+  );
+  tagPattern.lastIndex = start;
+
+  let depth = 0;
+  let match;
+  while ((match = tagPattern.exec(source))) {
+    const tag = match[0];
+    if (tag.startsWith(`<${kind}`) && !tag.startsWith(`<${kind}.`) && !tag.endsWith("/>")) {
+      depth += 1;
+    } else if (tag.startsWith(`</${kind}`) && !tag.startsWith(`</${kind}.`)) {
+      depth -= 1;
+      if (depth === 0) {
+        return tagPattern.lastIndex;
+      }
+    }
+  }
+
+  return -1;
+}
+
+function hasControlOutsideContent(block, kind) {
+  if (!block.includes(`<${kind}.Control`)) {
+    return false;
+  }
+
+  const controlStart = block.indexOf(`<${kind}.Control`);
+  const contentStart = block.indexOf(`<${kind}.Content`);
+  const contentEnd = block.indexOf(`</${kind}.Content>`);
+
+  return !(contentStart >= 0 && controlStart > contentStart && controlStart < contentEnd);
+}
+
 for (const file of files) {
   const source = await readFile(file, "utf8");
   if (!source.includes("@heroui/react")) {
@@ -52,6 +88,26 @@ for (const file of files) {
         message: rule.message,
         ruleId: rule.id,
       });
+    }
+  }
+
+  for (const kind of ["Checkbox", "Switch"]) {
+    const rootPattern = new RegExp(`<${kind}\\b`, "g");
+    let match;
+    while ((match = rootPattern.exec(source))) {
+      const end = findMatchingRootEnd(source, kind, match.index);
+      if (end < 0) {
+        continue;
+      }
+
+      if (hasControlOutsideContent(source.slice(match.index, end), kind)) {
+        findings.push({
+          file: path.relative(process.cwd(), file),
+          line: source.slice(0, match.index).split("\n").length,
+          message: `${kind}.Control debe vivir dentro de ${kind}.Content en HeroUI v3.2+.`,
+          ruleId: `${kind.toLowerCase()}-control-content`,
+        });
+      }
     }
   }
 }
