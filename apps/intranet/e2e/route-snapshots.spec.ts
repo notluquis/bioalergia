@@ -21,12 +21,13 @@
  * macOS — a macOS-generated PNG never matches the Linux CI diff). Do NOT
  * commit macOS-rendered baselines. Trigger the dedicated workflow:
  *
- *   gh workflow run e2e-hermetic.yml \
- *     --ref <branch> -f update_snapshots=true
+ *   gh workflow run snapshots.yml --ref <branch>
+ *     # optional: -f grep="route snapshot" to scope to one spec
  *
- * That job spins up the ephemeral Postgres, seeds it, sets
- * RUN_SNAPSHOTS=true, runs `playwright test route-snapshots
- * --update-snapshots`, and commits the PNGs back to the branch.
+ * That job spins up the ephemeral Postgres, seeds it (synthetic faker data,
+ * PHI-free), sets RUN_SNAPSHOTS=true, boots a hermetic local api+preview, runs
+ * `playwright test route-snapshots --update-snapshots`, and commits the PNGs
+ * back to the branch.
  *
  * Snapshots commit alongside the spec under
  * `apps/intranet/e2e/route-snapshots.spec.ts-snapshots/`. Regular CI
