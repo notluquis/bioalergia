@@ -104,6 +104,10 @@ export * from "./wa-cloud.ts";
 export { reactivosContract, type ReactivosContract } from "./reactivos.ts";
 export { pollenContract, type PollenContract } from "./pollen.ts";
 export { occupationalContract, type OccupationalContract } from "./occupational.ts";
+export {
+  occupationalTestingContract,
+  type OccupationalTestingContract,
+} from "./occupational-testing.ts";
 export { adherenceContract, type AdherenceContract } from "./adherence.ts";
 export { allergyDiaryContract, type AllergyDiaryContract } from "./allergy-diary.ts";
 export { productDocumentsContract, type ProductDocumentsContract } from "./product-documents.ts";
