@@ -4,6 +4,7 @@ import type { AccountContract } from "@finanzas/orpc-contracts/account";
 import type { CartContract } from "@finanzas/orpc-contracts/cart";
 import type { CatalogContract } from "@finanzas/orpc-contracts/catalog";
 import type { CheckoutContract } from "@finanzas/orpc-contracts/checkout";
+import type { KarinContract } from "@finanzas/orpc-contracts/karin";
 import type { OccupationalContract } from "@finanzas/orpc-contracts/occupational";
 import type { PollenContract } from "@finanzas/orpc-contracts/pollen";
 import type { PublicClinicContract } from "@finanzas/orpc-contracts/public-clinic";
@@ -60,6 +61,12 @@ export const pollenClient = createORPCClient(siteSuperJSONLink, {
 export const occupationalClient = createORPCClient(siteSuperJSONLink, {
   path: ["api", "orpc", "occupational", "rpc"],
 }) as ContractRouterClient<OccupationalContract>;
+
+// Canal de denuncia Ley Karin (Ley 21.643): createReport público sin auth
+// (denuncia identificada de acoso/violencia laboral). El resto del contrato es staff.
+export const karinClient = createORPCClient(siteSuperJSONLink, {
+  path: ["api", "orpc", "karin", "rpc"],
+}) as ContractRouterClient<KarinContract>;
 
 // Superficie pública de la clínica: precios a la vista + formularios de
 // reclamos / derechos del titular / contacto. Todo público sin auth.

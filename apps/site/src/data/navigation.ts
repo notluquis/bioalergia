@@ -37,4 +37,5 @@ export const secondaryNav: NavLink[] = [
   { label: "Derechos y deberes", href: "/derechos-deberes" },
   { label: "Reclamos", href: "/reclamos" },
   { label: "Ejercicio de derechos", href: "/derechos" },
+  { label: "Canal de denuncias", href: "/denuncias" },
 ];

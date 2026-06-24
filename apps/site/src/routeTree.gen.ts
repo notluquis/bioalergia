@@ -24,6 +24,7 @@ import { Route as EresAlergicoRouteImport } from './routes/eres-alergico'
 import { Route as EquipoRouteImport } from './routes/equipo'
 import { Route as DerechosDeberesRouteImport } from './routes/derechos-deberes'
 import { Route as DerechosRouteImport } from './routes/derechos'
+import { Route as DenunciasRouteImport } from './routes/denuncias'
 import { Route as ContactoRouteImport } from './routes/contacto'
 import { Route as CompromisoSocialRouteImport } from './routes/compromiso-social'
 import { Route as CheckoutRouteImport } from './routes/checkout'
@@ -122,6 +123,11 @@ const DerechosDeberesRoute = DerechosDeberesRouteImport.update({
 const DerechosRoute = DerechosRouteImport.update({
   id: '/derechos',
   path: '/derechos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DenunciasRoute = DenunciasRouteImport.update({
+  id: '/denuncias',
+  path: '/denuncias',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ContactoRoute = ContactoRouteImport.update({
@@ -253,6 +259,7 @@ export interface FileRoutesByFullPath {
   '/checkout': typeof CheckoutRoute
   '/compromiso-social': typeof CompromisoSocialRoute
   '/contacto': typeof ContactoRoute
+  '/denuncias': typeof DenunciasRoute
   '/derechos': typeof DerechosRoute
   '/derechos-deberes': typeof DerechosDeberesRoute
   '/equipo': typeof EquipoRoute
@@ -294,6 +301,7 @@ export interface FileRoutesByTo {
   '/checkout': typeof CheckoutRoute
   '/compromiso-social': typeof CompromisoSocialRoute
   '/contacto': typeof ContactoRoute
+  '/denuncias': typeof DenunciasRoute
   '/derechos': typeof DerechosRoute
   '/derechos-deberes': typeof DerechosDeberesRoute
   '/equipo': typeof EquipoRoute
@@ -335,6 +343,7 @@ export interface FileRoutesById {
   '/checkout': typeof CheckoutRoute
   '/compromiso-social': typeof CompromisoSocialRoute
   '/contacto': typeof ContactoRoute
+  '/denuncias': typeof DenunciasRoute
   '/derechos': typeof DerechosRoute
   '/derechos-deberes': typeof DerechosDeberesRoute
   '/equipo': typeof EquipoRoute
@@ -378,6 +387,7 @@ export interface FileRouteTypes {
     | '/checkout'
     | '/compromiso-social'
     | '/contacto'
+    | '/denuncias'
     | '/derechos'
     | '/derechos-deberes'
     | '/equipo'
@@ -419,6 +429,7 @@ export interface FileRouteTypes {
     | '/checkout'
     | '/compromiso-social'
     | '/contacto'
+    | '/denuncias'
     | '/derechos'
     | '/derechos-deberes'
     | '/equipo'
@@ -459,6 +470,7 @@ export interface FileRouteTypes {
     | '/checkout'
     | '/compromiso-social'
     | '/contacto'
+    | '/denuncias'
     | '/derechos'
     | '/derechos-deberes'
     | '/equipo'
@@ -501,6 +513,7 @@ export interface RootRouteChildren {
   CheckoutRoute: typeof CheckoutRoute
   CompromisoSocialRoute: typeof CompromisoSocialRoute
   ContactoRoute: typeof ContactoRoute
+  DenunciasRoute: typeof DenunciasRoute
   DerechosRoute: typeof DerechosRoute
   DerechosDeberesRoute: typeof DerechosDeberesRoute
   EquipoRoute: typeof EquipoRoute
@@ -634,6 +647,13 @@ declare module '@tanstack/react-router' {
       path: '/derechos'
       fullPath: '/derechos'
       preLoaderRoute: typeof DerechosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/denuncias': {
+      id: '/denuncias'
+      path: '/denuncias'
+      fullPath: '/denuncias'
+      preLoaderRoute: typeof DenunciasRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/contacto': {
@@ -847,6 +867,7 @@ const rootRouteChildren: RootRouteChildren = {
   CheckoutRoute: CheckoutRoute,
   CompromisoSocialRoute: CompromisoSocialRoute,
   ContactoRoute: ContactoRoute,
+  DenunciasRoute: DenunciasRoute,
   DerechosRoute: DerechosRoute,
   DerechosDeberesRoute: DerechosDeberesRoute,
   EquipoRoute: EquipoRoute,
