@@ -50,6 +50,9 @@ jobs:
     outputs:
       intranet: ${{ steps.filter.outputs.intranet }}
       site: ${{ steps.filter.outputs.site }}
+      # api: the hermetic e2e job boots `node apps/api/src/index.ts`, so an
+      # api-only PR must still run it even though intranet doesn't depend on api.
+      api: ${{ steps.filter.outputs.api }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -67,8 +70,10 @@ jobs:
         run: |
           pnpm turbo query affected --packages @finanzas/intranet --tasks build --base "$BASE_SHA" --head "$HEAD_SHA" > intranet-affected.json
           pnpm turbo query affected --packages @finanzas/site --tasks build --base "$BASE_SHA" --head "$HEAD_SHA" > site-affected.json
+          pnpm turbo query affected --packages @finanzas/api --tasks build --base "$BASE_SHA" --head "$HEAD_SHA" > api-affected.json
           echo "intranet=$(node -e "const fs=require('fs');const v=JSON.parse(fs.readFileSync('intranet-affected.json','utf8'));process.stdout.write(String((v.data?.affectedTasks?.length ?? 0) > 0))")" >> "$GITHUB_OUTPUT"
           echo "site=$(node -e "const fs=require('fs');const v=JSON.parse(fs.readFileSync('site-affected.json','utf8'));process.stdout.write(String((v.data?.affectedTasks?.length ?? 0) > 0))")" >> "$GITHUB_OUTPUT"
+          echo "api=$(node -e "const fs=require('fs');const v=JSON.parse(fs.readFileSync('api-affected.json','utf8'));process.stdout.write(String((v.data?.affectedTasks?.length ?? 0) > 0))")" >> "$GITHUB_OUTPUT"
 
   design-tokens:
     name: design-token lint
@@ -172,7 +177,12 @@ jobs:
   e2e-and-a11y:
     name: playwright + axe (hermetic)
     needs: changes
-    if: needs.changes.outputs.intranet == 'true'
+    # intranet OR api: this hermetic suite boots the api under test, so an
+    # api-only PR (intranet doesn't depend on api) must still run it. This is
+    # the single hermetic e2e gate — the old standalone e2e-hermetic.yml (PR
+    # path duplicated this job; dispatch path duplicated snapshots.yml) was
+    # removed. db changes are covered via intranet (intranet depends on db).
+    if: needs.changes.outputs.intranet == 'true' || needs.changes.outputs.api == 'true'
     runs-on: ubuntu-latest
     # Hermetic: authed smoke + a11y run against an EPHEMERAL, synthetically
     # seeded Postgres — never prod, no PHI. The run is mutation-safe BY
