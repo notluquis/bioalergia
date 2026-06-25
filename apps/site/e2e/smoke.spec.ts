@@ -8,11 +8,10 @@ import { expect, test } from "@playwright/test";
  * (proves the SPA actually mounted the route component, not just a shell).
  */
 
-// Static content routes → a substring of their <h1>. The homepage h1 nests a
-// <span>, so the accessible name is "Clínica Bioalergia Especialistas en
-// alergias e inmunoterapia" — match on a stable substring.
+// Static content routes → a substring of their <h1>. The homepage hero h1 is
+// the editorial headline — match on a stable substring.
 const ROUTE_HEADINGS: ReadonlyArray<{ path: string; heading: RegExp }> = [
-  { path: "/", heading: /Clínica Bioalergia/ },
+  { path: "/", heading: /Vuelve a respirar/ },
   { path: "/servicios", heading: /^Nuestros servicios$/ },
   { path: "/examenes", heading: /^Exámenes y estudios de alergia$/ },
   { path: "/inmunoterapia", heading: /^Inmunoterapia para alergias$/ },
