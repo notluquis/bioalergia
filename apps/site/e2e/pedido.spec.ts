@@ -26,8 +26,9 @@ test("a found order renders its status summary and total", async ({ page }) => {
   await expect(
     page.getByRole("heading", { level: 1, name: `Pedido ${ORDER_NUMBER}` })
   ).toBeVisible();
-  // Status line from the mocked PAID order.
-  await expect(page.getByText(/Estado:\s*PAID/)).toBeVisible();
+  // Status block from the mocked PAID order (editorial: "Estado del pedido" label + value).
+  await expect(page.getByText("Estado del pedido")).toBeVisible();
+  await expect(page.getByText("PAID", { exact: true })).toBeVisible();
   // PAID confirmation alert.
   await expect(page.getByText(/¡Pago confirmado!/)).toBeVisible();
   // DTE folio echoed.
