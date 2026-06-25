@@ -1,26 +1,20 @@
 [
   {
-    "name": "Initial JS bundle (entry chunk) — measured 201.85 kB gzip 2026-06; budget = ~14% headroom",
+    "name": "Initial JS bundle (entry chunk) — re-baselined 224.4 kB gzip after 2026 editorial redesign (PrimaryNav now eager in the header → folded into entry); budget = ~9% headroom",
     "path": ["dist/assets/index-*.js"],
-    "limit": "230 KB",
+    "limit": "245 KB",
     "gzip": true
   },
   {
-    "name": "tienda route chunk (shop, heaviest lazy route) — measured 35.54 kB gzip 2026-06; budget = ~15% headroom",
+    "name": "tienda route chunk (shop landing) — measured 2.1 kB gzip 2026-06; budget keeps headroom for shop growth",
     "path": ["dist/assets/tienda-*.js"],
     "limit": "41 KB",
     "gzip": true
   },
   {
-    "name": "_slug detail route chunk (article/product detail) — measured 16.62 kB gzip 2026-06; budget = ~14% headroom",
+    "name": "_slug detail route chunk (article/product detail) — re-baselined 18.5 kB gzip after redesign; budget = ~13% headroom",
     "path": ["dist/assets/_slug-*.js"],
-    "limit": "19 KB",
-    "gzip": true
-  },
-  {
-    "name": "PrimaryNav shared chunk (site header nav) — measured 10.04 kB gzip 2026-06; budget = ~15% headroom",
-    "path": ["dist/assets/PrimaryNav-*.js"],
-    "limit": "11.5 KB",
+    "limit": "21 KB",
     "gzip": true
   }
 ]
