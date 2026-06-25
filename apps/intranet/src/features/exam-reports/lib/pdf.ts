@@ -130,9 +130,7 @@ interface ClinicSettingsLite {
 
 // ── Brand palette (estandarizada con certificados / BRAND_*) ──────────────
 const BRAND_BLUE: [number, number, number] = [26, 77, 122]; // #1a4d7a
-const BRAND_AMBER: [number, number, number] = [212, 164, 53]; // #d4a435
 const BRAND_INK: [number, number, number] = [23, 33, 43]; // #17222b
-const BRAND_GRAY: [number, number, number] = [107, 115, 128]; // #6b7380
 const BRAND_TINT: [number, number, number] = [242, 247, 252]; // #f2f7fc
 const FOOTER: [number, number, number] = [107, 115, 128]; // BRAND_GRAY para el footer
 const BRAND_ACCENT: [number, number, number] = [255, 240, 230]; // was TABLE_ACCENT
@@ -984,7 +982,7 @@ export async function generateExamReportPdf(
 
   // Phones (right side)
   doc.setFontSize(9);
-  doc.setTextColor(...NAVY);
+  doc.setTextColor(...BRAND_BLUE);
   const phoneRightX = CONTENT_RIGHT - 5;
   doc.text(sanitizePdfText(settings.phoneWhatsapp), phoneRightX, PAGE_H - 80, { align: "right" });
   doc.text(sanitizePdfText(settings.phoneLandline), phoneRightX, PAGE_H - 68, { align: "right" });
