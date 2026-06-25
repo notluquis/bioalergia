@@ -47,11 +47,11 @@ export function ServicesSection() {
           Ver todos los servicios →
         </Link>
       </div>
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-[1.15fr_1fr_1fr]">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-[22rem_1fr_1fr]">
         {/* Tall photo cell — spans two rows on lg. */}
         <Link
           aria-label="Exámenes: test cutáneo y de parche"
-          className="group relative row-span-2 block min-h-[420px] overflow-hidden rounded-[10px]"
+          className="group relative row-span-2 block min-h-[420px] w-full overflow-hidden rounded-[10px]"
           href="/examenes"
         >
           <Photo

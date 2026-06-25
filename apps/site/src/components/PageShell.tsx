@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { Container } from "@/components/ui/Container";
+import { TiendaBanner } from "@/components/ui/TiendaBanner";
 
 /**
  * Content page wrapper — shared editorial header + footer. By default the body
@@ -21,6 +22,7 @@ export function PageShell({
 }) {
   return (
     <div className="flex min-h-screen flex-col bg-background">
+      <TiendaBanner />
       <SiteHeader pathname={pathname} />
       <main className="flex-1">
         {contained ? (

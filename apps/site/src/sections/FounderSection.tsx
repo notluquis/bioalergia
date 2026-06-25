@@ -3,7 +3,7 @@ import { Eyebrow } from "@/components/ui/Eyebrow";
 import { Photo } from "@/components/ui/Photo";
 import { founderProfile } from "@/data/founder";
 
-const credentials = ["U. de Concepción", "U. de Chile", "AAAeIC Argentina", "Pasantía España"];
+const credentials = ["U. de Concepción", "AAAeIC Argentina", "Pasantía España"];
 
 /** Founder (handoff) — deep-blue anchor band, portrait bleed + pull quote. */
 export function FounderSection() {

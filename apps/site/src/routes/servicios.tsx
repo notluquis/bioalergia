@@ -5,6 +5,7 @@ import { BookingCta } from "@/components/BookingCta";
 import { JsonLd } from "@/components/JsonLd";
 import { PageShell } from "@/components/PageShell";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { contactInfo } from "@/data/clinic";
 import { services } from "@/data/services";
 import { breadcrumbJsonLd } from "@/lib/seo";
 
@@ -59,7 +60,7 @@ function ServiciosPage() {
           <Card.Header className="gap-2">
             <Card.Title className="text-lg">Horario de atención</Card.Title>
             <Card.Description className="text-(--ink-muted) leading-relaxed">
-              Lunes a sábado, 10:00 a 17:00. Atención con cita previa.
+              {contactInfo.hours}. {contactInfo.hoursNote} (con cita previa).
             </Card.Description>
           </Card.Header>
           <Card.Content className="pb-6">

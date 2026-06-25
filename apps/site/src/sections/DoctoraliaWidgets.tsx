@@ -99,9 +99,10 @@ export function DoctoraliaBookingWidget() {
       </Card.Header>
       <Card.Content className="space-y-4 px-4 pb-4 sm:px-5 sm:pb-5 md:px-6 md:pb-6">
         <div className="mx-auto w-full max-w-full rounded-2xl border border-border bg-white p-2 shadow-[0_18px_45px_rgba(0,0,0,0.12)] sm:p-3 md:p-4">
-          {/* `min-h` reserva espacio durante la carga (valor empírico ≈ alto del
-              calendario; el iframe crece por encima si hace falta, sin dejar
-              hueco). Skeleton encima mientras `!loaded`. */}
+          {/* `min-h` reserva espacio durante la carga; el iframe de Doctoralia
+              crece a su alto natural (full). El hueco de la columna izquierda se
+              llena con el widget de polen, no capando este. Skeleton mientras
+              `!loaded`. */}
           <div className="relative min-h-[25rem]" aria-busy={!loaded}>
             {!loaded ? (
               <div
