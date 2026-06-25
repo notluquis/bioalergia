@@ -29,14 +29,16 @@ function formatRenta(raw: unknown): string | null {
   return `$${grouped}`;
 }
 
-// "03/06/2026 0:00:00" → Date
+// "03/06/2026 0:00:00" → Date a medianoche UTC. Fecha-calendario sin hora real:
+// anclar en UTC (no local) para que NO dependa del TZ del proceso (TZ=America/
+// Santiago en prod producía 04:00Z y churneaba el upsert contra filas 00:00Z).
 function parseDmyTime(raw: unknown): Date | null {
   const s = asString(raw);
   if (!s) return null;
   const m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
   if (!m) return null;
   const [, d, mo, y] = m;
-  const t = Date.parse(`${y}-${mo}-${d}T00:00:00`);
+  const t = Date.UTC(Number(y), Number(mo) - 1, Number(d));
   return Number.isNaN(t) ? null : new Date(t);
 }
 

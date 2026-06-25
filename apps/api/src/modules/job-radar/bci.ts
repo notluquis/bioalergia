@@ -28,7 +28,8 @@ function parseDate(raw: unknown): Date | null {
   const dmy = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
   if (dmy) {
     const [, d, m, y] = dmy;
-    const t = Date.parse(`${y}-${m}-${d}T00:00:00`);
+    // UTC, no local: fecha-calendario TZ-independiente (ver empleospublicos).
+    const t = Date.UTC(Number(y), Number(m) - 1, Number(d));
     return Number.isNaN(t) ? null : new Date(t);
   }
   const t = Date.parse(s);
