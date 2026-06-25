@@ -31,7 +31,7 @@ import {
   operationalRegistersORPCClient,
   toOperationalRegistersApiError,
 } from "@/features/operational-registers/orpc";
-import { formatChile } from "@/lib/dates";
+import { civilNoon, formatChile } from "@/lib/dates";
 import { toast } from "@/lib/toast-interceptor";
 
 const BASE_KEY = ["operational-registers"] as const;
@@ -232,6 +232,12 @@ function detailColumns(registerType: RegisterType): ColumnDef<OperationalRegiste
     id: key,
     cell: ({ row }) => <span className="text-sm">{getField(row.original, key) || "—"}</span>,
   });
+  // signedBy lives at the top level of the row (not in `data`).
+  const signedCol = (header: string): ColumnDef<OperationalRegisterDto> => ({
+    header,
+    id: "signedBy",
+    cell: ({ row }) => <span className="text-sm">{row.original.signedBy || "—"}</span>,
+  });
 
   switch (registerType) {
     case "COLD_CHAIN":
@@ -241,9 +247,9 @@ function detailColumns(registerType: RegisterType): ColumnDef<OperationalRegiste
     case "TRAINING":
       return [col("Facilitador", "facilitator"), col("Asistentes", "attendees")];
     case "EPP_DELIVERY":
-      return [col("Receptor", "recipient"), col("Cantidad", "quantity"), col("Firma", "signedBy")];
+      return [col("Receptor", "recipient"), col("Cantidad", "quantity"), signedCol("Firma")];
     case "OMPP":
-      return [col("Delegado a", "delegatedTo"), col("Firma director", "signedBy")];
+      return [col("Delegado a", "delegatedTo"), signedCol("Firma director")];
     case "R_AIT":
       return [col("Alérgeno", "allergen"), col("Dosis", "dose"), col("Reacción", "reaction")];
     default:
@@ -421,7 +427,7 @@ function buildPayload(
   registerType: RegisterType,
   f: FormState
 ): CreateOperationalRegisterInput | { error: string } {
-  const occurredAt = new Date(f.occurredAt).toISOString();
+  const occurredAt = civilNoon(f.occurredAt).toISOString();
   const notes = f.notes.trim() || undefined;
 
   switch (registerType) {
@@ -485,7 +491,7 @@ function buildPayload(
         notes,
         procedure: f.procedure.trim(),
         delegatedTo: f.delegatedTo.trim(),
-        validUntil: f.validUntil ? new Date(f.validUntil).toISOString() : undefined,
+        validUntil: f.validUntil ? civilNoon(f.validUntil).toISOString() : undefined,
         signedBy: f.signedBy.trim() || undefined,
       };
     case "R_AIT":
@@ -512,7 +518,7 @@ function buildPayload(
         rootCause: f.rootCause.trim() || undefined,
         action: f.action.trim() || undefined,
         responsible: f.responsible.trim() || undefined,
-        dueAt: f.dueAt ? new Date(f.dueAt).toISOString() : undefined,
+        dueAt: f.dueAt ? civilNoon(f.dueAt).toISOString() : undefined,
       };
   }
 }
