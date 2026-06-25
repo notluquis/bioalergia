@@ -404,12 +404,21 @@ export function JobRadarPage() {
           );
           return (
             <div className="flex items-center gap-1">
-              {action(
-                "open",
-                t("jobRadar.actions.view"),
-                <ExternalLink size={16} aria-hidden />,
-                () => window.open(job.url, "_blank", "noopener,noreferrer")
-              )}
+              <Tooltip>
+                <Tooltip.Trigger>
+                  <a
+                    aria-label={t("jobRadar.actions.view")}
+                    className="inline-flex items-center justify-center rounded-full border border-default-300 text-foreground transition-colors hover:bg-default-100 size-8"
+                    href={job.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    <ExternalLink size={16} aria-hidden />
+                  </a>
+                </Tooltip.Trigger>
+                <Tooltip.Content>{t("jobRadar.actions.view")}</Tooltip.Content>
+              </Tooltip>
               {action("seen", t("jobRadar.actions.seen"), <Eye size={16} aria-hidden />, () =>
                 setStatus(job.mergedIds, "SEEN", job.applicationStatus)
               )}

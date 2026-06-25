@@ -71,8 +71,20 @@ export function JobDetailDrawer({
           <Drawer.Dialog className="flex h-full max-h-dvh w-[min(96vw,720px)] max-w-none flex-col overflow-hidden rounded-l-lg border border-default-200 bg-background shadow-2xl sm:rounded-lg">
             <Drawer.CloseTrigger />
             <Drawer.Header className="border-default-200/70 border-b">
-              <div className="space-y-2">
-                <Drawer.Heading className="text-lg leading-snug">{job?.title}</Drawer.Heading>
+              <div className="space-y-3">
+                <div className="flex items-start justify-between gap-3 pr-10">
+                  <Drawer.Heading className="text-lg leading-snug">{job?.title}</Drawer.Heading>
+                  {job && (
+                    <a
+                      className="inline-flex shrink-0 items-center gap-2 rounded-full border border-default-300 px-3 py-1.5 text-sm text-foreground transition-colors hover:bg-default-100"
+                      href={job.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <ExternalLink size={16} aria-hidden /> {t("jobRadar.actions.view")}
+                    </a>
+                  )}
+                </div>
                 <div className="flex flex-wrap items-center gap-2">
                   {job && (
                     <Chip size="sm" variant="soft">
@@ -88,7 +100,7 @@ export function JobDetailDrawer({
               </div>
             </Drawer.Header>
 
-            <Drawer.Body className="space-y-5">
+            <Drawer.Body className="flex-1 space-y-5 overflow-y-auto">
               {job && (
                 <div className="flex flex-wrap gap-3 text-xs text-default-400">
                   <span>
@@ -140,14 +152,7 @@ export function JobDetailDrawer({
               )}
             </Drawer.Body>
 
-            <Drawer.Footer className="border-default-200/70 border-t">
-              {job && (
-                <a href={job.url} target="_blank" rel="noreferrer">
-                  <Button variant="tertiary">
-                    <ExternalLink size={16} aria-hidden /> {t("jobRadar.actions.view")}
-                  </Button>
-                </a>
-              )}
+            <Drawer.Footer className="shrink-0 border-default-200/70 border-t">
               <Button variant="primary" isPending={update.isPending} onPress={save}>
                 {t("jobRadar.detail.save")}
               </Button>
