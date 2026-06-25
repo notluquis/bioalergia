@@ -11,29 +11,15 @@
 .timesheet-audit-calendar-wrapper :is(.fc) {
   --fc-page-bg-color: var(--color-background);
   --fc-border-color: color-mix(in oklch, var(--color-foreground) 12%, transparent);
-  --fc-button-bg-color: var(--color-primary);
-  --fc-button-border-color: var(--color-primary);
-  --fc-button-text-color: var(--color-primary-foreground);
-  --fc-button-hover-bg-color: color-mix(
-    in oklch,
-    var(--color-primary) 85%,
-    var(--color-foreground) 15%
-  );
-  --fc-button-hover-border-color: color-mix(
-    in oklch,
-    var(--color-primary) 85%,
-    var(--color-foreground) 15%
-  );
-  --fc-button-active-bg-color: color-mix(
-    in oklch,
-    var(--color-primary) 75%,
-    var(--color-foreground) 25%
-  );
-  --fc-button-active-border-color: color-mix(
-    in oklch,
-    var(--color-primary) 75%,
-    var(--color-foreground) 25%
-  );
+  /* Deep brand blue + white text → WCAG AA-safe (amber primary is too light for
+     AA button text; its darkened active state went olive #889e37 → 3.6). */
+  --fc-button-bg-color: var(--brand-blue-deep);
+  --fc-button-border-color: var(--brand-blue-deep);
+  --fc-button-text-color: #ffffff;
+  --fc-button-hover-bg-color: color-mix(in oklch, var(--brand-blue-deep) 85%, #000000 15%);
+  --fc-button-hover-border-color: color-mix(in oklch, var(--brand-blue-deep) 85%, #000000 15%);
+  --fc-button-active-bg-color: color-mix(in oklch, var(--brand-blue-deep) 75%, #000000 25%);
+  --fc-button-active-border-color: color-mix(in oklch, var(--brand-blue-deep) 75%, #000000 25%);
   --fc-today-bg-color: color-mix(in oklch, var(--color-primary) 12%, transparent);
   --fc-now-indicator-color: var(--color-warning);
 }

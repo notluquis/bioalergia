@@ -39,9 +39,14 @@ test("home page exposes the primary navigation", async ({ page }) => {
   await page.goto("/", { waitUntil: "domcontentloaded" });
   const nav = page.getByRole("navigation", { name: "Navegación principal" });
   await expect(nav).toBeVisible();
-  // Spot-check a few core links exist inside the primary nav.
-  for (const label of ["Servicios", "Inmunoterapia", "Aprende", "Equipo"]) {
-    await expect(nav.getByRole("link", { name: label, exact: true })).toBeVisible();
+  // Spot-check direct top-level links (Equipo/Aprende now live inside the
+  // "Sobre nosotros" / "Recursos" dropdowns, so they're not direct links).
+  for (const label of ["Servicios", "Exámenes", "Inmunoterapia"]) {
+    await expect(nav.getByRole("link", { name: label, exact: true }).first()).toBeVisible();
+  }
+  // The grouping dropdowns expose their triggers as buttons.
+  for (const group of ["Sobre nosotros", "Recursos"]) {
+    await expect(nav.getByRole("button", { name: group, exact: true })).toBeVisible();
   }
 });
 
@@ -63,10 +68,15 @@ test("primary nav links all point to routes that load (no 404)", async ({ page }
       .filter((h) => h.startsWith("/") && !h.includes("#"))
   );
 
-  // Sanity: the nav should expose several routable links.
-  expect(hrefs.length).toBeGreaterThan(3);
+  // Dedupe — the nav renders both a desktop and a mobile copy of the links, so
+  // each href appears twice. Visiting each once keeps the preview server from
+  // being hammered (the source of past flakes).
+  const uniqueHrefs = [...new Set(hrefs)];
 
-  for (const href of hrefs) {
+  // Sanity: the nav should expose several routable links.
+  expect(uniqueHrefs.length).toBeGreaterThan(3);
+
+  for (const href of uniqueHrefs) {
     const response = await page.goto(href, { waitUntil: "domcontentloaded" });
     // No hard error status for any nav target (SPA serves index.html → 2xx).
     expect(response?.status(), `nav link ${href} returned an error status`).toBeLessThan(400);
@@ -77,7 +87,7 @@ test("primary nav links all point to routes that load (no 404)", async ({ page }
       continue;
     }
     await expect(
-      page.getByRole("heading", { level: 1 }),
+      page.getByRole("heading", { level: 1 }).first(),
       `nav link ${href} rendered no h1 (possible broken route)`
     ).toBeVisible();
   }
