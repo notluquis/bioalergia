@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 
+import { ctaClass } from "@/components/ui/cta";
 import { accountKeys } from "@/features/account/queries";
 import { siteAuthClient } from "@/lib/orpc-client";
 
@@ -61,14 +62,14 @@ function MiCuentaSecurity() {
   const passkeyAvailable = typeof window !== "undefined" && Boolean(window.PublicKeyCredential);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <header>
-        <h1 className="font-bold text-2xl">Seguridad</h1>
+        <h1 className="font-display text-[2rem] leading-[1.05] text-foreground">Seguridad</h1>
       </header>
 
-      <Card>
+      <Card className="rounded-2xl border-line bg-surface">
         <Card.Header>
-          <Card.Title>Contraseña</Card.Title>
+          <Card.Title className="font-display text-xl text-foreground">Contraseña</Card.Title>
         </Card.Header>
         <Card.Content className="space-y-3">
           {me.has_password && (
@@ -96,18 +97,18 @@ function MiCuentaSecurity() {
             </Alert>
           )}
           <Button
+            className={ctaClass("primary")}
             isDisabled={setPassword.isPending || newPassword.length < 8}
             onPress={() => setPassword.mutate()}
-            variant="primary"
           >
             Guardar contraseña
           </Button>
         </Card.Content>
       </Card>
 
-      <Card>
+      <Card className="rounded-2xl border-line bg-surface">
         <Card.Header>
-          <Card.Title>Passkeys</Card.Title>
+          <Card.Title className="font-display text-xl text-foreground">Passkeys</Card.Title>
         </Card.Header>
         <Card.Content className="space-y-3">
           {!passkeyAvailable && (
@@ -118,17 +119,17 @@ function MiCuentaSecurity() {
             </Alert>
           )}
           {passkeysQuery.data?.data.length === 0 && (
-            <p className="text-default-500 text-sm">Aún no has registrado passkeys.</p>
+            <p className="text-muted text-sm">Aún no has registrado passkeys.</p>
           )}
           <ul className="space-y-2">
             {passkeysQuery.data?.data.map((pk) => (
               <li
                 key={pk.id}
-                className="flex items-center justify-between rounded border border-default-200 p-3"
+                className="flex items-center justify-between rounded-xl border border-line bg-surface-2 p-3"
               >
                 <div>
-                  <p className="text-sm">{pk.friendly_name}</p>
-                  <p className="text-default-500 text-xs">
+                  <p className="text-foreground text-sm">{pk.friendly_name}</p>
+                  <p className="text-muted text-xs">
                     Creada {new Date(pk.created_at).toLocaleDateString("es-CL")}
                     {pk.last_used_at &&
                       ` · Último uso ${new Date(pk.last_used_at).toLocaleDateString("es-CL")}`}
@@ -158,9 +159,9 @@ function MiCuentaSecurity() {
           )}
           {passkeyAvailable && (
             <Button
+              className={ctaClass("primary")}
               isDisabled={addPasskey.isPending}
               onPress={() => addPasskey.mutate()}
-              variant="secondary"
             >
               Agregar passkey
             </Button>

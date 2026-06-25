@@ -1,9 +1,11 @@
-import { Breadcrumbs, Card, Chip } from "@heroui/react";
+import { Card, Chip } from "@heroui/react";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { BookingCta } from "@/components/BookingCta";
 import { JsonLd } from "@/components/JsonLd";
 import { PageShell } from "@/components/PageShell";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Photo } from "@/components/ui/Photo";
 import { examenesContent } from "@/data/exams";
 import { breadcrumbJsonLd } from "@/lib/seo";
 
@@ -16,21 +18,19 @@ function ExamenesPage() {
           { name: "Exámenes", path: "/examenes" },
         ])}
       />
-      <section className="grid gap-4">
-        <Breadcrumbs>
-          <Breadcrumbs.Item href="/">Inicio</Breadcrumbs.Item>
-          <Breadcrumbs.Item>Exámenes</Breadcrumbs.Item>
-        </Breadcrumbs>
-        <div className="grid gap-3">
-          <div className="text-(--ink-muted) text-xs uppercase tracking-[0.2em]">Diagnóstico</div>
-          <h1 className="font-semibold text-(--ink) text-3xl sm:text-4xl">
-            Exámenes y estudios de alergia
-          </h1>
-          <p className="max-w-3xl text-(--ink-muted) text-base leading-relaxed sm:text-lg">
-            {examenesContent.intro}
-          </p>
-        </div>
-      </section>
+      <PageHeader
+        crumbs={[{ label: "Inicio", href: "/" }, { label: "Exámenes" }]}
+        eyebrow="Diagnóstico"
+        lede={examenesContent.intro}
+        title="Exámenes y estudios de alergia"
+      />
+
+      <Photo
+        className="h-[clamp(14rem,32vw,22rem)]"
+        name="prickArm"
+        rounded="rounded-3xl"
+        sizes="(min-width: 1024px) 1100px, 100vw"
+      />
 
       <section className="grid gap-6 md:grid-cols-2">
         {examenesContent.items.map((exam) => (
@@ -56,16 +56,16 @@ function ExamenesPage() {
                 ))}
               </div>
               {(exam.duration || exam.prep) && (
-                <div className="grid gap-1 border-border border-t pt-4 text-(--ink-muted) text-xs">
+                <div className="grid gap-1 border-line border-t pt-4 text-muted text-xs">
                   {exam.duration ? (
                     <p>
-                      <span className="font-semibold text-(--ink)">Duración: </span>
+                      <span className="font-semibold text-foreground">Duración: </span>
                       {exam.duration}
                     </p>
                   ) : null}
                   {exam.prep ? (
                     <p>
-                      <span className="font-semibold text-(--ink)">Preparación: </span>
+                      <span className="font-semibold text-foreground">Preparación: </span>
                       {exam.prep}
                     </p>
                   ) : null}

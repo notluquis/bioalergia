@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
+import { ShopShell } from "@/components/ShopShell";
 import { CartView } from "@/features/shop/components/CartView";
 import { shopKeys } from "@/features/shop/queries";
 import { cartClient } from "@/lib/orpc-client";
@@ -19,12 +20,14 @@ function CarritoPage() {
   });
 
   return (
-    <CartView
-      cart={data?.data}
-      isLoading={isLoading}
-      onRemove={(productId) => removeMutation.mutate(productId)}
-      onUpdateQty={(input) => updateMutation.mutate(input)}
-    />
+    <ShopShell>
+      <CartView
+        cart={data?.data}
+        isLoading={isLoading}
+        onRemove={(productId) => removeMutation.mutate(productId)}
+        onUpdateQty={(input) => updateMutation.mutate(input)}
+      />
+    </ShopShell>
   );
 }
 

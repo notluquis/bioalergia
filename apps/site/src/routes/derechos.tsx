@@ -1,7 +1,6 @@
 import type { CreatePublicDataRightsInput } from "@finanzas/orpc-contracts/public-clinic";
 import {
   Alert,
-  Breadcrumbs,
   Button,
   Card,
   Form,
@@ -18,6 +17,8 @@ import { type FormEvent, useState } from "react";
 
 import { JsonLd } from "@/components/JsonLd";
 import { PageShell } from "@/components/PageShell";
+import { ctaClass } from "@/components/ui/cta";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { publicClinicClient } from "@/lib/orpc-client";
 import { breadcrumbJsonLd } from "@/lib/seo";
 import { Section } from "@/sections/Section";
@@ -25,16 +26,36 @@ import { Section } from "@/sections/Section";
 type RightType = CreatePublicDataRightsInput["type"];
 
 const RIGHTS: { id: RightType; label: string; detail: string }[] = [
-  { id: "ACCESS", label: "Acceso", detail: "Conocer qué datos suyos tratamos y obtener una copia." },
-  { id: "RECTIFICATION", label: "Rectificación", detail: "Corregir datos inexactos o incompletos." },
-  { id: "DELETION", label: "Supresión", detail: "Solicitar la eliminación de sus datos cuando proceda." },
-  { id: "OPPOSITION", label: "Oposición", detail: "Oponerse a un tratamiento determinado de sus datos." },
+  {
+    id: "ACCESS",
+    label: "Acceso",
+    detail: "Conocer qué datos suyos tratamos y obtener una copia.",
+  },
+  {
+    id: "RECTIFICATION",
+    label: "Rectificación",
+    detail: "Corregir datos inexactos o incompletos.",
+  },
+  {
+    id: "DELETION",
+    label: "Supresión",
+    detail: "Solicitar la eliminación de sus datos cuando proceda.",
+  },
+  {
+    id: "OPPOSITION",
+    label: "Oposición",
+    detail: "Oponerse a un tratamiento determinado de sus datos.",
+  },
   {
     id: "PORTABILITY",
     label: "Portabilidad",
     detail: "Recibir sus datos en un formato estructurado y de uso común.",
   },
-  { id: "BLOCKING", label: "Bloqueo", detail: "Suspender temporalmente el tratamiento de un dato." },
+  {
+    id: "BLOCKING",
+    label: "Bloqueo",
+    detail: "Suspender temporalmente el tratamiento de un dato.",
+  },
 ];
 
 function DataRightsForm() {
@@ -52,9 +73,7 @@ function DataRightsForm() {
   });
 
   const canSubmit =
-    requesterName.trim().length >= 1 &&
-    requesterEmail.includes("@") &&
-    !submitMutation.isPending;
+    requesterName.trim().length >= 1 && requesterEmail.includes("@") && !submitMutation.isPending;
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -73,11 +92,13 @@ function DataRightsForm() {
     return (
       <Card className="rounded-3xl" variant="secondary">
         <Card.Header className="gap-2">
-          <Card.Title className="text-lg">Recibimos tu solicitud</Card.Title>
-          <Card.Description className="text-(--ink-muted) leading-relaxed">
+          <Card.Title className="font-display text-2xl text-foreground">
+            Recibimos tu solicitud
+          </Card.Title>
+          <Card.Description className="text-muted leading-relaxed">
             El delegado de protección de datos revisará tu solicitud y te responderá dentro de
-            treinta días corridos. Para proteger tus datos, podemos pedir antecedentes que verifiquen
-            tu identidad antes de responder.
+            treinta días corridos. Para proteger tus datos, podemos pedir antecedentes que
+            verifiquen tu identidad antes de responder.
           </Card.Description>
         </Card.Header>
       </Card>
@@ -87,8 +108,10 @@ function DataRightsForm() {
   return (
     <Card className="rounded-3xl" variant="default">
       <Card.Header className="gap-2">
-        <Card.Title className="text-xl">Solicitud de ejercicio de derechos</Card.Title>
-        <Card.Description className="text-(--ink-muted) leading-relaxed">
+        <Card.Title className="font-display text-2xl text-foreground">
+          Solicitud de ejercicio de derechos
+        </Card.Title>
+        <Card.Description className="text-muted leading-relaxed">
           Indica el derecho que deseas ejercer y tus datos de contacto para la respuesta.
         </Card.Description>
       </Card.Header>
@@ -159,14 +182,19 @@ function DataRightsForm() {
             <Alert status="danger">
               <Alert.Content>
                 <Alert.Description>
-                  No pudimos registrar tu solicitud. Vuelve a intentarlo en unos minutos o escríbenos
-                  a contacto@bioalergia.cl.
+                  No pudimos registrar tu solicitud. Vuelve a intentarlo en unos minutos o
+                  escríbenos a contacto@bioalergia.cl.
                 </Alert.Description>
               </Alert.Content>
             </Alert>
           ) : null}
 
-          <Button isDisabled={!canSubmit} type="submit" variant="primary">
+          <Button
+            className={ctaClass("primary", "w-fit")}
+            isDisabled={!canSubmit}
+            type="submit"
+            variant="primary"
+          >
             {submitMutation.isPending ? "Enviando…" : "Enviar solicitud"}
           </Button>
         </Form>
@@ -184,33 +212,22 @@ function DerechosPage() {
           { name: "Ejercicio de derechos", path: "/derechos" },
         ])}
       />
-      <section className="grid gap-4">
-        <Breadcrumbs>
-          <Breadcrumbs.Item href="/">Inicio</Breadcrumbs.Item>
-          <Breadcrumbs.Item>Ejercicio de derechos</Breadcrumbs.Item>
-        </Breadcrumbs>
-        <div className="grid gap-3">
-          <div className="text-(--ink-muted) text-xs uppercase tracking-[0.2em]">
-            Protección de datos (Ley 21.719)
-          </div>
-          <h1 className="font-semibold text-(--ink) text-3xl sm:text-4xl">
-            Ejercicio de derechos del titular
-          </h1>
-          <p className="max-w-3xl text-(--ink-muted) text-base leading-relaxed sm:text-lg">
-            La Ley N° 21.719 le reconoce derechos sobre sus datos personales. En Bioalergia puede
-            ejercerlos de forma sencilla a través de esta página o escribiendo al delegado de
-            protección de datos.
-          </p>
-        </div>
-      </section>
+      <PageHeader
+        crumbs={[{ label: "Inicio", href: "/" }, { label: "Ejercicio de derechos" }]}
+        eyebrow="Protección de datos (Ley 21.719)"
+        lede="La Ley N° 21.719 le reconoce derechos sobre sus datos personales. En Bioalergia puede ejercerlos de forma sencilla a través de esta página o escribiendo al delegado de protección de datos."
+        title="Ejercicio de derechos del titular"
+      />
 
       <Section title="Qué derechos puede ejercer">
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {RIGHTS.map((right) => (
             <Card className="rounded-3xl" key={right.id} variant="default">
               <Card.Header className="gap-2">
-                <Card.Title className="text-lg">{right.label}</Card.Title>
-                <Card.Description className="text-(--ink-muted) leading-relaxed">
+                <Card.Title className="font-display text-xl text-foreground">
+                  {right.label}
+                </Card.Title>
+                <Card.Description className="text-muted leading-relaxed">
                   {right.detail}
                 </Card.Description>
               </Card.Header>
@@ -220,30 +237,31 @@ function DerechosPage() {
         <Card className="rounded-3xl" variant="secondary">
           <Card.Content className="grid gap-3 py-6">
             <div className="flex items-start gap-3 text-sm leading-relaxed">
-              <span className="mt-2 rounded-full bg-(--accent) size-2" />
-              <span className="text-(--ink-muted)">
+              <span className="mt-2 size-2 rounded-full bg-brand-amber" />
+              <span className="text-muted">
                 Plazo: respondemos dentro de treinta días corridos contados desde el ingreso de la
-                solicitud, prorrogables por una sola vez hasta por treinta días corridos adicionales.
+                solicitud, prorrogables por una sola vez hasta por treinta días corridos
+                adicionales.
               </span>
             </div>
             <div className="flex items-start gap-3 text-sm leading-relaxed">
-              <span className="mt-2 rounded-full bg-(--accent) size-2" />
-              <span className="text-(--ink-muted)">
+              <span className="mt-2 size-2 rounded-full bg-brand-amber" />
+              <span className="text-muted">
                 Verificación de identidad: antes de responder verificamos la identidad de quien
                 solicita; si actúa en representación, deberá acreditarla.
               </span>
             </div>
             <div className="flex items-start gap-3 text-sm leading-relaxed">
-              <span className="mt-2 rounded-full bg-(--accent) size-2" />
-              <span className="text-(--ink-muted)">
-                Límite por ficha clínica: la supresión no procede cuando la conservación es necesaria
-                por obligación legal (la ficha clínica se conserva quince años); en esos casos puede
-                proceder el bloqueo.
+              <span className="mt-2 size-2 rounded-full bg-brand-amber" />
+              <span className="text-muted">
+                Límite por ficha clínica: la supresión no procede cuando la conservación es
+                necesaria por obligación legal (la ficha clínica se conserva quince años); en esos
+                casos puede proceder el bloqueo.
               </span>
             </div>
             <div className="flex items-start gap-3 text-sm leading-relaxed">
-              <span className="mt-2 rounded-full bg-(--accent) size-2" />
-              <span className="text-(--ink-muted)">
+              <span className="mt-2 size-2 rounded-full bg-brand-amber" />
+              <span className="text-muted">
                 Reclamo ante la Agencia: si su solicitud es rechazada o no recibe respuesta, puede
                 reclamar ante la Agencia de Protección de Datos Personales dentro de treinta días
                 hábiles.

@@ -1,7 +1,6 @@
 import type { CreatePublicContactInput } from "@finanzas/orpc-contracts/public-clinic";
 import {
   Alert,
-  Breadcrumbs,
   Button,
   Card,
   Checkbox,
@@ -18,6 +17,8 @@ import { type FormEvent, useState } from "react";
 
 import { JsonLd } from "@/components/JsonLd";
 import { PageShell } from "@/components/PageShell";
+import { ctaClass } from "@/components/ui/cta";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { contactInfo } from "@/data/clinic";
 import { publicClinicClient } from "@/lib/orpc-client";
 import { breadcrumbJsonLd } from "@/lib/seo";
@@ -60,8 +61,10 @@ function ContactForm() {
     return (
       <Card className="rounded-3xl" variant="secondary">
         <Card.Header className="gap-2">
-          <Card.Title className="text-lg">¡Gracias por escribirnos!</Card.Title>
-          <Card.Description className="text-(--ink-muted) leading-relaxed">
+          <Card.Title className="font-display text-2xl text-foreground">
+            ¡Gracias por escribirnos!
+          </Card.Title>
+          <Card.Description className="text-muted leading-relaxed">
             Recibimos tu mensaje y te responderemos a la brevedad al medio de contacto que nos
             indicaste.
           </Card.Description>
@@ -73,8 +76,8 @@ function ContactForm() {
   return (
     <Card className="rounded-3xl" variant="default">
       <Card.Header className="gap-2">
-        <Card.Title className="text-xl">Escríbenos</Card.Title>
-        <Card.Description className="text-(--ink-muted) leading-relaxed">
+        <Card.Title className="font-display text-2xl text-foreground">Escríbenos</Card.Title>
+        <Card.Description className="text-muted leading-relaxed">
           Para responder tu mensaje te pedimos solo los datos necesarios. No incluyas información de
           salud en este formulario.
         </Card.Description>
@@ -107,9 +110,9 @@ function ContactForm() {
               <Checkbox.Control>
                 <Checkbox.Indicator />
               </Checkbox.Control>
-              <span className="text-sm text-(--ink-muted) leading-relaxed">
+              <span className="text-sm text-muted leading-relaxed">
                 Acepto el tratamiento de mis datos segun la{" "}
-                <Link className="text-(--accent)" href="/privacy">
+                <Link className="text-brand-blue" href="/privacy">
                   Política de Privacidad
                 </Link>
                 .
@@ -143,7 +146,12 @@ function ContactForm() {
             </Alert>
           ) : null}
 
-          <Button isDisabled={!canSubmit} type="submit" variant="primary">
+          <Button
+            className={ctaClass("primary", "w-fit")}
+            isDisabled={!canSubmit}
+            type="submit"
+            variant="primary"
+          >
             {submitMutation.isPending ? "Enviando…" : "Enviar mensaje"}
           </Button>
         </Form>
@@ -161,46 +169,46 @@ function ContactoPage() {
           { name: "Contacto", path: "/contacto" },
         ])}
       />
-      <section className="grid gap-4">
-        <Breadcrumbs>
-          <Breadcrumbs.Item href="/">Inicio</Breadcrumbs.Item>
-          <Breadcrumbs.Item>Contacto</Breadcrumbs.Item>
-        </Breadcrumbs>
-        <div className="grid gap-3">
-          <div className="text-(--ink-muted) text-xs uppercase tracking-[0.2em]">Contacto</div>
-          <h1 className="font-semibold text-(--ink) text-3xl sm:text-4xl">Contacto</h1>
-          <p className="max-w-3xl text-(--ink-muted) text-base leading-relaxed sm:text-lg">
-            ¿Tienes una consulta general o deseas agendar una atención? Escríbenos y te responderemos
-            a la brevedad.
-          </p>
-        </div>
-      </section>
+      <PageHeader
+        crumbs={[{ label: "Inicio", href: "/" }, { label: "Contacto" }]}
+        eyebrow="Contacto"
+        lede="¿Tienes una consulta general o deseas agendar una atención? Escríbenos y te responderemos a la brevedad."
+        title="Contacto"
+      />
 
       <Section title="Datos de contacto">
         <div className="grid gap-6 md:grid-cols-2">
           <Card className="rounded-3xl" variant="default">
-            <Card.Content className="grid gap-3 py-6 text-sm">
-              <div className="grid gap-1">
-                <span className="font-medium text-(--ink)">Dirección</span>
-                <span className="text-(--ink-muted)">{contactInfo.address}</span>
+            <Card.Content className="grid gap-0 py-2 text-sm">
+              <div className="grid gap-1 border-line border-b py-4">
+                <span className="text-eyebrow text-[0.7rem] uppercase tracking-[0.16em]">
+                  Dirección
+                </span>
+                <span className="text-foreground">{contactInfo.address}</span>
               </div>
-              <div className="grid gap-1">
-                <span className="font-medium text-(--ink)">Teléfonos</span>
+              <div className="grid gap-1 border-line border-b py-4">
+                <span className="text-eyebrow text-[0.7rem] uppercase tracking-[0.16em]">
+                  Teléfonos
+                </span>
                 {contactInfo.phones.map((phone) => (
-                  <span className="text-(--ink-muted)" key={phone}>
+                  <span className="text-foreground" key={phone}>
                     {phone}
                   </span>
                 ))}
               </div>
-              <div className="grid gap-1">
-                <span className="font-medium text-(--ink)">Correo</span>
-                <Link className="text-(--accent) w-fit" href={`mailto:${contactInfo.email}`}>
+              <div className="grid gap-1 border-line border-b py-4">
+                <span className="text-eyebrow text-[0.7rem] uppercase tracking-[0.16em]">
+                  Correo
+                </span>
+                <Link className="w-fit text-brand-blue" href={`mailto:${contactInfo.email}`}>
                   {contactInfo.email}
                 </Link>
               </div>
-              <div className="grid gap-1">
-                <span className="font-medium text-(--ink)">Horario</span>
-                <span className="text-(--ink-muted)">
+              <div className="grid gap-1 py-4">
+                <span className="text-eyebrow text-[0.7rem] uppercase tracking-[0.16em]">
+                  Horario
+                </span>
+                <span className="text-foreground">
                   Lunes a sábado, 10:00 a 17:00. Atención con cita previa.
                 </span>
               </div>
@@ -220,8 +228,8 @@ function ContactoPage() {
               <Alert.Content>
                 <Alert.Title>Protección de tus datos</Alert.Title>
                 <Alert.Description>
-                  No incluyas información de salud en este formulario. Tus datos se tratan conforme a
-                  nuestra Política de Protección de Datos (Ley N° 21.719).
+                  No incluyas información de salud en este formulario. Tus datos se tratan conforme
+                  a nuestra Política de Protección de Datos (Ley N° 21.719).
                 </Alert.Description>
               </Alert.Content>
             </Alert>

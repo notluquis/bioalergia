@@ -35,7 +35,7 @@ function StarRow({
         return (
           <Star
             aria-hidden="true"
-            className={filled ? "fill-warning text-warning" : "text-foreground/30"}
+            className={filled ? "fill-brand-amber text-brand-amber" : "text-line"}
             key={i}
             size={size}
           />
@@ -52,7 +52,7 @@ function StarPicker({ value, onChange }: { value: number; onChange: (v: number) 
       {[1, 2, 3, 4, 5].map((n) => {
         const filled = n <= value;
         return (
-          <label className="cursor-pointer rounded p-1 hover:bg-foreground/5" key={n}>
+          <label className="cursor-pointer rounded p-1 hover:bg-surface-2" key={n}>
             <input
               aria-label={`${n} estrella${n > 1 ? "s" : ""}`}
               checked={n === value}
@@ -64,7 +64,7 @@ function StarPicker({ value, onChange }: { value: number; onChange: (v: number) 
             />
             <Star
               aria-hidden="true"
-              className={filled ? "fill-warning text-warning" : "text-foreground/30"}
+              className={filled ? "fill-brand-amber text-brand-amber" : "text-line"}
               size={28}
             />
           </label>
@@ -125,7 +125,7 @@ export function Reviews({ productId }: { productId: number }) {
   if (reviewsQ.isLoading) {
     return (
       <section className="space-y-3">
-        <h2 className="font-semibold text-xl">Reseñas</h2>
+        <h2 className="font-display text-2xl text-foreground sm:text-[1.75rem]">Reseñas</h2>
         <Skeleton className="h-24 w-full" />
       </section>
     );
@@ -138,19 +138,22 @@ export function Reviews({ productId }: { productId: number }) {
     <section aria-labelledby="reviews-heading" className="space-y-4">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div className="space-y-1">
-          <h2 className="font-semibold text-xl" id="reviews-heading">
+          <h2
+            className="font-display text-2xl text-foreground sm:text-[1.75rem]"
+            id="reviews-heading"
+          >
             Reseñas
           </h2>
           {aggregate.count > 0 ? (
             <div className="flex items-center gap-2 text-sm">
               <StarRow value={aggregate.average} />
-              <span className="font-medium">{aggregate.average.toFixed(1)}</span>
-              <span className="text-foreground/60">
+              <span className="font-medium text-foreground">{aggregate.average.toFixed(1)}</span>
+              <span className="text-muted">
                 · {aggregate.count} {aggregate.count === 1 ? "reseña" : "reseñas"}
               </span>
             </div>
           ) : (
-            <p className="text-foreground/60 text-sm">Sin reseñas todavía. ¡Sé la primera!</p>
+            <p className="text-muted text-sm">Sin reseñas todavía. ¡Sé la primera!</p>
           )}
         </div>
         <Button onPress={() => setOpen((v) => !v)} variant="secondary">
@@ -167,9 +170,9 @@ export function Reviews({ productId }: { productId: number }) {
       )}
 
       {open && (
-        <Card>
+        <Card className="rounded-2xl border-line">
           <Card.Header>
-            <Card.Title>Tu reseña</Card.Title>
+            <Card.Title className="text-foreground">Tu reseña</Card.Title>
           </Card.Header>
           <Card.Content>
             <Form className="space-y-3" onSubmit={onSubmit} validationBehavior="aria">
@@ -211,22 +214,22 @@ export function Reviews({ productId }: { productId: number }) {
       {reviews.length > 0 && (
         <div className="space-y-3">
           {reviews.map((r) => (
-            <Card key={r.id}>
+            <Card className="rounded-2xl border-line" key={r.id}>
               <Card.Content className="space-y-2">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold">{r.author_name}</span>
+                    <span className="font-semibold text-foreground">{r.author_name}</span>
                     {r.verified && (
-                      <span className="rounded bg-success/10 px-1.5 py-0.5 text-success text-xs">
+                      <span className="rounded bg-doctoralia-green/10 px-1.5 py-0.5 text-doctoralia-green text-xs">
                         Compra verificada
                       </span>
                     )}
                   </div>
-                  <span className="text-foreground/50 text-xs">{formatRelative(r.created_at)}</span>
+                  <span className="text-muted text-xs">{formatRelative(r.created_at)}</span>
                 </div>
                 <StarRow value={r.rating} />
-                {r.title && <p className="font-semibold">{r.title}</p>}
-                <p className="whitespace-pre-line text-foreground/80 text-sm">{r.body}</p>
+                {r.title && <p className="font-semibold text-foreground">{r.title}</p>}
+                <p className="whitespace-pre-line text-muted text-sm leading-relaxed">{r.body}</p>
               </Card.Content>
             </Card>
           ))}

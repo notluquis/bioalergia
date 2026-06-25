@@ -69,7 +69,11 @@ const preview = {
     (Story: () => ReactNode) => {
       const queryClient = new QueryClient({
         defaultOptions: {
-          queries: { retry: false, refetchOnWindowFocus: false, staleTime: Number.POSITIVE_INFINITY },
+          queries: {
+            retry: false,
+            refetchOnWindowFocus: false,
+            staleTime: Number.POSITIVE_INFINITY,
+          },
           mutations: { retry: false },
         },
       });

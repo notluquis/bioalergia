@@ -21,8 +21,10 @@ export function RelatedProducts({
   if (items.length === 0) return null;
 
   return (
-    <section className="space-y-3">
-      <h2 className="font-semibold text-xl">También te puede interesar</h2>
+    <section className="space-y-4">
+      <h2 className="font-display text-2xl text-foreground sm:text-[1.75rem]">
+        También te puede interesar
+      </h2>
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
         {items.map((p) => (
           <ProductCard key={p.id} product={p} />

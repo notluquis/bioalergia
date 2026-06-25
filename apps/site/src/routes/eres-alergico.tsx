@@ -1,10 +1,11 @@
-import { Breadcrumbs } from "@heroui/react";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { BookingCta } from "@/components/BookingCta";
 import { ConditionQuiz } from "@/components/ConditionQuiz";
 import { JsonLd } from "@/components/JsonLd";
 import { PageShell } from "@/components/PageShell";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Photo } from "@/components/ui/Photo";
 import { quizContent } from "@/data/quiz";
 import { breadcrumbJsonLd } from "@/lib/seo";
 
@@ -17,25 +18,18 @@ function EresAlergicoPage() {
           { name: "¿Eres alérgico?", path: "/eres-alergico" },
         ])}
       />
-      <section className="grid gap-4">
-        <Breadcrumbs>
-          <Breadcrumbs.Item href="/">Inicio</Breadcrumbs.Item>
-          <Breadcrumbs.Item>¿Eres alérgico?</Breadcrumbs.Item>
-        </Breadcrumbs>
-        <div className="grid gap-3">
-          <div className="text-(--ink-muted) text-xs uppercase tracking-[0.2em]">
-            Autoevaluación
-          </div>
-          <h1 className="font-semibold text-(--ink) text-3xl sm:text-4xl">
-            ¿Eres alérgico? Haz tu autoevaluación
-          </h1>
-          <p className="max-w-3xl text-(--ink-muted) text-base leading-relaxed sm:text-lg">
-            Responde ocho preguntas rápidas sobre tus síntomas y antecedentes. Al terminar verás una
-            orientación que te ayudará a decidir si conviene una evaluación con un especialista.
-            Nada de lo que respondas se guarda ni se envía: todo ocurre en tu navegador.
-          </p>
-        </div>
-      </section>
+      <PageHeader
+        crumbs={[{ label: "Inicio", href: "/" }, { label: "¿Eres alérgico?" }]}
+        eyebrow="Autoevaluación"
+        lede="Responde ocho preguntas rápidas sobre tus síntomas y antecedentes. Al terminar verás una orientación que te ayudará a decidir si conviene una evaluación con un especialista. Nada de lo que respondas se guarda ni se envía: todo ocurre en tu navegador."
+        title="¿Eres alérgico? Haz tu autoevaluación"
+      />
+
+      <Photo
+        className="aspect-[16/6] w-full rounded-3xl"
+        name="prickGrid"
+        sizes="(min-width: 1024px) 960px, 100vw"
+      />
 
       <ConditionQuiz
         content={quizContent}

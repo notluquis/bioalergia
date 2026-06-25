@@ -1,9 +1,11 @@
-import { Breadcrumbs, Card, Chip, Link } from "@heroui/react";
+import { Card, Chip, Link } from "@heroui/react";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { BookingCta } from "@/components/BookingCta";
 import { JsonLd } from "@/components/JsonLd";
 import { PageShell } from "@/components/PageShell";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Photo } from "@/components/ui/Photo";
 import { clinicOverview } from "@/data/clinic";
 import { team } from "@/data/team";
 import { breadcrumbJsonLd, physicianJsonLd } from "@/lib/seo";
@@ -18,21 +20,19 @@ function EquipoPage() {
           { name: "Equipo", path: "/equipo" },
         ])}
       />
-      <section className="grid gap-4">
-        <Breadcrumbs>
-          <Breadcrumbs.Item href="/">Inicio</Breadcrumbs.Item>
-          <Breadcrumbs.Item>Equipo</Breadcrumbs.Item>
-        </Breadcrumbs>
-        <div className="grid gap-3">
-          <div className="text-(--ink-muted) text-xs uppercase tracking-[0.2em]">Equipo</div>
-          <h1 className="font-semibold text-(--ink) text-3xl sm:text-4xl">Nuestro equipo</h1>
-          <p className="max-w-3xl text-(--ink-muted) text-base leading-relaxed sm:text-lg">
-            Detrás de Bioalergia hay un equipo que combina experiencia clínica en alergología e
-            inmunología con una gestión cercana y plataformas digitales propias, para ofrecer una
-            atención precisa, ordenada y centrada en cada paciente.
-          </p>
-        </div>
-      </section>
+      <PageHeader
+        crumbs={[{ label: "Inicio", href: "/" }, { label: "Equipo" }]}
+        eyebrow="Equipo"
+        lede="Detrás de Bioalergia hay un equipo que combina experiencia clínica en alergología e inmunología con una gestión cercana y plataformas digitales propias, para ofrecer una atención precisa, ordenada y centrada en cada paciente."
+        title="Nuestro equipo"
+      />
+
+      <Photo
+        className="aspect-[16/7] w-full rounded-3xl"
+        eager
+        name="doctorDesk"
+        sizes="(min-width: 1024px) 960px, 100vw"
+      />
 
       <section className="grid gap-6">
         {team.map((member) => (
@@ -44,24 +44,21 @@ function EquipoPage() {
                   {member.badge}
                 </Chip>
               </div>
-              <Card.Description className="text-(--ink-muted) text-sm uppercase tracking-[0.18em]">
+              <Card.Description className="text-eyebrow text-sm uppercase tracking-[0.18em]">
                 {member.role}
               </Card.Description>
             </Card.Header>
             <Card.Content className="grid gap-4 pb-6">
               {member.paragraphs.map((paragraph) => (
-                <p
-                  className="text-(--ink-muted) text-base leading-relaxed"
-                  key={paragraph.slice(0, 40)}
-                >
+                <p className="text-base text-muted leading-relaxed" key={paragraph.slice(0, 40)}>
                   {paragraph}
                 </p>
               ))}
               {(member.email || member.linkedin) && (
-                <div className="flex flex-wrap items-center gap-4 border-border border-t pt-4">
+                <div className="flex flex-wrap items-center gap-4 border-line border-t pt-4">
                   {member.email ? (
                     <Link
-                      className="font-medium text-(--accent) text-sm no-underline hover:underline"
+                      className="font-semibold text-brand-blue text-sm no-underline hover:underline"
                       href={`mailto:${member.email}`}
                     >
                       {member.email}
@@ -69,7 +66,7 @@ function EquipoPage() {
                   ) : null}
                   {member.linkedin ? (
                     <Link
-                      className="font-medium text-(--accent) text-sm no-underline hover:underline"
+                      className="font-semibold text-brand-blue text-sm no-underline hover:underline"
                       href={member.linkedin}
                       rel="noopener noreferrer"
                       target="_blank"
@@ -86,13 +83,15 @@ function EquipoPage() {
       </section>
 
       <section className="grid gap-6">
-        <h2 className="font-semibold text-(--ink) text-2xl">Cómo trabajamos</h2>
+        <h2 className="font-display text-[1.75rem] text-foreground sm:text-[2rem]">
+          Cómo trabajamos
+        </h2>
         <div className="grid gap-6 md:grid-cols-3">
           {clinicOverview.pillars.map((pillar) => (
             <Card className="rounded-3xl" key={pillar.title} variant="default">
               <Card.Header className="gap-3">
                 <Card.Title className="text-lg">{pillar.title}</Card.Title>
-                <Card.Description className="text-(--ink-muted) leading-relaxed">
+                <Card.Description className="text-muted leading-relaxed">
                   {pillar.detail}
                 </Card.Description>
               </Card.Header>
@@ -105,7 +104,7 @@ function EquipoPage() {
         <Card className="rounded-3xl" variant="secondary">
           <Card.Header className="gap-2">
             <Card.Title className="text-lg">Misión</Card.Title>
-            <Card.Description className="text-(--ink-muted) leading-relaxed">
+            <Card.Description className="text-muted leading-relaxed">
               {clinicOverview.mission}
             </Card.Description>
           </Card.Header>
@@ -113,7 +112,7 @@ function EquipoPage() {
         <Card className="rounded-3xl" variant="secondary">
           <Card.Header className="gap-2">
             <Card.Title className="text-lg">Visión</Card.Title>
-            <Card.Description className="text-(--ink-muted) leading-relaxed">
+            <Card.Description className="text-muted leading-relaxed">
               {clinicOverview.vision}
             </Card.Description>
           </Card.Header>

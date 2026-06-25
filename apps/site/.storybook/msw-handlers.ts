@@ -126,7 +126,12 @@ const PRODUCT_LOW_STOCK = {
   name: "Cetirizina 10 mg — 30 comprimidos",
   brand: "Genérico",
   category_id: 11,
-  category: { ...PRODUCT_IN_STOCK.category, id: 11, slug: "antihistaminicos", name: "Antihistamínicos" },
+  category: {
+    ...PRODUCT_IN_STOCK.category,
+    id: 11,
+    slug: "antihistaminicos",
+    name: "Antihistamínicos",
+  },
   price_clp: 4_490,
   compare_at_price_clp: null,
   available_qty: 7,

@@ -30,10 +30,10 @@ export function ProductCard({ product }: { product: Product }) {
   const outOfStock = stock.label === "Agotado";
 
   return (
-    <Card className="h-full">
+    <Card className="h-full overflow-hidden rounded-2xl border border-line bg-surface transition hover:border-brand-amber hover:shadow-sm">
       <Card.Content className="p-0">
         <Link
-          className="relative block aspect-square overflow-hidden rounded-t-[18px] bg-foreground/5"
+          className="relative block aspect-square overflow-hidden bg-surface-2"
           params={{ slug: product.slug }}
           to="/producto/$slug"
         >
@@ -69,7 +69,7 @@ export function ProductCard({ product }: { product: Product }) {
               />
             </picture>
           ) : (
-            <div className="flex h-full items-center justify-center text-foreground/30 text-xs">
+            <div className="flex h-full items-center justify-center text-muted text-xs">
               Sin imagen
             </div>
           )}
@@ -88,25 +88,31 @@ export function ProductCard({ product }: { product: Product }) {
         </Link>
       </Card.Content>
       <Card.Header>
-        <Card.Description className="text-xs uppercase tracking-wide">
+        <Card.Description className="text-eyebrow text-xs uppercase tracking-[0.12em]">
           {product.brand ?? "—"} · SKU {product.sku}
         </Card.Description>
-        <Card.Title className="line-clamp-2 text-base">{product.name}</Card.Title>
+        <Card.Title className="line-clamp-2 text-base text-foreground">{product.name}</Card.Title>
       </Card.Header>
       <Card.Footer className="flex flex-col items-stretch gap-2">
         <div className="flex flex-col">
           <div className="flex items-baseline gap-2">
-            <span className="font-bold text-xl">{CLP_FORMATTER.format(product.price_clp)}</span>
+            <span className="font-bold text-foreground text-xl">
+              {CLP_FORMATTER.format(product.price_clp)}
+            </span>
             {product.compare_at_price_clp && product.compare_at_price_clp > product.price_clp && (
-              <span className="text-foreground/50 text-sm line-through">
+              <span className="text-muted text-sm line-through">
                 {CLP_FORMATTER.format(product.compare_at_price_clp)}
               </span>
             )}
           </div>
-          <span className="text-foreground/60 text-xs">IVA incluido</span>
+          <span className="text-muted text-xs">IVA incluido</span>
         </div>
         <Link params={{ slug: product.slug }} to="/producto/$slug">
-          <Button className="w-full" isDisabled={outOfStock} variant="primary">
+          <Button
+            className="w-full rounded-[3px] bg-brand-amber font-bold text-brand-amber-ink hover:brightness-[1.04]"
+            isDisabled={outOfStock}
+            variant="primary"
+          >
             {outOfStock ? "No disponible" : "Ver producto"}
           </Button>
         </Link>

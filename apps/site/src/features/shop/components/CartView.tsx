@@ -4,6 +4,8 @@ import type { InferContractRouterOutputs } from "@orpc/contract";
 import { Link } from "@tanstack/react-router";
 import { Trash2 } from "lucide-react";
 
+import { Eyebrow } from "@/components/ui/Eyebrow";
+import { ctaClass } from "@/components/ui/cta";
 import { lineTotalClp } from "@/features/shop/lib/cart-math";
 import { CLP_FORMATTER } from "@/features/shop/lib/shop-config";
 
@@ -27,11 +29,11 @@ export type CartViewProps = {
 export function CartView({ cart, isLoading, onUpdateQty, onRemove }: CartViewProps) {
   if (isLoading) {
     return (
-      <main className="mx-auto max-w-4xl space-y-4 px-4 py-8 sm:px-6">
-        <Skeleton className="h-6 w-32" />
-        <Skeleton className="h-10 w-48" />
-        <Skeleton className="h-24 w-full" />
-        <Skeleton className="h-24 w-full" />
+      <main className="mx-auto max-w-4xl space-y-4 px-4 py-12 sm:px-6">
+        <Skeleton className="h-6 w-32 rounded-full" />
+        <Skeleton className="h-10 w-48 rounded-full" />
+        <Skeleton className="h-24 w-full rounded-3xl" />
+        <Skeleton className="h-24 w-full rounded-3xl" />
       </main>
     );
   }
@@ -39,35 +41,36 @@ export function CartView({ cart, isLoading, onUpdateQty, onRemove }: CartViewPro
   const empty = !cart || cart.items.length === 0;
 
   return (
-    <main className="mx-auto max-w-4xl space-y-6 px-4 py-8 sm:px-6">
+    <main className="mx-auto max-w-4xl space-y-8 px-4 py-12 sm:px-6">
       <Breadcrumbs>
         <Breadcrumbs.Item href="/">Inicio</Breadcrumbs.Item>
         <Breadcrumbs.Item href="/tienda">Tienda</Breadcrumbs.Item>
         <Breadcrumbs.Item>Mi carrito</Breadcrumbs.Item>
       </Breadcrumbs>
-      <header>
-        <h1 className="font-bold text-3xl">Mi carrito</h1>
-        <Link className="text-foreground/60 text-sm hover:underline" to="/tienda">
+      <header className="space-y-3">
+        <Eyebrow>Tu compra</Eyebrow>
+        <h1 className="font-display text-[2rem] text-foreground sm:text-[2.5rem]">Mi carrito</h1>
+        <Link className="text-muted text-sm hover:text-brand-blue hover:underline" to="/tienda">
           ← Seguir comprando
         </Link>
       </header>
 
       {empty ? (
-        <Card variant="secondary">
-          <Card.Content className="py-12 text-center">
-            <p className="text-foreground/60">Tu carrito está vacío.</p>
-            <Link className="mt-4 inline-block" to="/tienda">
-              <Button variant="primary">Ir a la tienda</Button>
+        <Card className="rounded-3xl border-line bg-surface" variant="default">
+          <Card.Content className="py-16 text-center">
+            <p className="text-muted">Tu carrito está vacío.</p>
+            <Link className={ctaClass("primary", "mt-6")} to="/tienda">
+              Ir a la tienda
             </Link>
           </Card.Content>
         </Card>
       ) : (
         <>
-          <div className="space-y-3">
+          <div className="space-y-4">
             {cart.items.map((item: CartItem) => (
-              <Card key={item.id}>
-                <Card.Content className="flex items-center gap-4 p-4">
-                  <div className="flex-shrink-0 overflow-hidden rounded-lg bg-foreground/5 size-20">
+              <Card className="rounded-3xl border-line bg-surface" key={item.id} variant="default">
+                <Card.Content className="flex items-center gap-4 p-5">
+                  <div className="flex-shrink-0 overflow-hidden rounded-2xl bg-surface-2 size-20">
                     {item.product.primary_image_url && (
                       <img
                         alt={item.product.name}
@@ -78,13 +81,13 @@ export function CartView({ cart, isLoading, onUpdateQty, onRemove }: CartViewPro
                   </div>
                   <div className="min-w-0 flex-1">
                     <Link
-                      className="font-semibold hover:underline"
+                      className="font-semibold text-foreground hover:text-brand-blue hover:underline"
                       params={{ slug: item.product.slug }}
                       to="/producto/$slug"
                     >
                       {item.product.name}
                     </Link>
-                    <p className="text-foreground/60 text-xs">
+                    <p className="text-muted text-xs">
                       {CLP_FORMATTER.format(item.unit_price_clp)} c/u
                     </p>
                   </div>
@@ -107,7 +110,7 @@ export function CartView({ cart, isLoading, onUpdateQty, onRemove }: CartViewPro
                     </NumberField.Group>
                   </NumberField>
                   <div className="hidden text-right sm:block">
-                    <p className="font-semibold">
+                    <p className="font-semibold text-foreground">
                       {CLP_FORMATTER.format(lineTotalClp(item.unit_price_clp, item.qty))}
                     </p>
                   </div>
@@ -125,29 +128,30 @@ export function CartView({ cart, isLoading, onUpdateQty, onRemove }: CartViewPro
             ))}
           </div>
 
-          <Card>
-            <Card.Header>
-              <Card.Title>Resumen</Card.Title>
+          <Card className="rounded-3xl border-line bg-surface" variant="default">
+            <Card.Header className="gap-1">
+              <Eyebrow tone="muted">Resumen</Eyebrow>
+              <Card.Title className="font-display text-2xl text-foreground">
+                Total estimado
+              </Card.Title>
             </Card.Header>
-            <Card.Content className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span>Subtotal</span>
+            <Card.Content className="space-y-3 text-sm">
+              <div className="flex justify-between text-foreground">
+                <span className="text-muted">Subtotal</span>
                 <span>{CLP_FORMATTER.format(cart.subtotal_clp)}</span>
               </div>
-              <div className="flex justify-between text-foreground/60 text-xs">
+              <div className="flex justify-between text-muted text-xs">
                 <span>Envío</span>
                 <span>Se calcula en checkout</span>
               </div>
-              <div className="flex justify-between border-foreground/10 border-t pt-2 font-bold text-base">
+              <div className="flex justify-between border-line border-t pt-3 font-bold text-base text-foreground">
                 <span>Total estimado</span>
                 <span>{CLP_FORMATTER.format(cart.total_clp)}</span>
               </div>
             </Card.Content>
             <Card.Footer>
-              <Link className="block w-full" to="/checkout">
-                <Button className="w-full" size="lg" variant="primary">
-                  Ir al checkout
-                </Button>
+              <Link className={ctaClass("primary", "w-full")} to="/checkout">
+                Ir al checkout
               </Link>
             </Card.Footer>
           </Card>

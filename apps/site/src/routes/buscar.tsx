@@ -1,4 +1,4 @@
-import { Breadcrumbs, Card, Chip, Label, Link, SearchField, Separator } from "@heroui/react";
+import { Card, Chip, Label, Link, SearchField, Separator } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link as RouterLink } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
@@ -6,6 +6,7 @@ import { z } from "zod";
 
 import { ContentError, ContentLoading } from "@/components/ContentState";
 import { PageShell } from "@/components/PageShell";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { educationTopics } from "@/data/education";
 import { contentQueries } from "@/features/content/queries";
 import { searchSite } from "@/lib/site-search";
@@ -101,9 +102,7 @@ function ResultCard({
         </Chip>
       ) : null}
       <Card.Title className="text-lg">{title}</Card.Title>
-      <Card.Description className="text-(--ink-muted) leading-relaxed">
-        {description}
-      </Card.Description>
+      <Card.Description className="text-muted leading-relaxed">{description}</Card.Description>
     </Card.Header>
   );
   return (
@@ -157,17 +156,12 @@ function BuscarPage() {
 
   return (
     <PageShell>
-      <section className="grid gap-4">
-        <Breadcrumbs>
-          <Breadcrumbs.Item href="/">Inicio</Breadcrumbs.Item>
-          <Breadcrumbs.Item>Buscar</Breadcrumbs.Item>
-        </Breadcrumbs>
-        <div className="grid gap-3">
-          <h1 className="font-semibold text-(--ink) text-3xl sm:text-4xl">Buscar</h1>
-          <p className="max-w-3xl text-(--ink-muted) text-base leading-relaxed">
-            Busca en nuestras páginas, contenidos educativos y noticias.
-          </p>
-        </div>
+      <section className="grid gap-6">
+        <PageHeader
+          crumbs={[{ label: "Inicio", href: "/" }, { label: "Buscar" }]}
+          title="Buscar"
+          lede="Busca en nuestras páginas, contenidos educativos y noticias."
+        />
         <SearchField
           aria-label="Buscar en el sitio"
           className="max-w-xl"
@@ -184,14 +178,14 @@ function BuscarPage() {
       </section>
 
       {!hasQuery ? (
-        <p className="text-(--ink-muted) text-sm">
+        <p className="text-muted text-sm">
           Escribe arriba para buscar en páginas, contenidos educativos y noticias.
         </p>
       ) : (
         <div className="grid gap-12">
           {pageMatches.length > 0 ? (
             <section className="grid gap-4">
-              <h2 className="font-semibold text-(--ink) text-xl">Páginas</h2>
+              <h2 className="font-display text-[1.75rem] text-foreground">Páginas</h2>
               <Separator />
               <div className="grid gap-6 md:grid-cols-2">
                 {pageMatches.map((page) => (
@@ -209,7 +203,7 @@ function BuscarPage() {
 
           {topicMatches.length > 0 ? (
             <section className="grid gap-4">
-              <h2 className="font-semibold text-(--ink) text-xl">Aprende</h2>
+              <h2 className="font-display text-[1.75rem] text-foreground">Aprende</h2>
               <Separator />
               <div className="grid gap-6 md:grid-cols-2">
                 {topicMatches.map((topic) => (
@@ -236,7 +230,7 @@ function BuscarPage() {
 
           {showNewsSection ? (
             <section className="grid gap-4">
-              <h2 className="font-semibold text-(--ink) text-xl">Noticias</h2>
+              <h2 className="font-display text-[1.75rem] text-foreground">Noticias</h2>
               <Separator />
               {isLoading ? (
                 <ContentLoading />
@@ -264,9 +258,7 @@ function BuscarPage() {
                   ))}
                 </div>
               ) : (
-                <p className="text-(--ink-muted) text-sm">
-                  No encontramos noticias para «{q.trim()}».
-                </p>
+                <p className="text-muted text-sm">No encontramos noticias para «{q.trim()}».</p>
               )}
             </section>
           ) : null}
@@ -275,7 +267,7 @@ function BuscarPage() {
             <Card className="rounded-3xl" variant="secondary">
               <Card.Header className="gap-2">
                 <Card.Title className="text-lg">Sin resultados</Card.Title>
-                <Card.Description className="text-(--ink-muted) leading-relaxed">
+                <Card.Description className="text-muted leading-relaxed">
                   No encontramos resultados para «{q.trim()}». Prueba con otras palabras o revisa la
                   ortografía.
                 </Card.Description>

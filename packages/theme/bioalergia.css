@@ -1,24 +1,28 @@
 /* @finanzas/theme — Bioalergia brand palette (shared site + intranet).
  *
- * Defines the HeroUI v3 semantic anchors (the ~15 CSS vars HeroUI
- * components consume directly: --accent, --background, --foreground,
- * --surface*, --muted, --border, --separator, --focus, --link,
- * --default*, --primary, --secondary, --info, status colors).
+ * Values are the HIFI design-system handoff (2026 redesign): final brand hex
+ * mapped onto HeroUI v3 semantic anchors (the ~15 CSS vars HeroUI components
+ * consume: --accent, --background, --foreground, --surface*, --muted, --border,
+ * --separator, --focus, --link, --default*, --primary, --secondary, --info,
+ * status colors).
  *
- * Source colors come from the public site palette:
- *   - bg cream            #f7f3ea  →  oklch(96.5% 0.013 85)
- *   - bg mist             #e9f0f4  →  oklch(95% 0.012 220)
- *   - ink deep            #0f1c26  →  oklch(22% 0.025 240)
- *   - brand amber         hsl(38 90% 55%)  →  oklch(75% 0.16 75)
- *   - brand blue          hsl(210 82% 40%) →  oklch(45% 0.18 245)
+ * Brand model 60-30-10: neutral dominates, blue structures, amber accents.
+ *   - brand blue        #1169C2  (dark mode lightens to #5EA6ED for contrast)
+ *   - brand blue deep   #0D3E70  (anchor bands: founder / closing CTA / footer)
+ *   - brand amber        #F4A91C  (primary CTA, ~10% of surface)
+ *   - amber ink          #0D3E70  (text on amber)
+ *   - doctoralia green   #138063  (status: booking available / confirmed)
  *
- * Light is the default; dark is `data-theme="bioalergia-dark"`.
+ * Editorial-only tokens (--surface-2, --chip, --line, --header-bg, --brand-*,
+ * --eyebrow, --doctoralia-green*) are consumed by apps/site sections; the site
+ * exposes them as Tailwind utilities via `@theme inline` in its index.css.
  *
- * Apps may extend (e.g. intranet defines numbered scales 50..900 in its
- * own index.css for `bg-primary-200` Tailwind utilities). This file is
- * the single source of truth for BRAND anchors — never duplicate them
- * downstream. Override via cascade only when a route-specific tweak
- * is unavoidable.
+ * Themes key on `data-theme="bioalergia"` (light) / `"bioalergia-dark"`. Both
+ * apps map next-themes light/dark → these via the ThemeProvider `value` prop.
+ *
+ * Apps may extend (intranet defines numbered scales 50..900 in its own
+ * index.css). This file is the single source of truth for BRAND anchors —
+ * never duplicate them downstream.
  *
  * Reference: https://heroui.com/docs/react/getting-started/theming
  */
@@ -26,70 +30,75 @@
 [data-theme="bioalergia"] {
   color-scheme: light;
 
-  /* === Brand primitives === */
-  --bioalergia-cream: oklch(96.5% 0.013 85);
-  --bioalergia-mist: oklch(95% 0.012 220);
-  --bioalergia-ink: oklch(22% 0.025 240);
-  --bioalergia-amber: oklch(75% 0.16 75);
-  --bioalergia-amber-strong: oklch(67% 0.18 70);
-  --bioalergia-blue: oklch(45% 0.18 245);
-  --bioalergia-blue-soft: oklch(65% 0.14 240);
+  /* === Brand primitives (handoff) === */
+  --brand-blue: #1169c2;
+  --brand-blue-deep: #0d3e70;
+  --brand-amber: #f4a91c;
+  --brand-amber-ink: #0d3e70;
+  --doctoralia-green: #138063;
+  --doctoralia-green-soft: #e7f5f0;
+
+  /* === Editorial neutrals === */
+  --bg: #f7f5f1;
+  --surface-2: #eaeef3;
+  --chip: #eef4fb;
+  --ink: #1b2a3c;
+  --line: #e7e3d9;
+  --header-bg: rgba(255, 255, 255, 0.92);
+  --eyebrow: var(--brand-blue);
 
   /* === HeroUI v3 semantic anchors === */
-  --background: var(--bioalergia-cream);
-  --foreground: var(--bioalergia-ink);
+  --background: var(--bg);
+  --foreground: var(--ink);
 
-  --surface: oklch(99% 0.005 85);
+  --surface: #ffffff;
   --surface-foreground: var(--foreground);
-  --surface-secondary: oklch(96% 0.012 85);
+  --surface-secondary: var(--surface-2);
   --surface-secondary-foreground: var(--foreground);
-  --surface-tertiary: oklch(93% 0.015 85);
+  --surface-tertiary: var(--chip);
   --surface-tertiary-foreground: var(--foreground);
 
-  --overlay: oklch(99% 0.003 85);
+  --overlay: #ffffff;
   --overlay-foreground: var(--foreground);
 
-  --muted: oklch(45% 0.018 240);
-  --border: oklch(85% 0.012 85);
-  --separator: oklch(90% 0.01 85);
-  --focus: var(--bioalergia-amber-strong);
-  --link: var(--bioalergia-blue);
+  --muted: #5c6776;
+  --border: var(--line);
+  --separator: var(--line);
+  --focus: var(--brand-blue);
+  --link: var(--brand-blue);
 
-  --default: oklch(94% 0.008 85);
+  --default: var(--chip);
   --default-foreground: var(--foreground);
 
-  /* Primary brand action = amber (matches site CTA buttons). */
-  --accent: var(--bioalergia-amber);
-  --accent-foreground: var(--bioalergia-ink);
-  /* Soft-surface foreground (HeroUI button--secondary / soft chips read
-     --color-accent-soft-foreground). HeroUI defaults it to var(--accent) =
-     amber oklch(75%), which on the light --default surface (oklch 94%) is only
-     1.9:1 — fails WCAG 2.2 AA. Darken to a contrast-guaranteed amber: oklch
-     43% over the 94% surface ≈ 5.2:1. Brand --accent (buttons, CTAs) is left
-     untouched; only soft-on-light text changes. */
+  /* Primary brand action = amber; text on amber = deep blue. */
+  --accent: var(--brand-amber);
+  --accent-foreground: var(--brand-amber-ink);
+  /* Soft-surface foreground: HeroUI defaults --accent-soft-foreground to
+     --accent (amber), which on a light soft surface fails WCAG AA. Darken to a
+     contrast-safe amber (~5:1 on light). Brand --accent (CTAs) untouched. */
   --accent-soft-foreground: oklch(43% 0.13 68);
 
-  /* Status palette. Foregrounds = white for AA 4.5:1 over mid-saturated bg. */
-  --success: oklch(48% 0.16 145);
-  --success-foreground: oklch(100% 0 0);
+  /* Status. Doctoralia green = success; foregrounds white for AA. */
+  --success: var(--doctoralia-green);
+  --success-foreground: #ffffff;
   --warning: oklch(58% 0.16 55);
-  --warning-foreground: oklch(100% 0 0);
+  --warning-foreground: #ffffff;
   --danger: oklch(50% 0.2 25);
-  --danger-foreground: oklch(100% 0 0);
+  --danger-foreground: #ffffff;
 
   /* Form fields */
-  --field-background: oklch(99% 0.003 85);
+  --field-background: #ffffff;
   --field-foreground: var(--foreground);
   --field-placeholder: var(--muted);
-  --field-border: var(--border);
+  --field-border: var(--line);
 
   /* v2-style aliases (Tailwind utilities still in intranet refer to these). */
   --primary: var(--accent);
   --primary-foreground: var(--accent-foreground);
-  --secondary: var(--bioalergia-blue);
-  --secondary-foreground: oklch(100% 0 0);
-  --info: var(--bioalergia-blue);
-  --info-foreground: oklch(100% 0 0);
+  --secondary: var(--brand-blue);
+  --secondary-foreground: #ffffff;
+  --info: var(--brand-blue);
+  --info-foreground: #ffffff;
 
   --content1: var(--surface);
   --content1-foreground: var(--surface-foreground);
@@ -97,14 +106,14 @@
   --content2-foreground: var(--surface-secondary-foreground);
   --content3: var(--surface-tertiary);
   --content3-foreground: var(--surface-tertiary-foreground);
-  --content4: oklch(90% 0.013 85);
+  --content4: #e2e8f1;
   --content4-foreground: var(--foreground);
   --divider: var(--separator);
 
   /* Shadows tuned to ink hue for warm cream surfaces. */
-  --surface-shadow: 0 2px 4px 0 rgba(15, 28, 38, 0.04), 0 1px 2px 0 rgba(15, 28, 38, 0.06);
-  --overlay-shadow: 0 4px 16px 0 rgba(15, 28, 38, 0.08), 0 8px 24px 0 rgba(15, 28, 38, 0.09);
-  --field-shadow: 0 1px 2px 0 rgba(15, 28, 38, 0.04);
+  --surface-shadow: 0 2px 4px 0 rgba(27, 42, 60, 0.04), 0 1px 2px 0 rgba(27, 42, 60, 0.06);
+  --overlay-shadow: 0 12px 44px rgba(27, 42, 60, 0.12);
+  --field-shadow: 0 1px 2px 0 rgba(27, 42, 60, 0.04);
 
   --radius: 0.5rem;
 }
@@ -112,60 +121,66 @@
 [data-theme="bioalergia-dark"] {
   color-scheme: dark;
 
-  --bioalergia-cream: oklch(96.5% 0.013 85);
-  --bioalergia-mist: oklch(95% 0.012 220);
-  --bioalergia-ink: oklch(22% 0.025 240);
-  --bioalergia-amber: oklch(78% 0.16 75);
-  --bioalergia-amber-strong: oklch(72% 0.17 72);
-  --bioalergia-blue: oklch(72% 0.12 240);
-  --bioalergia-blue-soft: oklch(80% 0.08 240);
+  --brand-blue: #5ea6ed;
+  --brand-blue-deep: #0d3e70;
+  --brand-amber: #f4a91c;
+  --brand-amber-ink: #0d3e70;
+  --doctoralia-green: #2f9e6f;
+  --doctoralia-green-soft: #16302a;
 
-  --background: oklch(15% 0.025 240);
-  --foreground: var(--bioalergia-cream);
+  --bg: #0f1621;
+  --surface-2: #141c27;
+  --chip: #1e2937;
+  --ink: #e9eff6;
+  --line: #2a3542;
+  --header-bg: rgba(16, 23, 33, 0.92);
+  --eyebrow: var(--brand-blue);
 
-  --surface: oklch(20% 0.025 240);
+  --background: var(--bg);
+  --foreground: var(--ink);
+
+  --surface: #18212d;
   --surface-foreground: var(--foreground);
-  --surface-secondary: oklch(24% 0.022 240);
+  --surface-secondary: var(--surface-2);
   --surface-secondary-foreground: var(--foreground);
-  --surface-tertiary: oklch(28% 0.02 240);
+  --surface-tertiary: var(--chip);
   --surface-tertiary-foreground: var(--foreground);
-  --overlay: oklch(22% 0.025 240);
+
+  --overlay: #18212d;
   --overlay-foreground: var(--foreground);
 
-  --muted: oklch(70% 0.015 85);
-  --border: oklch(35% 0.018 240);
-  --separator: oklch(32% 0.018 240);
-  --focus: var(--bioalergia-amber);
-  --link: var(--bioalergia-blue);
+  --muted: #9aa9ba;
+  --border: var(--line);
+  --separator: var(--line);
+  --focus: var(--brand-blue);
+  --link: var(--brand-blue);
 
-  --default: oklch(30% 0.02 240);
+  --default: var(--chip);
   --default-foreground: var(--foreground);
 
-  --accent: var(--bioalergia-amber);
-  --accent-foreground: oklch(18% 0.025 240);
-  /* Dark surface is dark, so soft-foreground stays the bright brand amber
-     (oklch 78%) — ~5.2:1 over the dark --default. Explicit so it never
-     inherits the darkened light-mode value. */
-  --accent-soft-foreground: var(--accent);
+  --accent: var(--brand-amber);
+  --accent-foreground: var(--brand-amber-ink);
+  /* Dark soft surfaces are dark → bright brand amber keeps ~5:1. */
+  --accent-soft-foreground: var(--brand-amber);
 
-  --success: oklch(70% 0.16 145);
-  --success-foreground: oklch(15% 0.02 145);
+  --success: var(--doctoralia-green);
+  --success-foreground: #0a1f17;
   --warning: oklch(82% 0.14 70);
-  --warning-foreground: oklch(20% 0.02 70);
+  --warning-foreground: #1a1206;
   --danger: oklch(65% 0.2 25);
-  --danger-foreground: oklch(98% 0 0);
+  --danger-foreground: #ffffff;
 
-  --field-background: oklch(22% 0.025 240);
+  --field-background: #18212d;
   --field-foreground: var(--foreground);
   --field-placeholder: var(--muted);
-  --field-border: var(--border);
+  --field-border: var(--line);
 
   --primary: var(--accent);
   --primary-foreground: var(--accent-foreground);
-  --secondary: var(--bioalergia-blue);
-  --secondary-foreground: oklch(15% 0.025 240);
-  --info: var(--bioalergia-blue);
-  --info-foreground: oklch(15% 0.025 240);
+  --secondary: var(--brand-blue);
+  --secondary-foreground: #0f1621;
+  --info: var(--brand-blue);
+  --info-foreground: #0f1621;
 
   --content1: var(--surface);
   --content1-foreground: var(--surface-foreground);
@@ -173,7 +188,7 @@
   --content2-foreground: var(--surface-secondary-foreground);
   --content3: var(--surface-tertiary);
   --content3-foreground: var(--surface-tertiary-foreground);
-  --content4: oklch(32% 0.02 240);
+  --content4: #243140;
   --content4-foreground: var(--foreground);
   --divider: var(--separator);
 

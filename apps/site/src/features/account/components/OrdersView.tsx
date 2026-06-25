@@ -17,17 +17,17 @@ export type OrdersViewProps = {
 
 export function OrdersView({ orders, isLoading }: OrdersViewProps) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <header>
-        <h1 className="font-bold text-2xl">Mis pedidos</h1>
+        <h1 className="font-display text-[2rem] leading-[1.05] text-foreground">Mis pedidos</h1>
       </header>
       {isLoading && <Skeleton className="h-32 w-full" />}
       {orders?.length === 0 && (
-        <Card>
+        <Card className="rounded-2xl border-line bg-surface">
           <Card.Content>
-            <p className="text-default-500 text-sm">
+            <p className="text-muted text-sm">
               Aún no tienes pedidos.{" "}
-              <Link className="underline" to="/tienda">
+              <Link className="font-semibold text-brand-blue hover:underline" to="/tienda">
                 Ir a la tienda
               </Link>
               .
@@ -35,7 +35,7 @@ export function OrdersView({ orders, isLoading }: OrdersViewProps) {
           </Card.Content>
         </Card>
       )}
-      <div className="space-y-2">
+      <div className="space-y-3">
         {orders?.map((order) => (
           <Link
             key={order.id}
@@ -43,18 +43,20 @@ export function OrdersView({ orders, isLoading }: OrdersViewProps) {
             params={{ number: order.number }}
             className="block"
           >
-            <Card>
+            <Card className="rounded-2xl border-line bg-surface transition hover:border-brand-amber">
               <Card.Content className="flex items-center justify-between p-4">
                 <div>
-                  <p className="font-semibold">{order.number}</p>
-                  <p className="text-default-500 text-xs">
+                  <p className="font-display text-lg text-foreground">{order.number}</p>
+                  <p className="text-muted text-xs">
                     {formatOrderDateTime(order.created_at)} · {formatItemCount(order.item_count)} ·{" "}
                     {order.channel}
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="font-semibold">{CLP_FORMATTER.format(order.total_clp)}</p>
-                  <p className="text-default-500 text-xs">{order.status}</p>
+                  <p className="font-semibold text-foreground">
+                    {CLP_FORMATTER.format(order.total_clp)}
+                  </p>
+                  <p className="text-muted text-xs">{order.status}</p>
                 </div>
               </Card.Content>
             </Card>

@@ -4,7 +4,6 @@ import type {
 } from "@finanzas/orpc-contracts/reactivos";
 import {
   Alert,
-  Breadcrumbs,
   Button,
   Card,
   Checkbox,
@@ -33,6 +32,9 @@ import { type FormEvent, useMemo, useState } from "react";
 import { ContentError, ContentLoading } from "@/components/ContentState";
 import { JsonLd } from "@/components/JsonLd";
 import { PageShell } from "@/components/PageShell";
+import { ctaClass } from "@/components/ui/cta";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Photo } from "@/components/ui/Photo";
 import {
   reactivosBrands,
   reactivosServices,
@@ -49,8 +51,8 @@ const LEAD_FORM_ID = "quiero-reactivos";
 function Bullet({ children }: { children: string }) {
   return (
     <div className="flex items-start gap-3 text-sm leading-relaxed">
-      <span className="mt-2 rounded-full bg-(--accent) size-2" />
-      <span className="text-(--ink-muted)">{children}</span>
+      <span className="mt-2 size-2 rounded-full bg-brand-amber" />
+      <span className="text-muted">{children}</span>
     </div>
   );
 }
@@ -88,36 +90,36 @@ function VitrinaCard({ item }: { item: ReactivoVitrinaItemDto }) {
           ) : null}
         </div>
         {item.description ? (
-          <Card.Description className="text-(--ink-muted) leading-relaxed">
+          <Card.Description className="text-muted leading-relaxed">
             {item.description}
           </Card.Description>
         ) : null}
       </Card.Header>
       <Card.Content className="grid gap-3 pb-6">
         {item.format ? (
-          <div className="text-(--ink-muted) text-sm">
-            <span className="font-semibold text-(--ink)">Formato:</span> {item.format}
+          <div className="text-muted text-sm">
+            <span className="font-semibold text-foreground">Formato:</span> {item.format}
           </div>
         ) : null}
         {item.allergen ? (
-          <div className="grid gap-1 rounded-2xl bg-(--surface-2) p-4 text-sm leading-relaxed">
-            <span className="font-semibold text-(--ink)">Alérgeno</span>
-            <span className="text-(--ink-muted)">
+          <div className="grid gap-1 rounded-2xl bg-surface-2 p-4 text-sm leading-relaxed">
+            <span className="font-semibold text-foreground">Alérgeno</span>
+            <span className="text-muted">
               {item.allergen.commonName}
               {item.allergen.scientificName ? (
-                <em className="text-(--ink-muted)"> · {item.allergen.scientificName}</em>
+                <em className="text-muted"> · {item.allergen.scientificName}</em>
               ) : null}
             </span>
           </div>
         ) : null}
         {item.documents.length > 0 ? (
-          <div className="grid gap-2 rounded-2xl bg-(--surface-2) p-4 text-sm leading-relaxed">
-            <span className="font-semibold text-(--ink)">Fichas técnicas</span>
+          <div className="grid gap-2 rounded-2xl bg-surface-2 p-4 text-sm leading-relaxed">
+            <span className="font-semibold text-foreground">Fichas técnicas</span>
             <ul className="grid gap-1">
               {item.documents.map((doc) => (
                 <li key={doc.id}>
                   <Link
-                    className="text-(--accent) text-sm"
+                    className="text-brand-blue text-sm"
                     href={doc.url}
                     rel="noopener noreferrer"
                     target="_blank"
@@ -148,7 +150,7 @@ function SupplierSection() {
         <Card className="rounded-3xl" variant="default">
           <Card.Header className="gap-2">
             <Card.Title className="text-lg">Trayectoria y calidad</Card.Title>
-            <Card.Description className="text-(--ink-muted) leading-relaxed">
+            <Card.Description className="text-muted leading-relaxed">
               +{s.yearsTrajectory} años en diagnóstico, dispositivos médicos y reactivos.
             </Card.Description>
           </Card.Header>
@@ -198,7 +200,7 @@ function ServicesAndTrainingSection() {
           <Card className="rounded-3xl" key={service.slug} variant="default">
             <Card.Header className="gap-2">
               <Card.Title className="text-lg">{service.name}</Card.Title>
-              <Card.Description className="text-(--ink-muted) leading-relaxed">
+              <Card.Description className="text-muted leading-relaxed">
                 {service.description}
               </Card.Description>
             </Card.Header>
@@ -213,7 +215,7 @@ function ServicesAndTrainingSection() {
       <Card className="rounded-3xl" variant="secondary">
         <Card.Header className="gap-2">
           <Card.Title className="text-lg">Capacitaciones disponibles</Card.Title>
-          <Card.Description className="text-(--ink-muted) leading-relaxed">
+          <Card.Description className="text-muted leading-relaxed">
             Formación para equipos clínicos y de laboratorio.
           </Card.Description>
         </Card.Header>
@@ -279,7 +281,7 @@ function LeadForm({ vitrinaItems }: { vitrinaItems: ReactivoVitrinaItemDto[] }) 
       <Card className="rounded-3xl" variant="secondary">
         <Card.Header className="gap-2">
           <Card.Title className="text-lg">¡Gracias! Te contactaremos</Card.Title>
-          <Card.Description className="text-(--ink-muted) leading-relaxed">
+          <Card.Description className="text-muted leading-relaxed">
             Recibimos tu solicitud de reactivos. Nuestro equipo comercial se pondrá en contacto
             contigo a la brevedad para enviarte la cotización y resolver tus dudas.
           </Card.Description>
@@ -292,7 +294,7 @@ function LeadForm({ vitrinaItems }: { vitrinaItems: ReactivoVitrinaItemDto[] }) 
     <Card className="rounded-3xl" variant="default">
       <Card.Header className="gap-2">
         <Card.Title className="text-xl">Quiero cotizar</Card.Title>
-        <Card.Description className="text-(--ink-muted) leading-relaxed">
+        <Card.Description className="text-muted leading-relaxed">
           Cuéntanos sobre tu empresa o clínica y qué reactivos te interesan. Te enviaremos una
           cotización personalizada sin compromiso.
         </Card.Description>
@@ -323,7 +325,7 @@ function LeadForm({ vitrinaItems }: { vitrinaItems: ReactivoVitrinaItemDto[] }) 
           {vitrinaItems.length > 0 ? (
             <div className="grid gap-2">
               <Label>Reactivos de interés (opcional)</Label>
-              <div className="grid max-h-60 gap-2 overflow-y-auto rounded-2xl bg-(--surface-2) p-4">
+              <div className="grid max-h-60 gap-2 overflow-y-auto rounded-2xl bg-surface-2 p-4">
                 {vitrinaItems.map((item) => (
                   <Checkbox
                     isSelected={selected.has(item.name)}
@@ -399,36 +401,39 @@ function VentaEmpresasPage() {
           { name: "Venta a empresas", path: "/venta-empresas" },
         ])}
       />
-      <section className="grid gap-4">
-        <Breadcrumbs>
-          <Breadcrumbs.Item href="/">Inicio</Breadcrumbs.Item>
-          <Breadcrumbs.Item>Venta a empresas</Breadcrumbs.Item>
-        </Breadcrumbs>
-        <div className="grid gap-3">
-          <div className="text-(--ink-muted) text-xs uppercase tracking-[0.2em]">Venta B2B</div>
-          <h1 className="font-semibold text-(--ink) text-3xl sm:text-4xl">
-            Reactivos y diagnóstico para clínicas, laboratorios y empresas
-          </h1>
-          <p className="max-w-3xl text-(--ink-muted) text-base leading-relaxed sm:text-lg">
-            En alianza con <span className="font-semibold text-(--ink)">Inmunodiagnóstico</span>{" "}
+      <PageHeader
+        crumbs={[{ label: "Inicio", href: "/" }, { label: "Venta a empresas" }]}
+        eyebrow="Venta B2B"
+        title="Reactivos y diagnóstico para clínicas, laboratorios y empresas"
+        lede={
+          <>
+            En alianza con <span className="font-semibold text-foreground">Inmunodiagnóstico</span>{" "}
             (ISO 9001:2015, +25 años de trayectoria) distribuimos extractos alergénicos, tests
             rápidos, reactivos químicos, hematología y estándares de toxicología. Revisa el catálogo
             y solicita una cotización a la medida de tu institución.
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {reactivosBrands.map((brand) => (
-              <Chip key={brand} size="sm" variant="secondary">
-                {brand}
-              </Chip>
-            ))}
-          </div>
-          <div>
-            <Button onPress={() => scrollToForm()} variant="primary">
-              Quiero cotizar
-            </Button>
-          </div>
-        </div>
-      </section>
+          </>
+        }
+        actions={
+          <Button className={ctaClass("primary")} onPress={() => scrollToForm()}>
+            Quiero cotizar
+          </Button>
+        }
+      />
+
+      <div className="flex flex-wrap gap-2">
+        {reactivosBrands.map((brand) => (
+          <Chip key={brand} size="sm" variant="secondary">
+            {brand}
+          </Chip>
+        ))}
+      </div>
+
+      <Photo
+        className="aspect-[16/7] w-full rounded-3xl"
+        eager
+        name="patchWide"
+        sizes="(min-width: 1024px) 960px, 100vw"
+      />
 
       <SupplierSection />
       <ServicesAndTrainingSection />
@@ -446,7 +451,7 @@ function VentaEmpresasPage() {
           <Card className="rounded-3xl" variant="secondary">
             <Card.Header className="gap-2">
               <Card.Title className="text-lg">Catálogo en preparación</Card.Title>
-              <Card.Description className="text-(--ink-muted) leading-relaxed">
+              <Card.Description className="text-muted leading-relaxed">
                 Estamos actualizando nuestro catálogo de reactivos. Déjanos tu solicitud y te
                 enviaremos la información disponible.
               </Card.Description>
@@ -458,8 +463,8 @@ function VentaEmpresasPage() {
               <section className="grid gap-6" key={category}>
                 <div className="grid gap-3">
                   <div className="flex items-center gap-3">
-                    <span className="rounded-full bg-(--accent) size-2.5" />
-                    <h3 className="font-semibold text-(--ink) text-xl">{category}</h3>
+                    <span className="size-2.5 rounded-full bg-brand-amber" />
+                    <h3 className="font-display text-[1.5rem] text-foreground">{category}</h3>
                     <Chip size="sm" variant="soft">
                       {groupItemsList.length}
                     </Chip>

@@ -1,9 +1,10 @@
-import { Breadcrumbs, Card, Chip } from "@heroui/react";
+import { Card, Chip } from "@heroui/react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { BookingCta } from "@/components/BookingCta";
 import { JsonLd } from "@/components/JsonLd";
 import { PageShell } from "@/components/PageShell";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { type EducationCategory, educationTopics } from "@/data/education";
 import { groupTopicsByCategory } from "@/lib/education-grouping";
 import { breadcrumbJsonLd } from "@/lib/seo";
@@ -31,27 +32,18 @@ function AprendeIndexPage() {
           { name: "Aprende", path: "/aprende" },
         ])}
       />
-      <section className="grid gap-4">
-        <Breadcrumbs>
-          <Breadcrumbs.Item href="/">Inicio</Breadcrumbs.Item>
-          <Breadcrumbs.Item>Aprende</Breadcrumbs.Item>
-        </Breadcrumbs>
-        <div className="grid gap-3">
-          <div className="text-(--ink-muted) text-xs uppercase tracking-[0.2em]">Educación</div>
-          <h1 className="font-semibold text-(--ink) text-3xl sm:text-4xl">
-            Aprende sobre alergias
-          </h1>
-          <p className="max-w-3xl text-(--ink-muted) text-base leading-relaxed sm:text-lg">
-            Guías breves y claras para entender las condiciones alérgicas más frecuentes: qué son,
-            cómo se manifiestan y cuándo consultar. Esta información es educativa y general; el
-            diagnóstico y el tratamiento se definen siempre en la consulta médica.
-          </p>
-        </div>
-      </section>
+      <PageHeader
+        crumbs={[{ label: "Inicio", href: "/" }, { label: "Aprende" }]}
+        eyebrow="Educación"
+        lede="Guías breves y claras para entender las condiciones alérgicas más frecuentes: qué son, cómo se manifiestan y cuándo consultar. Esta información es educativa y general; el diagnóstico y el tratamiento se definen siempre en la consulta médica."
+        title="Aprende sobre alergias"
+      />
 
       {groupedTopics.map((group) => (
-        <section className="grid gap-4" key={group.category}>
-          <h2 className="font-semibold text-(--ink) text-xl">{group.category}</h2>
+        <section className="grid gap-5" key={group.category}>
+          <h2 className="font-display text-[1.75rem] text-foreground leading-[1.1] sm:text-[2rem]">
+            {group.category}
+          </h2>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {group.topics.map((topic) => (
               <Link
@@ -61,20 +53,22 @@ function AprendeIndexPage() {
                 to="/aprende/$slug"
               >
                 <Card
-                  className="h-full rounded-3xl transition-shadow hover:shadow-md"
+                  className="h-full rounded-2xl border border-line bg-surface transition hover:border-brand-amber hover:shadow-md"
                   variant="default"
                 >
                   <Card.Header className="gap-3">
                     <Chip size="sm" variant="secondary">
                       {topic.category}
                     </Chip>
-                    <Card.Title className="text-lg">{topic.title}</Card.Title>
-                    <Card.Description className="text-(--ink-muted) leading-relaxed">
+                    <Card.Title className="font-display text-[1.35rem] text-foreground leading-[1.15]">
+                      {topic.title}
+                    </Card.Title>
+                    <Card.Description className="text-muted leading-relaxed">
                       {topic.summary}
                     </Card.Description>
                   </Card.Header>
                   <Card.Content className="pb-6">
-                    <span className="text-(--ink-muted) text-xs">
+                    <span className="text-muted text-xs">
                       {topic.readingMinutes} min de lectura
                     </span>
                   </Card.Content>

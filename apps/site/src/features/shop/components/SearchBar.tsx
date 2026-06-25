@@ -50,11 +50,11 @@ export function SearchBar({ className = "" }: { className?: string }) {
       </SearchField>
 
       {showPopover && (
-        <div className="absolute top-full right-0 left-0 z-50 mt-1 max-h-80 overflow-y-auto rounded-xl border border-foreground/10 bg-surface shadow-lg">
+        <div className="absolute top-full right-0 left-0 z-50 mt-1 max-h-80 overflow-y-auto rounded-xl border border-line bg-surface shadow-lg">
           {isFetching && results.length === 0 ? (
-            <p className="px-3 py-2 text-foreground/60 text-sm">Buscando…</p>
+            <p className="px-3 py-2 text-muted text-sm">Buscando…</p>
           ) : results.length === 0 ? (
-            <p className="px-3 py-2 text-foreground/60 text-sm">Sin resultados</p>
+            <p className="px-3 py-2 text-muted text-sm">Sin resultados</p>
           ) : (
             <ul>
               {results.map((p) => {
@@ -62,7 +62,7 @@ export function SearchBar({ className = "" }: { className?: string }) {
                 return (
                   <li key={p.id}>
                     <button
-                      className="flex w-full items-center gap-3 px-3 py-2 text-left transition hover:bg-foreground/5"
+                      className="flex w-full items-center gap-3 px-3 py-2 text-left transition hover:bg-surface-2"
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => {
                         setQ("");
@@ -79,12 +79,14 @@ export function SearchBar({ className = "" }: { className?: string }) {
                         />
                       )}
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate font-medium text-sm">{p.name}</span>
-                        <span className="block text-foreground/60 text-xs">
+                        <span className="block truncate font-medium text-foreground text-sm">
+                          {p.name}
+                        </span>
+                        <span className="block text-muted text-xs">
                           {p.brand ?? "—"} · SKU {p.sku}
                         </span>
                       </span>
-                      <span className="flex-shrink-0 font-bold text-sm">
+                      <span className="flex-shrink-0 font-bold text-foreground text-sm">
                         {CLP_FORMATTER.format(p.price_clp)}
                       </span>
                     </button>

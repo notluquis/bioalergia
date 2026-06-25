@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 
+import { ctaClass } from "@/components/ui/cta";
 import { accountKeys } from "@/features/account/queries";
 import { accountClient } from "@/lib/orpc-client";
 
@@ -68,26 +69,26 @@ function MiCuentaAddresses() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <header>
-        <h1 className="font-bold text-2xl">Mis direcciones</h1>
+        <h1 className="font-display text-[2rem] leading-[1.05] text-foreground">Mis direcciones</h1>
       </header>
 
       {addresses.isLoading && <Skeleton className="h-24 w-full" />}
-      <div className="space-y-2">
+      <div className="space-y-3">
         {addresses.data?.data.map((addr) => (
-          <Card key={addr.id}>
+          <Card className="rounded-2xl border-line bg-surface" key={addr.id}>
             <Card.Content className="flex items-start justify-between p-4">
               <div className="space-y-1">
-                <p className="font-semibold text-sm">
+                <p className="font-semibold text-foreground text-sm">
                   {addr.label}{" "}
-                  {addr.is_primary && <span className="text-primary-700">(Principal)</span>}
+                  {addr.is_primary && <span className="text-brand-blue">(Principal)</span>}
                 </p>
-                <p className="text-default-500 text-sm">
+                <p className="text-muted text-sm">
                   {addr.street} {addr.number}
                   {addr.supplement && `, ${addr.supplement}`}
                 </p>
-                <p className="text-default-500 text-xs">
+                <p className="text-muted text-xs">
                   {addr.comuna}, {addr.region}
                 </p>
               </div>
@@ -128,15 +129,17 @@ function MiCuentaAddresses() {
       </div>
 
       {!editing && (
-        <Button onPress={() => setEditing(true)} variant="secondary">
+        <Button className={ctaClass("primary")} onPress={() => setEditing(true)}>
           Agregar dirección
         </Button>
       )}
 
       {editing && (
-        <Card>
+        <Card className="rounded-2xl border-line bg-surface">
           <Card.Header>
-            <Card.Title>{form.id ? "Editar dirección" : "Nueva dirección"}</Card.Title>
+            <Card.Title className="font-display text-xl text-foreground">
+              {form.id ? "Editar dirección" : "Nueva dirección"}
+            </Card.Title>
           </Card.Header>
           <Card.Content className="grid gap-3 sm:grid-cols-2">
             <TextField onChange={(v) => set("label", v)} value={form.label}>
@@ -188,11 +191,11 @@ function MiCuentaAddresses() {
                 </Alert.Content>
               </Alert>
             )}
-            <div className="col-span-full flex gap-2">
+            <div className="col-span-full flex gap-3">
               <Button
+                className={ctaClass("primary")}
                 isDisabled={upsert.isPending}
                 onPress={() => upsert.mutate()}
-                variant="primary"
               >
                 Guardar
               </Button>

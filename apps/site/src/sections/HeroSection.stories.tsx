@@ -11,6 +11,7 @@ const meta: Meta<typeof HeroSection> = {
   },
   args: {
     onBook: () => {},
+    onWhatsApp: () => {},
   },
 };
 

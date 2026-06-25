@@ -1,7 +1,6 @@
 import type { CreateOccupationalLeadInput } from "@finanzas/orpc-contracts/occupational";
 import {
   Alert,
-  Breadcrumbs,
   Button,
   Card,
   Chip,
@@ -20,6 +19,8 @@ import { type FormEvent, useState } from "react";
 
 import { JsonLd } from "@/components/JsonLd";
 import { PageShell } from "@/components/PageShell";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Photo } from "@/components/ui/Photo";
 import { occupationalClient } from "@/lib/orpc-client";
 import { breadcrumbJsonLd } from "@/lib/seo";
 import { Section } from "@/sections/Section";
@@ -331,45 +332,45 @@ function SaludOcupacionalPage() {
           { name: "Salud ocupacional", path: "/salud-ocupacional" },
         ])}
       />
-      <section className="grid gap-4">
-        <Breadcrumbs>
-          <Breadcrumbs.Item href="/">Inicio</Breadcrumbs.Item>
-          <Breadcrumbs.Item>Salud ocupacional</Breadcrumbs.Item>
-        </Breadcrumbs>
-        <div className="grid gap-3">
-          <div className="text-(--ink-muted) text-xs uppercase tracking-[0.2em]">
-            Salud ocupacional B2B
-          </div>
-          <h1 className="font-semibold text-(--ink) text-3xl sm:text-4xl">
-            Salud ocupacional para empresas
-          </h1>
-          <p className="max-w-3xl text-(--ink-muted) text-base leading-relaxed sm:text-lg">
+      <PageHeader
+        actions={
+          <Button onPress={() => scrollToForm()} variant="primary">
+            Solicitar información
+          </Button>
+        }
+        crumbs={[{ label: "Inicio", href: "/" }, { label: "Salud ocupacional" }]}
+        eyebrow="Salud ocupacional B2B"
+        lede={
+          <>
             Testeo de drogas y alcohol y reactivos para tu programa preventivo. El{" "}
-            <span className="font-semibold text-(--ink)">DS 44/2024</span> exige una política
+            <span className="font-semibold text-foreground">DS 44/2024</span> exige una política
             preventiva en todo lugar de trabajo: te ayudamos a implementarla con respaldo analítico
             y resguardo de los datos de tus trabajadores.
-          </p>
-          <div className="flex flex-wrap gap-2">
-            <Chip size="sm" variant="secondary">
-              Confirmación GC-MS
-            </Chip>
-            <Chip size="sm" variant="secondary">
-              Cadena de custodia
-            </Chip>
-            <Chip size="sm" variant="secondary">
-              Ley 21.719
-            </Chip>
-            <Chip size="sm" variant="secondary">
-              Reactivos incluidos
-            </Chip>
-          </div>
-          <div>
-            <Button onPress={() => scrollToForm()} variant="primary">
-              Solicitar información
-            </Button>
-          </div>
-        </div>
-      </section>
+          </>
+        }
+        title="Salud ocupacional para empresas"
+      />
+      <div className="flex flex-wrap gap-2">
+        <Chip size="sm" variant="secondary">
+          Confirmación GC-MS
+        </Chip>
+        <Chip size="sm" variant="secondary">
+          Cadena de custodia
+        </Chip>
+        <Chip size="sm" variant="secondary">
+          Ley 21.719
+        </Chip>
+        <Chip size="sm" variant="secondary">
+          Reactivos incluidos
+        </Chip>
+      </div>
+
+      <Photo
+        className="h-[clamp(14rem,32vw,22rem)]"
+        name="patchWide"
+        rounded="rounded-3xl"
+        sizes="(min-width: 1024px) 1100px, 100vw"
+      />
 
       <ComplianceSection />
       <SectorSection />
