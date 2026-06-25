@@ -54,7 +54,11 @@
     "seed:synthetic": "node scripts/seed-synthetic.ts",
     "seed:medications": "node --env-file=.env scripts/seed-medications.ts",
     "migrate:dev": "zen migrate dev",
-    "migrate:deploy": "zen migrate deploy",
+    "migrate:guard": "node scripts/migrate-guard.ts",
+    "migrate:deploy": "node scripts/migrate-guard.ts && zen migrate deploy",
+    "migrate:deploy:raw": "zen migrate deploy",
+    "migrate:drift-check": "bash scripts/migrate-drift-check.sh",
+    "manual-sql:apply": "bash scripts/apply-manual-sql.sh",
     "clean": "rm -rf dist",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix && oxfmt --write ."
