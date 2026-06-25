@@ -1,9 +1,10 @@
-import { Breadcrumbs, Card } from "@heroui/react";
+import { Card } from "@heroui/react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { BookingCta } from "@/components/BookingCta";
 import { JsonLd } from "@/components/JsonLd";
 import { PageShell } from "@/components/PageShell";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { conditions } from "@/data/conditions";
 import { breadcrumbJsonLd } from "@/lib/seo";
 
@@ -16,44 +17,37 @@ function CondicionesIndexPage() {
           { name: "Condiciones", path: "/condiciones" },
         ])}
       />
-      <section className="grid gap-4">
-        <Breadcrumbs>
-          <Breadcrumbs.Item href="/">Inicio</Breadcrumbs.Item>
-          <Breadcrumbs.Item>Condiciones</Breadcrumbs.Item>
-        </Breadcrumbs>
-        <div className="grid gap-3">
-          <div className="text-(--ink-muted) text-xs uppercase tracking-[0.2em]">Condiciones</div>
-          <h1 className="font-semibold text-(--ink) text-3xl sm:text-4xl">
-            Alergias e inmunología: guías por condición
-          </h1>
-          <p className="max-w-3xl text-(--ink-muted) text-base leading-relaxed sm:text-lg">
-            Información clara y referencial sobre las condiciones alérgicas más frecuentes: qué son,
-            cómo se diagnostican y cómo se tratan en Concepción. Cada guía incluye una
-            autoevaluación rápida.
-          </p>
-        </div>
-      </section>
+      <PageHeader
+        crumbs={[{ label: "Inicio", href: "/" }, { label: "Condiciones" }]}
+        eyebrow="Condiciones"
+        lede="Información clara y referencial sobre las condiciones alérgicas más frecuentes: qué son, cómo se diagnostican y cómo se tratan en Concepción. Cada guía incluye una autoevaluación rápida."
+        title="Alergias e inmunología: guías por condición"
+      />
 
       <section className="grid gap-6 md:grid-cols-2">
         {conditions.map((condition) => (
-          <Card className="rounded-3xl" key={condition.slug} variant="default">
+          <Card
+            className="rounded-2xl border border-line bg-surface transition hover:border-brand-amber"
+            key={condition.slug}
+            variant="default"
+          >
             <Card.Header className="gap-2">
-              <Card.Title className="text-xl">
+              <Card.Title className="font-display text-[1.5rem] leading-[1.15]">
                 <Link
-                  className="text-(--ink) no-underline hover:underline"
+                  className="text-foreground no-underline hover:text-brand-blue"
                   params={{ slug: condition.slug }}
                   to="/condiciones/$slug"
                 >
                   {condition.title}
                 </Link>
               </Card.Title>
-              <Card.Description className="text-(--ink-muted) leading-relaxed">
+              <Card.Description className="text-muted leading-relaxed">
                 {condition.heroIntro}
               </Card.Description>
             </Card.Header>
             <Card.Content className="pb-6">
               <Link
-                className="font-semibold text-(--ink) text-sm no-underline hover:underline"
+                className="font-semibold text-brand-blue text-sm no-underline hover:underline underline-offset-4"
                 params={{ slug: condition.slug }}
                 to="/condiciones/$slug"
               >

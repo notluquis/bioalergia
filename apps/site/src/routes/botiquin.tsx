@@ -1,9 +1,10 @@
-import { Breadcrumbs, Card, Chip, Link, Separator } from "@heroui/react";
+import { Card, Chip, Link, Separator } from "@heroui/react";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { BookingCta } from "@/components/BookingCta";
 import { JsonLd } from "@/components/JsonLd";
 import { PageShell } from "@/components/PageShell";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { botiquinContent } from "@/data/botiquin";
 import { breadcrumbJsonLd } from "@/lib/seo";
 
@@ -16,28 +17,23 @@ function BotiquinPage() {
           { name: "Botiquín", path: "/botiquin" },
         ])}
       />
-      <section className="grid gap-4">
-        <Breadcrumbs>
-          <Breadcrumbs.Item href="/">Inicio</Breadcrumbs.Item>
-          <Breadcrumbs.Item>Botiquín</Breadcrumbs.Item>
-        </Breadcrumbs>
-        <div className="grid gap-3">
-          <div className="text-(--ink-muted) text-xs uppercase tracking-[0.2em]">Guía práctica</div>
-          <h1 className="font-semibold text-(--ink) text-3xl sm:text-4xl">Botiquín del alérgico</h1>
-          <p className="max-w-3xl text-(--ink-muted) text-base leading-relaxed sm:text-lg">
-            {botiquinContent.intro}
-          </p>
-        </div>
-      </section>
+      <PageHeader
+        crumbs={[{ label: "Inicio", href: "/" }, { label: "Botiquín" }]}
+        eyebrow="Guía práctica"
+        lede={botiquinContent.intro}
+        title="Botiquín del alérgico"
+      />
 
       {botiquinContent.groups.map((group) => (
         <section className="grid gap-6" key={group.category}>
           <div className="grid gap-3">
             <div className="flex items-center gap-3">
-              <span className="rounded-full bg-(--accent) size-2.5" />
-              <h2 className="font-semibold text-(--ink) text-2xl">{group.category}</h2>
+              <span className="rounded-full bg-brand-amber size-2.5" />
+              <h2 className="font-display text-[1.75rem] text-foreground sm:text-[2rem]">
+                {group.category}
+              </h2>
             </div>
-            <p className="max-w-3xl text-(--ink-muted) text-sm leading-relaxed sm:text-base">
+            <p className="max-w-3xl text-muted text-sm leading-relaxed sm:text-base">
               {group.intro}
             </p>
             <Separator />
@@ -59,9 +55,9 @@ function BotiquinPage() {
                 </Card.Header>
                 <Card.Content className="grid gap-4 pb-6">
                   {item.note ? (
-                    <div className="grid gap-1 rounded-2xl bg-(--surface-2) p-4 text-sm leading-relaxed">
-                      <span className="font-semibold text-(--ink)">Importante</span>
-                      <span className="text-(--ink-muted)">{item.note}</span>
+                    <div className="grid gap-1 rounded-2xl bg-surface-2 p-4 text-sm leading-relaxed">
+                      <span className="font-semibold text-foreground">Importante</span>
+                      <span className="text-muted">{item.note}</span>
                     </div>
                   ) : null}
                   {item.shopHref ? (

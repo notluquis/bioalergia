@@ -39,7 +39,9 @@ export function PageHeader({
         <h1 className="font-display text-[2.5rem] leading-[1.04] text-foreground sm:text-[3.25rem]">
           {title}
         </h1>
-        {lede ? <p className="max-w-3xl text-[1.0625rem] leading-[1.6] text-muted">{lede}</p> : null}
+        {lede ? (
+          <p className="max-w-3xl text-[1.0625rem] leading-[1.6] text-muted">{lede}</p>
+        ) : null}
         {actions ? <div className="mt-2 flex flex-wrap items-center gap-3">{actions}</div> : null}
       </div>
     </header>

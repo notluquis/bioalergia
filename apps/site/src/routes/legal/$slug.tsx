@@ -1,4 +1,4 @@
-import { Breadcrumbs, Card } from "@heroui/react";
+import { Breadcrumbs } from "@heroui/react";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 
 import { LEGAL } from "@/features/shop/legal-content";
@@ -11,24 +11,30 @@ function LegalPage() {
   if (!entry) throw notFound();
 
   return (
-    <main className="mx-auto max-w-3xl space-y-6 px-4 py-8 sm:px-6">
+    <main className="mx-auto max-w-[760px] space-y-8 px-4 py-12 sm:px-6 sm:py-16">
       <Breadcrumbs>
         <Breadcrumbs.Item href="/">Inicio</Breadcrumbs.Item>
         <Breadcrumbs.Item>Legal</Breadcrumbs.Item>
         <Breadcrumbs.Item>{entry.title}</Breadcrumbs.Item>
       </Breadcrumbs>
 
-      <header>
-        <h1 className="font-bold text-3xl">{entry.title}</h1>
+      <header className="grid gap-3">
+        <p className="font-bold text-[0.75rem] text-eyebrow uppercase leading-none tracking-[0.16em]">
+          Legal
+        </p>
+        <h1 className="font-display text-[2.5rem] text-foreground leading-[1.04] sm:text-[3rem]">
+          {entry.title}
+        </h1>
       </header>
 
-      <Card>
-        <Card.Content className="prose prose-sm max-w-none whitespace-pre-line">
-          {entry.body}
-        </Card.Content>
-      </Card>
+      <div className="border-line border-t pt-8 text-[1.0625rem] text-muted leading-[1.75] whitespace-pre-line">
+        {entry.body}
+      </div>
 
-      <Link className="text-foreground/60 text-sm hover:underline" to="/tienda">
+      <Link
+        className="inline-flex w-fit border-line border-t pt-8 font-semibold text-brand-blue text-sm no-underline hover:underline"
+        to="/tienda"
+      >
         ← Volver a la tienda
       </Link>
     </main>

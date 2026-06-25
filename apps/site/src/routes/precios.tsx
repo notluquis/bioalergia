@@ -1,9 +1,10 @@
-import { Breadcrumbs, Card, Separator, Spinner } from "@heroui/react";
+import { Card, Separator, Spinner } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { JsonLd } from "@/components/JsonLd";
 import { PageShell } from "@/components/PageShell";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { publicClinicClient } from "@/lib/orpc-client";
 import { breadcrumbJsonLd } from "@/lib/seo";
 import { Section } from "@/sections/Section";
@@ -50,14 +51,14 @@ function PriceGroup({ category, rows }: { category: string; rows: PriceRow[] }) 
         {rows.map((row) => (
           <div className="grid gap-1" key={`${category}-${row.name}`}>
             <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <span className="font-medium text-(--ink)">{row.name}</span>
-              <span className="font-semibold text-(--ink) tabular-nums">
+              <span className="font-medium text-foreground">{row.name}</span>
+              <span className="font-semibold text-foreground tabular-nums">
                 {CLP.format(row.priceClp)}
               </span>
             </div>
-            <span className="text-(--ink-muted) text-sm">{row.unit}</span>
+            <span className="text-muted text-sm">{row.unit}</span>
             {row.notes ? (
-              <span className="text-(--ink-muted) text-xs leading-relaxed">{row.notes}</span>
+              <span className="text-muted text-xs leading-relaxed">{row.notes}</span>
             ) : null}
           </div>
         ))}
@@ -84,46 +85,36 @@ function PreciosPage() {
           { name: "Precios", path: "/precios" },
         ])}
       />
-      <section className="grid gap-4">
-        <Breadcrumbs>
-          <Breadcrumbs.Item href="/">Inicio</Breadcrumbs.Item>
-          <Breadcrumbs.Item>Precios</Breadcrumbs.Item>
-        </Breadcrumbs>
-        <div className="grid gap-3">
-          <div className="text-(--ink-muted) text-xs uppercase tracking-[0.2em]">
-            Aranceles a la vista
-          </div>
-          <h1 className="font-semibold text-(--ink) text-3xl sm:text-4xl">Lista de precios</h1>
-          <p className="max-w-3xl text-(--ink-muted) text-base leading-relaxed sm:text-lg">
-            Aranceles particulares vigentes, expresados en pesos chilenos (CLP), por prestación e
-            incluyendo los insumos del procedimiento. La atención es particular (sin convenio) y el
-            paciente recibe boleta o factura. Esta lista se mantiene a la vista del público conforme
-            al derecho de información de la Ley N° 20.584.
-          </p>
-          {updatedAt ? (
-            <p className="text-(--ink-muted) text-sm">
-              Valores vigentes al{" "}
-              {updatedAt.toLocaleDateString("es-CL", {
-                day: "numeric",
-                month: "long",
-                year: "numeric",
-              })}
-              .
-            </p>
-          ) : null}
-        </div>
-      </section>
+      <PageHeader
+        crumbs={[{ label: "Inicio", href: "/" }, { label: "Precios" }]}
+        eyebrow="Aranceles a la vista"
+        lede="Aranceles particulares vigentes, expresados en pesos chilenos (CLP), por prestación e incluyendo los insumos del procedimiento. La atención es particular (sin convenio) y el paciente recibe boleta o factura. Esta lista se mantiene a la vista del público conforme al derecho de información de la Ley N° 20.584."
+        title="Lista de precios"
+      />
+      {updatedAt ? (
+        <p className="text-muted text-sm">
+          Valores vigentes al{" "}
+          {updatedAt.toLocaleDateString("es-CL", {
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+          })}
+          .
+        </p>
+      ) : null}
 
       {query.isPending ? (
-        <div className="flex items-center gap-3 text-(--ink-muted) text-sm">
+        <div className="flex items-center gap-3 text-muted text-sm">
           <Spinner size="sm" />
           Cargando lista de precios…
         </div>
       ) : query.isError ? (
         <Card className="rounded-3xl" variant="secondary">
           <Card.Content className="grid gap-2 py-6">
-            <span className="font-medium text-(--ink)">No pudimos cargar la lista de precios</span>
-            <span className="text-(--ink-muted) text-sm leading-relaxed">
+            <span className="font-medium text-foreground">
+              No pudimos cargar la lista de precios
+            </span>
+            <span className="text-muted text-sm leading-relaxed">
               Vuelve a intentarlo en unos minutos o escríbenos a contacto@bioalergia.cl para
               consultar los aranceles vigentes.
             </span>
@@ -132,8 +123,8 @@ function PreciosPage() {
       ) : items.length === 0 ? (
         <Card className="rounded-3xl" variant="secondary">
           <Card.Content className="grid gap-2 py-6">
-            <span className="font-medium text-(--ink)">Lista de precios en actualización</span>
-            <span className="text-(--ink-muted) text-sm leading-relaxed">
+            <span className="font-medium text-foreground">Lista de precios en actualización</span>
+            <span className="text-muted text-sm leading-relaxed">
               Estamos actualizando los aranceles. Escríbenos a contacto@bioalergia.cl o llámanos
               para conocer los valores vigentes.
             </span>
@@ -155,8 +146,8 @@ function PreciosPage() {
             <Separator className="mb-1" />
             {NOTES.map((note) => (
               <div className="flex items-start gap-3 text-sm leading-relaxed" key={note}>
-                <span className="mt-2 rounded-full bg-(--accent) size-2" />
-                <span className="text-(--ink-muted)">{note}</span>
+                <span className="mt-2 size-2 rounded-full bg-brand-amber" />
+                <span className="text-muted">{note}</span>
               </div>
             ))}
           </Card.Content>

@@ -1,8 +1,9 @@
-import { Breadcrumbs, Card, Link } from "@heroui/react";
+import { Card, Link } from "@heroui/react";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { JsonLd } from "@/components/JsonLd";
 import { PageShell } from "@/components/PageShell";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { breadcrumbJsonLd } from "@/lib/seo";
 import { Section } from "@/sections/Section";
 
@@ -34,13 +35,13 @@ function ListCard({ title, items }: { title: string; items: string[] }) {
   return (
     <Card className="rounded-3xl" variant="default">
       <Card.Header className="gap-1">
-        <Card.Title className="text-lg">{title}</Card.Title>
+        <Card.Title className="font-display text-xl text-foreground">{title}</Card.Title>
       </Card.Header>
       <Card.Content className="grid gap-3 pb-6">
         {items.map((item) => (
           <div className="flex items-start gap-3 text-sm leading-relaxed" key={item}>
-            <span className="mt-2 rounded-full bg-(--accent) size-2" />
-            <span className="text-(--ink-muted)">{item}</span>
+            <span className="mt-2 size-2 rounded-full bg-brand-amber" />
+            <span className="text-muted">{item}</span>
           </div>
         ))}
       </Card.Content>
@@ -57,23 +58,12 @@ function DerechosDeberesPage() {
           { name: "Derechos y deberes", path: "/derechos-deberes" },
         ])}
       />
-      <section className="grid gap-4">
-        <Breadcrumbs>
-          <Breadcrumbs.Item href="/">Inicio</Breadcrumbs.Item>
-          <Breadcrumbs.Item>Derechos y deberes</Breadcrumbs.Item>
-        </Breadcrumbs>
-        <div className="grid gap-3">
-          <div className="text-(--ink-muted) text-xs uppercase tracking-[0.2em]">Ley 20.584</div>
-          <h1 className="font-semibold text-(--ink) text-3xl sm:text-4xl">
-            Carta de Derechos y Deberes del Paciente
-          </h1>
-          <p className="max-w-3xl text-(--ink-muted) text-base leading-relaxed sm:text-lg">
-            En Bioalergia respetamos los derechos y deberes de las personas en su atención de salud,
-            establecidos en la Ley N° 20.584. Esta carta se mantiene visible para todos los
-            pacientes y sus acompañantes.
-          </p>
-        </div>
-      </section>
+      <PageHeader
+        crumbs={[{ label: "Inicio", href: "/" }, { label: "Derechos y deberes" }]}
+        eyebrow="Ley 20.584"
+        lede="En Bioalergia respetamos los derechos y deberes de las personas en su atención de salud, establecidos en la Ley N° 20.584. Esta carta se mantiene visible para todos los pacientes y sus acompañantes."
+        title="Carta de Derechos y Deberes del Paciente"
+      />
 
       <Section title="Derechos y deberes">
         <div className="grid gap-6 lg:grid-cols-2">
@@ -85,13 +75,13 @@ function DerechosDeberesPage() {
       <Section title="Reclamos y sugerencias">
         <Card className="rounded-3xl" variant="secondary">
           <Card.Header className="gap-2">
-            <Card.Description className="text-(--ink-muted) leading-relaxed">
+            <Card.Description className="max-w-[760px] text-muted leading-relaxed">
               Si usted no está conforme con la atención, puede presentar un reclamo. El
               establecimiento lo registrará y le responderá por escrito dentro de quince días
               hábiles. Si la respuesta no le satisface, puede recurrir a la Superintendencia de
               Salud (Intendencia de Prestadores). Solicite el formulario de reclamo en recepción o
               utilice el{" "}
-              <Link className="text-(--accent)" href="/reclamos">
+              <Link className="text-brand-blue" href="/reclamos">
                 formulario en línea
               </Link>
               .

@@ -1,7 +1,6 @@
 import type { CreateKarinReportInput, KarinReportType } from "@finanzas/orpc-contracts/karin";
 import {
   Alert,
-  Breadcrumbs,
   Button,
   Card,
   Form,
@@ -18,6 +17,8 @@ import { type FormEvent, useState } from "react";
 
 import { JsonLd } from "@/components/JsonLd";
 import { PageShell } from "@/components/PageShell";
+import { ctaClass } from "@/components/ui/cta";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { karinClient } from "@/lib/orpc-client";
 import { breadcrumbJsonLd } from "@/lib/seo";
 import { Section } from "@/sections/Section";
@@ -31,8 +32,8 @@ const REPORT_TYPES: { id: KarinReportType; label: string }[] = [
 function Bullet({ children }: { children: string }) {
   return (
     <div className="flex items-start gap-3 text-sm leading-relaxed">
-      <span className="mt-2 rounded-full bg-(--accent) size-2" />
-      <span className="text-(--ink-muted)">{children}</span>
+      <span className="mt-2 size-2 rounded-full bg-brand-amber" />
+      <span className="text-muted">{children}</span>
     </div>
   );
 }
@@ -78,8 +79,10 @@ function KarinForm() {
     return (
       <Card className="rounded-3xl" variant="secondary">
         <Card.Header className="gap-2">
-          <Card.Title className="text-lg">Denuncia recibida</Card.Title>
-          <Card.Description className="text-(--ink-muted) leading-relaxed">
+          <Card.Title className="font-display text-2xl text-foreground">
+            Denuncia recibida
+          </Card.Title>
+          <Card.Description className="text-muted leading-relaxed">
             Tu denuncia quedó registrada de forma confidencial. La persona encargada adoptará las
             medidas de resguardo que correspondan y te contactará por el medio que indicaste. Si lo
             prefieres, también puedes acudir directamente a la Inspección del Trabajo.
@@ -92,8 +95,10 @@ function KarinForm() {
   return (
     <Card className="rounded-3xl" variant="default">
       <Card.Header className="gap-2">
-        <Card.Title className="text-xl">Formulario de denuncia (Anexo A)</Card.Title>
-        <Card.Description className="text-(--ink-muted) leading-relaxed">
+        <Card.Title className="font-display text-2xl text-foreground">
+          Formulario de denuncia (Anexo A)
+        </Card.Title>
+        <Card.Description className="text-muted leading-relaxed">
           La denuncia es identificada: para iniciar la investigación reglada necesitamos tu nombre y
           un medio de contacto. La información se trata con reserva y acceso restringido.
         </Card.Description>
@@ -180,7 +185,12 @@ function KarinForm() {
             </Alert>
           ) : null}
 
-          <Button isDisabled={!canSubmit} type="submit" variant="primary">
+          <Button
+            className={ctaClass("primary", "w-fit")}
+            isDisabled={!canSubmit}
+            type="submit"
+            variant="primary"
+          >
             {submitMutation.isPending ? "Enviando…" : "Enviar denuncia"}
           </Button>
         </Form>
@@ -198,31 +208,21 @@ function DenunciasPage() {
           { name: "Canal de denuncias", path: "/denuncias" },
         ])}
       />
-      <section className="grid gap-4">
-        <Breadcrumbs>
-          <Breadcrumbs.Item href="/">Inicio</Breadcrumbs.Item>
-          <Breadcrumbs.Item>Canal de denuncias</Breadcrumbs.Item>
-        </Breadcrumbs>
-        <div className="grid gap-3">
-          <div className="text-(--ink-muted) text-xs uppercase tracking-[0.2em]">Ley Karin</div>
-          <h1 className="font-semibold text-(--ink) text-3xl sm:text-4xl">
-            Canal de denuncias Ley Karin
-          </h1>
-          <p className="max-w-3xl text-(--ink-muted) text-base leading-relaxed sm:text-lg">
-            Bioalergia cuenta con un canal para denunciar acoso laboral, acoso sexual y violencia en
-            el trabajo, conforme a la Ley N° 21.643 y al Decreto N° 21 de 2024. Está dirigido al
-            personal del establecimiento. La denuncia se recibe de forma identificada y se trata con
-            reserva.
-          </p>
-        </div>
-      </section>
+      <PageHeader
+        crumbs={[{ label: "Inicio", href: "/" }, { label: "Canal de denuncias" }]}
+        eyebrow="Ley Karin"
+        lede="Bioalergia cuenta con un canal para denunciar acoso laboral, acoso sexual y violencia en el trabajo, conforme a la Ley N° 21.643 y al Decreto N° 21 de 2024. Está dirigido al personal del establecimiento. La denuncia se recibe de forma identificada y se trata con reserva."
+        title="Canal de denuncias Ley Karin"
+      />
 
       <Section title="Cómo funciona">
         <div className="grid gap-6 md:grid-cols-2">
           <Card className="rounded-3xl" variant="default">
             <Card.Header className="gap-2">
-              <Card.Title className="text-lg">Denuncia identificada</Card.Title>
-              <Card.Description className="text-(--ink-muted) leading-relaxed">
+              <Card.Title className="font-display text-xl text-foreground">
+                Denuncia identificada
+              </Card.Title>
+              <Card.Description className="text-muted leading-relaxed">
                 Para iniciar la investigación reglada, la denuncia debe individualizar a quien la
                 presenta (nombre y contacto). Una denuncia anónima puede recibirse como antecedente,
                 pero por sí sola no inicia la investigación.
@@ -231,8 +231,10 @@ function DenunciasPage() {
           </Card>
           <Card className="rounded-3xl" variant="default">
             <Card.Header className="gap-2">
-              <Card.Title className="text-lg">Reserva y resguardo</Card.Title>
-              <Card.Description className="text-(--ink-muted) leading-relaxed">
+              <Card.Title className="font-display text-xl text-foreground">
+                Reserva y resguardo
+              </Card.Title>
+              <Card.Description className="text-muted leading-relaxed">
                 La información tiene acceso restringido a quien recibe y gestiona la denuncia. Se
                 adoptan medidas de resguardo inmediatas para proteger a la persona afectada durante
                 el procedimiento.
@@ -241,8 +243,8 @@ function DenunciasPage() {
           </Card>
           <Card className="rounded-3xl" variant="default">
             <Card.Header className="gap-2">
-              <Card.Title className="text-lg">Plazos</Card.Title>
-              <Card.Description className="text-(--ink-muted) leading-relaxed">
+              <Card.Title className="font-display text-xl text-foreground">Plazos</Card.Title>
+              <Card.Description className="text-muted leading-relaxed">
                 Resguardo inmediato, remisión a la Inspección del Trabajo dentro de tres días
                 hábiles e investigación en un plazo de treinta días hábiles, según corresponda al
                 procedimiento elegido.
@@ -251,8 +253,10 @@ function DenunciasPage() {
           </Card>
           <Card className="rounded-3xl" variant="default">
             <Card.Header className="gap-2">
-              <Card.Title className="text-lg">Vías alternativas</Card.Title>
-              <Card.Description className="text-(--ink-muted) leading-relaxed">
+              <Card.Title className="font-display text-xl text-foreground">
+                Vías alternativas
+              </Card.Title>
+              <Card.Description className="text-muted leading-relaxed">
                 Puedes usar este formulario, escribir a denuncias@bioalergia.cl o acudir
                 directamente a la Inspección del Trabajo. La elección de la vía es tuya.
               </Card.Description>

@@ -1,11 +1,14 @@
-import { Breadcrumbs, Card, Chip } from "@heroui/react";
+import { Card, Chip } from "@heroui/react";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { BookingCta } from "@/components/BookingCta";
 import { JsonLd } from "@/components/JsonLd";
 import { PageShell } from "@/components/PageShell";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Photo } from "@/components/ui/Photo";
 import { inmunoterapiaContent } from "@/data/immunotherapy";
 import { breadcrumbJsonLd } from "@/lib/seo";
+import { Section } from "@/sections/Section";
 
 function InmunoterapiaPage() {
   return (
@@ -16,31 +19,25 @@ function InmunoterapiaPage() {
           { name: "Inmunoterapia", path: "/inmunoterapia" },
         ])}
       />
-      <section className="grid gap-4">
-        <Breadcrumbs>
-          <Breadcrumbs.Item href="/">Inicio</Breadcrumbs.Item>
-          <Breadcrumbs.Item>Inmunoterapia</Breadcrumbs.Item>
-        </Breadcrumbs>
-        <div className="grid gap-3">
-          <div className="text-(--ink-muted) text-xs uppercase tracking-[0.2em]">Tratamiento</div>
-          <h1 className="font-semibold text-(--ink) text-3xl sm:text-4xl">
-            Inmunoterapia para alergias
-          </h1>
-          <p className="max-w-3xl text-(--ink-muted) text-base leading-relaxed sm:text-lg">
-            {inmunoterapiaContent.intro}
-          </p>
-        </div>
-      </section>
-      <section className="grid gap-6">
-        <div className="grid gap-3">
-          <div className="text-(--ink-muted) text-xs uppercase tracking-[0.2em]">Modalidades</div>
-          <h2 className="font-semibold text-(--ink) text-2xl sm:text-3xl">SCIT vs SLIT</h2>
-          <p className="max-w-3xl text-(--ink-muted) leading-relaxed">
-            Existen dos formas de administrar la inmunoterapia. Elegimos la modalidad adecuada según
-            tu diagnóstico, tu edad, tu estilo de vida y criterios de seguridad clínica.
-          </p>
-        </div>
+      <PageHeader
+        crumbs={[{ label: "Inicio", href: "/" }, { label: "Inmunoterapia" }]}
+        eyebrow="Tratamiento"
+        lede={inmunoterapiaContent.intro}
+        title="Inmunoterapia para alergias"
+      />
 
+      <Photo
+        className="h-[clamp(14rem,32vw,22rem)]"
+        name="scitInjection"
+        rounded="rounded-3xl"
+        sizes="(min-width: 1024px) 1100px, 100vw"
+      />
+
+      <Section
+        eyebrow="Modalidades"
+        subtitle="Existen dos formas de administrar la inmunoterapia. Elegimos la modalidad adecuada según tu diagnóstico, tu edad, tu estilo de vida y criterios de seguridad clínica."
+        title="SCIT vs SLIT"
+      >
         <div className="grid gap-6 lg:grid-cols-2">
           {inmunoterapiaContent.modalities.map((item) => (
             <Card className="rounded-3xl" key={item.label} variant="default">
@@ -57,20 +54,20 @@ function InmunoterapiaPage() {
         <Card className="rounded-3xl" variant="default">
           <Card.Header className="gap-2">
             <Card.Title className="text-xl">Comparativa clínica</Card.Title>
-            <Card.Description className="text-(--ink-muted)">
+            <Card.Description className="text-muted">
               Diferencias clave para tomar una decisión informada junto a tu médico.
             </Card.Description>
           </Card.Header>
           <Card.Content className="overflow-x-auto pb-6 sm:overflow-x-visible">
             <div className="space-y-0">
-              <div className="grid grid-cols-1 gap-6 border-border border-b pb-3 sm:grid-cols-3 sm:pb-4">
-                <div className="font-semibold text-(--ink-muted) text-xs uppercase tracking-[0.2em]">
+              <div className="grid grid-cols-1 gap-6 border-line border-b pb-3 sm:grid-cols-3 sm:pb-4">
+                <div className="font-semibold text-muted text-xs uppercase tracking-[0.2em]">
                   Aspecto
                 </div>
-                <div className="font-semibold text-(--ink-muted) text-xs uppercase tracking-[0.2em]">
+                <div className="font-semibold text-muted text-xs uppercase tracking-[0.2em]">
                   SCIT · subcutánea
                 </div>
-                <div className="font-semibold text-(--ink-muted) text-xs uppercase tracking-[0.2em]">
+                <div className="font-semibold text-muted text-xs uppercase tracking-[0.2em]">
                   SLIT · sublingual
                 </div>
               </div>
@@ -78,34 +75,27 @@ function InmunoterapiaPage() {
               {inmunoterapiaContent.comparison.map((row, index) => (
                 <div
                   key={row.aspect}
-                  className={`-mx-4 grid grid-cols-1 gap-6 border-border border-b sm:grid-cols-3 p-4 ${
-                    index % 2 === 0 ? "bg-(--surface-2)" : ""
+                  className={`-mx-4 grid grid-cols-1 gap-6 border-line border-b sm:grid-cols-3 p-4 ${
+                    index % 2 === 0 ? "bg-surface-2" : ""
                   }`}
                 >
-                  <div className="font-semibold text-(--ink) text-sm sm:text-base">
+                  <div className="font-semibold text-foreground text-sm sm:text-base">
                     {row.aspect}
                   </div>
-                  <div className="text-(--ink-muted) text-sm">{row.scit}</div>
-                  <div className="text-(--ink-muted) text-sm">{row.slit}</div>
+                  <div className="text-muted text-sm">{row.scit}</div>
+                  <div className="text-muted text-sm">{row.slit}</div>
                 </div>
               ))}
             </div>
           </Card.Content>
         </Card>
-      </section>
+      </Section>
 
-      <section className="grid gap-6">
-        <div className="grid gap-3">
-          <div className="text-(--ink-muted) text-xs uppercase tracking-[0.2em]">Alcance</div>
-          <h2 className="font-semibold text-(--ink) text-2xl sm:text-3xl">
-            Alérgenos que tratamos
-          </h2>
-          <p className="max-w-3xl text-(--ink-muted) leading-relaxed">
-            La inmunoterapia puede indicarse frente a distintos alérgenos respiratorios y, en casos
-            seleccionados, a veneno de insectos. Estos son los más frecuentes.
-          </p>
-        </div>
-
+      <Section
+        eyebrow="Alcance"
+        subtitle="La inmunoterapia puede indicarse frente a distintos alérgenos respiratorios y, en casos seleccionados, a veneno de insectos. Estos son los más frecuentes."
+        title="Alérgenos que tratamos"
+      >
         <div className="grid gap-6 md:grid-cols-2">
           {inmunoterapiaContent.allergens.map((allergen) => (
             <Card className="rounded-3xl" key={allergen.name} variant="default">
@@ -118,20 +108,13 @@ function InmunoterapiaPage() {
             </Card>
           ))}
         </div>
-      </section>
+      </Section>
 
-      <section className="grid gap-6">
-        <div className="grid gap-3">
-          <div className="text-(--ink-muted) text-xs uppercase tracking-[0.2em]">A quién</div>
-          <h2 className="font-semibold text-(--ink) text-2xl sm:text-3xl">
-            Consideraciones por edad
-          </h2>
-          <p className="max-w-3xl text-(--ink-muted) leading-relaxed">
-            La inmunoterapia se evalúa de forma individual. Estas son orientaciones generales que
-            siempre se confirman en la consulta.
-          </p>
-        </div>
-
+      <Section
+        eyebrow="A quién"
+        subtitle="La inmunoterapia se evalúa de forma individual. Estas son orientaciones generales que siempre se confirman en la consulta."
+        title="Consideraciones por edad"
+      >
         <div className="grid gap-6 md:grid-cols-3">
           {inmunoterapiaContent.ages.map((age) => (
             <Card className="rounded-3xl" key={age.label} variant="default">
@@ -149,38 +132,31 @@ function InmunoterapiaPage() {
             </Card>
           ))}
         </div>
-      </section>
+      </Section>
 
       <Card className="rounded-3xl" variant="secondary">
         <Card.Header className="gap-3">
           <Card.Title className="text-xl">Beneficios de la inmunoterapia</Card.Title>
-          <Card.Description className="text-(--ink-muted)">
+          <Card.Description className="text-muted">
             Un tratamiento modificador de la enfermedad, con impacto sostenido en el tiempo.
           </Card.Description>
         </Card.Header>
         <Card.Content className="grid gap-4 pb-6">
           {inmunoterapiaContent.benefits.map((benefit) => (
             <div className="flex items-start gap-3 text-sm leading-relaxed" key={benefit}>
-              <span className="mt-2 rounded-full bg-(--accent) size-2" />
-              <span className="text-(--ink-muted)">{benefit}</span>
+              <span className="mt-2 rounded-full bg-brand-amber size-2" />
+              <span className="text-muted">{benefit}</span>
             </div>
           ))}
         </Card.Content>
       </Card>
 
-      <section className="grid gap-6">
-        <div className="grid gap-3">
-          <div className="text-(--ink-muted) text-xs uppercase tracking-[0.2em]">
-            Dudas frecuentes
-          </div>
-          <h2 className="font-semibold text-(--ink) text-2xl sm:text-3xl">Preguntas frecuentes</h2>
-        </div>
-
+      <Section eyebrow="Dudas frecuentes" title="Preguntas frecuentes">
         <div className="grid gap-4">
           {inmunoterapiaContent.faq.map((faq) => (
             <Card className="rounded-3xl" key={faq.question} variant="default">
               <Card.Header className="gap-3">
-                <Card.Title className="text-base font-semibold text-(--ink)">
+                <Card.Title className="text-base font-semibold text-foreground">
                   {faq.question}
                 </Card.Title>
                 <Card.Description className="text-(--ink-muted) leading-relaxed">
@@ -190,7 +166,7 @@ function InmunoterapiaPage() {
             </Card>
           ))}
         </div>
-      </section>
+      </Section>
 
       <BookingCta
         title="¿La inmunoterapia es para ti?"
