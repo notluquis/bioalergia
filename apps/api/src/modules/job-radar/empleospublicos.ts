@@ -85,11 +85,16 @@ function extractDescriptionHtml(html: string): string | null {
   return sections.length > 0 ? sections.join("") : null;
 }
 
-async function addDescriptions(jobs: RawJob[]): Promise<void> {
+// `skipIds` = externalIds que YA tienen descripción en DB → no re-fetchear su
+// detalle (la descripción de una convocatoria no cambia). Quedan con
+// descriptionHtml=null y el upsert (COALESCE) preserva la almacenada. En régimen
+// solo enriquece convocatorias nuevas → de ~276 fetches a un puñado.
+async function addDescriptions(jobs: RawJob[], skipIds?: ReadonlySet<string>): Promise<void> {
   let next = 0;
   const workers = Array.from({ length: Math.min(DETAIL_CONCURRENCY, jobs.length) }, async () => {
     while (next < jobs.length) {
       const job = jobs[next++];
+      if (skipIds?.has(job.externalId)) continue;
       const html = await requestText(job.url, {
         tag: "job_radar.empleospublicos.detail",
         ctx: { id: job.externalId },
@@ -102,7 +107,7 @@ async function addDescriptions(jobs: RawJob[]): Promise<void> {
   await Promise.all(workers);
 }
 
-export async function fetchEmpleosPublicosJobs(): Promise<RawJob[]> {
+export async function fetchEmpleosPublicosJobs(skipIds?: ReadonlySet<string>): Promise<RawJob[]> {
   // El feed `.txt` redirige (302) a HTML si el Accept es application/json → `*/*`.
   const text = await requestText(FEED, { tag: "job_radar.empleospublicos", accept: "*/*" });
   if (!text) return [];
@@ -135,6 +140,6 @@ export async function fetchEmpleosPublicosJobs(): Promise<RawJob[]> {
       raw: item,
     });
   }
-  await addDescriptions(out);
+  await addDescriptions(out, skipIds);
   return out;
 }

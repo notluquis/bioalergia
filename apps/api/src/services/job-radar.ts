@@ -339,11 +339,18 @@ async function getSources(config: JobRadarConfig): Promise<JobSource[]> {
     });
   }
   if (config.empleospublicos) {
+    // Pre-cargar externalIds que ya tienen descripción → el adapter NO re-fetchea
+    // su detalle (la descripción no cambia). Evita ~276 requests por sync.
+    const describedRows = await db.jobPosting.findMany({
+      where: { source: "empleospublicos", descriptionHtml: { not: null } },
+      select: { externalId: true },
+    });
+    const describedIds = new Set(describedRows.map((r) => r.externalId));
     sources.push({
       source: "empleospublicos",
       company: "empleospublicos",
       label: "empleospublicos",
-      fetch: fetchEmpleosPublicosJobs,
+      fetch: () => fetchEmpleosPublicosJobs(describedIds),
     });
   }
   return sources;
@@ -468,20 +475,32 @@ async function upsertSourceJobs(
          application_status, first_seen_at, last_seen_at, raw)
       VALUES ${sql.join(values, sql`, `)}
       ON CONFLICT (source, company, external_id) DO UPDATE SET
-        title = EXCLUDED.title, url = EXCLUDED.url, department = EXCLUDED.department,
-        location = EXCLUDED.location, remote = EXCLUDED.remote, salary = EXCLUDED.salary,
-        description_html = EXCLUDED.description_html, published_at = EXCLUDED.published_at,
+        title = EXCLUDED.title, url = EXCLUDED.url,
+        -- Campos enriquecidos vía detalle (department/location/salary/description/
+        -- published_at): COALESCE preserva lo guardado cuando el adapter saltó el
+        -- enriquecido (devuelve null) → no se pierde data ni se churnea el upsert.
+        department = COALESCE(EXCLUDED.department, personal.job_postings.department),
+        location = COALESCE(EXCLUDED.location, personal.job_postings.location),
+        remote = EXCLUDED.remote,
+        salary = COALESCE(EXCLUDED.salary, personal.job_postings.salary),
+        description_html = COALESCE(EXCLUDED.description_html, personal.job_postings.description_html),
+        published_at = COALESCE(EXCLUDED.published_at, personal.job_postings.published_at),
         lastmod = EXCLUDED.lastmod, status = 'OPEN'::personal."JobPostingStatus",
         matched = EXCLUDED.matched, last_seen_at = EXCLUDED.last_seen_at, raw = EXCLUDED.raw
       WHERE
         personal.job_postings.title IS DISTINCT FROM EXCLUDED.title OR
         personal.job_postings.url IS DISTINCT FROM EXCLUDED.url OR
-        personal.job_postings.department IS DISTINCT FROM EXCLUDED.department OR
-        personal.job_postings.location IS DISTINCT FROM EXCLUDED.location OR
+        personal.job_postings.department IS DISTINCT FROM
+          COALESCE(EXCLUDED.department, personal.job_postings.department) OR
+        personal.job_postings.location IS DISTINCT FROM
+          COALESCE(EXCLUDED.location, personal.job_postings.location) OR
         personal.job_postings.remote IS DISTINCT FROM EXCLUDED.remote OR
-        personal.job_postings.salary IS DISTINCT FROM EXCLUDED.salary OR
-        personal.job_postings.description_html IS DISTINCT FROM EXCLUDED.description_html OR
-        personal.job_postings.published_at IS DISTINCT FROM EXCLUDED.published_at OR
+        personal.job_postings.salary IS DISTINCT FROM
+          COALESCE(EXCLUDED.salary, personal.job_postings.salary) OR
+        personal.job_postings.description_html IS DISTINCT FROM
+          COALESCE(EXCLUDED.description_html, personal.job_postings.description_html) OR
+        personal.job_postings.published_at IS DISTINCT FROM
+          COALESCE(EXCLUDED.published_at, personal.job_postings.published_at) OR
         personal.job_postings.lastmod IS DISTINCT FROM EXCLUDED.lastmod OR
         personal.job_postings.status IS DISTINCT FROM 'OPEN'::personal."JobPostingStatus" OR
         personal.job_postings.matched IS DISTINCT FROM EXCLUDED.matched
