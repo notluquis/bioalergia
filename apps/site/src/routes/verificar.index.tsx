@@ -29,7 +29,7 @@ function VerificarIndexPage() {
             placeholder="Ej. BA-XXXX-XXXX"
             value={code}
             onChange={(e) => setCode((e.target as HTMLInputElement).value)}
-            isRequired
+            required
             autoFocus
           />
           <Button type="submit" className="w-full font-bold bg-primary text-white">
