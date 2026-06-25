@@ -135,29 +135,31 @@ export function ProductDetailView({
         </div>
         <div className="space-y-5">
           {product.brand && (
-            <p className="text-foreground/60 text-sm uppercase tracking-wide">{product.brand}</p>
+            <p className="text-eyebrow text-sm uppercase tracking-[0.12em]">{product.brand}</p>
           )}
-          <h1 className="font-bold text-2xl sm:text-3xl">{product.name}</h1>
+          <h1 className="font-display text-3xl text-foreground sm:text-4xl">{product.name}</h1>
 
           <div className="flex flex-col">
             <div className="flex items-baseline gap-3">
-              <span className="font-bold text-4xl">{CLP_FORMATTER.format(product.price_clp)}</span>
+              <span className="font-bold text-4xl text-foreground">
+                {CLP_FORMATTER.format(product.price_clp)}
+              </span>
               {hasCompareAtSaving(product.price_clp, product.compare_at_price_clp) && (
-                <span className="text-foreground/50 text-lg line-through">
+                <span className="text-lg text-muted line-through">
                   {CLP_FORMATTER.format(product.compare_at_price_clp as number)}
                 </span>
               )}
             </div>
-            <span className="text-foreground/60 text-sm">IVA incluido</span>
+            <span className="text-muted text-sm">IVA incluido</span>
           </div>
 
           {product.short_description && (
-            <p className="text-foreground/80">{product.short_description}</p>
+            <p className="text-foreground leading-relaxed">{product.short_description}</p>
           )}
 
           {product.description && (
-            <Card variant="secondary">
-              <Card.Content className="whitespace-pre-line text-sm">
+            <Card className="rounded-2xl border-line" variant="secondary">
+              <Card.Content className="whitespace-pre-line text-muted text-sm leading-relaxed">
                 {product.description}
               </Card.Content>
             </Card>
@@ -206,7 +208,7 @@ export function ProductDetailView({
               </NumberField>
 
               <Button
-                className="flex-1"
+                className="flex-1 rounded-[3px] bg-brand-amber font-bold text-brand-amber-ink hover:brightness-[1.04]"
                 isDisabled={isAdding}
                 onPress={() => onAddToCart(qty)}
                 size="lg"
@@ -219,7 +221,7 @@ export function ProductDetailView({
           )}
 
           <a
-            className="inline-flex items-center gap-2 text-[#25D366] text-sm hover:underline"
+            className="inline-flex items-center gap-2 font-semibold text-doctoralia-green text-sm no-underline hover:underline underline-offset-4"
             href={whatsappHref}
             rel="noopener noreferrer"
             target="_blank"
@@ -227,27 +229,29 @@ export function ProductDetailView({
             <MessageCircle size={16} /> Consultar por WhatsApp
           </a>
 
-          <Card variant="secondary">
+          <Card className="rounded-2xl border-line" variant="secondary">
             <Card.Content className="grid grid-cols-2 gap-3 text-xs sm:text-sm">
               <div>
-                <p className="text-foreground/50">SKU</p>
-                <p className="font-mono">{product.sku}</p>
+                <p className="text-muted">SKU</p>
+                <p className="font-mono text-foreground">{product.sku}</p>
               </div>
               {product.brand && (
                 <div>
-                  <p className="text-foreground/50">Laboratorio</p>
-                  <p>{product.brand}</p>
+                  <p className="text-muted">Laboratorio</p>
+                  <p className="text-foreground">{product.brand}</p>
                 </div>
               )}
               {product.category?.name && (
                 <div>
-                  <p className="text-foreground/50">Categoría</p>
-                  <p>{product.category.name}</p>
+                  <p className="text-muted">Categoría</p>
+                  <p className="text-foreground">{product.category.name}</p>
                 </div>
               )}
               <div>
-                <p className="text-foreground/50">Disponibilidad</p>
-                <p>{outOfStock ? "Agotado" : `${product.available_qty} unidades`}</p>
+                <p className="text-muted">Disponibilidad</p>
+                <p className="text-foreground">
+                  {outOfStock ? "Agotado" : `${product.available_qty} unidades`}
+                </p>
               </div>
             </Card.Content>
           </Card>
@@ -264,13 +268,16 @@ export function ProductDetailView({
 
       {/* Sticky add-to-cart bar mobile only (Baymard +12% conversión móvil) */}
       {!outOfStock && (
-        <div className="-mx-4 fixed right-0 bottom-0 left-0 z-40 border-foreground/10 border-t bg-surface px-4 py-3 shadow-lg sm:hidden">
+        <div className="-mx-4 fixed right-0 bottom-0 left-0 z-40 border-line border-t bg-surface px-4 py-3 shadow-lg sm:hidden">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="font-bold text-lg">{CLP_FORMATTER.format(product.price_clp)}</p>
-              <p className="text-foreground/60 text-xs">IVA incluido</p>
+              <p className="font-bold text-foreground text-lg">
+                {CLP_FORMATTER.format(product.price_clp)}
+              </p>
+              <p className="text-muted text-xs">IVA incluido</p>
             </div>
             <Button
+              className="rounded-[3px] bg-brand-amber font-bold text-brand-amber-ink hover:brightness-[1.04]"
               isDisabled={isAdding}
               onPress={() => onAddToCart(1)}
               size="lg"

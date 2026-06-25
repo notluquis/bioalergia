@@ -1,5 +1,6 @@
 import { Breadcrumbs, Card, Label, ListBox, Select, Skeleton } from "@heroui/react";
 
+import { Eyebrow } from "@/components/ui/Eyebrow";
 import { ProductCard } from "@/features/shop/components/ProductCard";
 import { SearchBar } from "@/features/shop/components/SearchBar";
 import type { SortKey } from "@/features/shop/lib/catalog";
@@ -40,9 +41,10 @@ export function TiendaView({
         <Breadcrumbs.Item>Tienda</Breadcrumbs.Item>
       </Breadcrumbs>
 
-      <header className="space-y-2">
-        <h1 className="font-bold text-3xl sm:text-4xl">Tienda Bioalergia</h1>
-        <p className="text-foreground/70">
+      <header className="space-y-3">
+        <Eyebrow>Tienda</Eyebrow>
+        <h1 className="font-display text-4xl text-foreground sm:text-5xl">Tienda Bioalergia</h1>
+        <p className="max-w-2xl text-muted leading-relaxed">
           Productos seleccionados para el cuidado de la piel, hidratación y bienestar.
         </p>
       </header>
@@ -50,7 +52,7 @@ export function TiendaView({
       <SearchBar />
 
       <div className="flex items-center justify-between gap-3">
-        <p className="text-foreground/60 text-sm">
+        <p className="text-muted text-sm">
           {productCount !== null ? `${productCount} productos` : null}
         </p>
         <Select
@@ -93,8 +95,8 @@ export function TiendaView({
         </div>
       )}
       {Boolean(error) && (
-        <Card variant="secondary">
-          <Card.Content className="py-8 text-center text-foreground/60">
+        <Card className="rounded-2xl border-line" variant="secondary">
+          <Card.Content className="py-8 text-center text-muted">
             No se pudieron cargar los productos.
           </Card.Content>
         </Card>

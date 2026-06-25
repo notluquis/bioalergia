@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 
+import { ShopShell } from "@/components/ShopShell";
 import { ProductDetailView } from "@/features/shop/components/ProductDetailView";
 import { useShopConfig } from "@/features/shop/lib/shop-config";
 import { shopKeys } from "@/features/shop/queries";
@@ -41,45 +42,53 @@ function ProductDetailPage() {
 
   if (isLoading) {
     return (
-      <main className="mx-auto max-w-6xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
-        <Skeleton className="h-6 w-48" />
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-          <Skeleton className="aspect-square w-full rounded-2xl" />
-          <div className="space-y-4">
-            <Skeleton className="h-8 w-3/4" />
-            <Skeleton className="h-12 w-1/3" />
-            <Skeleton className="h-24 w-full" />
-            <Skeleton className="h-12 w-full" />
+      <ShopShell>
+        <main className="mx-auto max-w-6xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+          <Skeleton className="h-6 w-48" />
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+            <Skeleton className="aspect-square w-full rounded-2xl" />
+            <div className="space-y-4">
+              <Skeleton className="h-8 w-3/4" />
+              <Skeleton className="h-12 w-1/3" />
+              <Skeleton className="h-24 w-full" />
+              <Skeleton className="h-12 w-full" />
+            </div>
           </div>
-        </div>
-      </main>
+        </main>
+      </ShopShell>
     );
   }
   if (error || !data) {
     return (
-      <main className="mx-auto max-w-3xl space-y-4 px-4 py-8">
-        <Alert status="danger">
-          <Alert.Content>
-            <Alert.Description>Producto no encontrado.</Alert.Description>
-          </Alert.Content>
-        </Alert>
-        <Link to="/tienda">← Volver a la tienda</Link>
-      </main>
+      <ShopShell>
+        <main className="mx-auto max-w-3xl space-y-4 px-4 py-8">
+          <Alert status="danger">
+            <Alert.Content>
+              <Alert.Description>Producto no encontrado.</Alert.Description>
+            </Alert.Content>
+          </Alert>
+          <Link className="font-semibold text-brand-blue no-underline hover:underline" to="/tienda">
+            ← Volver a la tienda
+          </Link>
+        </main>
+      </ShopShell>
     );
   }
 
   return (
-    <ProductDetailView
-      added={added}
-      feedback={feedback}
-      isAdding={addMutation.isPending}
-      lowStockThreshold={lowStockThreshold}
-      onAddToCart={(addQty) => addMutation.mutate({ product_id: data.data.id, qty: addQty })}
-      onQtyChange={setQty}
-      product={data.data}
-      qty={qty}
-      reviewsAggregate={reviewsAggregateQ.data?.aggregate}
-    />
+    <ShopShell>
+      <ProductDetailView
+        added={added}
+        feedback={feedback}
+        isAdding={addMutation.isPending}
+        lowStockThreshold={lowStockThreshold}
+        onAddToCart={(addQty) => addMutation.mutate({ product_id: data.data.id, qty: addQty })}
+        onQtyChange={setQty}
+        product={data.data}
+        qty={qty}
+        reviewsAggregate={reviewsAggregateQ.data?.aggregate}
+      />
+    </ShopShell>
   );
 }
 

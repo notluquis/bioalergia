@@ -40,15 +40,15 @@ export function AccountLayoutView({
   children,
 }: AccountLayoutViewProps) {
   return (
-    <main className="mx-auto grid max-w-5xl gap-6 px-4 py-8 sm:px-6 md:grid-cols-[220px_1fr]">
-      <aside className="space-y-2">
-        <Card>
+    <main className="mx-auto grid max-w-5xl gap-8 px-4 py-12 sm:px-6 md:grid-cols-[240px_1fr]">
+      <aside className="space-y-4">
+        <Card className="rounded-2xl border-line bg-surface">
           <Card.Content className="space-y-1 p-4">
-            <p className="font-semibold text-sm">{user.name ?? "Cliente"}</p>
-            <p className="break-all text-default-500 text-xs">{user.email}</p>
+            <p className="font-display text-lg text-foreground">{user.name ?? "Cliente"}</p>
+            <p className="break-all text-muted text-xs">{user.email}</p>
           </Card.Content>
         </Card>
-        <nav className="flex flex-col gap-1">
+        <nav className="flex flex-col gap-1 border-line border-t pt-3">
           {navItems.map((item) => {
             const active =
               item.to === "/mi-cuenta" ? activePath === "/mi-cuenta" : activePath === item.to;
@@ -56,17 +56,22 @@ export function AccountLayoutView({
               <Link
                 key={item.to}
                 to={item.to}
-                className={`rounded px-3 py-2 text-sm transition-colors ${
+                className={`rounded-lg px-3 py-2 text-sm transition-colors ${
                   active
-                    ? "bg-primary-100 font-semibold text-primary-700"
-                    : "text-default-700 hover:bg-default-100"
+                    ? "bg-chip font-semibold text-brand-blue"
+                    : "text-foreground hover:bg-surface-2"
                 }`}
               >
                 {item.label}
               </Link>
             );
           })}
-          <Button isDisabled={isLoggingOut} onPress={onLogout} variant="ghost">
+          <Button
+            className="mt-2 justify-start text-muted"
+            isDisabled={isLoggingOut}
+            onPress={onLogout}
+            variant="ghost"
+          >
             Cerrar sesión
           </Button>
         </nav>

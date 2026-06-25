@@ -3,6 +3,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 
+import { ShopShell } from "@/components/ShopShell";
+import { Eyebrow } from "@/components/ui/Eyebrow";
+import { ctaClass } from "@/components/ui/cta";
 import { accountKeys } from "@/features/account/queries";
 import { siteAuthClient } from "@/lib/orpc-client";
 
@@ -42,86 +45,103 @@ function RegistroPage() {
     email.includes("@") && name.length >= 2 && terms && (!usePassword || password.length >= 8);
 
   return (
-    <main className="mx-auto max-w-md space-y-6 px-4 py-8 sm:px-6">
-      <Breadcrumbs>
-        <Breadcrumbs.Item href="/">Inicio</Breadcrumbs.Item>
-        <Breadcrumbs.Item>Crear cuenta</Breadcrumbs.Item>
-      </Breadcrumbs>
+    <ShopShell>
+      <main className="mx-auto max-w-md space-y-6 px-4 py-12 sm:px-6">
+        <Breadcrumbs>
+          <Breadcrumbs.Item href="/">Inicio</Breadcrumbs.Item>
+          <Breadcrumbs.Item>Crear cuenta</Breadcrumbs.Item>
+        </Breadcrumbs>
 
-      <header className="space-y-1">
-        <h1 className="font-bold text-3xl">Crear cuenta</h1>
-        <p className="text-default-500 text-sm">
-          Crea tu cuenta para hacer seguimiento a tus pedidos. La contraseña es opcional — puedes
-          acceder con enlace mágico.
-        </p>
-      </header>
-
-      <Card>
-        <Card.Content className="space-y-4">
-          <TextField onChange={setEmail} value={email}>
-            <Label>Email</Label>
-            <Input type="email" placeholder="tu@email.cl" autoComplete="email" />
-          </TextField>
-          <TextField onChange={setName} value={name}>
-            <Label>Nombre completo</Label>
-            <Input autoComplete="name" />
-          </TextField>
-          <TextField onChange={setRut} value={rut}>
-            <Label>RUT (opcional, solo si quieres factura)</Label>
-            <Input placeholder="12.345.678-9" />
-          </TextField>
-          <TextField onChange={setPassword} value={password}>
-            <Label>Contraseña (opcional)</Label>
-            <Input type="password" placeholder="Mínimo 8 caracteres" autoComplete="new-password" />
-          </TextField>
-          <Checkbox isSelected={terms} onChange={setTerms}>
-            <Checkbox.Content>
-              <Checkbox.Control>
-                <Checkbox.Indicator />
-              </Checkbox.Control>
-              Acepto los{" "}
-              <Link className="underline" to="/legal/$slug" params={{ slug: "terms" }}>
-                términos
-              </Link>{" "}
-              y{" "}
-              <Link className="underline" to="/legal/$slug" params={{ slug: "privacy" }}>
-                política de privacidad
-              </Link>
-              .
-            </Checkbox.Content>
-          </Checkbox>
-          {error && (
-            <Alert status="danger">
-              <Alert.Content>
-                <Alert.Description>{error}</Alert.Description>
-              </Alert.Content>
-            </Alert>
-          )}
-          <Button
-            isDisabled={!canSubmit || registerMutation.isPending || magicLinkMutation.isPending}
-            onPress={() => (usePassword ? registerMutation.mutate() : magicLinkMutation.mutate())}
-            variant="primary"
-          >
-            {usePassword ? "Crear cuenta" : "Enviarme un enlace mágico"}
-          </Button>
-          {!usePassword && magicLinkMutation.isSuccess && (
-            <Alert status="success">
-              <Alert.Content>
-                <Alert.Description>
-                  Te enviamos un enlace de acceso a {email}. Es válido por 15 minutos.
-                </Alert.Description>
-              </Alert.Content>
-            </Alert>
-          )}
-          <p className="text-default-500 text-sm">
-            ¿Ya tienes cuenta?{" "}
-            <Link className="underline" to="/login">
-              Inicia sesión
-            </Link>
+        <header className="grid gap-3">
+          <Eyebrow>Mi cuenta</Eyebrow>
+          <h1 className="font-display text-[2.5rem] leading-[1.04] text-foreground">
+            Crear cuenta
+          </h1>
+          <p className="text-[1.0625rem] leading-[1.6] text-muted">
+            Crea tu cuenta para hacer seguimiento a tus pedidos. La contraseña es opcional — puedes
+            acceder con enlace mágico.
           </p>
-        </Card.Content>
-      </Card>
-    </main>
+        </header>
+
+        <Card className="rounded-3xl border-line bg-surface">
+          <Card.Content className="space-y-4">
+            <TextField onChange={setEmail} value={email}>
+              <Label>Email</Label>
+              <Input type="email" placeholder="tu@email.cl" autoComplete="email" />
+            </TextField>
+            <TextField onChange={setName} value={name}>
+              <Label>Nombre completo</Label>
+              <Input autoComplete="name" />
+            </TextField>
+            <TextField onChange={setRut} value={rut}>
+              <Label>RUT (opcional, solo si quieres factura)</Label>
+              <Input placeholder="12.345.678-9" />
+            </TextField>
+            <TextField onChange={setPassword} value={password}>
+              <Label>Contraseña (opcional)</Label>
+              <Input
+                type="password"
+                placeholder="Mínimo 8 caracteres"
+                autoComplete="new-password"
+              />
+            </TextField>
+            <Checkbox isSelected={terms} onChange={setTerms}>
+              <Checkbox.Content>
+                <Checkbox.Control>
+                  <Checkbox.Indicator />
+                </Checkbox.Control>
+                Acepto los{" "}
+                <Link
+                  className="font-semibold text-brand-blue hover:underline"
+                  to="/legal/$slug"
+                  params={{ slug: "terms" }}
+                >
+                  términos
+                </Link>{" "}
+                y{" "}
+                <Link
+                  className="font-semibold text-brand-blue hover:underline"
+                  to="/legal/$slug"
+                  params={{ slug: "privacy" }}
+                >
+                  política de privacidad
+                </Link>
+                .
+              </Checkbox.Content>
+            </Checkbox>
+            {error && (
+              <Alert status="danger">
+                <Alert.Content>
+                  <Alert.Description>{error}</Alert.Description>
+                </Alert.Content>
+              </Alert>
+            )}
+            <Button
+              className={ctaClass("primary", "w-full")}
+              isDisabled={!canSubmit || registerMutation.isPending || magicLinkMutation.isPending}
+              onPress={() => (usePassword ? registerMutation.mutate() : magicLinkMutation.mutate())}
+            >
+              {usePassword ? "Crear cuenta" : "Enviarme un enlace mágico"}
+            </Button>
+            {!usePassword && magicLinkMutation.isSuccess && (
+              <Alert status="success">
+                <Alert.Content>
+                  <Alert.Description>
+                    Te enviamos un enlace de acceso a {email}. Es válido por 15 minutos.
+                  </Alert.Description>
+                </Alert.Content>
+              </Alert>
+            )}
+            <p className="text-muted text-sm">
+              ¿Ya tienes cuenta?{" "}
+              <Link className="font-semibold text-brand-blue hover:underline" to="/login">
+                Inicia sesión
+              </Link>
+            </p>
+          </Card.Content>
+        </Card>
+      </main>
+    </ShopShell>
   );
 }
 

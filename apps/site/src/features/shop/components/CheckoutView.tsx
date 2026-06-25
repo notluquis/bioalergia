@@ -6,6 +6,7 @@ import type { InferContractRouterOutputs } from "@orpc/contract";
 import { Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 
+import { Eyebrow } from "@/components/ui/Eyebrow";
 import { TrustBlock } from "@/features/shop/components/TrustBlock";
 import { computeOrderTotal, pickCheapestShippingOption } from "@/features/shop/lib/checkout-math";
 import { lineTotalClp } from "@/features/shop/lib/cart-math";
@@ -76,7 +77,7 @@ export function CheckoutView({
 
   if (!publicKey) {
     return (
-      <main className="mx-auto max-w-3xl space-y-4 px-4 py-8">
+      <main className="mx-auto max-w-3xl space-y-4 px-4 py-12 sm:px-6">
         <Alert status="danger">
           <Alert.Content>
             <Alert.Description>
@@ -88,15 +89,15 @@ export function CheckoutView({
     );
   }
 
-  if (isCartLoading) return <p className="px-4 py-8">Cargando…</p>;
+  if (isCartLoading) return <p className="px-4 py-12 text-muted">Cargando…</p>;
   if (!cart || cart.items.length === 0) {
     return (
-      <main className="mx-auto max-w-3xl space-y-4 px-4 py-8">
+      <main className="mx-auto max-w-3xl space-y-4 px-4 py-12 sm:px-6">
         <Alert status="warning">
           <Alert.Content>
             <Alert.Description>
               Tu carrito está vacío.{" "}
-              <Link className="underline" to="/tienda">
+              <Link className="text-brand-blue underline" to="/tienda">
                 Ir a la tienda
               </Link>
             </Alert.Description>
@@ -127,7 +128,7 @@ export function CheckoutView({
   };
 
   return (
-    <main className="mx-auto max-w-3xl space-y-6 px-4 py-8 sm:px-6">
+    <main className="mx-auto max-w-3xl space-y-8 px-4 py-12 sm:px-6">
       <Breadcrumbs>
         <Breadcrumbs.Item href="/">Inicio</Breadcrumbs.Item>
         <Breadcrumbs.Item href="/tienda">Tienda</Breadcrumbs.Item>
@@ -135,15 +136,17 @@ export function CheckoutView({
         <Breadcrumbs.Item>Checkout</Breadcrumbs.Item>
       </Breadcrumbs>
 
-      <header>
-        <h1 className="font-bold text-3xl">Checkout</h1>
+      <header className="space-y-3">
+        <Eyebrow>Finalizar compra</Eyebrow>
+        <h1 className="font-display text-[2rem] text-foreground sm:text-[2.5rem]">Checkout</h1>
       </header>
 
       <TrustBlock compact />
 
-      <Card>
-        <Card.Header>
-          <Card.Title>1. Contacto</Card.Title>
+      <Card className="rounded-3xl border-line bg-surface" variant="default">
+        <Card.Header className="gap-1">
+          <Eyebrow tone="muted">Paso 1</Eyebrow>
+          <Card.Title className="font-display text-xl text-foreground">Contacto</Card.Title>
         </Card.Header>
         <Card.Content className="space-y-3">
           <TextField onChange={setEmail} value={email}>
@@ -161,9 +164,10 @@ export function CheckoutView({
         </Card.Content>
       </Card>
 
-      <Card>
-        <Card.Header>
-          <Card.Title>2. Envío</Card.Title>
+      <Card className="rounded-3xl border-line bg-surface" variant="default">
+        <Card.Header className="gap-1">
+          <Eyebrow tone="muted">Paso 2</Eyebrow>
+          <Card.Title className="font-display text-xl text-foreground">Envío</Card.Title>
         </Card.Header>
         <Card.Content className="space-y-3">
           <div className="flex gap-2">
@@ -202,10 +206,10 @@ export function CheckoutView({
               {quoteOptions.map((o) => (
                 <button
                   aria-label={`${o.service_description} — ${CLP_FORMATTER.format(o.shipping_clp)}`}
-                  className={`block w-full rounded-lg border p-3 text-left text-sm ${
+                  className={`block w-full rounded-2xl border p-3 text-left text-sm transition ${
                     serviceCode === o.service_code
-                      ? "border-primary bg-primary/10"
-                      : "border-foreground/10"
+                      ? "border-brand-amber bg-brand-amber/10"
+                      : "border-line hover:border-brand-blue"
                   }`}
                   key={o.service_code}
                   onClick={() => {
@@ -214,7 +218,7 @@ export function CheckoutView({
                   }}
                   type="button"
                 >
-                  <span className="flex justify-between">
+                  <span className="flex justify-between text-foreground">
                     <span>{o.service_description}</span>
                     <span className="font-bold">{CLP_FORMATTER.format(o.shipping_clp)}</span>
                   </span>
@@ -225,39 +229,43 @@ export function CheckoutView({
         </Card.Content>
       </Card>
 
-      <Card>
-        <Card.Header>
-          <Card.Title>Resumen</Card.Title>
+      <Card className="rounded-3xl border-line bg-surface" variant="default">
+        <Card.Header className="gap-1">
+          <Eyebrow tone="muted">Resumen</Eyebrow>
+          <Card.Title className="font-display text-xl text-foreground">Tu pedido</Card.Title>
         </Card.Header>
-        <Card.Content className="space-y-1 text-sm">
+        <Card.Content className="space-y-2 text-sm">
           {cart.items.map((i: CartItem) => (
-            <div className="flex justify-between" key={i.id}>
-              <span>
+            <div className="flex justify-between text-foreground" key={i.id}>
+              <span className="text-muted">
                 {i.qty}× {i.product.name}
               </span>
               <span>{CLP_FORMATTER.format(lineTotalClp(i.unit_price_clp, i.qty))}</span>
             </div>
           ))}
-          <div className="flex justify-between border-foreground/10 border-t pt-2">
-            <span>Subtotal</span>
+          <div className="flex justify-between border-line border-t pt-2 text-foreground">
+            <span className="text-muted">Subtotal</span>
             <span>{CLP_FORMATTER.format(cart.subtotal_clp)}</span>
           </div>
-          <div className="flex justify-between">
-            <span>Envío</span>
+          <div className="flex justify-between text-foreground">
+            <span className="text-muted">Envío</span>
             <span>{CLP_FORMATTER.format(shippingClp)}</span>
           </div>
-          <div className="flex justify-between border-foreground/10 border-t pt-2 font-bold text-base">
+          <div className="flex justify-between border-line border-t pt-3 font-bold text-base text-foreground">
             <span>Total</span>
             <span>{CLP_FORMATTER.format(totalClp)}</span>
           </div>
-          <p className="text-foreground/60 text-xs">IVA incluido</p>
+          <p className="text-muted text-xs">IVA incluido</p>
         </Card.Content>
       </Card>
 
-      <Card>
-        <Card.Header>
-          <Card.Title>3. Pago</Card.Title>
-          <Card.Description>Tarjeta de crédito/débito · Webpay · MercadoPago</Card.Description>
+      <Card className="rounded-3xl border-line bg-surface" variant="default">
+        <Card.Header className="gap-1">
+          <Eyebrow tone="muted">Paso 3</Eyebrow>
+          <Card.Title className="font-display text-xl text-foreground">Pago</Card.Title>
+          <Card.Description className="text-muted">
+            Tarjeta de crédito/débito · Webpay · MercadoPago
+          </Card.Description>
         </Card.Header>
         <Card.Content>
           {!customerReady && (

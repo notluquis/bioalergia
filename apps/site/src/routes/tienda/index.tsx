@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { z } from "zod";
 
+import { ShopShell } from "@/components/ShopShell";
 import { TiendaView } from "@/features/shop/components/TiendaView";
 import { sortProducts } from "@/features/shop/lib/catalog";
 import { shopKeys } from "@/features/shop/queries";
@@ -19,16 +20,18 @@ function TiendaPage() {
   const sorted = useMemo(() => (data ? sortProducts(data.data, sort) : []), [data, sort]);
 
   return (
-    <TiendaView
-      error={error}
-      isLoading={isLoading}
-      onSortChange={(next) => {
-        void navigate({ search: { sort: next } });
-      }}
-      productCount={data ? data.data.length : null}
-      products={sorted}
-      sort={sort}
-    />
+    <ShopShell>
+      <TiendaView
+        error={error}
+        isLoading={isLoading}
+        onSortChange={(next) => {
+          void navigate({ search: { sort: next } });
+        }}
+        productCount={data ? data.data.length : null}
+        products={sorted}
+        sort={sort}
+      />
+    </ShopShell>
   );
 }
 

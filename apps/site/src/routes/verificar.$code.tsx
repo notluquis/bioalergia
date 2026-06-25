@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { BadgeCheck, ShieldX } from "lucide-react";
 import { z } from "zod";
 
+import { ShopShell } from "@/components/ShopShell";
 import { verificationClient } from "@/lib/orpc-client";
 
 // Search param opcional `h`: hash SHA-256 del PDF para el badge de integridad.
@@ -24,12 +25,12 @@ function formatDate(value: string | Date): string {
 
 function Field({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
-    <div className="rounded-xl border border-default-200 bg-default-50 px-4 py-3">
-      <span className="block font-semibold text-[11px] text-default-500 uppercase tracking-wide">
+    <div className="rounded-xl border border-line bg-surface-2 px-4 py-3">
+      <span className="block font-semibold text-[11px] text-eyebrow uppercase tracking-[0.12em]">
         {label}
       </span>
       <span className="mt-0.5 block font-medium text-foreground text-base">{value}</span>
-      {hint ? <span className="mt-0.5 block text-default-400 text-xs">{hint}</span> : null}
+      {hint ? <span className="mt-0.5 block text-muted text-xs">{hint}</span> : null}
     </div>
   );
 }
@@ -52,7 +53,7 @@ function VerificarDocumentPage() {
           <div className="h-16 rounded-xl bg-default-100" />
           <div className="h-16 rounded-xl bg-default-100" />
         </div>
-        <p className="mt-4 text-center text-default-500 text-sm">Verificando documento…</p>
+        <p className="mt-4 text-center text-muted text-sm">Verificando documento…</p>
       </Shell>
     );
   }
@@ -62,11 +63,11 @@ function VerificarDocumentPage() {
       <Shell>
         <div className="text-center">
           <ShieldX className="mx-auto mb-3 size-14 text-danger" />
-          <h1 className="font-bold text-2xl text-danger">Documento inválido</h1>
-          <p className="mt-2 text-default-500 text-sm">
+          <h1 className="font-display text-3xl text-danger">Documento inválido</h1>
+          <p className="mt-2 text-muted text-sm">
             Este documento no existe, fue anulado o el código no es correcto.
           </p>
-          <p className="mt-1 text-default-400 text-xs">Código consultado: {code}</p>
+          <p className="mt-1 text-muted text-xs">Código consultado: {code}</p>
         </div>
       </Shell>
     );
@@ -76,8 +77,8 @@ function VerificarDocumentPage() {
     <Shell>
       <div className="mb-5 text-center">
         <BadgeCheck className="mx-auto mb-2 size-14 text-secondary" />
-        <h1 className="font-bold text-2xl text-secondary">Documento auténtico</h1>
-        <p className="mt-1 text-default-500 text-sm">{data.documentLabel}</p>
+        <h1 className="font-display text-3xl text-secondary">Documento auténtico</h1>
+        <p className="mt-1 text-muted text-sm">{data.documentLabel}</p>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
@@ -122,7 +123,7 @@ function VerificarDocumentPage() {
         </div>
       ) : null}
 
-      <p className="mt-6 text-center text-default-400 text-xs">
+      <p className="mt-6 text-center text-muted text-xs">
         Verificación oficial de documentos médicos · Bioalergia
       </p>
     </Shell>
@@ -131,10 +132,12 @@ function VerificarDocumentPage() {
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-default-100 p-4">
-      <div className="w-full max-w-lg rounded-3xl bg-background p-6 shadow-xl sm:p-8">
-        {children}
+    <ShopShell>
+      <div className="flex items-center justify-center bg-surface-2 px-4 py-16">
+        <div className="w-full max-w-lg rounded-3xl border border-line bg-surface p-6 shadow-sm sm:p-8">
+          {children}
+        </div>
       </div>
-    </div>
+    </ShopShell>
   );
 }

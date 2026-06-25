@@ -32,7 +32,7 @@ export function ProductGallery({ images, productName }: { images: Image[]; produ
 
   if (sorted.length === 0) {
     return (
-      <div className="flex aspect-square w-full items-center justify-center rounded-2xl bg-foreground/5 text-foreground/30">
+      <div className="flex aspect-square w-full items-center justify-center rounded-2xl border border-line bg-surface-2 text-muted">
         Sin imagen
       </div>
     );
@@ -40,7 +40,10 @@ export function ProductGallery({ images, productName }: { images: Image[]; produ
 
   return (
     <div className="space-y-3">
-      <div className="relative overflow-hidden rounded-2xl bg-foreground/5" ref={emblaRef}>
+      <div
+        className="relative overflow-hidden rounded-2xl border border-line bg-surface-2"
+        ref={emblaRef}
+      >
         <div className="flex">
           {sorted.map((img, i) => (
             <div className="min-w-0 flex-[0_0_100%]" key={img.cdn_url}>
@@ -84,7 +87,7 @@ export function ProductGallery({ images, productName }: { images: Image[]; produ
           <>
             <button
               aria-label="Anterior"
-              className="-translate-y-1/2 absolute top-1/2 left-3 grid place-items-center rounded-full bg-white/80 text-foreground shadow size-9"
+              className="-translate-y-1/2 absolute top-1/2 left-3 grid place-items-center rounded-full border border-line bg-surface/90 text-foreground shadow-sm backdrop-blur size-9 transition hover:bg-surface"
               onClick={() => emblaApi?.scrollPrev()}
               type="button"
             >
@@ -92,7 +95,7 @@ export function ProductGallery({ images, productName }: { images: Image[]; produ
             </button>
             <button
               aria-label="Siguiente"
-              className="-translate-y-1/2 absolute top-1/2 right-3 grid place-items-center rounded-full bg-white/80 text-foreground shadow size-9"
+              className="-translate-y-1/2 absolute top-1/2 right-3 grid place-items-center rounded-full border border-line bg-surface/90 text-foreground shadow-sm backdrop-blur size-9 transition hover:bg-surface"
               onClick={() => emblaApi?.scrollNext()}
               type="button"
             >
@@ -107,7 +110,7 @@ export function ProductGallery({ images, productName }: { images: Image[]; produ
             <button
               aria-label={`Imagen ${i + 1}`}
               className={`flex-shrink-0 overflow-hidden rounded-lg border-2 transition size-16 ${
-                selectedIdx === i ? "border-foreground" : "border-transparent opacity-60"
+                selectedIdx === i ? "border-brand-blue" : "border-line opacity-60 hover:opacity-100"
               }`}
               key={img.cdn_url}
               onClick={() => scrollTo(i)}

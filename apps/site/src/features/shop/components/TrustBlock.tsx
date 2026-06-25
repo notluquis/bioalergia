@@ -47,14 +47,14 @@ export function TrustBlock({ compact = false }: { compact?: boolean }) {
     >
       {items.map((i) => (
         <a
-          className="flex gap-3 rounded-xl border border-foreground/10 bg-foreground/[0.02] p-3 no-underline hover:bg-foreground/5"
+          className="flex gap-3 rounded-xl border border-line bg-surface p-3 no-underline transition hover:border-brand-amber"
           href={i.href}
           key={i.title}
         >
-          <span className="text-(--accent)">{i.icon}</span>
+          <span className="text-brand-blue">{i.icon}</span>
           <span>
-            <strong className="block">{i.title}</strong>
-            <span className={compact ? "hidden" : "text-foreground/70 text-xs"}>{i.body}</span>
+            <strong className="block text-foreground">{i.title}</strong>
+            <span className={compact ? "hidden" : "text-muted text-xs"}>{i.body}</span>
           </span>
         </a>
       ))}
