@@ -193,10 +193,12 @@ export async function createMedicalPrescription(
     .filter(Boolean)
     .join(" ");
   const primaryAddress = patient.person.addresses?.[0];
+  const streetAndNumber = primaryAddress
+    ? [primaryAddress.street, primaryAddress.number].filter(Boolean).join(" ")
+    : null;
   const addressStr = primaryAddress
     ? [
-        primaryAddress.street,
-        primaryAddress.number,
+        streetAndNumber,
         primaryAddress.supplement,
         primaryAddress.comuna,
       ]

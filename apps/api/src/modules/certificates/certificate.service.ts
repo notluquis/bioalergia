@@ -504,13 +504,24 @@ export async function generateMedicalPrescriptionPdf(
   const boxTop = y + 4;
   const px = margin + PATIENT_BOX_PAD;
   // Etiqueta gris + valor (negrita opcional) inline; devuelve x final.
-  const drawField = (label: string, value: string, x: number, yy: number, valueBold = false) => {
+  const drawField = (label: string, value: string, x: number, yy: number, valueBold = false, maxW?: number) => {
     page.drawText(label, { x, y: yy, size: 8.5, font, color: BRAND_GRAY });
     const lw = font.widthOfTextAtSize(`${label} `, 8.5);
     const vFont = valueBold ? bold : font;
-    const vSize = valueBold ? 9.5 : 9;
-    page.drawText(value, { x: x + lw, y: yy, size: vSize, font: vFont, color: BRAND_INK });
-    return x + lw + vFont.widthOfTextAtSize(value, vSize);
+    let vSize = valueBold ? 9.5 : 9;
+    let displayValue = value;
+
+    if (maxW) {
+      while (vSize > 6 && vFont.widthOfTextAtSize(displayValue, vSize) > maxW) {
+        vSize -= 0.25;
+      }
+      if (vFont.widthOfTextAtSize(displayValue, vSize) > maxW) {
+        displayValue = truncateToWidth(displayValue, vFont, vSize, maxW);
+      }
+    }
+
+    page.drawText(displayValue, { x: x + lw, y: yy, size: vSize, font: vFont, color: BRAND_INK });
+    return x + lw + vFont.widthOfTextAtSize(displayValue, vSize);
   };
   if (showStatic) {
     tagger.artifact(page, () => {
@@ -530,7 +541,7 @@ export async function generateMedicalPrescriptionPdf(
     let py = boxTop - PATIENT_BOX_PAD - 8;
 
     const nameMaxW = 210 - font.widthOfTextAtSize("Paciente: ", 8.5);
-    drawField("Paciente:", truncateToWidth(input.patient.name, bold, 9.5, nameMaxW), px, py, true);
+    drawField("Paciente:", input.patient.name, px, py, true, nameMaxW);
     const sex = input.patientSex?.trim();
     if (sex) drawField("Sexo:", sex, px + 220, py);
     py -= 15;
@@ -540,8 +551,8 @@ export async function generateMedicalPrescriptionPdf(
     drawField("Edad:", ageText, px + 110, py);
     py -= 15;
 
-    const addressMaxW = 250 - font.widthOfTextAtSize("Domicilio: ", 8.5);
-    drawField("Domicilio:", truncateToWidth(input.patientAddress || "No registrado", font, 9, addressMaxW), px, py);
+    const addressMaxW = contentWidth - PATIENT_BOX_PAD * 2 - font.widthOfTextAtSize("Domicilio: ", 8.5);
+    drawField("Domicilio:", input.patientAddress || "No registrado", px, py, false, addressMaxW);
     py -= 15;
 
     drawField("Fecha de emisión:", formatDate(input.date), px, py);

@@ -128,16 +128,17 @@ interface ClinicSettingsLite {
   privacyPolicyUrl?: string | null;
 }
 
-// ── Brand palette (do not change — matches templates) ────────────────────
-const NAVY: [number, number, number] = [12, 38, 84];
-const SECTION_BLUE: [number, number, number] = [42, 95, 184];
-const PEACH: [number, number, number] = [253, 217, 178];
-const TEXT: [number, number, number] = [0, 0, 0];
-const FOOTER: [number, number, number] = [80, 80, 80];
-const TABLE_ACCENT: [number, number, number] = [255, 240, 230];
+// ── Brand palette (estandarizada con certificados / BRAND_*) ──────────────
+const BRAND_BLUE: [number, number, number] = [26, 77, 122]; // #1a4d7a
+const BRAND_AMBER: [number, number, number] = [212, 164, 53]; // #d4a435
+const BRAND_INK: [number, number, number] = [23, 33, 43]; // #17222b
+const BRAND_GRAY: [number, number, number] = [107, 115, 128]; // #6b7380
+const BRAND_TINT: [number, number, number] = [242, 247, 252]; // #f2f7fc
+const FOOTER: [number, number, number] = [107, 115, 128]; // BRAND_GRAY para el footer
+const BRAND_ACCENT: [number, number, number] = [255, 240, 230]; // was TABLE_ACCENT
 
-const PAGE_W = 612;
-const PAGE_H = 792;
+const PAGE_W = 595; // A4 width in pt (595.28)
+const PAGE_H = 842; // A4 height in pt (841.89)
 const SIDEBAR_W = 32;
 const MARGIN_X = 60;
 const CONTENT_RIGHT = PAGE_W - 50;
@@ -185,7 +186,7 @@ async function renderLucideIcon(
   // multiple paths split on " M " (each subpath starts with M/m).
   const subpaths = pathData.split(/\s(?=[Mm]\s)/).map((s) => s.trim());
   const pathEls = subpaths.map((d) => `<path d="${d}" />`).join("");
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="${sizePx}" height="${sizePx}" fill="none" stroke="rgb(${SECTION_BLUE.join(",")})" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${pathEls}</svg>`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="${sizePx}" height="${sizePx}" fill="none" stroke="rgb(${BRAND_BLUE.join(",")})" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${pathEls}</svg>`;
   const dataUrl = `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
   return rasterizeSvg(dataUrl, sizePx * 3, sizePx * 3);
 }
@@ -419,9 +420,9 @@ const EAACI_2023_NOMENCLATURE =
 // ── Page-shell helpers ──────────────────────────────────────────────────
 
 function drawSidebar(doc: jsPDF, clinicName: string): void {
-  doc.setFillColor(...PEACH);
+  doc.setFillColor(...BRAND_TINT);
   doc.rect(0, 0, SIDEBAR_W, PAGE_H, "F");
-  doc.setTextColor(...NAVY);
+  doc.setTextColor(...BRAND_INK);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(20);
   doc.text(sanitizePdfText(clinicName.toUpperCase()), SIDEBAR_W / 2 + 7, PAGE_H - 80, {
@@ -450,7 +451,7 @@ function drawSectionTitle({ doc, y, title, iconDataUrl }: SectionTitleOptions): 
   }
   doc.setFont("helvetica", "bold");
   doc.setFontSize(11);
-  doc.setTextColor(...SECTION_BLUE);
+  doc.setTextColor(...BRAND_BLUE);
   doc.text(sanitizePdfText(title), textX, y);
   return y + 16;
 }
@@ -462,7 +463,7 @@ export async function generateExamReportPdf(
   settings: ClinicSettingsLite,
   options?: { logoUrl?: string }
 ): Promise<Blob> {
-  const doc = new jsPDF({ unit: "pt", format: "letter", orientation: "portrait" });
+  const doc = new jsPDF({ unit: "pt", format: "a4", orientation: "portrait" });
   const config = EXAM_TYPE_CONFIG[report.examType];
   const isPatch = report.examType === "PATCH";
 
@@ -494,7 +495,7 @@ export async function generateExamReportPdf(
   }
 
   // ── Title (multi-line, centered) ─────────────────────────────────────
-  doc.setTextColor(...TEXT);
+  doc.setTextColor(...BRAND_INK);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(15);
   let y = 110;
@@ -519,12 +520,12 @@ export async function generateExamReportPdf(
   doc.setFontSize(12);
   const drawLabel = (label: string, value: string | null, yPos: number): void => {
     doc.setFont("helvetica", "bold");
-    doc.setTextColor(...NAVY);
+    doc.setTextColor(...BRAND_INK);
     const safeLabel = sanitizePdfText(label);
     doc.text(safeLabel, MARGIN_X, yPos);
     const labelW = doc.getTextWidth(safeLabel);
     doc.setFont("helvetica", "normal");
-    doc.setTextColor(...TEXT);
+    doc.setTextColor(...BRAND_INK);
     doc.text(sanitizePdfText(value ?? "—"), MARGIN_X + labelW + 4, yPos);
   };
   drawLabel("NOMBRE: ", report.patient.fullName, y);
@@ -551,15 +552,15 @@ export async function generateExamReportPdf(
     ];
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9.5);
-    doc.setTextColor(...TEXT);
+    doc.setTextColor(...BRAND_INK);
     for (const [k, v] of metaRows) {
       doc.setFont("helvetica", "bold");
-      doc.setTextColor(...NAVY);
+      doc.setTextColor(...BRAND_INK);
       const labelTxt = sanitizePdfText(`${k}: `);
       doc.text(labelTxt, MARGIN_X, y);
       const lw = doc.getTextWidth(labelTxt);
       doc.setFont("helvetica", "normal");
-      doc.setTextColor(...TEXT);
+      doc.setTextColor(...BRAND_INK);
       doc.text(sanitizePdfText(v), MARGIN_X + lw, y);
       y += 12;
     }
@@ -572,7 +573,7 @@ export async function generateExamReportPdf(
     y = drawSectionTitle({ doc, y, title: "CONTROLES DEL EXAMEN", iconDataUrl: iconShield });
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
-    doc.setTextColor(...TEXT);
+    doc.setTextColor(...BRAND_INK);
 
     const histTxt =
       controls.histamineMm != null
@@ -595,12 +596,12 @@ export async function generateExamReportPdf(
 
   // ── Conclusion ───────────────────────────────────────────────────────
   doc.setFont("helvetica", "bold");
-  doc.setTextColor(...NAVY);
+  doc.setTextColor(...BRAND_INK);
   doc.setFontSize(11);
   doc.text("CONCLUSION EXAMEN: ", MARGIN_X, y);
   const concW = doc.getTextWidth("CONCLUSION EXAMEN: ");
   doc.setFont("helvetica", "normal");
-  doc.setTextColor(...TEXT);
+  doc.setTextColor(...BRAND_INK);
   const concWrapped = safeSplit(doc, report.conclusionText, CONTENT_W - concW);
   if (concWrapped.length > 0) {
     doc.text(concWrapped[0] ?? "", MARGIN_X + concW, y);
@@ -679,12 +680,12 @@ export async function generateExamReportPdf(
         font: "helvetica",
         fontSize: 9,
         cellPadding: 3,
-        textColor: TEXT,
+        textColor: BRAND_INK,
         lineColor: [200, 200, 200],
         lineWidth: 0.3,
       },
       headStyles: {
-        fillColor: NAVY,
+        fillColor: BRAND_BLUE,
         textColor: [255, 255, 255],
         fontStyle: "bold",
       },
@@ -702,7 +703,7 @@ export async function generateExamReportPdf(
         if (data.section === "body" && data.column.index === 3) {
           const row = rows[data.row.index];
           if (row?.positive) {
-            data.cell.styles.fillColor = TABLE_ACCENT;
+            data.cell.styles.fillColor = BRAND_ACCENT;
             data.cell.styles.fontStyle = "bold";
           }
         }
@@ -720,7 +721,7 @@ export async function generateExamReportPdf(
   // ── PATCH path keeps the original section/grouping body ─────────────
   if (isPatch) {
     doc.setFont("helvetica", "bold");
-    doc.setTextColor(...SECTION_BLUE);
+    doc.setTextColor(...BRAND_BLUE);
     doc.text("ALERGENOS TESTEADOS:", MARGIN_X, y);
     y += 18;
 
@@ -759,7 +760,7 @@ export async function generateExamReportPdf(
 
       doc.setFont("helvetica", "bold");
       doc.setFontSize(11);
-      doc.setTextColor(...SECTION_BLUE);
+      doc.setTextColor(...BRAND_BLUE);
       doc.text(
         sanitizePdfText(isGroupHeader ? item.label : `${item.group ? "- " : ""}${item.label}:`),
         MARGIN_X + indent,
@@ -777,7 +778,7 @@ export async function generateExamReportPdf(
 
       doc.setFont("helvetica", "normal");
       doc.setFontSize(10);
-      doc.setTextColor(...TEXT);
+      doc.setTextColor(...BRAND_INK);
       for (const line of reactionLines) {
         const wrapped = safeSplit(doc, line, maxW);
         for (const wline of wrapped) {
@@ -883,7 +884,7 @@ export async function generateExamReportPdf(
     y += 4;
     doc.setFont("helvetica", "bolditalic");
     doc.setFontSize(9);
-    doc.setTextColor(...TEXT);
+    doc.setTextColor(...BRAND_INK);
     const wrapped = safeSplit(doc, report.notes, CONTENT_W);
     for (const line of wrapped) {
       doc.text(line, MARGIN_X, y);
@@ -929,7 +930,7 @@ export async function generateExamReportPdf(
   }
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10);
-  doc.setTextColor(...NAVY);
+  doc.setTextColor(...BRAND_INK);
   doc.text(sanitizePdfText(report.doctorName.toUpperCase()), sigBoxX, sigBoxY + 78);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
