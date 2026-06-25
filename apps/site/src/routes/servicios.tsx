@@ -1,9 +1,10 @@
-import { Alert, Breadcrumbs, Card, Link } from "@heroui/react";
+import { Alert, Card, Link } from "@heroui/react";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { BookingCta } from "@/components/BookingCta";
 import { JsonLd } from "@/components/JsonLd";
 import { PageShell } from "@/components/PageShell";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { services } from "@/data/services";
 import { breadcrumbJsonLd } from "@/lib/seo";
 
@@ -22,21 +23,12 @@ function ServiciosPage() {
           { name: "Servicios", path: "/servicios" },
         ])}
       />
-      <section className="grid gap-4">
-        <Breadcrumbs>
-          <Breadcrumbs.Item href="/">Inicio</Breadcrumbs.Item>
-          <Breadcrumbs.Item>Servicios</Breadcrumbs.Item>
-        </Breadcrumbs>
-        <div className="grid gap-3">
-          <div className="text-(--ink-muted) text-xs uppercase tracking-[0.2em]">Servicios</div>
-          <h1 className="font-semibold text-(--ink) text-3xl sm:text-4xl">Nuestros servicios</h1>
-          <p className="max-w-3xl text-(--ink-muted) text-base leading-relaxed sm:text-lg">
-            Acompañamos todo el proceso de las enfermedades alérgicas: desde el diagnóstico preciso
-            hasta tratamientos que modifican el curso de la enfermedad, con educación y seguimiento
-            cercano. El plan adecuado se define siempre en la consulta médica.
-          </p>
-        </div>
-      </section>
+      <PageHeader
+        crumbs={[{ label: "Inicio", href: "/" }, { label: "Servicios" }]}
+        eyebrow="Servicios"
+        lede="Acompañamos todo el proceso de las enfermedades alérgicas: desde el diagnóstico preciso hasta tratamientos que modifican el curso de la enfermedad, con educación y seguimiento cercano. El plan adecuado se define siempre en la consulta médica."
+        title="Nuestros servicios"
+      />
 
       <section className="grid gap-6 md:grid-cols-2">
         {services.map((service) => (
@@ -60,7 +52,9 @@ function ServiciosPage() {
       </section>
 
       <section className="grid gap-4">
-        <h2 className="font-semibold text-(--ink) text-2xl">Horario y atención</h2>
+        <h2 className="font-display text-[1.75rem] text-foreground sm:text-[2rem]">
+          Horario y atención
+        </h2>
         <Card className="rounded-3xl" variant="secondary">
           <Card.Header className="gap-2">
             <Card.Title className="text-lg">Horario de atención</Card.Title>
@@ -82,12 +76,14 @@ function ServiciosPage() {
       </section>
 
       <section className="grid gap-4">
-        <h2 className="font-semibold text-(--ink) text-2xl">Profundiza en cada área</h2>
+        <h2 className="font-display text-[1.75rem] text-foreground sm:text-[2rem]">
+          Profundiza en cada área
+        </h2>
         <div className="flex flex-wrap gap-3">
           {QUICK_LINKS.map((link) => (
             <Link
               key={link.href}
-              className="rounded-full border border-border bg-(--surface-2) px-5 py-2 font-medium text-(--ink) text-sm no-underline transition hover:bg-(--accent) hover:text-white"
+              className="rounded-full border border-line bg-surface-2 px-5 py-2 font-semibold text-foreground text-sm no-underline transition hover:border-brand-amber hover:text-brand-blue"
               href={link.href}
             >
               {link.label}
