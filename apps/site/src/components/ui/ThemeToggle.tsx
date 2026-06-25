@@ -1,9 +1,11 @@
+import { Button } from "@heroui/react";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 
 /**
- * Round 38px theme toggle (handoff) — moon/sun, border line. Uses next-themes;
- * a mounted guard avoids the hydration flash of the wrong icon.
+ * Round 38px theme toggle (handoff) — moon/sun, border line. HeroUI Button
+ * (icon-only) for press/focus a11y; next-themes for state, with a mounted
+ * guard to avoid the hydration flash of the wrong icon.
  */
 export function ThemeToggle({ className = "" }: { className?: string }) {
   const [mounted, setMounted] = useState(false);
@@ -13,11 +15,12 @@ export function ThemeToggle({ className = "" }: { className?: string }) {
   const isDark = mounted && resolvedTheme === "dark";
 
   return (
-    <button
+    <Button
       aria-label={isDark ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
-      className={`inline-flex size-[38px] shrink-0 items-center justify-center rounded-full border border-line text-foreground transition-colors hover:bg-surface-2 ${className}`}
-      onClick={() => setTheme(isDark ? "light" : "dark")}
-      type="button"
+      className={`size-[38px] shrink-0 rounded-full border border-line text-foreground hover:bg-surface-2 ${className}`}
+      isIconOnly
+      onPress={() => setTheme(isDark ? "light" : "dark")}
+      variant="tertiary"
     >
       {isDark ? (
         <svg
@@ -48,6 +51,6 @@ export function ThemeToggle({ className = "" }: { className?: string }) {
           <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />
         </svg>
       )}
-    </button>
+    </Button>
   );
 }

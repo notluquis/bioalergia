@@ -1,3 +1,5 @@
+import { Card } from "@heroui/react";
+
 import type { ClinicPhotoName } from "@/data/photos";
 import { SectionBand } from "@/components/ui/SectionBand";
 import { Eyebrow } from "@/components/ui/Eyebrow";
@@ -45,22 +47,30 @@ export function ImmunotherapySection() {
       </div>
       <div className="grid gap-[26px] md:grid-cols-2">
         {modalities.map((m) => (
-          <div key={m.title} className="overflow-hidden rounded-lg bg-surface shadow-sm">
+          <Card
+            key={m.title}
+            className="gap-0 overflow-hidden rounded-lg bg-surface p-0"
+            variant="default"
+          >
             <Photo
               className="h-[230px]"
               name={m.photo}
               rounded="rounded-none"
               sizes="(min-width: 768px) 560px, 100vw"
             />
-            <div className="p-8">
+            <Card.Header className="block p-8">
               <Eyebrow className="mb-3 text-[0.72rem]">{m.eyebrow}</Eyebrow>
-              <h3 className="mb-3 font-display text-[1.6875rem] text-foreground">{m.title}</h3>
-              <p className="mb-4 text-[0.94rem] leading-[1.6] text-muted">{m.body}</p>
+              <Card.Title className="mb-3 font-display text-[1.6875rem] text-foreground">
+                {m.title}
+              </Card.Title>
+              <Card.Description className="mb-4 text-[0.94rem] leading-[1.6] text-muted">
+                {m.body}
+              </Card.Description>
               <div className="border-line border-t pt-4 text-[0.84rem] text-foreground">
                 <b className="text-brand-blue">Para</b> {m.forWhom}
               </div>
-            </div>
-          </div>
+            </Card.Header>
+          </Card>
         ))}
       </div>
     </SectionBand>

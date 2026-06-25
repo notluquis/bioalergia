@@ -40,10 +40,14 @@ export function HeroSection({ onBook, onWhatsApp }: HeroSectionProps) {
             >
               Reservar evaluación
             </Button>
-            <button className={ctaClass("whatsapp")} onClick={onWhatsApp} type="button">
+            <Button
+              className={ctaClass("whatsapp", "h-auto bg-transparent px-0")}
+              onPress={onWhatsApp}
+              variant="tertiary"
+            >
               <span className="size-[9px] rounded-full bg-doctoralia-green" />
               Hablar por WhatsApp
-            </button>
+            </Button>
           </div>
           <div className="mt-10 flex flex-wrap items-center gap-[14px] border-line border-t pt-[26px] text-[0.84rem] text-muted">
             <span className="font-semibold text-foreground">Dr. José Manuel Martínez</span>
