@@ -22,7 +22,6 @@ export type ClinicPhotoName =
   | "prickDark"
   | "prickDrops"
   | "prickGrid"
-  | "skinTest"
   | "extractsCase"
   | "scitSyringe"
   | "scitInjection";
@@ -84,12 +83,6 @@ export const clinicPhotos: Record<ClinicPhotoName, ClinicPhoto> = {
     stem: "prick-grid",
     alt: "Marcado de la grilla de prueba cutánea en el antebrazo",
     position: "center 35%",
-    orientation: "portrait",
-  },
-  skinTest: {
-    stem: "skin-test",
-    alt: "Profesional de Bioalergia realizando una prueba cutánea",
-    position: "center 25%",
     orientation: "portrait",
   },
   extractsCase: {

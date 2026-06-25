@@ -12,7 +12,7 @@ import { installAccountMocks } from "./_account-mocks";
 test("/login renders the email + password form", async ({ page }) => {
   await page.goto("/login", { waitUntil: "domcontentloaded" });
 
-  await expect(page.getByRole("heading", { level: 1, name: "Mi cuenta" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Inicia sesión" })).toBeVisible();
   await expect(page.getByLabel("Email")).toBeVisible();
   await expect(page.getByLabel(/Contraseña/)).toBeVisible();
   // The CTA defaults to the magic-link label until a password is typed.
@@ -51,5 +51,5 @@ test("/mi-cuenta redirects to /login when unauthenticated", async ({ page }) => 
 
   // The layout's guard navigates to /login once `me` resolves with no user.
   await expect(page).toHaveURL(/\/login$/);
-  await expect(page.getByRole("heading", { level: 1, name: "Mi cuenta" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Inicia sesión" })).toBeVisible();
 });
