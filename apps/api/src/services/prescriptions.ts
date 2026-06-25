@@ -117,7 +117,8 @@ export async function buildPrescriptionPdfBytes(
       doctorEmail: prescription.doctorEmail ?? undefined,
       doctorAddress: prescription.doctorAddress ?? undefined,
       patient: { name: prescription.patientName, rut: prescription.patientRut },
-      patientAddress: (prescription.metadata as any)?.patientAddress ?? undefined,
+      patientAddress:
+        (prescription.metadata as { patientAddress?: string } | null)?.patientAddress ?? undefined,
       clinicName: clinic?.name ?? undefined,
     },
     { primary: clinic?.logoUrl, secondary: clinic?.secondaryLogoUrl }

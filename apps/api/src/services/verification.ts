@@ -49,6 +49,33 @@ function toInitials(fullName: null | string | undefined): string {
   return words.map((w) => `${(w[0] ?? "").toUpperCase()}.`).join("");
 }
 
+// Nombre completo del emisor a partir de su Person (el include trae solo el
+// primer nombre `names` + apellidos). NO hardcodear un médico: la proyección
+// deriva el firmante del documento, de la clínica o del emisor real.
+function issuerFullName(
+  issuer: {
+    person: { names: string; fatherName: null | string; motherName: null | string } | null;
+  } | null
+): string | undefined {
+  const p = issuer?.person;
+  if (!p) return undefined;
+  const full = [p.names, p.fatherName, p.motherName].filter(Boolean).join(" ").trim();
+  return full || undefined;
+}
+
+// Firmante configurado por la clínica (ClinicSettings singleton id=1) —
+// editable en la intranet, no constante en código.
+async function clinicSigner(): Promise<{ name?: string; specialty?: string }> {
+  const c = await db.clinicSettings.findUnique({
+    where: { id: 1 },
+    select: { doctorName: true, doctorSpecialty: true },
+  });
+  return {
+    name: c?.doctorName?.trim() || undefined,
+    specialty: c?.doctorSpecialty?.trim() || undefined,
+  };
+}
+
 // Código corto público listo para codificar en el QR ANTES de persistir el doc.
 // La FK certificate_id/prescription_id exige que el doc exista primero, así que
 // el flujo es: (1) generar código → codificarlo en el QR/PDF → crear el doc →
@@ -202,13 +229,15 @@ async function projectCertificate(
   });
   if (!certificate) return INVALID;
 
-  const doctorName = "Dr. José Manuel Martínez Martínez";
+  const signer = await clinicSigner();
+  const doctorName =
+    signer.name || issuerFullName(certificate.issuer) || "Equipo médico Bioalergia";
   return {
     valid: true,
     documentType: "certificate",
     documentLabel: "Certificado médico",
     issuedAt: certificate.issuedAt,
-    doctor: { name: doctorName, specialty: DEFAULT_SPECIALTY },
+    doctor: { name: doctorName, specialty: signer.specialty || DEFAULT_SPECIALTY },
     patientInitials: toInitials(certificate.patientName),
     ...(maskRut(certificate.patientRut)
       ? { patientRutMasked: maskRut(certificate.patientRut) }
@@ -229,10 +258,13 @@ async function projectPrescription(
   if (!prescription) return INVALID;
   if (prescription.status === "ANNULLED") return INVALID;
 
+  const signer = await clinicSigner();
   const doctorName =
     prescription.doctorName?.trim() ||
-    "Dr. José Manuel Martínez Martínez";
-  const specialty = prescription.doctorSpecialty?.trim() || DEFAULT_SPECIALTY;
+    signer.name ||
+    issuerFullName(prescription.issuer) ||
+    "Equipo médico Bioalergia";
+  const specialty = prescription.doctorSpecialty?.trim() || signer.specialty || DEFAULT_SPECIALTY;
   return {
     valid: true,
     documentType: "prescription",
