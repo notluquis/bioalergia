@@ -129,9 +129,11 @@ interface ClinicSettingsLite {
 }
 
 // ── Brand palette (estandarizada con certificados / BRAND_*) ──────────────
-const BRAND_BLUE: [number, number, number] = [26, 77, 122]; // #1a4d7a
-const BRAND_INK: [number, number, number] = [23, 33, 43]; // #17222b
-const BRAND_TINT: [number, number, number] = [242, 247, 252]; // #f2f7fc
+// PDF brand colours as pdf-lib RGB tuples (OKLCH/theme tokens don't apply to
+// PDF rendering). RGB is the value of record; descriptive names, no hex.
+const BRAND_BLUE: [number, number, number] = [26, 77, 122]; // navy
+const BRAND_INK: [number, number, number] = [23, 33, 43]; // ink
+const BRAND_TINT: [number, number, number] = [242, 247, 252]; // light tint
 const FOOTER: [number, number, number] = [107, 115, 128]; // BRAND_GRAY para el footer
 const BRAND_ACCENT: [number, number, number] = [255, 240, 230]; // was TABLE_ACCENT
 

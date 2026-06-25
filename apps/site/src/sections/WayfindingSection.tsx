@@ -70,21 +70,26 @@ export function WayfindingSection({ onBook }: { onBook: () => void }) {
               </Card.Description>
             </Card.Header>
             <Card.Footer className="mt-auto p-0 pt-[22px]">
-              {route.href ? (
-                <Link
-                  className={ctaClass(route.variant, "w-full rounded-lg py-[13px] text-[0.94rem]")}
-                  href={route.href}
-                >
-                  {route.cta}
-                </Link>
-              ) : (
-                <Button
-                  className={ctaClass(route.variant, "w-full rounded-lg py-[13px] text-[0.94rem]")}
-                  onPress={onBook}
-                >
-                  {route.cta}
-                </Button>
-              )}
+              {(() => {
+                // Homologous button box: the outline variant already has a
+                // 1.5px border; give the filled ones a transparent border of
+                // the same width so all three CTAs are exactly the same height.
+                // Fixed height = identical box across Button/Link + outline
+                // border differences.
+                const btn = ctaClass(
+                  route.variant,
+                  "h-[3.25rem] w-full rounded-lg py-0 text-[0.94rem]"
+                );
+                return route.href ? (
+                  <Link className={btn} href={route.href}>
+                    {route.cta}
+                  </Link>
+                ) : (
+                  <Button className={btn} onPress={onBook}>
+                    {route.cta}
+                  </Button>
+                );
+              })()}
             </Card.Footer>
           </Card>
         ))}

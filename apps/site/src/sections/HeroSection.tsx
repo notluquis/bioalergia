@@ -29,7 +29,7 @@ export function HeroSection({ onBook, onWhatsApp }: HeroSectionProps) {
   return (
     <section className="relative overflow-hidden bg-background" id="inicio">
       <MoleculeMotif className="pointer-events-none absolute top-[-40px] right-[-30px] size-[440px] text-[#c9d8ea] opacity-30" />
-      <Container className="relative grid items-start gap-10 pt-6 pb-16 lg:grid-cols-[1fr_1.02fr] lg:gap-14 lg:pt-8 lg:pb-[5.25rem]">
+      <Container className="relative grid items-stretch gap-10 pt-6 pb-16 lg:grid-cols-[1fr_1.02fr] lg:gap-14 lg:pt-8 lg:pb-[5.25rem]">
         <div className="flex flex-col">
           <Eyebrow className="mb-6">Clínica especializada en respiración</Eyebrow>
           <h1 className="font-display text-[2.75rem] leading-[1.06] text-foreground sm:text-[3.5rem] lg:text-[4.125rem]">
@@ -55,16 +55,18 @@ export function HeroSection({ onBook, onWhatsApp }: HeroSectionProps) {
               Hablar por WhatsApp
             </Button>
           </div>
-          <div className="mt-10 flex flex-wrap items-center gap-[14px] border-line border-t pt-[26px] text-[0.84rem] text-muted">
-            <span className="font-semibold text-foreground">Dr. José Manuel Martínez</span>
-            <span className="text-line">·</span>
-            <span>Formación AAAeIC Argentina y pasantía en España</span>
-          </div>
-          <Suspense fallback={null}>
-            <div className="mt-8">
-              <PollenHeroCard />
+          {/* Bottom group sinks to the column foot (mt-auto) so it lines up
+              with the base of the tall booking widget — fills the space. */}
+          <div className="mt-auto flex flex-col gap-6 pt-10">
+            <div className="flex flex-wrap items-center gap-[14px] border-line border-t pt-[26px] text-[0.84rem] text-muted">
+              <span className="font-semibold text-foreground">Dr. José Manuel Martínez</span>
+              <span className="text-line">·</span>
+              <span>Formación AAAeIC Argentina y pasantía en España</span>
             </div>
-          </Suspense>
+            <Suspense fallback={null}>
+              <PollenHeroCard />
+            </Suspense>
+          </div>
         </div>
         <Suspense
           fallback={<div className="min-h-[25rem] animate-pulse rounded-2xl bg-surface-2" />}
