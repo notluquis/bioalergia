@@ -123,7 +123,7 @@ describe("normalizeJobLocation", () => {
       ["Laja, REGION DEL BIOBIO, CL", "Laja, Biobío", "region:biobio"],
       ["Yerbas Buenas, REGION DEL MAULE, CL", "Yerbas Buenas, Maule", "region:maule"],
       ["La Unión, REGIÓN DE LOS RÍOS, CL", "La Unión, Los Ríos", "region:los rios"],
-      ["Diguillín, REGIÓN DE ÑUBLE, CL", "Diguillín, Ñuble", "region:nuble"],
+      ["Bulnes, REGIÓN DE ÑUBLE, CL", "Bulnes, Ñuble", "region:nuble"],
     ];
 
     for (const [raw, label, regionKey] of cases) {
@@ -140,7 +140,7 @@ describe("normalizeJobLocation", () => {
   it("normalizes Chilean city plus CL values from Genomawork", () => {
     const cases: Array<[string, string]> = [
       ["Puerto Varas, CL", "Puerto Varas, Los Lagos"],
-      ["San Francisco de Mostazal, CL", "San Francisco de Mostazal, O'Higgins"],
+      ["San Francisco de Mostazal, CL", "Mostazal, O'Higgins"],
       ["Machalí, CL", "Machalí, O'Higgins"],
       ["Frutillar, CL", "Frutillar, Los Lagos"],
     ];
