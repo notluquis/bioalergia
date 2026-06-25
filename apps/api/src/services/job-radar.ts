@@ -24,7 +24,7 @@ import { fetchGenomaworkJobs } from "../modules/job-radar/genomawork.ts";
 import { fetchHirefrontJobs } from "../modules/job-radar/hirefront.ts";
 import { fetchHiringRoomJobs } from "../modules/job-radar/hiringroom.ts";
 import { fetchPandapeJobs } from "../modules/job-radar/pandape.ts";
-import { fetchSfClassicJobs } from "../modules/job-radar/sfclassic.ts";
+import { fetchSfClassicJobs, parseSfClassicEntry } from "../modules/job-radar/sfclassic.ts";
 import { fetchEmpleosPublicosJobs } from "../modules/job-radar/empleospublicos.ts";
 import {
   DEFAULT_KEYWORDS,
@@ -146,7 +146,12 @@ interface JobSource {
 
 // Mapea una fila JobSource (kind + identifier) a su fetcher. null si el
 // identifier es inválido (ej. Workday mal formado).
-function sourceFromRow(kind: string, identifier: string, keywords: string[]): JobSource | null {
+function sourceFromRow(
+  kind: string,
+  identifier: string,
+  keywords: string[],
+  rowLabel?: string | null
+): JobSource | null {
   switch (kind) {
     case "TEAMTAILOR":
       return {
@@ -204,13 +209,16 @@ function sourceFromRow(kind: string, identifier: string, keywords: string[]): Jo
         label: `trabajando:${identifier}`,
         fetch: () => fetchTrabajandoJobs(identifier),
       };
-    case "SFCLASSIC":
+    case "SFCLASSIC": {
+      // El tenant code SAP no es legible; preferimos el label de la fila.
+      const sfCompany = rowLabel?.trim() || parseSfClassicEntry(identifier)?.company || identifier;
       return {
         source: "sfclassic",
-        company: identifier.split(":")[2] ?? identifier,
-        label: `sfclassic:${identifier.split(":")[2] ?? identifier}`,
-        fetch: () => fetchSfClassicJobs(identifier),
+        company: sfCompany,
+        label: `sfclassic:${sfCompany}`,
+        fetch: () => fetchSfClassicJobs(identifier, rowLabel),
       };
+    }
     case "GENOMAWORK":
       return {
         source: "genomawork",
@@ -308,7 +316,7 @@ async function getSources(config: JobRadarConfig): Promise<JobSource[]> {
   const sources: JobSource[] = [];
   const rows = await db.jobSource.findMany({ where: { enabled: true } });
   for (const row of rows) {
-    const s = sourceFromRow(row.kind, row.identifier, config.keywords);
+    const s = sourceFromRow(row.kind, row.identifier, config.keywords, row.label);
     if (s) sources.push(s);
   }
   if (config.bci) {

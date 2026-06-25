@@ -22,7 +22,7 @@ import type { RawJob } from "./types.ts";
 export interface SfClassicEntry {
   host: string;
   path: string; // "career" | "careers"
-  company: string;
+  company: string; // tenant code SAP (ej "C0008741144P"), va en la URL
   locale: string;
 }
 
@@ -89,8 +89,13 @@ function stripHtml(html: string | null): string | null {
 /**
  * Trae las ofertas vigentes de un career-site SuccessFactors clásico vía feed XML.
  * Devuelve [] si el feed no responde. Sin paginación: el feed es un dump completo.
+ * `companyLabel` (de job_sources.label) reemplaza el tenant code SAP — que no es
+ * legible (ej "C0008741144P" → "Gold Fields") — como empresa visible de cada oferta.
  */
-export async function fetchSfClassicJobs(identifier: string): Promise<RawJob[]> {
+export async function fetchSfClassicJobs(
+  identifier: string,
+  companyLabel?: string | null
+): Promise<RawJob[]> {
   const e = parseSfClassicEntry(identifier);
   if (!e) return [];
   const url =
@@ -114,13 +119,15 @@ export async function fetchSfClassicJobs(identifier: string): Promise<RawJob[]> 
     seen.add(reqId);
     const filters = filtersByLabel(block);
     const descHtml = cdata(block, "Job-Description");
-    const city = pick(filters, "city", "ciudad");
-    const country = pick(filters, "country", "país", "pais");
+    // Los labels de filtro varían por tenant: LATAM/AMSAP usan City/Country,
+    // Gold Fields usa Location/Region. Aceptamos ambos juegos.
+    const city = pick(filters, "city", "ciudad", "location", "ubicaci", "localidad", "lugar");
+    const country = pick(filters, "country", "país", "pais", "region", "regi", "estado", "state");
     const location =
       [city, country].filter(Boolean).join(", ") || deriveLocationFromText(title, descHtml);
     out.push({
       source: "sfclassic",
-      company: e.company,
+      company: companyLabel ?? e.company,
       externalId: reqId,
       title,
       url:

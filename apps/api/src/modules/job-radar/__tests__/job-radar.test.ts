@@ -14,6 +14,7 @@ import {
   __test__ as sourceIdentifierTest,
   normalizeJobSourceIdentifier,
 } from "../source-identifiers.ts";
+import { fetchSfClassicJobs, parseSfClassicEntry } from "../sfclassic.ts";
 import { fetchSuccessFactorsJobs } from "../successfactors.ts";
 import { fetchTeamtailorJobs } from "../teamtailor.ts";
 import { fetchTrabajandoJobs } from "../trabajando.ts";
@@ -789,6 +790,53 @@ describe("normalizeJobSourceIdentifier", () => {
         '<meta property="og:image" content="https://gcs-files.airavirtual.com/public/companies_assets/be_corredores_de_la_bolsa/WELCOME_RESOURCE-OFFER4914.jpg">'
       )
     ).toBe("be_corredores_de_la_bolsa");
+  });
+});
+
+// Tenant Gold Fields: filtros Region/Location (no City/Country) + tenant code SAP.
+const SFCLASSIC_XML = `<?xml version="1.0" encoding="UTF-8"?>
+<Job-Listing>
+<Job>
+<ReqId>70934</ReqId>
+<JobTitle><![CDATA[Accountant]]></JobTitle>
+<Job-Description><![CDATA[<p>Granny Smith finance role</p>]]></Job-Description>
+<filter1><label>Region</label><value>Australia</value></filter1>
+<filter2><label>Location</label><value>Granny Smith</value></filter2>
+<Posted-Date><![CDATA[06/18/2026]]></Posted-Date>
+</Job>
+</Job-Listing>`;
+
+describe("sfclassic", () => {
+  it("parseSfClassicEntry requires exactly 4 segments", () => {
+    expect(parseSfClassicEntry("career5.successfactors.eu:career:C0008741144P:es_ES")).toEqual({
+      host: "career5.successfactors.eu",
+      path: "career",
+      company: "C0008741144P",
+      locale: "es_ES",
+    });
+    expect(parseSfClassicEntry("a:b:c")).toBeNull();
+  });
+
+  it("uses companyLabel + Region/Location filters (not tenant code)", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(res(SFCLASSIC_XML));
+    const jobs = await fetchSfClassicJobs(
+      "career5.successfactors.eu:career:C0008741144P:es_ES",
+      "Gold Fields"
+    );
+    expect(jobs[0]).toMatchObject({
+      source: "sfclassic",
+      company: "Gold Fields", // no el tenant code C0008741144P
+      externalId: "70934",
+      location: "Granny Smith, Australia",
+    });
+    fetchSpy.mockRestore();
+  });
+
+  it("falls back to tenant code when no label given", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(res(SFCLASSIC_XML));
+    const jobs = await fetchSfClassicJobs("career5.successfactors.eu:career:C0008741144P:es_ES");
+    expect(jobs[0].company).toBe("C0008741144P");
+    fetchSpy.mockRestore();
   });
 });
 
