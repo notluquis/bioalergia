@@ -63,3 +63,6 @@ overrides:
   # 4.17.23). NOTE: there is no 4.17.24 — the maintainers (jdalton) shipped the
   # fixes as the 4.18.0 minor, so 4.17.23 is NOT sufficient.
   lodash-es: ^4.18.0
+
+patchedDependencies:
+  msw@2.14.6: patches/msw@2.14.6.patch

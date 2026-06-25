@@ -1,0 +1,25 @@
+diff --git a/lib/core/index.js b/lib/core/index.js
+index 96a923947dd390a0a71a930e84e643694fe88b61..318ea9d97bae60ad664cb05b0739bd1545b5a918 100644
+--- a/lib/core/index.js
++++ b/lib/core/index.js
+@@ -60,5 +60,5 @@ var import_delay = require("./delay");
+ var import_bypass = require("./bypass");
+ var import_passthrough = require("./passthrough");
+ var import_isCommonAssetRequest = require("./isCommonAssetRequest");
+-(0, import_checkGlobals.checkGlobals)();
++/* checkGlobals() removed: see index.mjs */
+ //# sourceMappingURL=index.js.map
+\ No newline at end of file
+diff --git a/lib/core/index.mjs b/lib/core/index.mjs
+index df5368076ce351e4655d2ff0f66bba5c4d59f2a5..4ea3cdda8479cc56593db46e5506146ed33d8f3d 100644
+--- a/lib/core/index.mjs
++++ b/lib/core/index.mjs
+@@ -26,7 +26,7 @@ import { delay } from './delay.mjs';
+ import { bypass } from './bypass.mjs';
+ import { passthrough } from './passthrough.mjs';
+ import { isCommonAssetRequest } from './isCommonAssetRequest.mjs';
+-checkGlobals();
++/* checkGlobals() removed: top-level side-effect call breaks Storybook esbuild prebundle (import tree-shaken, call kept -> "checkGlobals is not defined" in Chromatic). Guard only warns on missing URL global (RN); unused in browser/Node26. */
+ export {
+   GraphQLHandler,
+   HttpHandler,
