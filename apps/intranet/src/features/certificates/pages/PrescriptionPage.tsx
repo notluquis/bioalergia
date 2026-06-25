@@ -58,7 +58,9 @@ import {
 import { certificatesORPCClient, toCertificatesApiError } from "@/features/certificates/orpc";
 import { PatientSelectModal } from "@/features/exam-reports/components/PatientSelectModal";
 import { fetchPatient } from "@/features/patients/api";
+import { listAddresses } from "@/features/addresses/api";
 import { CreatePatientModal } from "@/features/patients/components/CreatePatientModal";
+import { AddressFormModal } from "@/features/addresses/components/AddressFormModal";
 import { EmailPrescriptionModal } from "@/features/certificates/components/EmailPrescriptionModal";
 import { confirmAction } from "@/components/ui/ConfirmDialog";
 import { chileDay, endOfWeek, formatChile, getISOWeek, startOfWeek, today } from "@/lib/dates";
@@ -69,6 +71,7 @@ const routeApi = getRouteApi("/_authed/certificates/prescription");
 type SelectedPatient = {
   id: number;
   person: {
+    id: number;
     fatherName?: string | null;
     motherName?: string | null;
     names: string;
@@ -274,6 +277,7 @@ export function PrescriptionPage() {
   const searchPatientId = search.patientId;
   const [selectPatientOpen, setSelectPatientOpen] = useState(false);
   const [createPatientOpen, setCreatePatientOpen] = useState(false);
+  const [addressFormOpen, setAddressFormOpen] = useState(false);
   const [patient, setPatient] = useState<SelectedPatient | null>(null);
   const [date, setDate] = useState(today());
   const [selectedDiagnoses, setSelectedDiagnoses] = useState<PrescriptionDiagnosis[]>([]);
@@ -323,6 +327,33 @@ export function PrescriptionPage() {
       person: selectedPatientQ.data.person,
     });
   }, [selectedPatientQ.data]);
+
+  const patientAddressesQ = useQuery({
+    queryKey: ["addresses", patient?.person.id],
+    queryFn: () => listAddresses(patient?.person.id ?? 0),
+    enabled: patient != null,
+  });
+
+  const [missingDataCheck, setMissingDataCheck] = useState<{
+    missingAddress: boolean;
+    missingRut: boolean;
+  } | null>(null);
+
+  const [verifiedPatientId, setVerifiedPatientId] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!patient || patientAddressesQ.isPending) return;
+    if (verifiedPatientId === patient.id) return;
+
+    const missingRut = !patient.person.rut;
+    const missingAddress = !patientAddressesQ.data?.length;
+
+    if (missingRut || missingAddress) {
+      setMissingDataCheck({ missingRut, missingAddress });
+    } else {
+      setVerifiedPatientId(patient.id);
+    }
+  }, [patient, patientAddressesQ.isPending, patientAddressesQ.data, verifiedPatientId]);
 
   const patientLabel = useMemo(() => (patient ? patientFullName(patient) : ""), [patient]);
   const prescriptionsQ = useQuery({
@@ -464,11 +495,8 @@ export function PrescriptionPage() {
     setSelectedDiagnoses((current) => current.filter((item) => item.id !== id));
   };
 
-  const handleSubmit = async () => {
-    if (!patient) {
-      setSubmitError("Selecciona un paciente");
-      return;
-    }
+  const executeSubmit = async () => {
+    if (!patient) return;
     const cleanMedications = medications
       .map((item) => ({
         dosage: composeDosage(item),
@@ -478,10 +506,6 @@ export function PrescriptionPage() {
         name: item.name.trim(),
       }))
       .filter((item) => item.name.length > 0);
-    if (cleanMedications.length === 0) {
-      setSubmitError("Agrega al menos un medicamento");
-      return;
-    }
     const diagnosisText = formatPrescriptionDiagnoses(selectedDiagnoses);
     setSubmitError(null);
     await generateMutation.mutateAsync({
@@ -498,6 +522,23 @@ export function PrescriptionPage() {
     setSelectedDiagnoses([]);
     setNotes("");
     setMedications([newMedicationDraft()]);
+    setMissingDataCheck(null);
+  };
+
+  const handleSubmit = async () => {
+    if (!patient) {
+      setSubmitError("Selecciona un paciente");
+      return;
+    }
+    const cleanMedications = medications
+      .map((item) => item.name.trim())
+      .filter((name) => name.length > 0);
+    if (cleanMedications.length === 0) {
+      setSubmitError("Agrega al menos un medicamento");
+      return;
+    }
+
+    await executeSubmit();
   };
 
   const [isPreviewing, setIsPreviewing] = useState(false);
@@ -602,7 +643,7 @@ export function PrescriptionPage() {
         prescription={emailTarget}
       />
 
-      {patient ? (
+      {patient && verifiedPatientId === patient.id && !missingDataCheck ? (
         <PrescriptionModal
           customDiagnosis={customDiagnosis}
           date={date}
@@ -652,6 +693,82 @@ export function PrescriptionPage() {
           setSelectPatientOpen(true);
         }}
       />
+
+      {missingDataCheck && (
+        <Modal
+          isOpen
+          onOpenChange={(open) => {
+            if (!open) setMissingDataCheck(null);
+          }}
+        >
+          <Modal.Backdrop>
+            <Modal.Container placement="center">
+              <Modal.Dialog className="relative rounded-[28px] bg-background p-6 shadow-2xl max-w-lg">
+                <Modal.Header className="font-semibold text-primary text-xl">
+                  <Modal.Heading>Datos incompletos del paciente</Modal.Heading>
+                </Modal.Header>
+                <Modal.Body className="py-4">
+                  <p className="text-default-600 text-sm">
+                    Faltan algunos datos obligatorios para la receta:
+                  </p>
+                  <ul className="list-inside list-disc text-default-600 text-sm">
+                    {missingDataCheck.missingRut && <li>RUT del paciente</li>}
+                    {missingDataCheck.missingAddress && <li>Dirección de contacto</li>}
+                  </ul>
+                  <div className="mt-4 rounded-lg bg-warning/10 p-3 text-warning text-sm">
+                    Si omites este paso, la receta se emitirá igual, pero quedará con información
+                    faltante.
+                  </div>
+                </Modal.Body>
+                <div className="flex justify-end gap-3 mt-4 border-t border-default-100 pt-4">
+                  <Button
+                    onPress={() => {
+                      setMissingDataCheck(null);
+                      if (patient) setVerifiedPatientId(patient.id);
+                    }}
+                    variant="ghost"
+                    className="text-warning"
+                  >
+                    Omitir y continuar
+                  </Button>
+                  {missingDataCheck.missingAddress ? (
+                    <Button
+                      onPress={() => {
+                        setMissingDataCheck(null);
+                        setAddressFormOpen(true);
+                      }}
+                      className="bg-primary text-primary-foreground"
+                    >
+                      Agregar dirección
+                    </Button>
+                  ) : (
+                    <Button
+                      onPress={() => {
+                        setMissingDataCheck(null);
+                        if (patient) setVerifiedPatientId(patient.id);
+                      }}
+                    >
+                      Entendido y continuar
+                    </Button>
+                  )}
+                </div>
+              </Modal.Dialog>
+            </Modal.Container>
+          </Modal.Backdrop>
+        </Modal>
+      )}
+
+      {patient && addressFormOpen && (
+        <AddressFormModal
+          isOpen={addressFormOpen}
+          onClose={() => {
+            setAddressFormOpen(false);
+            // Optionally, we could auto-resume executeSubmit here if we wanted to be ultra-seamless,
+            // but letting them click 'Generar receta' again is safer.
+          }}
+          personId={patient.person.id}
+        />
+      )}
     </div>
   );
 }

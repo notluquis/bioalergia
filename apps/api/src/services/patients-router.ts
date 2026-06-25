@@ -510,7 +510,9 @@ export async function getPatientDetail(patientId: number) {
   const patient = await db.patient.findUnique({
     where: { id: patientId },
     include: {
-      person: true,
+      person: {
+        include: { addresses: true },
+      },
       consultations: {
         orderBy: { date: "desc" },
         take: 10,

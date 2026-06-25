@@ -121,6 +121,7 @@ export const medicalPrescriptionSchema = z.object({
   patient: z.object({
     id: z.number().int(),
     person: z.object({
+      id: z.number().int(),
       email: z.string().nullable().optional(),
       fatherName: z.string().nullable().optional(),
       motherName: z.string().nullable().optional(),
