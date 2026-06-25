@@ -9,7 +9,7 @@
 import { db, kysely, type JsonValue } from "@finanzas/db";
 import { sql } from "kysely";
 import { DomainError } from "../lib/errors.ts";
-import { logEvent, logWarn } from "../lib/logger.ts";
+import { logError, logEvent, logWarn } from "../lib/logger.ts";
 import { getSettings, updateSettings } from "../lib/settings.ts";
 import { fetchAiravirtualJobs } from "../modules/job-radar/airavirtual.ts";
 import { fetchAshbyJobs } from "../modules/job-radar/ashby.ts";
@@ -617,14 +617,44 @@ let syncProgress: JobRadarSyncProgress = {
 };
 
 export function getJobRadarSyncProgress(): JobRadarSyncProgress {
-  // Si un sync lanzó y dejó el flag colgado, lo damos por terminado tras 5 min.
-  if (
-    syncProgress.running &&
-    syncProgress.startedAt !== null &&
-    Date.now() - syncProgress.startedAt > 300_000
-  ) {
-    return { ...syncProgress, running: false, phase: "done" };
-  }
+  return syncProgress;
+}
+
+export function markJobRadarSyncStarting(): JobRadarSyncProgress {
+  if (getJobRadarSyncProgress().running) return syncProgress;
+  syncProgress = {
+    running: true,
+    phase: "fetching",
+    total: 0,
+    done: 0,
+    fetched: 0,
+    currentLabel: null,
+    startedAt: Date.now(),
+    finishedAt: null,
+    result: null,
+  };
+  return syncProgress;
+}
+
+export function markJobRadarSyncFailed(): JobRadarSyncProgress {
+  syncProgress = {
+    ...syncProgress,
+    running: false,
+    phase: "done",
+    finishedAt: Date.now(),
+  };
+  return syncProgress;
+}
+
+export function startJobRadarSync(options: JobRadarSyncOptions = {}): JobRadarSyncProgress {
+  if (getJobRadarSyncProgress().running) return syncProgress;
+  markJobRadarSyncStarting();
+  void syncJobRadar(options).catch((error) => {
+    markJobRadarSyncFailed();
+    logError("job_radar.background_failed", error, {
+      triggerSource: options.triggerSource ?? "manual",
+    });
+  });
   return syncProgress;
 }
 

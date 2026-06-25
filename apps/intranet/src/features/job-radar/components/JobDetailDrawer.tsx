@@ -1,5 +1,5 @@
 import { formatChile } from "@/lib/dates";
-import { Button, Chip, Drawer, Label, ListBox, Select, TextArea, TextField } from "@heroui/react";
+import { Button, Chip, Drawer, Label, TextArea, TextField } from "@heroui/react";
 import DOMPurify from "dompurify";
 import { ExternalLink } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -7,17 +7,6 @@ import { useTranslation } from "react-i18next";
 import type { JobApplicationStatus, JobPostingDTO } from "@finanzas/orpc-contracts/job-radar";
 import { useToast } from "@/context/ToastContext";
 import { useUpdateJobApplication } from "../hooks/useJobRadar";
-
-const APP_STATUSES: JobApplicationStatus[] = [
-  "NEW",
-  "SEEN",
-  "INTERESTED",
-  "APPLIED",
-  "INTERVIEW",
-  "OFFER",
-  "REJECTED",
-  "DISCARDED",
-];
 
 export function JobDetailDrawer({
   job,
@@ -30,24 +19,22 @@ export function JobDetailDrawer({
   const { success: toastSuccess, error: toastError } = useToast();
   const update = useUpdateJobApplication();
   const [notes, setNotes] = useState("");
-  const [status, setStatus] = useState<JobApplicationStatus>("NEW");
 
   useEffect(() => {
     if (job) {
       setNotes(job.notes ?? "");
-      setStatus(job.applicationStatus);
     }
   }, [job]);
 
   const statusLabel = (s: JobApplicationStatus) => t(`jobRadar.status.${s}`);
 
-  function save() {
+  function markInterested() {
     if (!job) return;
     update.mutate(
-      { id: job.id, applicationStatus: status, notes: notes.trim() === "" ? null : notes },
+      { id: job.id, applicationStatus: "INTERESTED", notes: notes.trim() === "" ? null : notes },
       {
         onSuccess: () => {
-          toastSuccess(t("jobRadar.detail.saved"));
+          toastSuccess(t("jobRadar.statusUpdated", { status: statusLabel("INTERESTED") }));
           onClose();
         },
         onError: (e) => toastError(e),
@@ -116,23 +103,6 @@ export function JobDetailDrawer({
                 </div>
               )}
 
-              <Select value={status} onChange={(k) => k && setStatus(k as JobApplicationStatus)}>
-                <Label>{t("jobRadar.changeStatus")}</Label>
-                <Select.Trigger>
-                  <Select.Value />
-                  <Select.Indicator />
-                </Select.Trigger>
-                <Select.Popover>
-                  <ListBox>
-                    {APP_STATUSES.map((s) => (
-                      <ListBox.Item key={s} id={s}>
-                        {statusLabel(s)}
-                      </ListBox.Item>
-                    ))}
-                  </ListBox>
-                </Select.Popover>
-              </Select>
-
               <TextField value={notes} onChange={setNotes}>
                 <Label>{t("jobRadar.detail.notes")}</Label>
                 <TextArea rows={4} placeholder={t("jobRadar.detail.notesPlaceholder")} />
@@ -153,8 +123,8 @@ export function JobDetailDrawer({
             </Drawer.Body>
 
             <Drawer.Footer className="shrink-0 border-default-200/70 border-t">
-              <Button variant="primary" isPending={update.isPending} onPress={save}>
-                {t("jobRadar.detail.save")}
+              <Button variant="primary" isPending={update.isPending} onPress={markInterested}>
+                {t("jobRadar.actions.interested")}
               </Button>
             </Drawer.Footer>
           </Drawer.Dialog>

@@ -6,7 +6,6 @@ import {
   jobRadarSettingsSchema,
   jobRadarSettingsUpdateSchema,
   jobRadarSyncProgressSchema,
-  jobRadarSyncResultSchema,
   jobRadarUpdateInputSchema,
   jobPostingSchema,
   jobSourceSchema,
@@ -24,6 +23,7 @@ import { getSessionUser } from "../lib/auth.ts";
 import { DomainError } from "../lib/errors.ts";
 import { logError } from "../lib/logger.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
+import { enqueueJob } from "../queue/runner.ts";
 import {
   addJobSource,
   bulkUpdateJobApplications,
@@ -33,8 +33,9 @@ import {
   listJobRadarFilterOptions,
   listJobPostings,
   listJobSources,
+  markJobRadarSyncStarting,
   setJobSourceEnabled,
-  syncJobRadar,
+  startJobRadarSync,
   updateJobApplication,
   updateJobRadarSettings,
 } from "../services/job-radar.ts";
@@ -108,10 +109,16 @@ const jobRadarORPCRouterBase = {
 
   syncNow: base
     .route({ method: "POST", path: "/sync", summary: "Trigger a manual sync", tags: ["Job Radar"] })
-    .output(jobRadarSyncResultSchema)
+    .output(jobRadarSyncProgressSchema)
     .handler(async ({ context }) => {
       await requireUser(context.hono);
-      return syncJobRadar({ triggerSource: "manual" });
+      if (getJobRadarSyncProgress().running) return getJobRadarSyncProgress();
+      const enqueued = await enqueueJob(
+        "job_radar_sync",
+        { triggerSource: "manual" },
+        { jobKey: "job_radar_manual_sync", jobKeyMode: "replace" }
+      );
+      return enqueued ? markJobRadarSyncStarting() : startJobRadarSync({ triggerSource: "manual" });
     }),
 
   syncProgress: base
