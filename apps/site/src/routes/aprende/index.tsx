@@ -4,8 +4,10 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { BookingCta } from "@/components/BookingCta";
 import { JsonLd } from "@/components/JsonLd";
 import { PageShell } from "@/components/PageShell";
+import { Eyebrow } from "@/components/ui/Eyebrow";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { type EducationCategory, educationTopics } from "@/data/education";
+import { glossary } from "@/data/glossary";
 import { groupTopicsByCategory } from "@/lib/education-grouping";
 import { breadcrumbJsonLd } from "@/lib/seo";
 
@@ -78,6 +80,34 @@ function AprendeIndexPage() {
           </div>
         </section>
       ))}
+
+      <section className="grid gap-5" id="glosario">
+        <div className="grid gap-3">
+          <Eyebrow>Glosario</Eyebrow>
+          <h2 className="font-display text-[1.75rem] text-foreground leading-[1.1] sm:text-[2rem]">
+            Términos clave
+          </h2>
+          <p className="max-w-3xl text-[1.0625rem] text-muted leading-[1.6]">
+            Definiciones simples para comprender mejor tu diagnóstico y tratamiento.
+          </p>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {glossary.map((item) => (
+            <Card
+              className="h-full rounded-2xl border border-line bg-surface"
+              key={item.term}
+              variant="default"
+            >
+              <Card.Header className="gap-1.5">
+                <Card.Title className="text-[1.05rem] text-foreground">{item.term}</Card.Title>
+                <Card.Description className="text-muted text-sm leading-relaxed">
+                  {item.definition}
+                </Card.Description>
+              </Card.Header>
+            </Card>
+          ))}
+        </div>
+      </section>
 
       <BookingCta
         title="¿Tienes dudas sobre tus síntomas?"
