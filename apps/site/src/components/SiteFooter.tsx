@@ -62,6 +62,11 @@ export function SiteFooter() {
               cálido y personalizado.
             </p>
             <p className="text-[#9fb4ce] text-sm">{contactInfo.address}</p>
+            <p className="text-[#7f97b4] text-xs leading-relaxed">
+              {legalOwner.companyName} · RUT {legalOwner.rut}
+              <br />
+              Director técnico: {legalOwner.directorName}
+            </p>
           </div>
 
           <div className="space-y-4">
@@ -148,6 +153,13 @@ export function SiteFooter() {
               href={legalDocuments.terms.canonicalPath}
             >
               Términos
+            </Link>
+            <span className="text-[#3f5f86]">·</span>
+            <Link
+              className="text-[#7f97b4] no-underline hover:text-white"
+              href={legalDocuments.dataDeletion.canonicalPath}
+            >
+              Eliminación de datos
             </Link>
           </div>
         </div>

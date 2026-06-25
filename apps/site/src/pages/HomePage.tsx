@@ -3,6 +3,7 @@ import { lazy, Suspense } from "react";
 import { JsonLd } from "@/components/JsonLd";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
+import { TiendaBanner } from "@/components/ui/TiendaBanner";
 import { HeroSection } from "@/sections/HeroSection";
 import { WayfindingSection } from "@/sections/WayfindingSection";
 import { faqItems } from "@/data/faq";
@@ -48,6 +49,7 @@ export function HomePage({
     <div className="flex min-h-screen flex-col bg-background">
       <JsonLd data={clinicJsonLd()} />
       <JsonLd data={faqJsonLd(faqItems)} />
+      <TiendaBanner />
       <SiteHeader pathname={pathname} />
       <main className="flex-1">
         <HeroSection onBook={onBook} onWhatsApp={onWhatsApp} />

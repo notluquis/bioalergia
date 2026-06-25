@@ -6,8 +6,8 @@ import { contactInfo } from "@/data/clinic";
 const whatsappLink = (phone: string) => `https://wa.me/${phone.replace(/\D/g, "")}`;
 
 /**
- * Top utility bar (handoff) — surface bg, line border, 12.5px muted text.
- * Left: specialty + city. Right: hours · phone · WhatsApp. Desktop only.
+ * Top utility bar (handoff) — surface bg, line border, muted text. Left:
+ * specialty + city. Right: hours · phone · WhatsApp · Mi cuenta. Desktop only.
  */
 export function UtilityBar() {
   return (
@@ -15,9 +15,11 @@ export function UtilityBar() {
       <Container className="flex items-center justify-between py-[9px] text-[0.78rem] text-muted">
         <span className="tracking-[0.02em]">Alergología e Inmunología · Concepción, Chile</span>
         <div className="flex items-center gap-[18px]">
-          <span>Lun–Vie 09:00–18:00</span>
+          <span>
+            {contactInfo.hours} · {contactInfo.hoursNote}
+          </span>
           <span className="text-line">·</span>
-          <span>{contactInfo.phones[0]}</span>
+          <span>{contactInfo.phones.join(" · ")}</span>
           <Link
             className="font-semibold text-brand-blue no-underline hover:underline"
             href={whatsappLink(contactInfo.phones[0])}
@@ -25,6 +27,13 @@ export function UtilityBar() {
             target="_blank"
           >
             WhatsApp
+          </Link>
+          <span className="text-line">·</span>
+          <Link
+            className="font-semibold text-brand-blue no-underline hover:underline"
+            href="/mi-cuenta"
+          >
+            Mi cuenta
           </Link>
         </div>
       </Container>

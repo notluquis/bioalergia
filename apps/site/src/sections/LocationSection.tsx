@@ -11,9 +11,10 @@ const clinicMapEmbedUrl = `https://www.google.com/maps?q=${clinicMapQuery}&outpu
 
 const rows = [
   { label: "Dirección", value: "Av. Prat 199, Of. A603, Edificio Centro Costanera" },
-  { label: "Horario", value: "Lunes a viernes · 09:00–18:00" },
+  { label: "Horario", value: `${contactInfo.hours} · ${contactInfo.hoursNote}` },
   { label: "Teléfonos", value: contactInfo.phones.join(" · ") },
-  { label: "Email", value: contactInfo.email },
+  { label: "Salud / pacientes", value: contactInfo.clinicalEmail },
+  { label: "Administración", value: contactInfo.email },
 ];
 
 /** Visit (handoff) — clinic detail rows beside an embedded map. */

@@ -31,6 +31,15 @@ export function SiteHeader({ pathname }: { pathname?: string }) {
             <BrandLogo className="h-9 w-auto" eager />
           </Link>
           <div className="flex items-center gap-3">
+            <Link
+              className={ctaClass(
+                "outline",
+                "hidden h-auto px-[18px] py-[9px] text-sm sm:inline-flex"
+              )}
+              href="/tienda"
+            >
+              Tienda
+            </Link>
             <Button
               className={ctaClass("primary", "h-auto px-[22px] py-[11px] text-sm")}
               onPress={handleBook}

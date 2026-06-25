@@ -26,7 +26,11 @@ const modalities: Modality[] = [
     title: "Gotas o tabletas en casa",
     body: "Administración diaria sin agujas, con seguimiento clínico periódico. Eficacia comparable en rinitis alérgica y alta adherencia.",
     forWhom: "niños y pacientes con agendas exigentes que prefieren evitar inyecciones.",
-    photo: "extractsCase",
+    // ponytail: no hay foto real de SLIT (gotas/tabletas sublinguales). El
+    // maletín de extractos (extractsCase) es REACTIVOS de diagnóstico, no SLIT.
+    // Usamos una foto neutra de consulta/seguimiento; pedir al cliente una de
+    // administración sublingual para hacer swap.
+    photo: "doctorDesk",
   },
 ];
 
@@ -36,7 +40,7 @@ export function ImmunotherapySection() {
     <SectionBand id="inmunoterapia" tone="surface2">
       <div className="mx-auto mb-12 max-w-[760px] text-center">
         <Eyebrow className="mb-5 inline-block">Inmunoterapia</Eyebrow>
-        <p className="font-display text-[1.75rem] italic leading-[1.22] text-foreground sm:text-[2.1875rem]">
+        <p className="font-display text-[1.875rem] leading-[1.25] text-foreground sm:text-[2.375rem]">
           «La única terapia capaz de cambiar el curso natural de la enfermedad alérgica, en lugar de
           sólo aliviar los síntomas.»
         </p>

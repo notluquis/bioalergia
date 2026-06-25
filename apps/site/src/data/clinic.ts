@@ -32,9 +32,16 @@ export const clinicOverview = {
 };
 
 export const contactInfo = {
+  // Correo administrativo / general (contacto, insumos, temas no clínicos).
   email: "contacto@bioalergia.cl",
-  phones: ["+56 9 3254 5883", "+56 9 3096 3316"],
+  // Correo clínico (temas de salud / pacientes).
+  clinicalEmail: "clinica@bioalergia.cl",
+  // Primario primero (termina en 3316) — lo usa el FAB de WhatsApp y los CTAs.
+  phones: ["+56 9 3096 3316", "+56 9 3254 5883"],
   address: "Avenida Prat 199, Oficina A603, Edificio Centro Costanera, Concepción",
+  // Atención por agenda: el horario es la ventana, no atención continua.
+  hours: "Lunes a viernes, 10:00–19:00",
+  hoursNote: "Atención según agenda",
   // N° de registro en la Superintendencia de Salud (Director Técnico).
   // Se muestra en el footer solo si tiene valor.
   superintendenciaNumber: "15651",

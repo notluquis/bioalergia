@@ -57,7 +57,7 @@ export function WayfindingSection({ onBook }: { onBook: () => void }) {
         {routes.map((route) => (
           <Card
             key={route.title}
-            className="flex flex-col rounded-xl border border-line bg-surface p-7"
+            className="flex h-full flex-col rounded-xl border border-line bg-surface p-7"
             variant="default"
           >
             <Card.Header className="block p-0">
@@ -69,7 +69,7 @@ export function WayfindingSection({ onBook }: { onBook: () => void }) {
                 {route.body}
               </Card.Description>
             </Card.Header>
-            <Card.Footer className="mt-[22px] p-0">
+            <Card.Footer className="mt-auto p-0 pt-[22px]">
               {route.href ? (
                 <Link
                   className={ctaClass(route.variant, "w-full rounded-lg py-[13px] text-[0.94rem]")}

@@ -1,30 +1,21 @@
-import { useMatchRoute } from "@tanstack/react-router";
 import { MessageCircle } from "lucide-react";
 
 import { contactInfo } from "@/data/clinic";
 
 const PHONE = contactInfo.phones[0].replace(/\D/g, "");
-const HREF = `https://wa.me/${PHONE}?text=${encodeURIComponent("Hola, tengo una consulta sobre la tienda.")}`;
+const HREF = `https://wa.me/${PHONE}?text=${encodeURIComponent("Hola, tengo una consulta.")}`;
 
+/** Botón flotante de WhatsApp — presente en todo el sitio. */
 export function WhatsAppFab() {
-  const matchRoute = useMatchRoute();
-  const onShop = Boolean(
-    matchRoute({ to: "/tienda", fuzzy: true }) ||
-    matchRoute({ to: "/producto/$slug" }) ||
-    matchRoute({ to: "/carrito" }) ||
-    matchRoute({ to: "/checkout" })
-  );
-  if (!onShop) return null;
-
   return (
     <a
-      aria-label="Consultar por WhatsApp"
-      className="fixed bottom-4 left-4 z-50 flex items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg transition hover:scale-105 sm:bottom-6 sm:left-6 size-12 sm:size-14"
+      aria-label="Escríbenos por WhatsApp"
+      className="fixed right-5 bottom-5 z-50 flex items-center justify-center rounded-full bg-[#25D366] text-white shadow-[0_18px_40px_rgba(10,20,30,0.25)] ring-2 ring-white/80 transition hover:scale-105 sm:right-7 sm:bottom-7 size-12 sm:size-14"
       href={HREF}
       rel="noopener noreferrer"
       target="_blank"
     >
-      <MessageCircle size={22} />
+      <MessageCircle size={24} />
     </a>
   );
 }
