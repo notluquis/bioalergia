@@ -23,6 +23,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { ClipboardList, Plus } from "lucide-react";
 import { useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
+import { AppDatePicker } from "@/components/forms/AppDatePicker";
 import { Page } from "@/components/layouts/Page";
 import { PageHeader } from "@/components/layouts/PageHeader";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
@@ -549,10 +550,11 @@ function NewRegisterForm({
     <Card className="space-y-4 p-5">
       <h2 className="font-semibold text-base">Nuevo registro — {TYPE_LABEL[registerType]}</h2>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <TextField value={form.occurredAt} onChange={(v) => set("occurredAt", v)}>
-          <Label>Fecha</Label>
-          <Input type="date" />
-        </TextField>
+        <AppDatePicker
+          label="Fecha"
+          onChange={(v) => set("occurredAt", v)}
+          value={form.occurredAt}
+        />
 
         {registerType === "COLD_CHAIN" && (
           <>
@@ -729,10 +731,11 @@ function NewRegisterForm({
               <Label>Delegado a</Label>
               <Input placeholder="Nombre del profesional" />
             </TextField>
-            <TextField value={form.validUntil} onChange={(v) => set("validUntil", v)}>
-              <Label>Válido hasta (opcional)</Label>
-              <Input type="date" />
-            </TextField>
+            <AppDatePicker
+              label="Válido hasta (opcional)"
+              onChange={(v) => set("validUntil", v)}
+              value={form.validUntil}
+            />
             <TextField value={form.signedBy} onChange={(v) => set("signedBy", v)}>
               <Label>Firma del director (opcional)</Label>
               <Input />
@@ -796,10 +799,11 @@ function NewRegisterForm({
               <Label>Responsable (opcional)</Label>
               <Input />
             </TextField>
-            <TextField value={form.dueAt} onChange={(v) => set("dueAt", v)}>
-              <Label>Plazo CAPA (opcional)</Label>
-              <Input type="date" />
-            </TextField>
+            <AppDatePicker
+              label="Plazo CAPA (opcional)"
+              onChange={(v) => set("dueAt", v)}
+              value={form.dueAt}
+            />
           </>
         )}
 
