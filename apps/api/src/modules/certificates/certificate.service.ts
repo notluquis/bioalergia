@@ -333,6 +333,7 @@ export type MedicalPrescriptionPdfInput = MedicalPrescriptionInput & {
   // Fecha de nacimiento (YYYY-MM-DD) + sexo — requisito Código Sanitario Art. 101.
   patientBirthDate?: string;
   patientSex?: string;
+  patientAddress?: string;
   mode?: PrescriptionPdfMode;
   // ISSUED | ANNULLED — ANNULLED estampa marca de agua "ANULADA".
   status?: string;
@@ -462,7 +463,7 @@ export async function generateMedicalPrescriptionPdf(
   // sobre el recetario pre-impreso. Nada acá puede depender del contenido.
   const LOGO_BAND_H = 46;
   const PATIENT_BOX_PAD = 10;
-  const PATIENT_BOX_H = 15 + 15 + 15 + 2 * PATIENT_BOX_PAD; // 3 filas espaciadas
+  const PATIENT_BOX_H = 15 + 15 + 15 + 15 + 2 * PATIENT_BOX_PAD; // 4 filas espaciadas
   // Diagnóstico (opcional, largo variable): área full-width de hasta 2 líneas
   // DEBAJO del recuadro. Reserva FIJA (también en template) para que el overlay
   // caiga alineado. Antes iba dentro del recuadro y se truncaba a 1 línea.
@@ -537,6 +538,10 @@ export async function generateMedicalPrescriptionPdf(
     const ageText = input.patientAge != null ? `${input.patientAge} años` : "-";
     drawField("RUT:", input.patient.rut ?? "Sin RUT", px, py, true);
     drawField("Edad:", ageText, px + 110, py);
+    py -= 15;
+
+    const addressMaxW = 250 - font.widthOfTextAtSize("Domicilio: ", 8.5);
+    drawField("Domicilio:", truncateToWidth(input.patientAddress || "No registrado", font, 9, addressMaxW), px, py);
     py -= 15;
 
     drawField("Fecha de emisión:", formatDate(input.date), px, py);
@@ -790,7 +795,7 @@ export async function generateMedicalPrescriptionPdf(
       // Verification code to the LEFT of the QR code (center aligned vertically)
       if (input.verificationCode) {
         const endVerify = tagger.beginTag(pg, index, "P");
-        const vText = "Verificar autenticidad";
+        const vText = "Verificar en bioalergia.cl";
         const rightEdge = qx - 8;
         pg.drawText(vText, {
           x: rightEdge - font.widthOfTextAtSize(vText, 7.5),

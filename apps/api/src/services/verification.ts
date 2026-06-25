@@ -202,7 +202,7 @@ async function projectCertificate(
   });
   if (!certificate) return INVALID;
 
-  const doctorName = certificate.issuer?.person?.names ?? "Equipo médico Bioalergia";
+  const doctorName = "Dr. José Manuel Martínez Martínez";
   return {
     valid: true,
     documentType: "certificate",
@@ -231,8 +231,7 @@ async function projectPrescription(
 
   const doctorName =
     prescription.doctorName?.trim() ||
-    prescription.issuer?.person?.names ||
-    "Equipo médico Bioalergia";
+    "Dr. José Manuel Martínez Martínez";
   const specialty = prescription.doctorSpecialty?.trim() || DEFAULT_SPECIALTY;
   return {
     valid: true,

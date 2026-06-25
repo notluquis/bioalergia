@@ -117,6 +117,7 @@ export async function buildPrescriptionPdfBytes(
       doctorEmail: prescription.doctorEmail ?? undefined,
       doctorAddress: prescription.doctorAddress ?? undefined,
       patient: { name: prescription.patientName, rut: prescription.patientRut },
+      patientAddress: (prescription.metadata as any)?.patientAddress ?? undefined,
       clinicName: clinic?.name ?? undefined,
     },
     { primary: clinic?.logoUrl, secondary: clinic?.secondaryLogoUrl }
@@ -172,6 +173,11 @@ export async function createMedicalPrescription(
           motherName: true,
           names: true,
           rut: true,
+          addresses: {
+            where: { isPrimary: true },
+            take: 1,
+            select: { street: true, number: true, supplement: true, comuna: true },
+          },
         },
       },
     },
@@ -186,6 +192,17 @@ export async function createMedicalPrescription(
   const fullName = [patient.person.names, patient.person.fatherName, patient.person.motherName]
     .filter(Boolean)
     .join(" ");
+  const primaryAddress = patient.person.addresses?.[0];
+  const addressStr = primaryAddress
+    ? [
+        primaryAddress.street,
+        primaryAddress.number,
+        primaryAddress.supplement,
+        primaryAddress.comuna,
+      ]
+        .filter(Boolean)
+        .join(", ")
+    : "No registrado";
   const diagnosisText = parsed.diagnosis?.trim() || formatPrescriptionDiagnoses(parsed.diagnoses);
 
   // Folio: correlativo desde la secuencia (auditoría) + sufijo aleatorio.
@@ -230,6 +247,7 @@ export async function createMedicalPrescription(
         notes: parsed.notes ?? null,
         patientName: fullName,
         patientRut: patient.person.rut ?? null,
+        patientAddress: addressStr,
         ...(storedDiagnoses ? { diagnoses: storedDiagnoses } : {}),
         ...(parsed.supersedesId ? { supersedesId: parsed.supersedesId } : {}),
       } as unknown as JsonInput,

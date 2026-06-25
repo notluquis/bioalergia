@@ -32,6 +32,7 @@ import { Route as CarritoRouteImport } from './routes/carrito'
 import { Route as BuscarRouteImport } from './routes/buscar'
 import { Route as BotiquinRouteImport } from './routes/botiquin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as VerificarIndexRouteImport } from './routes/verificar.index'
 import { Route as TiendaIndexRouteImport } from './routes/tienda/index'
 import { Route as NoticiasIndexRouteImport } from './routes/noticias/index'
 import { Route as MiCuentaIndexRouteImport } from './routes/mi-cuenta/index'
@@ -165,6 +166,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const VerificarIndexRoute = VerificarIndexRouteImport.update({
+  id: '/verificar/',
+  path: '/verificar/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TiendaIndexRoute = TiendaIndexRouteImport.update({
   id: '/tienda/',
   path: '/tienda/',
@@ -290,6 +296,7 @@ export interface FileRoutesByFullPath {
   '/mi-cuenta/': typeof MiCuentaIndexRoute
   '/noticias/': typeof NoticiasIndexRoute
   '/tienda/': typeof TiendaIndexRoute
+  '/verificar/': typeof VerificarIndexRoute
   '/mi-cuenta/auth/callback': typeof MiCuentaAuthCallbackRoute
   '/mi-cuenta/pedidos/$number': typeof MiCuentaPedidosNumberRoute
 }
@@ -331,6 +338,7 @@ export interface FileRoutesByTo {
   '/mi-cuenta': typeof MiCuentaIndexRoute
   '/noticias': typeof NoticiasIndexRoute
   '/tienda': typeof TiendaIndexRoute
+  '/verificar': typeof VerificarIndexRoute
   '/mi-cuenta/auth/callback': typeof MiCuentaAuthCallbackRoute
   '/mi-cuenta/pedidos/$number': typeof MiCuentaPedidosNumberRoute
 }
@@ -374,6 +382,7 @@ export interface FileRoutesById {
   '/mi-cuenta/': typeof MiCuentaIndexRoute
   '/noticias/': typeof NoticiasIndexRoute
   '/tienda/': typeof TiendaIndexRoute
+  '/verificar/': typeof VerificarIndexRoute
   '/mi-cuenta/auth/callback': typeof MiCuentaAuthCallbackRoute
   '/mi-cuenta/pedidos/$number': typeof MiCuentaPedidosNumberRoute
 }
@@ -418,6 +427,7 @@ export interface FileRouteTypes {
     | '/mi-cuenta/'
     | '/noticias/'
     | '/tienda/'
+    | '/verificar/'
     | '/mi-cuenta/auth/callback'
     | '/mi-cuenta/pedidos/$number'
   fileRoutesByTo: FileRoutesByTo
@@ -459,6 +469,7 @@ export interface FileRouteTypes {
     | '/mi-cuenta'
     | '/noticias'
     | '/tienda'
+    | '/verificar'
     | '/mi-cuenta/auth/callback'
     | '/mi-cuenta/pedidos/$number'
   id:
@@ -501,6 +512,7 @@ export interface FileRouteTypes {
     | '/mi-cuenta/'
     | '/noticias/'
     | '/tienda/'
+    | '/verificar/'
     | '/mi-cuenta/auth/callback'
     | '/mi-cuenta/pedidos/$number'
   fileRoutesById: FileRoutesById
@@ -540,6 +552,7 @@ export interface RootRouteChildren {
   CondicionesIndexRoute: typeof CondicionesIndexRoute
   NoticiasIndexRoute: typeof NoticiasIndexRoute
   TiendaIndexRoute: typeof TiendaIndexRoute
+  VerificarIndexRoute: typeof VerificarIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -703,6 +716,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/verificar/': {
+      id: '/verificar/'
+      path: '/verificar'
+      fullPath: '/verificar/'
+      preLoaderRoute: typeof VerificarIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/tienda/': {
@@ -894,6 +914,7 @@ const rootRouteChildren: RootRouteChildren = {
   CondicionesIndexRoute: CondicionesIndexRoute,
   NoticiasIndexRoute: NoticiasIndexRoute,
   TiendaIndexRoute: TiendaIndexRoute,
+  VerificarIndexRoute: VerificarIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
