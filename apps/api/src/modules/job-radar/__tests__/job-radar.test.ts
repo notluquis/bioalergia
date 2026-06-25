@@ -16,6 +16,7 @@ import {
 } from "../source-identifiers.ts";
 import { fetchSuccessFactorsJobs } from "../successfactors.ts";
 import { fetchTeamtailorJobs } from "../teamtailor.ts";
+import { fetchTrabajandoJobs } from "../trabajando.ts";
 import { fetchWorkdayJobs, parseWorkdayEntry } from "../workday.ts";
 import type { RawJob } from "../types.ts";
 
@@ -788,6 +789,48 @@ describe("normalizeJobSourceIdentifier", () => {
         '<meta property="og:image" content="https://gcs-files.airavirtual.com/public/companies_assets/be_corredores_de_la_bolsa/WELCOME_RESOURCE-OFFER4914.jpg">'
       )
     ).toBe("be_corredores_de_la_bolsa");
+  });
+});
+
+describe("fetchTrabajandoJobs", () => {
+  let fetchSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation((input) => {
+      const url = String(input);
+      if (url.includes("/api/config/portal"))
+        return Promise.resolve(res(JSON.stringify({ idDominio: 123 })));
+      if (url.includes("/api/searchjob")) {
+        return Promise.resolve(
+          res(
+            JSON.stringify({
+              cantidadPaginas: 1,
+              ofertas: [
+                {
+                  idOferta: 6089355,
+                  nombreCargo:
+                    "Enfermera/o Asistencial - Centro Medico y Dental - RedSalud Concepción",
+                  nombreEmpresa: "Centros Médicos y Dentales RedSalud",
+                  ubicacion: "Concepción, Biobío",
+                  fechaPublicacion: "2026-06-24 10:00",
+                },
+              ],
+            })
+          )
+        );
+      }
+      return Promise.resolve(res("", false, 404));
+    });
+  });
+
+  afterEach(() => fetchSpy.mockRestore());
+
+  it("uses the canonical slugged offer URL", async () => {
+    const jobs = await fetchTrabajandoJobs("redsalud");
+
+    expect(jobs[0]?.url).toBe(
+      "https://redsalud.trabajando.cl/trabajo/6089355-enfermera-o-asistencial-centro-medico-y-dental-redsalud-concepcion"
+    );
   });
 });
 

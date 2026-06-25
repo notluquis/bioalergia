@@ -13,6 +13,15 @@ import type { RawJob } from "./types.ts";
 
 const MAX_PAGES = 50; // tope de seguridad (750 ofertas)
 
+function slugifyTitle(title: string): string {
+  return title
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 function parseClDate(raw: unknown): Date | null {
   // "2026-06-08 16:42" hora local Chile → interpretamos como -04/-03 best-effort.
   if (typeof raw !== "string" || raw.length === 0) return null;
@@ -71,7 +80,7 @@ export async function fetchTrabajandoJobs(identifier: string): Promise<RawJob[]>
         company: asString(o.nombreEmpresa) ?? slug,
         externalId,
         title,
-        url: `https://${host}/trabajo/${externalId}`,
+        url: `https://${host}/trabajo/${externalId}-${slugifyTitle(title)}`,
         department: null,
         location: asString(o.ubicacion),
         remote: null,
