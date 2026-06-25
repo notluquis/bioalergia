@@ -494,9 +494,7 @@ export function JobRadarPage() {
             onPress={() => {
               setLastSyncResult(null);
               setSyncing(true);
-              sync.mutate(undefined, {
-                onSuccess: (result) => setLastSyncResult(result),
-              });
+              sync.mutate();
             }}
           >
             <RefreshCw size={16} aria-hidden />

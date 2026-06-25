@@ -852,11 +852,31 @@ const EP_JSON =
 describe("fetchEmpleosPublicosJobs", () => {
   let fetchSpy: ReturnType<typeof vi.spyOn>;
   beforeEach(() => {
-    fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(res(EP_JSON));
+    fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation((input) => {
+      const url = String(input);
+      if (url.includes("convocatorias2_nueva.txt")) return Promise.resolve(res(EP_JSON));
+      if (url.includes("convpostularavisoTrabajo.aspx")) {
+        return Promise.resolve(
+          res(`
+            <html>
+              <body>
+                <h3>Contexto del cargo</h3>
+                <p>Apoyar la gestión programática regional.</p>
+                <h3>Funciones del Cargo</h3>
+                <p>Coordinar actividades y seguimiento territorial.</p>
+                <h3>Antecedentes Generales</h3>
+                <p>No debe ir en la descripción resumida.</p>
+              </body>
+            </html>
+          `)
+        );
+      }
+      return Promise.resolve(res("", false, 404));
+    });
   });
   afterEach(() => fetchSpy.mockRestore());
 
-  it("parses the BOM JSON feed + formats salary/location/id", async () => {
+  it("parses the BOM JSON feed + formats salary/location/id + detail description", async () => {
     const jobs = await fetchEmpleosPublicosJobs();
     expect(String(fetchSpy.mock.calls[0][0])).toContain("convocatorias2_nueva.txt");
     expect(jobs[0]).toMatchObject({
@@ -868,6 +888,13 @@ describe("fetchEmpleosPublicosJobs", () => {
       location: "Santiago, Región Metropolitana",
       salary: "$1.036.481",
     });
+    expect(
+      fetchSpy.mock.calls.some((call) => String(call[0]).includes("convpostularavisoTrabajo.aspx"))
+    ).toBe(true);
+    expect(jobs[0]?.descriptionHtml).toContain("Contexto del cargo");
+    expect(jobs[0]?.descriptionHtml).toContain("Apoyar la gestión programática regional.");
+    expect(jobs[0]?.descriptionHtml).toContain("Funciones del Cargo");
+    expect(jobs[0]?.descriptionHtml).not.toContain("Antecedentes Generales");
     expect(jobs[0].publishedAt).toBeInstanceOf(Date);
   });
 });

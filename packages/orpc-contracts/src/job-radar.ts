@@ -184,7 +184,7 @@ export const jobRadarContract = {
     .route({ method: "PATCH", path: "/postings/bulk" })
     .input(jobRadarBulkUpdateInputSchema)
     .output(jobRadarBulkUpdateResultSchema),
-  syncNow: oc.route({ method: "POST", path: "/sync" }).output(jobRadarSyncResultSchema),
+  syncNow: oc.route({ method: "POST", path: "/sync" }).output(jobRadarSyncProgressSchema),
   syncProgress: oc
     .route({ method: "GET", path: "/sync/progress" })
     .output(jobRadarSyncProgressSchema),
