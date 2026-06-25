@@ -160,7 +160,7 @@ export async function updateAllergen(input: UpdateClinicalAllergenInput) {
   // unique global) el delete hace rollback y los aliases previos se conservan.
   if (aliases !== undefined) {
     const created = buildAliasCreate(aliases);
-    data.aliases = { deleteMany: {}, ...(created ?? {}) };
+    data.aliases = { deleteMany: {}, ...created };
   }
 
   return db.clinicalAllergen.update({ where: { id }, data, include: allergenInclude });

@@ -110,7 +110,7 @@ function applyDetail(job: RawJob, html: string): RawJob {
     publishedAt: datePosted ?? job.publishedAt,
     lastmod: datePosted ?? job.lastmod,
     raw: {
-      ...(asRecord(job.raw) ?? {}),
+      ...asRecord(job.raw),
       detail: jobPosting,
     },
   };

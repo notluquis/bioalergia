@@ -1,3 +1,4 @@
+import type { Key } from "@heroui/react";
 import type { DateValue } from "@internationalized/date";
 import {
   Button,
@@ -9,12 +10,15 @@ import {
   Label,
   ListBox,
   Select,
+  Input,
+  TextField,
+  ComboBox,
+  Description,
 } from "@heroui/react";
-import { useForm } from "@tanstack/react-form";
-import { useStore } from "@tanstack/react-store";
+import { useForm, useStore } from "@tanstack/react-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, OctagonX, Save, User, UserPlus } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import {
   TanStackInputField,
   TanStackTextAreaField,
@@ -25,6 +29,14 @@ import { useToast } from "@/context/ToastContext";
 import { createPatient } from "@/features/patients/api";
 import { patientKeys, patientQueries } from "@/features/patients/queries";
 import { formatRut, validateRut } from "@/lib/rut";
+import {
+  fetchCommunes,
+  fetchRegions,
+  getStreetNumbers,
+  searchStreets,
+} from "@/features/shipments/api";
+import { createAddress } from "@/features/addresses/api";
+import { cxKeys } from "@/features/addresses/queries";
 
 const BLOOD_TYPES = ["O+", "O-", "A+", "A-", "B+", "B-", "AB+", "AB-"];
 
@@ -39,9 +51,18 @@ interface PatientFormState {
   bloodType: string;
   sex: string;
   notes: string;
+  // Address fields
+  region: Key | null;
+  comuna: Key | null;
+  street: string;
+  number: string;
+  supplement: string;
 }
 
-type PatientPayload = Omit<PatientFormState, "birthDate" | "sex"> & {
+type PatientPayload = Omit<
+  PatientFormState,
+  "birthDate" | "sex" | "region" | "comuna" | "street" | "number" | "supplement"
+> & {
   birthDate?: string;
   sex?: "M" | "F" | "X";
 };
@@ -51,22 +72,157 @@ interface CreatePatientModalProps {
   onClose: () => void;
 }
 
+interface StreetAutocompleteProps {
+  countyName: string;
+  value: string;
+  onChange: (value: string) => void;
+  onSelectStreet?: (streetId: number, streetName: string) => void;
+}
+
+function StreetAutocomplete({
+  countyName,
+  value,
+  onChange,
+  onSelectStreet,
+}: Readonly<StreetAutocompleteProps>) {
+  const [inputValue, setInputValue] = useState(value);
+  const [debounced, setDebounced] = useState(inputValue);
+
+  useEffect(() => {
+    setInputValue(value);
+  }, [value]);
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(inputValue), 300);
+    return () => clearTimeout(t);
+  }, [inputValue]);
+
+  const { data: streetsResponse, isLoading } = useQuery({
+    queryKey: cxKeys.streets(countyName, debounced),
+    queryFn: () => searchStreets({ countyName, query: debounced }),
+    enabled: countyName.length > 0 && debounced.trim().length >= 2,
+    staleTime: 1000 * 60 * 10,
+  });
+  const streets = useMemo(() => streetsResponse?.streets ?? [], [streetsResponse]);
+
+  type StreetRow =
+    | { kind: "street"; id: string; label: string; streetId: number }
+    | { kind: "placeholder"; id: string; label: string };
+
+  const { items, disabledIds } = useMemo<{
+    items: StreetRow[];
+    disabledIds: string[];
+  }>(() => {
+    if (countyName.length === 0) {
+      return {
+        items: [
+          { kind: "placeholder", id: "__no-county__", label: "Selecciona una comuna primero" },
+        ],
+        disabledIds: ["__no-county__"],
+      };
+    }
+    if (debounced.trim().length < 2) {
+      return {
+        items: [
+          { kind: "placeholder", id: "__too-short__", label: "Escribe al menos 2 caracteres" },
+        ],
+        disabledIds: ["__too-short__"],
+      };
+    }
+    if (isLoading) {
+      return {
+        items: [{ kind: "placeholder", id: "__loading__", label: "Buscando…" }],
+        disabledIds: ["__loading__"],
+      };
+    }
+    if (streets.length === 0) {
+      return {
+        items: [
+          { kind: "placeholder", id: "__empty__", label: "Sin sugerencias para esta comuna" },
+        ],
+        disabledIds: ["__empty__"],
+      };
+    }
+    return {
+      items: streets.map((s) => ({
+        kind: "street" as const,
+        id: `s-${s.streetId}`,
+        label: s.streetName,
+        streetId: s.streetId,
+      })),
+      disabledIds: [],
+    };
+  }, [countyName, debounced, isLoading, streets]);
+
+  return (
+    <ComboBox
+      allowsCustomValue
+      inputValue={inputValue}
+      isDisabled={countyName.length === 0}
+      items={items}
+      menuTrigger="input"
+      onInputChange={(next) => {
+        setInputValue(next);
+        onChange(next);
+      }}
+      onSelectionChange={(key) => {
+        if (key == null) return;
+        const row = items.find((i) => i.id === String(key));
+        if (row && row.kind === "street") {
+          setInputValue(row.label);
+          onChange(row.label);
+          onSelectStreet?.(row.streetId, row.label);
+        }
+      }}
+    >
+      <Label>Calle</Label>
+      <ComboBox.InputGroup>
+        <Input placeholder={countyName ? "Av. Apoquindo" : "Selecciona una comuna primero"} />
+        <ComboBox.Trigger />
+      </ComboBox.InputGroup>
+      <ComboBox.Popover>
+        <ListBox disabledKeys={disabledIds}>
+          {(item: StreetRow) => (
+            <ListBox.Item id={item.id} textValue={item.label}>
+              {item.label}
+            </ListBox.Item>
+          )}
+        </ListBox>
+      </ComboBox.Popover>
+    </ComboBox>
+  );
+}
+
 export function CreatePatientModal({ isOpen, onClose }: Readonly<CreatePatientModalProps>) {
   const queryClient = useQueryClient();
   const { error: toastError, success } = useToast();
+
+  const { data: regionsResponse, isLoading: loadingRegions } = useQuery({
+    queryKey: cxKeys.regions,
+    queryFn: fetchRegions,
+    staleTime: 1000 * 60 * 60,
+  });
+  const regions = regionsResponse?.regions ?? [];
 
   const createPatientMutation = useMutation({
     mutationFn: async (payload: PatientPayload) => createPatient(payload),
     onError: (err) => {
       toastError(err instanceof Error ? err.message : "Error al registrar paciente");
     },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: patientKeys.all });
-      success("Paciente registrado exitosamente");
-      form.reset();
-      onClose();
+  });
+
+  const createAddressMutation = useMutation({
+    mutationFn: createAddress,
+    onError: (err) => {
+      toastError(
+        err instanceof Error
+          ? err.message
+          : "Error al guardar dirección. Puedes agregarla luego en el perfil."
+      );
     },
   });
+
+  const [pickedStreetId, setPickedStreetId] = useState<number | null>(null);
 
   const form = useForm({
     defaultValues: {
@@ -80,22 +236,81 @@ export function CreatePatientModal({ isOpen, onClose }: Readonly<CreatePatientMo
       bloodType: "",
       sex: "",
       notes: "",
+      region: null,
+      comuna: null,
+      street: "",
+      number: "",
+      supplement: "",
     } as PatientFormState,
     onSubmit: async ({ value }) => {
       if (!validateRut(value.rut)) {
         toastError("El RUT ingresado no es válido");
         return;
       }
-      await createPatientMutation.mutateAsync({
-        ...value,
-        birthDate: value.birthDate?.toString() ?? undefined,
-        sex: value.sex ? (value.sex as "M" | "F" | "X") : undefined,
-      });
+
+      try {
+        const newPatient = await createPatientMutation.mutateAsync({
+          rut: value.rut,
+          names: value.names,
+          fatherName: value.fatherName,
+          motherName: value.motherName,
+          email: value.email,
+          phone: value.phone,
+          bloodType: value.bloodType,
+          notes: value.notes,
+          birthDate: value.birthDate?.toString() ?? undefined,
+          sex: value.sex ? (value.sex as "M" | "F" | "X") : undefined,
+        });
+
+        // Try to create address if minimum fields are present
+        if (value.region && value.comuna && value.street) {
+          const regionObj = regions.find((r) => r.regionId === String(value.region));
+          const regionDisplay = regionObj?.regionName ?? String(value.region);
+
+          const communes = await queryClient.fetchQuery({
+            queryKey: cxKeys.communes(String(value.region)),
+            queryFn: () => fetchCommunes(String(value.region)),
+            staleTime: 1000 * 60 * 60,
+          });
+          const communaObj = communes.communes.find(
+            (c) => c.coverageRegionCode === String(value.comuna)
+          );
+          const comunaDisplay = communaObj?.countyName ?? String(value.comuna);
+
+          await createAddressMutation.mutateAsync({
+            label: "Principal",
+            street: value.street.trim(),
+            number: value.number.trim(),
+            supplement: value.supplement.trim() || null,
+            reference: null,
+            postalCode: null,
+            region: regionDisplay,
+            comuna: comunaDisplay,
+            regionCode: String(value.region),
+            coverageCode: String(value.comuna),
+            ineRegionCode:
+              (regionObj as { ineRegionCode?: number } | undefined)?.ineRegionCode ?? null,
+            ineCountyCode: communaObj?.ineCountyCode ?? null,
+            supportsCashOnDelivery: communaObj?.supportsCashOnDelivery ?? null,
+            supportsReturn: communaObj?.supportsReturn ?? null,
+            isPrimary: true,
+            personId: newPatient.personId,
+            countryCode: "CL",
+          });
+        }
+
+        void queryClient.invalidateQueries({ queryKey: patientKeys.all });
+        success("Paciente registrado exitosamente");
+        form.reset();
+        onClose();
+      } catch (err) {
+        // Error handled in mutation onError
+      }
     },
   });
 
   const handleClose = () => {
-    if (createPatientMutation.isPending) {
+    if (createPatientMutation.isPending || createAddressMutation.isPending) {
       return;
     }
     form.reset();
@@ -104,6 +319,9 @@ export function CreatePatientModal({ isOpen, onClose }: Readonly<CreatePatientMo
 
   const rutValue = useStore(form.store, (s) => s.values.rut);
   const nameValue = useStore(form.store, (s) => s.values.names);
+  const regionValue = useStore(form.store, (s) => String(s.values.region ?? ""));
+  const comunaValue = useStore(form.store, (s) => String(s.values.comuna ?? ""));
+
   const [debouncedRut, setDebouncedRut] = useState("");
   const [debouncedName, setDebouncedName] = useState("");
 
@@ -117,11 +335,6 @@ export function CreatePatientModal({ isOpen, onClose }: Readonly<CreatePatientMo
     return () => clearTimeout(t);
   }, [nameValue]);
 
-  // RUT-based dedup uses the canonical /people/by-rut lookup so the same
-  // RUT in any input format (dots/no-dots) resolves to the same Person.
-  // person.patient existing ⇒ already a patient ⇒ block submit.
-  // person without patient ⇒ employee/user etc. ⇒ offer to autofill and
-  // attach a patient profile to the same Person on submit.
   const { data: existingPerson } = useQuery({
     ...patientQueries.personByRut(debouncedRut),
     enabled: validateRut(debouncedRut),
@@ -131,7 +344,6 @@ export function CreatePatientModal({ isOpen, onClose }: Readonly<CreatePatientMo
     (existingPerson as { patient?: unknown } | null | undefined)?.patient
   );
 
-  // Name-based "similar patients" hint stays as best-effort contains match.
   const { data: nameMatches } = useQuery({
     ...patientQueries.nameSearch(debouncedName),
     enabled: debouncedName.trim().length >= 3,
@@ -148,6 +360,26 @@ export function CreatePatientModal({ isOpen, onClose }: Readonly<CreatePatientMo
     if (existingPerson.phone) form.setFieldValue("phone", existingPerson.phone);
   };
 
+  const { data: communesResponse, isLoading: loadingCommunes } = useQuery({
+    queryKey: cxKeys.communes(regionValue),
+    queryFn: () => fetchCommunes(regionValue),
+    enabled: regionValue.length > 0,
+    staleTime: 1000 * 60 * 60,
+  });
+  const communes = communesResponse?.communes ?? [];
+  const selectedCommuneName =
+    communes.find((c) => c.coverageRegionCode === comunaValue)?.countyName ?? "";
+
+  const { data: streetNumbersData } = useQuery({
+    queryKey: cxKeys.streetNumbers(pickedStreetId),
+    queryFn: () => getStreetNumbers(pickedStreetId as number),
+    enabled: pickedStreetId != null,
+    staleTime: 1000 * 60 * 30,
+  });
+  const validNumbers = (streetNumbersData?.numbers ?? []).map((n) => n.number);
+  const minNumber = validNumbers.length ? Math.min(...validNumbers) : null;
+  const maxNumber = validNumbers.length ? Math.max(...validNumbers) : null;
+
   return (
     <AppModal
       isOpen={isOpen}
@@ -157,7 +389,7 @@ export function CreatePatientModal({ isOpen, onClose }: Readonly<CreatePatientMo
       footer={
         <>
           <Button
-            isDisabled={createPatientMutation.isPending}
+            isDisabled={createPatientMutation.isPending || createAddressMutation.isPending}
             onPress={handleClose}
             type="button"
             variant="outline"
@@ -169,8 +401,15 @@ export function CreatePatientModal({ isOpen, onClose }: Readonly<CreatePatientMo
               <Button
                 className="min-w-37.5"
                 form="create-patient-form"
-                isDisabled={!canSubmit || createPatientMutation.isPending || hasExistingPatient}
-                isPending={isSubmitting || createPatientMutation.isPending}
+                isDisabled={
+                  !canSubmit ||
+                  createPatientMutation.isPending ||
+                  hasExistingPatient ||
+                  createAddressMutation.isPending
+                }
+                isPending={
+                  isSubmitting || createPatientMutation.isPending || createAddressMutation.isPending
+                }
                 type="submit"
                 variant="primary"
               >
@@ -385,6 +624,131 @@ export function CreatePatientModal({ isOpen, onClose }: Readonly<CreatePatientMo
                     label="Telefono"
                     placeholder="+56 9 1234 5678"
                   />
+                )}
+              </form.Field>
+
+              {/* Added Address Fields to unify with Shipments/Pulpo */}
+              <form.Field name="region">
+                {(field) => (
+                  <Select
+                    isDisabled={loadingRegions}
+                    onChange={(value) => {
+                      field.handleChange(value as Key | null);
+                      form.setFieldValue("comuna", null);
+                    }}
+                    placeholder="Selecciona una región"
+                    value={field.state.value}
+                  >
+                    <Label>Región (opcional)</Label>
+                    <Select.Trigger>
+                      <Select.Value />
+                      <Select.Indicator />
+                    </Select.Trigger>
+                    <Select.Popover>
+                      <ListBox>
+                        {regions.map((r) => (
+                          <ListBox.Item id={r.regionId} key={r.regionId} textValue={r.regionName}>
+                            {r.regionName}
+                            <ListBox.ItemIndicator />
+                          </ListBox.Item>
+                        ))}
+                      </ListBox>
+                    </Select.Popover>
+                  </Select>
+                )}
+              </form.Field>
+
+              <form.Field name="comuna">
+                {(field) => (
+                  <Select
+                    isDisabled={!regionValue || loadingCommunes}
+                    onChange={(value) => field.handleChange(value as Key | null)}
+                    placeholder="Selecciona una comuna"
+                    value={field.state.value}
+                  >
+                    <Label>Comuna (opcional)</Label>
+                    <Select.Trigger>
+                      <Select.Value />
+                      <Select.Indicator />
+                    </Select.Trigger>
+                    <Select.Popover>
+                      <ListBox>
+                        {communes.map((c) => (
+                          <ListBox.Item
+                            id={c.coverageRegionCode}
+                            key={c.coverageRegionCode}
+                            textValue={c.countyName}
+                          >
+                            <span className="flex w-full items-center justify-between gap-2">
+                              <span>{c.countyName}</span>
+                            </span>
+                            <ListBox.ItemIndicator />
+                          </ListBox.Item>
+                        ))}
+                      </ListBox>
+                    </Select.Popover>
+                  </Select>
+                )}
+              </form.Field>
+
+              <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="md:col-span-2">
+                  <form.Field name="street">
+                    {(field) => (
+                      <StreetAutocomplete
+                        countyName={selectedCommuneName}
+                        onChange={(value) => {
+                          field.handleChange(value);
+                          setPickedStreetId(null);
+                        }}
+                        onSelectStreet={(streetId) => setPickedStreetId(streetId)}
+                        value={field.state.value}
+                      />
+                    )}
+                  </form.Field>
+                </div>
+
+                <form.Field name="number">
+                  {(field) => {
+                    const raw = field.state.value;
+                    const num = Number(raw);
+                    const outOfRange =
+                      validNumbers.length > 0 &&
+                      Number.isFinite(num) &&
+                      num > 0 &&
+                      !validNumbers.includes(num);
+                    const nonNumeric = raw.trim() !== "" && !/^\d+$/.test(raw.trim());
+                    return (
+                      <TextField onChange={(v) => field.handleChange(v)} value={field.state.value}>
+                        <Label>Número</Label>
+                        <Input placeholder="1234" inputMode="numeric" />
+                        {minNumber != null && maxNumber != null ? (
+                          <Description>
+                            Rango Chilexpress: {minNumber} – {maxNumber}
+                          </Description>
+                        ) : null}
+                        {nonNumeric ? (
+                          <Description className="text-danger">
+                            Solo dígitos (Chilexpress rechaza letras)
+                          </Description>
+                        ) : null}
+                        {outOfRange ? (
+                          <Description className="text-warning">
+                            Número fuera del rango registrado
+                          </Description>
+                        ) : null}
+                      </TextField>
+                    );
+                  }}
+                </form.Field>
+              </div>
+
+              <form.Field name="supplement">
+                {(field) => (
+                  <TextField onChange={(v) => field.handleChange(v)} value={field.state.value}>
+                    <Label>Depto / Casa (opcional)</Label>
+                    <Input placeholder="Depto 502, Casa 5, etc." />
+                  </TextField>
                 )}
               </form.Field>
             </div>
