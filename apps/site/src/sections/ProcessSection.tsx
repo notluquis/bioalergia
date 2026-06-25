@@ -43,7 +43,7 @@ export function ProcessSection() {
         </div>
         <Photo
           className="h-[420px] rounded-md lg:h-[540px]"
-          name="skinTest"
+          name="prickArm"
           rounded="rounded-md"
           sizes="(min-width: 1024px) 580px, 100vw"
         />
