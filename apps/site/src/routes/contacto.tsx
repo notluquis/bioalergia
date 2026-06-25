@@ -170,8 +170,8 @@ function ContactoPage() {
           <div className="text-(--ink-muted) text-xs uppercase tracking-[0.2em]">Contacto</div>
           <h1 className="font-semibold text-(--ink) text-3xl sm:text-4xl">Contacto</h1>
           <p className="max-w-3xl text-(--ink-muted) text-base leading-relaxed sm:text-lg">
-            ¿Tienes una consulta general o deseas agendar una atención? Escríbenos y te responderemos
-            a la brevedad.
+            ¿Tienes una consulta general o deseas agendar una atención? Escríbenos y te
+            responderemos a la brevedad.
           </p>
         </div>
       </section>
@@ -220,8 +220,8 @@ function ContactoPage() {
               <Alert.Content>
                 <Alert.Title>Protección de tus datos</Alert.Title>
                 <Alert.Description>
-                  No incluyas información de salud en este formulario. Tus datos se tratan conforme a
-                  nuestra Política de Protección de Datos (Ley N° 21.719).
+                  No incluyas información de salud en este formulario. Tus datos se tratan conforme
+                  a nuestra Política de Protección de Datos (Ley N° 21.719).
                 </Alert.Description>
               </Alert.Content>
             </Alert>

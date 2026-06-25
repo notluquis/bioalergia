@@ -14,7 +14,13 @@ const CLP = new Intl.NumberFormat("es-CL", {
   maximumFractionDigits: 0,
 });
 
-type PriceRow = { name: string; category: string; unit: string; priceClp: number; notes: string | null };
+type PriceRow = {
+  name: string;
+  category: string;
+  unit: string;
+  priceClp: number;
+  notes: string | null;
+};
 
 const NOTES = [
   "Los valores corresponden a atención particular y pueden actualizarse. La versión vigente es la exhibida en el establecimiento.",
@@ -45,10 +51,14 @@ function PriceGroup({ category, rows }: { category: string; rows: PriceRow[] }) 
           <div className="grid gap-1" key={`${category}-${row.name}`}>
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <span className="font-medium text-(--ink)">{row.name}</span>
-              <span className="font-semibold text-(--ink) tabular-nums">{CLP.format(row.priceClp)}</span>
+              <span className="font-semibold text-(--ink) tabular-nums">
+                {CLP.format(row.priceClp)}
+              </span>
             </div>
             <span className="text-(--ink-muted) text-sm">{row.unit}</span>
-            {row.notes ? <span className="text-(--ink-muted) text-xs leading-relaxed">{row.notes}</span> : null}
+            {row.notes ? (
+              <span className="text-(--ink-muted) text-xs leading-relaxed">{row.notes}</span>
+            ) : null}
           </div>
         ))}
       </Card.Content>
@@ -80,7 +90,9 @@ function PreciosPage() {
           <Breadcrumbs.Item>Precios</Breadcrumbs.Item>
         </Breadcrumbs>
         <div className="grid gap-3">
-          <div className="text-(--ink-muted) text-xs uppercase tracking-[0.2em]">Aranceles a la vista</div>
+          <div className="text-(--ink-muted) text-xs uppercase tracking-[0.2em]">
+            Aranceles a la vista
+          </div>
           <h1 className="font-semibold text-(--ink) text-3xl sm:text-4xl">Lista de precios</h1>
           <p className="max-w-3xl text-(--ink-muted) text-base leading-relaxed sm:text-lg">
             Aranceles particulares vigentes, expresados en pesos chilenos (CLP), por prestación e
@@ -122,8 +134,8 @@ function PreciosPage() {
           <Card.Content className="grid gap-2 py-6">
             <span className="font-medium text-(--ink)">Lista de precios en actualización</span>
             <span className="text-(--ink-muted) text-sm leading-relaxed">
-              Estamos actualizando los aranceles. Escríbenos a contacto@bioalergia.cl o llámanos para
-              conocer los valores vigentes.
+              Estamos actualizando los aranceles. Escríbenos a contacto@bioalergia.cl o llámanos
+              para conocer los valores vigentes.
             </span>
           </Card.Content>
         </Card>

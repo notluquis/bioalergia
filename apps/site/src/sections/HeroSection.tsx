@@ -1,94 +1,62 @@
-import { Button, Card, Chip, Link } from "@heroui/react";
-import { usePostHog } from "posthog-js/react";
+import { Button } from "@heroui/react";
 import { lazy, Suspense } from "react";
-import { clinicOverview } from "@/data/clinic";
-import { doctoraliaLink } from "@/lib/doctoralia";
+
+import { Container } from "@/components/ui/Container";
+import { ctaClass } from "@/components/ui/cta";
+import { Eyebrow } from "@/components/ui/Eyebrow";
+import { MoleculeMotif } from "@/components/ui/MoleculeMotif";
 
 const DoctoraliaBookingWidget = lazy(() =>
-  import("@/sections/DoctoraliaWidgets").then((m) => ({
-    default: m.DoctoraliaBookingWidget,
-  }))
+  import("@/sections/DoctoraliaWidgets").then((m) => ({ default: m.DoctoraliaBookingWidget }))
 );
-
-const PollenHeroCard = lazy(() =>
-  import("@/sections/PollenHeroCard").then((m) => ({ default: m.PollenHeroCard }))
-);
-
-const badges = ["Alergología", "Inmunología", "Adultos y niños", "Concepción, Chile"];
 
 type HeroSectionProps = {
   onBook: () => void;
+  onWhatsApp: () => void;
 };
 
-export function HeroSection({ onBook }: HeroSectionProps) {
-  const posthog = usePostHog();
-
-  const handleDoctoraliaLink = () => {
-    posthog?.capture("doctoralia_link_click", { location: "hero_section" });
-  };
+/**
+ * Hero (handoff) — photo-led editorial split: brand copy + CTAs on the left,
+ * the real Doctoralia booking widget on the right, molecular motif behind.
+ */
+export function HeroSection({ onBook, onWhatsApp }: HeroSectionProps) {
   return (
-    <section className="grid items-start gap-10 lg:grid-cols-[1.05fr_0.95fr]" id="inicio">
-      <div className="flex flex-col gap-6" style={{ animation: "floatIn 0.8s ease-out" }}>
-        <div className="flex flex-wrap gap-2">
-          {badges.map((badge) => (
-            <Chip key={badge} size="sm" variant="soft">
-              {badge}
-            </Chip>
-          ))}
-        </div>
-        <div className="space-y-4">
-          <p className="text-(--ink-muted) text-xs uppercase tracking-[0.28em]">
-            {clinicOverview.subtitle}
-          </p>
-          <h1 className="font-semibold text-(--ink) text-3xl leading-tight sm:text-4xl md:text-5xl lg:text-6xl">
-            Clínica Bioalergia
-            <span
-              className="mt-2 block font-normal text-(--ink-muted) text-2xl sm:text-3xl md:text-4xl"
-              style={{ fontFamily: '"Instrument Serif", serif' }}
-            >
-              Especialistas en alergias e inmunoterapia
-            </span>
+    <section className="relative overflow-hidden bg-background" id="inicio">
+      <MoleculeMotif className="pointer-events-none absolute top-[-40px] right-[-30px] size-[440px] text-[#c9d8ea] opacity-30" />
+      <Container className="relative grid items-center gap-10 py-16 lg:grid-cols-[1fr_1.02fr] lg:gap-14 lg:py-[5.25rem]">
+        <div className="flex flex-col">
+          <Eyebrow className="mb-6">Clínica especializada en respiración</Eyebrow>
+          <h1 className="font-display text-[2.75rem] leading-[1.06] text-foreground sm:text-[3.5rem] lg:text-[4.125rem]">
+            Vuelve a respirar sin que las alergias decidan por ti.
           </h1>
-          <p className="max-w-xl text-(--ink-muted) text-base sm:text-lg">
-            Diagnóstico preciso, tratamientos personalizados y acompañamiento clínico para mejorar
-            tu calidad de vida.
+          <p className="mt-5 max-w-[460px] text-[1.125rem] leading-[1.6] text-muted">
+            Estudiamos tu alergia, te explicamos en simple qué tienes y armamos un tratamiento a tu
+            medida. Atención para grandes y chicos en Concepción.
           </p>
+          <div className="mt-8 flex flex-wrap items-center gap-[18px]">
+            <Button
+              className={ctaClass("primary", "px-[30px] py-[15px] text-[0.97rem]")}
+              onPress={onBook}
+            >
+              Reservar evaluación
+            </Button>
+            <button className={ctaClass("whatsapp")} onClick={onWhatsApp} type="button">
+              <span className="size-[9px] rounded-full bg-doctoralia-green" />
+              Hablar por WhatsApp
+            </button>
+          </div>
+          <div className="mt-10 flex flex-wrap items-center gap-[14px] border-line border-t pt-[26px] text-[0.84rem] text-muted">
+            <span className="font-semibold text-foreground">Dr. José Manuel Martínez</span>
+            <span className="text-line">·</span>
+            <span>Formación AAAeIC Argentina y pasantía en España</span>
+          </div>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <Button className="rounded-full bg-(--accent) px-6 text-white" onPress={onBook}>
-            Reservar evaluación
-          </Button>
-          <Link className="text-(--ink-muted) text-sm underline-offset-4" href="/servicios">
-            Ver servicios
-          </Link>
-          <Link
-            className="text-(--ink-muted) text-sm underline-offset-4"
-            href={doctoraliaLink}
-            target="_blank"
-            rel="noreferrer"
-            onClick={handleDoctoraliaLink}
-          >
-            Agenda online
-          </Link>
-        </div>
-        <div className="grid gap-3 sm:grid-cols-3">
-          {clinicOverview.summary.map((item) => (
-            <Card className="rounded-2xl" key={item} variant="secondary">
-              <Card.Content className="text-(--ink-muted) text-sm">{item}</Card.Content>
-            </Card>
-          ))}
-        </div>
-        <Suspense fallback={null}>
-          <PollenHeroCard />
-        </Suspense>
-      </div>
-      <div className="lg:pl-4" style={{ animation: "floatIn 0.9s ease-out" }}>
         <Suspense
-          fallback={<div className="min-h-[25rem] animate-pulse rounded-3xl bg-(--surface-2)" />}
+          fallback={<div className="min-h-[25rem] animate-pulse rounded-2xl bg-surface-2" />}
         >
           <DoctoraliaBookingWidget />
         </Suspense>
-      </div>
+      </Container>
     </section>
   );
 }

@@ -25,16 +25,36 @@ import { Section } from "@/sections/Section";
 type RightType = CreatePublicDataRightsInput["type"];
 
 const RIGHTS: { id: RightType; label: string; detail: string }[] = [
-  { id: "ACCESS", label: "Acceso", detail: "Conocer qué datos suyos tratamos y obtener una copia." },
-  { id: "RECTIFICATION", label: "Rectificación", detail: "Corregir datos inexactos o incompletos." },
-  { id: "DELETION", label: "Supresión", detail: "Solicitar la eliminación de sus datos cuando proceda." },
-  { id: "OPPOSITION", label: "Oposición", detail: "Oponerse a un tratamiento determinado de sus datos." },
+  {
+    id: "ACCESS",
+    label: "Acceso",
+    detail: "Conocer qué datos suyos tratamos y obtener una copia.",
+  },
+  {
+    id: "RECTIFICATION",
+    label: "Rectificación",
+    detail: "Corregir datos inexactos o incompletos.",
+  },
+  {
+    id: "DELETION",
+    label: "Supresión",
+    detail: "Solicitar la eliminación de sus datos cuando proceda.",
+  },
+  {
+    id: "OPPOSITION",
+    label: "Oposición",
+    detail: "Oponerse a un tratamiento determinado de sus datos.",
+  },
   {
     id: "PORTABILITY",
     label: "Portabilidad",
     detail: "Recibir sus datos en un formato estructurado y de uso común.",
   },
-  { id: "BLOCKING", label: "Bloqueo", detail: "Suspender temporalmente el tratamiento de un dato." },
+  {
+    id: "BLOCKING",
+    label: "Bloqueo",
+    detail: "Suspender temporalmente el tratamiento de un dato.",
+  },
 ];
 
 function DataRightsForm() {
@@ -52,9 +72,7 @@ function DataRightsForm() {
   });
 
   const canSubmit =
-    requesterName.trim().length >= 1 &&
-    requesterEmail.includes("@") &&
-    !submitMutation.isPending;
+    requesterName.trim().length >= 1 && requesterEmail.includes("@") && !submitMutation.isPending;
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -76,8 +94,8 @@ function DataRightsForm() {
           <Card.Title className="text-lg">Recibimos tu solicitud</Card.Title>
           <Card.Description className="text-(--ink-muted) leading-relaxed">
             El delegado de protección de datos revisará tu solicitud y te responderá dentro de
-            treinta días corridos. Para proteger tus datos, podemos pedir antecedentes que verifiquen
-            tu identidad antes de responder.
+            treinta días corridos. Para proteger tus datos, podemos pedir antecedentes que
+            verifiquen tu identidad antes de responder.
           </Card.Description>
         </Card.Header>
       </Card>
@@ -159,8 +177,8 @@ function DataRightsForm() {
             <Alert status="danger">
               <Alert.Content>
                 <Alert.Description>
-                  No pudimos registrar tu solicitud. Vuelve a intentarlo en unos minutos o escríbenos
-                  a contacto@bioalergia.cl.
+                  No pudimos registrar tu solicitud. Vuelve a intentarlo en unos minutos o
+                  escríbenos a contacto@bioalergia.cl.
                 </Alert.Description>
               </Alert.Content>
             </Alert>
@@ -223,7 +241,8 @@ function DerechosPage() {
               <span className="mt-2 rounded-full bg-(--accent) size-2" />
               <span className="text-(--ink-muted)">
                 Plazo: respondemos dentro de treinta días corridos contados desde el ingreso de la
-                solicitud, prorrogables por una sola vez hasta por treinta días corridos adicionales.
+                solicitud, prorrogables por una sola vez hasta por treinta días corridos
+                adicionales.
               </span>
             </div>
             <div className="flex items-start gap-3 text-sm leading-relaxed">
@@ -236,9 +255,9 @@ function DerechosPage() {
             <div className="flex items-start gap-3 text-sm leading-relaxed">
               <span className="mt-2 rounded-full bg-(--accent) size-2" />
               <span className="text-(--ink-muted)">
-                Límite por ficha clínica: la supresión no procede cuando la conservación es necesaria
-                por obligación legal (la ficha clínica se conserva quince años); en esos casos puede
-                proceder el bloqueo.
+                Límite por ficha clínica: la supresión no procede cuando la conservación es
+                necesaria por obligación legal (la ficha clínica se conserva quince años); en esos
+                casos puede proceder el bloqueo.
               </span>
             </div>
             <div className="flex items-start gap-3 text-sm leading-relaxed">

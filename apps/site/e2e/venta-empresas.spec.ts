@@ -33,7 +33,9 @@ test("/venta-empresas renders the vitrina with product names and the allergen", 
   }
 
   // The allergen commonName of the first card renders inside its allergen block.
-  await expect(page.getByText(VITRINA_ALLERGEN_COMMON_NAME, { exact: false }).first()).toBeVisible();
+  await expect(
+    page.getByText(VITRINA_ALLERGEN_COMMON_NAME, { exact: false }).first()
+  ).toBeVisible();
 });
 
 test("/venta-empresas does NOT leak any CLP price", async ({ page }) => {

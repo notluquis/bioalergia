@@ -2,17 +2,33 @@ import type { ReactNode } from "react";
 
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
+import { Container } from "@/components/ui/Container";
 
 /**
- * Marketing/content page wrapper: shared header + footer + the same
- * max-width container the homepage (App.tsx) uses, so content routes
- * (/examenes, /inmunoterapia, /polen, ...) feel consistent with `/`.
+ * Content page wrapper — shared editorial header + footer. By default the body
+ * is wrapped in the 1200px container with section rhythm; pages that lay out
+ * full-width colour bands (SectionBand) pass `contained={false}` and own their
+ * own containers.
  */
-export function PageShell({ children }: { children: ReactNode }) {
+export function PageShell({
+  children,
+  contained = true,
+  pathname,
+}: {
+  children: ReactNode;
+  contained?: boolean;
+  pathname?: string;
+}) {
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-10 px-4 pt-6 pb-14 sm:px-6 md:gap-12 lg:gap-16 lg:px-8">
-      <SiteHeader />
-      <main className="grid gap-16">{children}</main>
+    <div className="flex min-h-screen flex-col bg-background">
+      <SiteHeader pathname={pathname} />
+      <main className="flex-1">
+        {contained ? (
+          <Container className="grid gap-16 py-12 sm:py-16">{children}</Container>
+        ) : (
+          children
+        )}
+      </main>
       <SiteFooter />
     </div>
   );

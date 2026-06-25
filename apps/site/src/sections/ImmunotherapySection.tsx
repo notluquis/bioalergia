@@ -1,92 +1,68 @@
-import { Card } from "@heroui/react";
-import { immunotherapyBenefits, immunotherapyComparison } from "@/data/services";
-import { Section } from "@/sections/Section";
+import type { ClinicPhotoName } from "@/data/photos";
+import { SectionBand } from "@/components/ui/SectionBand";
+import { Eyebrow } from "@/components/ui/Eyebrow";
+import { Photo } from "@/components/ui/Photo";
 
-const abbreviations = [
+type Modality = {
+  eyebrow: string;
+  title: string;
+  body: string;
+  forWhom: string;
+  photo: ClinicPhotoName;
+};
+
+const modalities: Modality[] = [
   {
-    label: "SCIT",
-    detail: "Inmunoterapia subcutánea: inyecciones controladas en clínica.",
+    eyebrow: "SCIT · Subcutánea",
+    title: "Vacunas por inyección",
+    body: "Fases de inducción y mantenimiento mensual bajo observación médica. Alta eficacia con evidencia histórica sólida; reduce el riesgo de progresión a asma.",
+    forWhom: "rinitis persistente, asma alérgica y sensibilizaciones múltiples.",
+    photo: "scitInjection",
   },
   {
-    label: "SLIT",
-    detail: "Inmunoterapia sublingual: gotas o tabletas en casa con seguimiento.",
+    eyebrow: "SLIT · Sublingual",
+    title: "Gotas o tabletas en casa",
+    body: "Administración diaria sin agujas, con seguimiento clínico periódico. Eficacia comparable en rinitis alérgica y alta adherencia.",
+    forWhom: "niños y pacientes con agendas exigentes que prefieren evitar inyecciones.",
+    photo: "extractsCase",
   },
 ];
 
+/** Immunotherapy (handoff) — editorial quote + two modality photo cards. */
 export function ImmunotherapySection() {
   return (
-    <Section
-      id="inmunoterapia"
-      eyebrow="Inmunoterapia"
-      title="SCIT vs SLIT"
-      subtitle="Elegimos la modalidad adecuada según diagnóstico, estilo de vida y seguridad clínica."
-    >
-      <div className="grid gap-6 lg:grid-cols-2">
-        {abbreviations.map((item) => (
-          <Card className="rounded-2xl" key={item.label} variant="default">
-            <Card.Header className="gap-3 pb-5">
-              <Card.Title className="text-lg">{item.label}</Card.Title>
-              <Card.Description className="text-(--ink-muted)">{item.detail}</Card.Description>
-            </Card.Header>
-          </Card>
+    <SectionBand id="inmunoterapia" tone="surface2">
+      <div className="mx-auto mb-12 max-w-[760px] text-center">
+        <Eyebrow className="mb-5 inline-block">Inmunoterapia</Eyebrow>
+        <p className="font-display text-[1.75rem] italic leading-[1.22] text-foreground sm:text-[2.1875rem]">
+          «La única terapia capaz de cambiar el curso natural de la enfermedad alérgica, en lugar de
+          sólo aliviar los síntomas.»
+        </p>
+        <p className="mx-auto mt-[18px] max-w-[600px] text-[1rem] leading-[1.6] text-muted">
+          En simple: en vez de tomar remedios para siempre, entrenamos a tu cuerpo para que deje de
+          reaccionar a lo que te da alergia.
+        </p>
+      </div>
+      <div className="grid gap-[26px] md:grid-cols-2">
+        {modalities.map((m) => (
+          <div key={m.title} className="overflow-hidden rounded-lg bg-surface shadow-sm">
+            <Photo
+              className="h-[230px]"
+              name={m.photo}
+              rounded="rounded-none"
+              sizes="(min-width: 768px) 560px, 100vw"
+            />
+            <div className="p-8">
+              <Eyebrow className="mb-3 text-[0.72rem]">{m.eyebrow}</Eyebrow>
+              <h3 className="mb-3 font-display text-[1.6875rem] text-foreground">{m.title}</h3>
+              <p className="mb-4 text-[0.94rem] leading-[1.6] text-muted">{m.body}</p>
+              <div className="border-line border-t pt-4 text-[0.84rem] text-foreground">
+                <b className="text-brand-blue">Para</b> {m.forWhom}
+              </div>
+            </div>
+          </div>
         ))}
       </div>
-
-      <Card className="rounded-3xl" variant="default">
-        <Card.Header className="gap-2">
-          <Card.Title className="text-xl">Comparativa clínica</Card.Title>
-          <Card.Description className="text-(--ink-muted)">
-            Diferencias clave para tomar una decisión informada.
-          </Card.Description>
-        </Card.Header>
-        <Card.Content className="overflow-x-auto pb-6 sm:overflow-x-visible">
-          <div className="space-y-0">
-            {/* Header Row */}
-            <div className="grid grid-cols-1 gap-6 border-border border-b pb-3 sm:grid-cols-3 sm:pb-4">
-              <div className="font-semibold text-(--ink-muted) text-xs uppercase tracking-[0.2em]">
-                Aspecto
-              </div>
-              <div className="font-semibold text-(--ink-muted) text-xs uppercase tracking-[0.2em]">
-                SCIT · subcutánea
-              </div>
-              <div className="font-semibold text-(--ink-muted) text-xs uppercase tracking-[0.2em]">
-                SLIT · sublingual
-              </div>
-            </div>
-
-            {/* Data Rows with zebra striping */}
-            {immunotherapyComparison.map((row, index) => (
-              <div
-                key={row.aspect}
-                className={`-mx-4 grid grid-cols-1 gap-6 border-border border-b sm:grid-cols-3 p-4 ${
-                  index % 2 === 0 ? "bg-(--surface-2)" : ""
-                }`}
-              >
-                <div className="font-semibold text-(--ink) text-sm sm:text-base">{row.aspect}</div>
-                <div className="text-(--ink-muted) text-sm">{row.scit}</div>
-                <div className="text-(--ink-muted) text-sm">{row.slit}</div>
-              </div>
-            ))}
-          </div>
-        </Card.Content>
-      </Card>
-
-      <Card className="rounded-3xl" variant="secondary">
-        <Card.Header className="gap-3">
-          <Card.Title className="text-xl">Beneficios de la inmunoterapia</Card.Title>
-          <Card.Description className="text-(--ink-muted)">
-            Tratamiento modificador de la enfermedad, con impacto sostenido en el tiempo.
-          </Card.Description>
-        </Card.Header>
-        <Card.Content className="grid gap-4 pb-6">
-          {immunotherapyBenefits.map((benefit) => (
-            <div className="flex items-start gap-3 text-sm leading-relaxed" key={benefit}>
-              <span className="mt-2 rounded-full bg-(--accent) size-2" />
-              <span className="text-(--ink-muted)">{benefit}</span>
-            </div>
-          ))}
-        </Card.Content>
-      </Card>
-    </Section>
+    </SectionBand>
   );
 }

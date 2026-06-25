@@ -243,8 +243,8 @@ function DenunciasPage() {
             <Card.Header className="gap-2">
               <Card.Title className="text-lg">Plazos</Card.Title>
               <Card.Description className="text-(--ink-muted) leading-relaxed">
-                Resguardo inmediato, remisión a la Inspección del Trabajo dentro de tres días hábiles
-                e investigación en un plazo de treinta días hábiles, según corresponda al
+                Resguardo inmediato, remisión a la Inspección del Trabajo dentro de tres días
+                hábiles e investigación en un plazo de treinta días hábiles, según corresponda al
                 procedimiento elegido.
               </Card.Description>
             </Card.Header>
@@ -253,8 +253,8 @@ function DenunciasPage() {
             <Card.Header className="gap-2">
               <Card.Title className="text-lg">Vías alternativas</Card.Title>
               <Card.Description className="text-(--ink-muted) leading-relaxed">
-                Puedes usar este formulario, escribir a denuncias@bioalergia.cl o acudir directamente
-                a la Inspección del Trabajo. La elección de la vía es tuya.
+                Puedes usar este formulario, escribir a denuncias@bioalergia.cl o acudir
+                directamente a la Inspección del Trabajo. La elección de la vía es tuya.
               </Card.Description>
             </Card.Header>
           </Card>

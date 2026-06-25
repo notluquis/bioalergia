@@ -220,9 +220,9 @@ function ReclamosPage() {
               <Card.Title className="text-lg">Cómo se presenta</Card.Title>
               <Card.Description className="text-(--ink-muted) leading-relaxed">
                 Mediante el formulario en línea de esta página, o por escrito en recepción, donde
-                también está disponible el libro de sugerencias y reclamos. Indica tu identificación,
-                un medio de respuesta, una descripción clara del hecho con su fecha y la petición
-                concreta.
+                también está disponible el libro de sugerencias y reclamos. Indica tu
+                identificación, un medio de respuesta, una descripción clara del hecho con su fecha
+                y la petición concreta.
               </Card.Description>
             </Card.Header>
           </Card>
@@ -249,7 +249,9 @@ function ReclamosPage() {
         </div>
         <Card className="rounded-3xl" variant="secondary">
           <Card.Content className="grid gap-3 py-6">
-            <Bullet>El reclamo queda registrado con número correlativo asignado por el sistema.</Bullet>
+            <Bullet>
+              El reclamo queda registrado con número correlativo asignado por el sistema.
+            </Bullet>
             <Bullet>
               Se conserva copia del reclamo, de la respuesta y del documento que acredite su
               notificación.

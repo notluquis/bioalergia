@@ -60,6 +60,7 @@ createRoot(root).render(
       enableColorScheme
       enableSystem
       storageKey="bioalergia.theme"
+      value={{ light: "bioalergia", dark: "bioalergia-dark" }}
     >
       <PostHogProvider apiKey={import.meta.env.VITE_PUBLIC_POSTHOG_KEY} options={posthogOptions}>
         <QueryClientProvider client={queryClient}>

@@ -69,8 +69,8 @@ function DerechosDeberesPage() {
           </h1>
           <p className="max-w-3xl text-(--ink-muted) text-base leading-relaxed sm:text-lg">
             En Bioalergia respetamos los derechos y deberes de las personas en su atención de salud,
-            establecidos en la Ley N° 20.584. Esta carta se mantiene visible para todos los pacientes
-            y sus acompañantes.
+            establecidos en la Ley N° 20.584. Esta carta se mantiene visible para todos los
+            pacientes y sus acompañantes.
           </p>
         </div>
       </section>
@@ -88,9 +88,9 @@ function DerechosDeberesPage() {
             <Card.Description className="text-(--ink-muted) leading-relaxed">
               Si usted no está conforme con la atención, puede presentar un reclamo. El
               establecimiento lo registrará y le responderá por escrito dentro de quince días
-              hábiles. Si la respuesta no le satisface, puede recurrir a la Superintendencia de Salud
-              (Intendencia de Prestadores). Solicite el formulario de reclamo en recepción o utilice
-              el{" "}
+              hábiles. Si la respuesta no le satisface, puede recurrir a la Superintendencia de
+              Salud (Intendencia de Prestadores). Solicite el formulario de reclamo en recepción o
+              utilice el{" "}
               <Link className="text-(--accent)" href="/reclamos">
                 formulario en línea
               </Link>
