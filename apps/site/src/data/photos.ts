@@ -11,6 +11,8 @@
  * (it's the clinic's own mark) but ask the client for clean masters to swap in.
  */
 
+import { photoAsset } from "@/lib/assets";
+
 export type ClinicPhotoName =
   | "founderPortrait"
   | "doctorDesk"
@@ -112,7 +114,7 @@ export const clinicPhotos: Record<ClinicPhotoName, ClinicPhoto> = {
 
 export function photoSrcSet(stem: string): { src: string; srcSet: string } {
   return {
-    src: `/fotos/${stem}-1600.webp`,
-    srcSet: `/fotos/${stem}-800.webp 800w, /fotos/${stem}-1600.webp 1600w`,
+    src: photoAsset(`${stem}-1600.webp`),
+    srcSet: `${photoAsset(`${stem}-800.webp`)} 800w, ${photoAsset(`${stem}-1600.webp`)} 1600w`,
   };
 }

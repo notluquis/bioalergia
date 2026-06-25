@@ -1,6 +1,7 @@
 import { Link } from "@heroui/react";
 
 import { Container } from "@/components/ui/Container";
+import { brandAsset } from "@/lib/assets";
 import { Eyebrow } from "@/components/ui/Eyebrow";
 import { contactInfo } from "@/data/clinic";
 import { legalDocuments, legalOwner } from "@/data/legal";
@@ -54,7 +55,7 @@ export function SiteFooter() {
               alt="Bioalergia"
               className="h-[34px] w-auto"
               loading="lazy"
-              src="/logo-bioalergia-white.png"
+              src={brandAsset("logo-bioalergia-white.png")}
             />
             <p className="max-w-[260px] text-[#9fb4ce] text-sm leading-relaxed">
               Alergología e inmunología clínica en Concepción. Atención de excelencia con un enfoque
