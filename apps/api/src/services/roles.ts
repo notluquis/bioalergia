@@ -270,6 +270,17 @@ export async function syncPermissions() {
     // Attendance
     "Attendance",
     "AttendanceAdmin",
+    // Domain subjects checked by route guards + server `hasPermission` gates but
+    // backed by no single ZenStack model (the finance/transactions, production
+    // balance, and calendar-event domains span several models). Without these,
+    // `read:Transaction` / `read:ProductionBalance` / `read:CalendarEvent`
+    // permission rows never exist → no role can be granted them → the matching
+    // routes (cash-flow, production-balances, clinical analytics) and their
+    // oRPC APIs (finance.ts, production-balances.ts, calendar.ts) are
+    // unreachable for everyone. See route-guards + `hasPermission` call sites.
+    "Transaction",
+    "ProductionBalance",
+    "CalendarEvent",
   ];
 
   // 3. Combine and merge
