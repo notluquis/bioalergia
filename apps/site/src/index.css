@@ -24,14 +24,11 @@
   --font-display: "Instrument Serif", ui-serif, Georgia, serif;
 }
 
-/* Legacy alias compat — pre-redesign sections reference these names via
- * arbitrary utilities (text-(--ink-muted) etc.). Mapped onto the new theme
- * tokens so the app stays buildable mid-migration; removed as each section is
- * restyled. ponytail: temporary bridge, delete when no refs remain. */
+/* Legacy alias compat — some not-yet-migrated components reference
+ * `text-(--ink-muted)` via arbitrary utilities. Mapped onto the muted theme
+ * token. ponytail: drop once the last --ink-muted ref is restyled. */
 :root {
   --ink-muted: var(--muted);
-  --bg-2: var(--surface-2);
-  --accent-2: var(--brand-blue);
 }
 
 * {
