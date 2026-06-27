@@ -860,8 +860,42 @@ function orderedSubset<T extends string>(values: Iterable<T>, order: readonly T[
   return order.filter((value) => set.has(value));
 }
 
-export async function listJobRadarFilterOptions(): Promise<JobRadarFilterOptionsDTO> {
-  const rows = await db.jobPosting.findMany({
+function buildJobPostingWhere(
+  filters: ListJobPostingsFilters,
+  omit: Array<keyof ListJobPostingsFilters> = []
+): Record<string, unknown> {
+  const skip = new Set<keyof ListJobPostingsFilters>(omit);
+  const where: Record<string, unknown> = {};
+  if (!skip.has("postingStatus")) {
+    if (filters.postingStatus && filters.postingStatus !== "ALL") {
+      where.status = filters.postingStatus;
+    } else if (!filters.postingStatus) {
+      where.status = "OPEN";
+    }
+  }
+  if (!skip.has("applicationStatus") && filters.applicationStatus) {
+    where.applicationStatus = filters.applicationStatus;
+  }
+  if (!skip.has("source") && filters.source) where.source = filters.source;
+  if (!skip.has("company") && filters.company) where.company = filters.company;
+  if (!skip.has("search") && filters.search && filters.search.trim().length > 0) {
+    const q = filters.search.trim();
+    where.OR = [
+      { title: { contains: q, mode: "insensitive" as const } },
+      { department: { contains: q, mode: "insensitive" as const } },
+      { location: { contains: q, mode: "insensitive" as const } },
+      { company: { contains: q, mode: "insensitive" as const } },
+    ];
+  }
+  return where;
+}
+
+async function listFacetRows(
+  filters: ListJobPostingsFilters,
+  omit: Array<keyof ListJobPostingsFilters> = []
+) {
+  return db.jobPosting.findMany({
+    where: buildJobPostingWhere(filters, omit),
     select: {
       applicationStatus: true,
       company: true,
@@ -871,29 +905,44 @@ export async function listJobRadarFilterOptions(): Promise<JobRadarFilterOptions
       status: true,
     },
   });
+}
+
+export async function listJobRadarFilterOptions(
+  filters: ListJobPostingsFilters = {}
+): Promise<JobRadarFilterOptionsDTO> {
+  const [applicationRows, companyRows, locationRows, postingRows, sourceRows] = await Promise.all([
+    listFacetRows(filters, ["applicationStatus"]),
+    listFacetRows(filters, ["company"]),
+    listFacetRows(filters),
+    listFacetRows(filters, ["postingStatus"]),
+    listFacetRows(filters, ["source"]),
+  ]);
 
   const companies = new Map<string, { source: string; value: string }>();
+  for (const row of companyRows) {
+    companies.set(`${row.source}\u0000${row.company}`, { source: row.source, value: row.company });
+  }
+
   const locations = new Set<string | null>();
   const remoteModes = new Set<string>();
-  const sources = new Set<string>();
-
-  for (const row of rows) {
-    sources.add(row.source);
-    companies.set(`${row.source}\u0000${row.company}`, { source: row.source, value: row.company });
+  for (const row of locationRows) {
     locations.add(row.location);
     if (row.remote) remoteModes.add(row.remote);
   }
 
+  const sources = new Set<string>();
+  for (const row of sourceRows) sources.add(row.source);
+
   return {
     applicationStatuses: orderedSubset(
-      rows.map((row) => row.applicationStatus as ApplicationStatus),
+      applicationRows.map((row) => row.applicationStatus as ApplicationStatus),
       APPLICATION_STATUS_ORDER
     ),
     companies: [...companies.values()].sort(
       (a, b) => a.source.localeCompare(b.source, "es") || a.value.localeCompare(b.value, "es")
     ),
     postingStatuses: orderedSubset(
-      rows.map((row) => row.status as "OPEN" | "CLOSED"),
+      postingRows.map((row) => row.status as "OPEN" | "CLOSED"),
       POSTING_STATUS_ORDER
     ),
     rawLocations: [...locations].sort((a, b) => (a ?? "").localeCompare(b ?? "", "es")),
@@ -903,26 +952,8 @@ export async function listJobRadarFilterOptions(): Promise<JobRadarFilterOptions
 }
 
 export async function listJobPostings(filters: ListJobPostingsFilters = {}) {
-  const where: Record<string, unknown> = {};
-  if (filters.postingStatus && filters.postingStatus !== "ALL") {
-    where.status = filters.postingStatus;
-  } else if (!filters.postingStatus) {
-    where.status = "OPEN";
-  }
-  if (filters.applicationStatus) where.applicationStatus = filters.applicationStatus;
-  if (filters.source) where.source = filters.source;
-  if (filters.company) where.company = filters.company;
-  if (filters.search && filters.search.trim().length > 0) {
-    const q = filters.search.trim();
-    where.OR = [
-      { title: { contains: q, mode: "insensitive" as const } },
-      { department: { contains: q, mode: "insensitive" as const } },
-      { location: { contains: q, mode: "insensitive" as const } },
-      { company: { contains: q, mode: "insensitive" as const } },
-    ];
-  }
   return db.jobPosting.findMany({
-    where,
+    where: buildJobPostingWhere(filters),
     // `id` como desempate ÚNICO y estable: firstSeenAt es idéntico en filas
     // insertadas en el mismo sync masivo, y sin desempate Postgres devuelve los
     // empates en orden de heap arbitrario que se reordena al mutar una fila

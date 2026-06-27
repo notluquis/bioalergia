@@ -76,8 +76,8 @@ export function useJobPostings(filters: JobRadarListFilters = {}) {
   return useQuery(jobRadarQueries.list(filters));
 }
 
-export function useJobRadarFilterOptions() {
-  return useQuery(jobRadarQueries.filterOptions());
+export function useJobRadarFilterOptions(filters: JobRadarListFilters = {}) {
+  return useQuery(jobRadarQueries.filterOptions(filters));
 }
 
 export function useUpdateJobApplication() {

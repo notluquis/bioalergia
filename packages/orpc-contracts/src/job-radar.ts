@@ -175,6 +175,7 @@ export const jobRadarContract = {
     .output(z.array(jobPostingSchema)),
   filterOptions: oc
     .route({ method: "GET", path: "/postings/filter-options" })
+    .input(jobRadarListInputSchema)
     .output(jobRadarFilterOptionsSchema),
   update: oc
     .route({ method: "PATCH", path: "/postings/{id}" })

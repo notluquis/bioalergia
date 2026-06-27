@@ -114,7 +114,7 @@ export function JobRadarPage() {
     return f;
   }, [appStatus, postingStatus, source, company, debouncedSearch]);
 
-  const { data: filterOptions } = useJobRadarFilterOptions();
+  const { data: filterOptions } = useJobRadarFilterOptions(filters);
   const { data: postings, isPending } = useJobPostings(filters);
   const update = useUpdateJobApplication();
   const bulkUpdate = useBulkUpdateJobApplications();
@@ -234,14 +234,10 @@ export function JobRadarPage() {
     );
   };
 
-  const companies = useMemo(() => {
-    const options = filterOptions?.companies ?? [];
-    return options
-      .filter((option) => source === "ALL" || option.source === source)
-      .map((option) => option.value)
-      .filter((value, index, arr) => arr.indexOf(value) === index)
-      .sort((a, b) => a.localeCompare(b, "es"));
-  }, [filterOptions?.companies, source]);
+  const companies = useMemo(
+    () => [...new Set((filterOptions?.companies ?? []).map((option) => option.value))],
+    [filterOptions?.companies]
+  );
 
   const sources = filterOptions?.sources ?? [];
   const locations = useMemo(() => buildLocationFilterOptions(rows), [rows]);

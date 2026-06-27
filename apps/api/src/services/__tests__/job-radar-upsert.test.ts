@@ -1,9 +1,16 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { RawJob } from "../../modules/job-radar/types.ts";
 
-vi.mock("@finanzas/db", () => ({ db: {}, kysely: {} }));
+const { mockFindMany } = vi.hoisted(() => ({ mockFindMany: vi.fn() }));
 
-const { dedupeJobsForUpsert } = await import("../job-radar.ts");
+vi.mock("@finanzas/db", () => ({
+  db: { jobPosting: { findMany: mockFindMany } },
+  kysely: {},
+}));
+
+const { dedupeJobsForUpsert, listJobRadarFilterOptions } = await import("../job-radar.ts");
+
+beforeEach(() => mockFindMany.mockReset());
 
 function job(over: Partial<RawJob> = {}): RawJob {
   return {
@@ -45,5 +52,47 @@ describe("dedupeJobsForUpsert", () => {
 
     expect(result.duplicateCount).toBe(0);
     expect(result.jobs).toHaveLength(3);
+  });
+});
+
+describe("listJobRadarFilterOptions", () => {
+  it("builds dependent facets from the active filters, excluding only the current facet", async () => {
+    mockFindMany
+      .mockResolvedValueOnce([{ applicationStatus: "NEW" }])
+      .mockResolvedValueOnce([
+        { source: "workday", company: "bci" },
+        { source: "workday", company: "bci" },
+      ])
+      .mockResolvedValueOnce([{ location: "Santiago, Chile", remote: "Híbrido" }])
+      .mockResolvedValueOnce([{ status: "OPEN" }])
+      .mockResolvedValueOnce([{ source: "workday" }]);
+
+    const result = await listJobRadarFilterOptions({
+      postingStatus: "OPEN",
+      applicationStatus: "SEEN",
+      source: "workday",
+      company: "bci",
+      search: "data",
+    });
+
+    expect(result).toMatchObject({
+      applicationStatuses: ["NEW"],
+      companies: [{ source: "workday", value: "bci" }],
+      postingStatuses: ["OPEN"],
+      rawLocations: ["Santiago, Chile"],
+      remoteModes: ["Híbrido"],
+      sources: ["workday"],
+    });
+    expect(mockFindMany).toHaveBeenCalledTimes(5);
+    expect(mockFindMany.mock.calls[0]?.[0].where).not.toHaveProperty("applicationStatus");
+    expect(mockFindMany.mock.calls[1]?.[0].where).not.toHaveProperty("company");
+    expect(mockFindMany.mock.calls[2]?.[0].where).toMatchObject({
+      applicationStatus: "SEEN",
+      company: "bci",
+      source: "workday",
+      status: "OPEN",
+    });
+    expect(mockFindMany.mock.calls[3]?.[0].where).not.toHaveProperty("status");
+    expect(mockFindMany.mock.calls[4]?.[0].where).not.toHaveProperty("source");
   });
 });

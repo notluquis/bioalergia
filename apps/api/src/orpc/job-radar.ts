@@ -72,10 +72,11 @@ const jobRadarORPCRouterBase = {
       summary: "List available posting filter options",
       tags: ["Job Radar"],
     })
+    .input(jobRadarListInputSchema)
     .output(jobRadarFilterOptionsSchema)
-    .handler(async ({ context }) => {
+    .handler(async ({ context, input }) => {
       await requireUser(context.hono);
-      return listJobRadarFilterOptions();
+      return listJobRadarFilterOptions(input ?? {});
     }),
 
   update: base
