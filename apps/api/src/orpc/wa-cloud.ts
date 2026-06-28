@@ -107,7 +107,7 @@ import {
 } from "@finanzas/orpc-contracts/wa-cloud";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
-import { ORPCError, onError, os } from "@orpc/server";
+import { ORPCError, ValidationError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
 import { z } from "zod";
@@ -238,7 +238,28 @@ import { SuperJSONRPCHandler } from "./superjson.ts";
 configureSuperjson();
 
 type WaCloudORPCContext = { hono: HonoContext };
-const base = os.$context<WaCloudORPCContext>();
+// Base error logger as a procedure middleware (golden oRPC pattern): runs
+// before .input/.output so it catches validation errors, and the middleware
+// `path` identifies WHICH procedure failed — unlike a handler interceptor.
+const base = os.$context<WaCloudORPCContext>().use(
+  onError((error, { path }) => {
+    const details: Record<string, unknown> = {
+      module: "api",
+      operation: "orpc.wa-cloud",
+      procedure: path.join("."),
+    };
+    if (error instanceof ORPCError) {
+      details.code = error.code;
+      details.status = error.status;
+      if (error.cause instanceof ValidationError) {
+        details.issues = JSON.stringify(error.cause.issues);
+      } else if (error.cause instanceof Error) {
+        details.cause = error.cause.message;
+      }
+    }
+    logError(error, details);
+  })
+);
 
 const authed = base.use(async ({ context, next }) => {
   const user = await getSessionUser(context.hono);
@@ -1239,23 +1260,9 @@ const waRouterBase = {
 
 export const waCloudORPCRouter = base.prefix("/api/orpc/wa-cloud").router(waRouterBase);
 
-export const waCloudORPCHandler = new SuperJSONRPCHandler(waCloudORPCRouter, {
-  interceptors: [
-    onError((error) => {
-      // Enrich so a validation reject is diagnosable: log the ORPCError code +
-      // the Zod issues (field + message), not just "Input validation failed".
-      const details: Record<string, unknown> = { module: "api", operation: "orpc.wa-cloud" };
-      if (error instanceof ORPCError) {
-        details.code = error.code;
-        details.status = error.status;
-        const data = error.data as { issues?: unknown } | undefined;
-        if (data?.issues) details.issues = JSON.stringify(data.issues);
-        if (error.cause instanceof Error) details.cause = error.cause.message;
-      }
-      logError(error, details);
-    }),
-  ],
-});
+// Error logging lives in the `base` procedure middleware (path-aware). The
+// handler only needs SuperJSONRPCHandler's built-in normalizeServerError.
+export const waCloudORPCHandler = new SuperJSONRPCHandler(waCloudORPCRouter);
 
 export const waCloudOpenAPIHandler = new OpenAPIHandler(waCloudORPCRouter, {
   plugins: [
