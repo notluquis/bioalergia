@@ -64,7 +64,7 @@ export function ImmunotherapySection() {
             />
             <Card.Header className="block p-8">
               <Eyebrow className="mb-3 text-[0.72rem]">{m.eyebrow}</Eyebrow>
-              <Card.Title className="mb-3 font-display text-[1.6875rem] text-foreground">
+              <Card.Title className="mb-3 font-display text-[1.4rem] text-foreground">
                 {m.title}
               </Card.Title>
               <Card.Description className="mb-4 text-[0.94rem] leading-[1.6] text-muted">

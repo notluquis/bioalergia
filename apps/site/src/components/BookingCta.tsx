@@ -38,7 +38,7 @@ export function BookingCta({
   };
 
   return (
-    <Card className="rounded-3xl" variant="secondary">
+    <Card className="rounded-2xl" variant="secondary">
       <Card.Header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between md:gap-6">
         <div className="flex-1 space-y-2">
           <Card.Title className="text-xl">{title}</Card.Title>

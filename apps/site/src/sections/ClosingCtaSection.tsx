@@ -14,7 +14,7 @@ export function ClosingCtaSection({
   return (
     <section className="bg-brand-blue-deep text-[#eef3f9]">
       <Container className="flex flex-col items-start justify-between gap-10 py-[5.5rem] lg:flex-row lg:items-center">
-        <h2 className="max-w-[660px] font-display text-[2.25rem] leading-[1.05] text-[#f7f9fc] sm:text-[3rem]">
+        <h2 className="max-w-[660px] font-display text-[2rem] leading-[1.05] text-[#f7f9fc] sm:text-[2.5rem]">
           Recupera el control de tus alergias. Empieza con una evaluación.
         </h2>
         <div className="flex w-full min-w-[240px] flex-col gap-3.5 lg:w-auto">

@@ -78,7 +78,7 @@ export function DoctoraliaBookingWidget() {
 
   return (
     <Card
-      className="h-fit overflow-hidden rounded-3xl border border-border bg-surface shadow-[0_24px_70px_rgba(0,0,0,0.18)]"
+      className="h-fit overflow-hidden rounded-2xl border border-border bg-surface shadow-[0_24px_70px_rgba(0,0,0,0.18)]"
       variant="tertiary"
     >
       <Card.Header className="flex flex-col items-start justify-start gap-4 px-4 pt-4 pb-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-5 sm:pt-5 md:px-6 md:pt-6">

@@ -64,7 +64,7 @@ export function ConditionQuiz({
 
   return (
     <div className="grid gap-6">
-      <Card className="rounded-3xl border-border" variant="secondary">
+      <Card className="rounded-2xl border-border" variant="secondary">
         <Card.Content className="flex items-start gap-3 py-5">
           <span className="mt-1.5 rounded-full bg-(--accent) size-2 shrink-0" aria-hidden="true" />
           <p className="text-(--ink-muted) text-sm leading-relaxed">
@@ -76,7 +76,7 @@ export function ConditionQuiz({
 
       {result ? (
         <section className="grid gap-6">
-          <Card className="rounded-3xl" variant="default">
+          <Card className="rounded-2xl" variant="default">
             <Card.Header className="gap-3">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <Card.Title className="text-2xl">{result.title}</Card.Title>
@@ -123,7 +123,7 @@ export function ConditionQuiz({
             </ProgressBar.Track>
           </ProgressBar>
 
-          <Card className="rounded-3xl" variant="default">
+          <Card className="rounded-2xl" variant="default">
             <Card.Header className="gap-2">
               <Card.Title className="text-xl leading-snug">{question.text}</Card.Title>
             </Card.Header>

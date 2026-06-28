@@ -39,7 +39,7 @@ function PedidoPage() {
           </h1>
         </header>
 
-        {isLoading && <Skeleton className="h-32 w-full rounded-3xl" />}
+        {isLoading && <Skeleton className="h-32 w-full rounded-2xl" />}
         {error && (
           <Alert status="danger">
             <Alert.Content>
@@ -48,7 +48,7 @@ function PedidoPage() {
           </Alert>
         )}
         {data && (
-          <Card className="rounded-3xl border-line bg-surface" variant="default">
+          <Card className="rounded-2xl border-line bg-surface" variant="default">
             <Card.Header className="gap-2">
               <Eyebrow tone="muted">Estado del pedido</Eyebrow>
               <Card.Title className="font-display text-2xl text-foreground">

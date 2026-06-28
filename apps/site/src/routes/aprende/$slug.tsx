@@ -20,7 +20,7 @@ function TopicBody({ blocks }: { blocks: EducationBlock[] }) {
           case "h2":
             return (
               <h2
-                className="mt-2 font-display text-[1.6rem] text-foreground leading-[1.15] sm:text-[1.9rem]"
+                className="mt-2 font-display text-[1.75rem] leading-[1.1] text-foreground sm:text-[2rem]"
                 key={key}
               >
                 {block.text}
@@ -140,7 +140,7 @@ function TopicDetailPage() {
                     <Chip size="sm" variant="secondary">
                       {item.category}
                     </Chip>
-                    <Card.Title className="font-display text-[1.2rem] text-foreground leading-[1.15]">
+                    <Card.Title className="font-display text-[1.2rem] text-foreground">
                       {item.title}
                     </Card.Title>
                   </Card.Header>

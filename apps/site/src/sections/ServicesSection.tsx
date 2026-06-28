@@ -39,7 +39,7 @@ export function ServicesSection() {
       <div className="mb-9 flex items-end justify-between gap-6">
         <div>
           <Eyebrow className="mb-4">Lo que hacemos</Eyebrow>
-          <h2 className="font-display text-[2.25rem] leading-[1.05] text-foreground sm:text-[2.75rem]">
+          <h2 className="font-display text-[2rem] leading-[1.05] text-foreground sm:text-[2.5rem]">
             Todo lo de tu alergia, en un solo lugar.
           </h2>
         </div>
@@ -65,7 +65,7 @@ export function ServicesSection() {
             <Eyebrow className="mb-2" tone="amber">
               Exámenes
             </Eyebrow>
-            <h3 className="mb-1.5 font-display text-[1.6875rem] text-white">
+            <h3 className="mb-1.5 font-display text-[1.4rem] text-white">
               Test cutáneo y de parche
             </h3>
             <p className="text-[0.875rem] leading-[1.5] text-[#dce6f2]">
@@ -82,7 +82,7 @@ export function ServicesSection() {
           >
             <div>
               <Eyebrow className="mb-3 text-[0.69rem]">{card.eyebrow}</Eyebrow>
-              <h3 className="mb-2 font-display text-[1.4375rem] text-foreground">{card.title}</h3>
+              <h3 className="mb-2 font-display text-[1.4rem] text-foreground">{card.title}</h3>
               <p className="text-[0.875rem] leading-[1.5] text-muted">{card.body}</p>
             </div>
             <span className="mt-3.5 self-end text-[1.125rem] text-brand-amber">→</span>

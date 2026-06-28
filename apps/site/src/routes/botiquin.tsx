@@ -39,7 +39,7 @@ function BotiquinPage() {
           <div className="mb-9 grid gap-3">
             <div className="flex items-center gap-3">
               <span className="size-2.5 rounded-full bg-brand-amber" />
-              <h2 className="font-display text-[1.75rem] text-foreground sm:text-[2rem]">
+              <h2 className="font-display text-[1.75rem] leading-[1.1] text-foreground sm:text-[2rem]">
                 {group.category}
               </h2>
             </div>

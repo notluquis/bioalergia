@@ -44,7 +44,7 @@ function EditorialList({
   return (
     <div>
       <Eyebrow className="mb-3">{eyebrow}</Eyebrow>
-      <h2 className="mb-6 font-display text-[1.5rem] leading-[1.1] text-foreground sm:text-[1.75rem]">
+      <h2 className="mb-6 font-display text-[1.75rem] leading-[1.1] text-foreground sm:text-[2rem]">
         {title}
       </h2>
       <ul className="grid">
@@ -88,7 +88,7 @@ function DerechosDeberesPage() {
       <SectionBand tone="surface">
         <div className="mx-auto max-w-[760px]">
           <Eyebrow className="mb-3">Reclamos y sugerencias</Eyebrow>
-          <h2 className="mb-6 font-display text-[1.875rem] leading-[1.1] text-foreground sm:text-[2.25rem]">
+          <h2 className="mb-6 font-display text-[1.75rem] leading-[1.1] text-foreground sm:text-[2rem]">
             Si no está conforme con la atención
           </h2>
           <p className="border-line border-t pt-6 text-[1.0625rem] text-muted leading-[1.75]">
