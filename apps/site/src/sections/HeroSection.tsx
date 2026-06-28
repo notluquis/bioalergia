@@ -21,9 +21,10 @@ type HeroSectionProps = {
 
 /**
  * Hero (handoff) — editorial split: brand copy + CTAs on the left with the live
- * pollen indicator filling the column foot, the real Doctoralia booking widget
- * (full height) on the right, molecular motif behind. `items-stretch` lets the
- * left column match the tall widget so the pollen card sits at its base.
+ * pollen indicator below, the real Doctoralia booking widget (full height) on
+ * the right, molecular motif behind. `items-start` lets each column flow to its
+ * own height — the widget shows full (no scroll cap), the copy column is just
+ * shorter; content-driven asymmetry, no mid-column void.
  */
 export function HeroSection({ onBook, onWhatsApp }: HeroSectionProps) {
   return (
