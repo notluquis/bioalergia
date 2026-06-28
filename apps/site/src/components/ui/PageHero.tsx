@@ -56,6 +56,7 @@ export function PageHero({
         {photo ? (
           <Photo
             className="page-hero-photo h-[300px] rounded-md lg:h-[420px]"
+            eager
             name={photo}
             sizes="(min-width: 1024px) 540px, 100vw"
           />
