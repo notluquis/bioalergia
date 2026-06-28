@@ -43,7 +43,9 @@ if (process.env.DISABLE_QUEUE_RUNNER !== "true") {
 // flags. Only the IMAP listener remains a direct startup here.
 if (process.env.ENABLE_DOCTORALIA_IMAP === "true") {
   const { startDoctoraliaImapListener } = await import("./lib/doctoralia/imap-idle.ts");
-  startDoctoraliaImapListener();
+  const { ensureContactAndConversation } = await import("./services/wa-contacts.ts");
+  const { sendTemplate } = await import("./services/wa-messages.ts");
+  startDoctoraliaImapListener({ ensureContactAndConversation, sendTemplate });
 }
 
 const server = serve({ fetch: app.fetch, port });

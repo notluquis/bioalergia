@@ -20,6 +20,13 @@ import { getR2Object, putR2Object } from "../modules/cloudflare/r2.ts";
 import { downloadMediaBytes, uploadMedia } from "../modules/wa-cloud/graph-client.ts";
 import { sendMedia } from "./wa-messages.ts";
 
+export async function getWaSavedStickerForMedia(id: number) {
+  return db.waSavedSticker.findUnique({
+    where: { id },
+    select: { r2Key: true, mimeType: true },
+  });
+}
+
 type SavedSticker = z.infer<typeof savedStickerSchema>;
 type ListSavedStickersPayload = z.infer<typeof listSavedStickersInputSchema>;
 type SendSavedStickerPayload = z.infer<typeof sendSavedStickerInputSchema>;

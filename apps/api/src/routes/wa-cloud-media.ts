@@ -1,4 +1,3 @@
-import { db } from "@finanzas/db";
 import { type Context, Hono } from "hono";
 import { getSessionUser, hasPermission } from "../lib/auth.ts";
 import { logWarn } from "../lib/logger.ts";
@@ -10,6 +9,10 @@ import {
   uploadMedia,
   uploadProfilePictureHandle,
 } from "../modules/wa-cloud/graph-client.ts";
+import { getWaBusinessAccountForMedia, getWaPhoneNumberForAuth } from "../services/wa-accounts.ts";
+import { getWaConversationForExport } from "../services/wa-conversations.ts";
+import { getWaMessageForMedia, getWaMessagesForExport } from "../services/wa-messages.ts";
+import { getWaSavedStickerForMedia } from "../services/wa-stickers.ts";
 
 export const waCloudMediaRoutes = new Hono();
 
@@ -24,10 +27,7 @@ async function requireWaPhone(
   if (!session) return { ok: false as const, status: 401 as const, msg: "Unauthorized" };
   const ok = await hasPermission(session, action, "WaBusinessAccount");
   if (!ok) return { ok: false as const, status: 403 as const, msg: "Forbidden" };
-  const phone = await db.waPhoneNumber.findUnique({
-    where: { id: phoneNumberId },
-    select: { id: true, accountId: true },
-  });
+  const phone = await getWaPhoneNumberForAuth(phoneNumberId);
   if (!phone) return { ok: false as const, status: 404 as const, msg: "Phone not found" };
   return { ok: true as const, session, phone };
 }
@@ -41,24 +41,9 @@ waCloudMediaRoutes.get("/conversations/:id/export", async (c) => {
   const id = Number.parseInt(c.req.param("id"), 10);
   if (!Number.isFinite(id)) return c.text("Bad id", 400);
   const format = (c.req.query("format") ?? "txt").toLowerCase();
-  const conv = await db.waConversation.findUnique({
-    where: { id },
-    include: { contact: true },
-  });
+  const conv = await getWaConversationForExport(id);
   if (!conv) return c.text("Not found", 404);
-  const messages = await db.waMessage.findMany({
-    where: { conversationId: id },
-    orderBy: { timestamp: "asc" },
-    select: {
-      id: true,
-      timestamp: true,
-      direction: true,
-      type: true,
-      body: true,
-      status: true,
-      metaMessageId: true,
-    },
-  });
+  const messages = await getWaMessagesForExport(id);
   const contactName = conv.contact.name ?? conv.contact.pushName ?? conv.contact.phoneE164;
   if (format === "json") {
     return c.json(
@@ -116,15 +101,9 @@ waCloudMediaRoutes.post("/profile-picture", async (c) => {
     return c.text("Only JPEG/PNG allowed", 415);
   }
   const filename = (file as File).name ?? "avatar.jpg";
-  try {
-    const handle = await uploadProfilePictureHandle(phoneNumberId, file, filename);
-    await updateBusinessProfile(phoneNumberId, { profile_picture_handle: handle });
-    return c.json({ ok: true, handle });
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    logWarn("[wa-cloud.profile-picture] upload failed", { error: msg });
-    return c.text(msg, 502);
-  }
+  const handle = await uploadProfilePictureHandle(phoneNumberId, file, filename);
+  await updateBusinessProfile(phoneNumberId, { profile_picture_handle: handle });
+  return c.json({ ok: true, handle });
 });
 
 // Resumable upload that returns a Meta media handle (h:...). Used for
@@ -144,14 +123,8 @@ waCloudMediaRoutes.post("/template-header-sample", async (c) => {
   // Meta limits: image 5MB, video 16MB, document 100MB.
   const MAX = 100 * 1024 * 1024;
   if (file.size > MAX) return c.text("File too large", 413);
-  try {
-    const handle = await uploadProfilePictureHandle(phoneNumberId, file, filename);
-    return c.json({ handle, filename, size: file.size, mimeType: file.type || null });
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    logWarn("[wa-cloud.template-header-sample] upload failed", { error: msg });
-    return c.text(msg, 502);
-  }
+  const handle = await uploadProfilePictureHandle(phoneNumberId, file, filename);
+  return c.json({ handle, filename, size: file.size, mimeType: file.type || null });
 });
 
 waCloudMediaRoutes.post("/upload", async (c) => {
@@ -168,14 +141,8 @@ waCloudMediaRoutes.post("/upload", async (c) => {
   // Meta size limits per type (image 5MB, document 100MB, video 16MB, audio 16MB).
   const MAX = 100 * 1024 * 1024;
   if (file.size > MAX) return c.text("File too large", 413);
-  try {
-    const result = await uploadMedia(phoneNumberId, file, mimeType, filename);
-    return c.json({ id: result.id, mimeType, filename, size: file.size });
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    logWarn("[wa-cloud.media] upload failed", { error: msg });
-    return c.text(msg, 502);
-  }
+  const result = await uploadMedia(phoneNumberId, file, mimeType, filename);
+  return c.json({ id: result.id, mimeType, filename, size: file.size });
 });
 
 /**
@@ -195,10 +162,7 @@ waCloudMediaRoutes.get("/saved-sticker/:id", async (c) => {
   const id = Number.parseInt(c.req.param("id"), 10);
   if (!Number.isFinite(id)) return c.text("Bad id", 400);
 
-  const sticker = await db.waSavedSticker.findUnique({
-    where: { id },
-    select: { r2Key: true, mimeType: true },
-  });
+  const sticker = await getWaSavedStickerForMedia(id);
   if (!sticker) return c.text("Not found", 404);
 
   try {
@@ -323,16 +287,7 @@ waCloudMediaRoutes.get("/:messageId", async (c) => {
   const messageId = Number.parseInt(messageIdRaw, 10);
   if (!Number.isFinite(messageId)) return c.text("Bad message id", 400);
 
-  const message = await db.waMessage.findUnique({
-    where: { id: messageId },
-    select: {
-      id: true,
-      type: true,
-      mediaMimeType: true,
-      payload: true,
-      phoneNumber: { select: { accountId: true } },
-    },
-  });
+  const message = await getWaMessageForMedia(messageId);
   if (!message) return c.text("Not found", 404);
 
   // Pull the Meta media id from the stored webhook payload. Each message type
@@ -351,10 +306,8 @@ waCloudMediaRoutes.get("/:messageId", async (c) => {
 
   try {
     const meta = await downloadMediaUrl(mediaId, message.phoneNumber.accountId);
-    const account = await db.waBusinessAccount.findUnique({
-      where: { id: message.phoneNumber.accountId },
-      select: { systemUserToken: true },
-    });
+    const accountId = message.phoneNumber.accountId;
+    const account = await getWaBusinessAccountForMedia(accountId);
     const accToken = decryptSecret(account?.systemUserToken);
     if (!accToken) return c.text("Account token missing", 500);
 
@@ -363,12 +316,14 @@ waCloudMediaRoutes.get("/:messageId", async (c) => {
     });
     if (!upstream.ok || !upstream.body) {
       const body = await upstream.text().catch(() => "");
+      const isExpired = body.includes("does not exist") || body.includes("GraphMethodException");
       logWarn("[wa-cloud.media] upstream fetch failed", {
         messageId,
         status: upstream.status,
+        expired: isExpired,
         body: body.slice(0, 200),
       });
-      return c.text("Upstream error", 502);
+      return c.text(isExpired ? "Media expired" : "Upstream error", isExpired ? 410 : 502);
     }
 
     const filename =
@@ -425,7 +380,8 @@ waCloudMediaRoutes.get("/:messageId", async (c) => {
     });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    logWarn("[wa-cloud.media] proxy failed", { messageId, error: msg });
-    return c.text(`Media proxy error: ${msg}`, 500);
+    const isExpired = msg.includes("does not exist") || msg.includes("GraphMethodException");
+    logWarn("[wa-cloud.media] proxy failed", { messageId, expired: isExpired, error: msg });
+    return c.text(isExpired ? "Media expired" : `Media proxy error: ${msg}`, isExpired ? 410 : 500);
   }
 });

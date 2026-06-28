@@ -33,7 +33,7 @@ export async function sendTextMessage(input: SendTextInput) {
   );
 }
 
-export type TemplateComponentParam =
+export type TemplateComponentParam = (
   | { type: "text"; text: string }
   | { type: "currency"; currency: { fallback_value: string; code: string; amount_1000: number } }
   | { type: "date_time"; date_time: { fallback_value: string } }
@@ -52,7 +52,8 @@ export type TemplateComponentParam =
       limited_time_offer: { expiration_time_ms: number };
     }
   // URL button suffix (existing in tu base) + payload for copy_code etc.
-  | { type: "payload"; payload: string };
+  | { type: "payload"; payload: string }
+) & { parameter_name?: string };
 
 export type TemplateComponentBase = {
   // Adds "limited_time_offer" so LTO templates can pass the countdown

@@ -13,7 +13,7 @@ import type {
   waTemplateSchema,
 } from "@finanzas/orpc-contracts/wa-cloud";
 import type { z } from "zod";
-import { logError } from "../lib/logger.ts";
+import { logError, logEvent } from "../lib/logger.ts";
 import {
   cloneTemplateFromLibrary as graphCloneTemplateFromLibrary,
   createTemplate as graphCreateTemplate,
@@ -153,7 +153,7 @@ export async function listTemplateLibrary(payload: ListTemplateLibraryPayload) {
     const isTierError =
       message.includes("nonexisting field") || message.includes("message_template_library");
     if (!isTierError) throw err;
-    logError("[wa-cloud.listTemplateLibrary] catalog browse not available", { message });
+    logEvent("[wa-cloud.listTemplateLibrary] catalog browse not available", { message });
     return { templates: [] };
   }
 }

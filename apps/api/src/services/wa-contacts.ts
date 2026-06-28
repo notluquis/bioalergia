@@ -19,6 +19,28 @@ type BlockContactPayload = z.infer<typeof blockContactInputSchema>;
 type ListBlockedResponse = z.infer<typeof listBlockedResponseSchema>;
 type PhoneIdPayload = z.infer<typeof waPhoneIdInput>;
 
+export async function ensureContactAndConversation(phoneE164: string, name: string, phoneNumberRowId: number) {
+  let contact = await db.waContact.findUnique({ where: { phoneE164 } });
+  if (!contact) {
+    contact = await db.waContact.create({ data: { phoneE164, name } });
+  }
+  let conv = await db.waConversation.findUnique({ where: { contactId: contact.id } });
+  if (!conv) {
+    conv = await db.waConversation.create({ data: { contactId: contact.id } });
+  }
+  const channel = await db.waConversationChannel.findUnique({
+    where: {
+      conversationId_phoneNumberId: { conversationId: conv.id, phoneNumberId: phoneNumberRowId },
+    },
+  });
+  if (!channel) {
+    await db.waConversationChannel.create({
+      data: { conversationId: conv.id, phoneNumberId: phoneNumberRowId },
+    });
+  }
+  return { contactId: contact.id, conversationId: conv.id };
+}
+
 export async function updateContact(payload: UpdateContactPayload): Promise<void> {
   const data: Record<string, unknown> = {};
   if (payload.name !== undefined) data.name = payload.name;

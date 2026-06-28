@@ -48,6 +48,7 @@ import { Route as MiCuentaDireccionesRouteImport } from './routes/mi-cuenta/dire
 import { Route as LegalSlugRouteImport } from './routes/legal/$slug'
 import { Route as CondicionesSlugRouteImport } from './routes/condiciones/$slug'
 import { Route as AprendeSlugRouteImport } from './routes/aprende/$slug'
+import { Route as AbonoTokenRouteImport } from './routes/abono.$token'
 import { Route as MiCuentaPedidosNumberRouteImport } from './routes/mi-cuenta/pedidos.$number'
 import { Route as MiCuentaAuthCallbackRouteImport } from './routes/mi-cuenta/auth/callback'
 
@@ -246,6 +247,11 @@ const AprendeSlugRoute = AprendeSlugRouteImport.update({
   path: '/aprende/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AbonoTokenRoute = AbonoTokenRouteImport.update({
+  id: '/abono/$token',
+  path: '/abono/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MiCuentaPedidosNumberRoute = MiCuentaPedidosNumberRouteImport.update({
   id: '/$number',
   path: '/$number',
@@ -281,6 +287,7 @@ export interface FileRoutesByFullPath {
   '/salud-ocupacional': typeof SaludOcupacionalRoute
   '/servicios': typeof ServiciosRoute
   '/venta-empresas': typeof VentaEmpresasRoute
+  '/abono/$token': typeof AbonoTokenRoute
   '/aprende/$slug': typeof AprendeSlugRoute
   '/condiciones/$slug': typeof CondicionesSlugRoute
   '/legal/$slug': typeof LegalSlugRoute
@@ -323,6 +330,7 @@ export interface FileRoutesByTo {
   '/salud-ocupacional': typeof SaludOcupacionalRoute
   '/servicios': typeof ServiciosRoute
   '/venta-empresas': typeof VentaEmpresasRoute
+  '/abono/$token': typeof AbonoTokenRoute
   '/aprende/$slug': typeof AprendeSlugRoute
   '/condiciones/$slug': typeof CondicionesSlugRoute
   '/legal/$slug': typeof LegalSlugRoute
@@ -367,6 +375,7 @@ export interface FileRoutesById {
   '/salud-ocupacional': typeof SaludOcupacionalRoute
   '/servicios': typeof ServiciosRoute
   '/venta-empresas': typeof VentaEmpresasRoute
+  '/abono/$token': typeof AbonoTokenRoute
   '/aprende/$slug': typeof AprendeSlugRoute
   '/condiciones/$slug': typeof CondicionesSlugRoute
   '/legal/$slug': typeof LegalSlugRoute
@@ -412,6 +421,7 @@ export interface FileRouteTypes {
     | '/salud-ocupacional'
     | '/servicios'
     | '/venta-empresas'
+    | '/abono/$token'
     | '/aprende/$slug'
     | '/condiciones/$slug'
     | '/legal/$slug'
@@ -454,6 +464,7 @@ export interface FileRouteTypes {
     | '/salud-ocupacional'
     | '/servicios'
     | '/venta-empresas'
+    | '/abono/$token'
     | '/aprende/$slug'
     | '/condiciones/$slug'
     | '/legal/$slug'
@@ -497,6 +508,7 @@ export interface FileRouteTypes {
     | '/salud-ocupacional'
     | '/servicios'
     | '/venta-empresas'
+    | '/abono/$token'
     | '/aprende/$slug'
     | '/condiciones/$slug'
     | '/legal/$slug'
@@ -541,6 +553,7 @@ export interface RootRouteChildren {
   SaludOcupacionalRoute: typeof SaludOcupacionalRoute
   ServiciosRoute: typeof ServiciosRoute
   VentaEmpresasRoute: typeof VentaEmpresasRoute
+  AbonoTokenRoute: typeof AbonoTokenRoute
   AprendeSlugRoute: typeof AprendeSlugRoute
   CondicionesSlugRoute: typeof CondicionesSlugRoute
   LegalSlugRoute: typeof LegalSlugRoute
@@ -830,6 +843,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AprendeSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/abono/$token': {
+      id: '/abono/$token'
+      path: '/abono/$token'
+      fullPath: '/abono/$token'
+      preLoaderRoute: typeof AbonoTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/mi-cuenta/pedidos/$number': {
       id: '/mi-cuenta/pedidos/$number'
       path: '/$number'
@@ -903,6 +923,7 @@ const rootRouteChildren: RootRouteChildren = {
   SaludOcupacionalRoute: SaludOcupacionalRoute,
   ServiciosRoute: ServiciosRoute,
   VentaEmpresasRoute: VentaEmpresasRoute,
+  AbonoTokenRoute: AbonoTokenRoute,
   AprendeSlugRoute: AprendeSlugRoute,
   CondicionesSlugRoute: CondicionesSlugRoute,
   LegalSlugRoute: LegalSlugRoute,

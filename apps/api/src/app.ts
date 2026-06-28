@@ -81,6 +81,7 @@ import { registerGoogleMerchantFeed } from "./routes/google-merchant-feed.ts";
 import { registerMercadolibreOauthCallback } from "./routes/mercadolibre-oauth-callback.ts";
 import { registerMercadolibreWebhook } from "./routes/mercadolibre-webhook.ts";
 import { registerMercadopagoCheckoutWebhook } from "./routes/mercadopago-checkout-webhook.ts";
+import { registerAbonoRoutes } from "./routes/abono.ts";
 import { notificationsOpenAPIHandler, notificationsORPCHandler } from "./orpc/notifications.ts";
 import { outreachOpenAPIHandler, outreachORPCHandler } from "./orpc/outreach.ts";
 import { addressesOpenAPIHandler, addressesORPCHandler } from "./orpc/addresses.ts";
@@ -1623,6 +1624,7 @@ registerMercadolibreOauthCallback(app);
 registerMercadolibreWebhook(app);
 registerGoogleMerchantFeed(app);
 registerMercadopagoCheckoutWebhook(app);
+registerAbonoRoutes(app);
 
 app.use("/api/orpc/inventory/rpc/*", async (c, next) => {
   const { matched, response } = await inventoryORPCHandler.handle(createHonoORPCRequest(c), {
@@ -3029,6 +3031,18 @@ app.onError((error, c) => {
       httpErrorMessages[error.status] ?? "Request Error",
       {
         code: "HTTP_EXCEPTION",
+      }
+    );
+  }
+
+  if (isDomainError(error)) {
+    return errorReply(
+      c,
+      error.status as ContentfulStatusCode,
+      error.message,
+      {
+        code: error.kind,
+        ...(error.details ? { details: error.details } : {}),
       }
     );
   }

@@ -21,6 +21,13 @@ import { logError } from "../lib/logger.ts";
 import { emitWaEvent } from "../modules/wa-cloud/events.ts";
 import { markMessageRead } from "../modules/wa-cloud/graph-client.ts";
 
+export async function getWaConversationForExport(id: number) {
+  return db.waConversation.findUnique({
+    where: { id },
+    include: { contact: true },
+  });
+}
+
 const WINDOW_HOURS = 24;
 
 type ListConversationsPayload = z.infer<typeof listConversationsInputSchema>;
