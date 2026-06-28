@@ -1,6 +1,6 @@
-import { Breadcrumbs, Card, Label, ListBox, Select, Skeleton } from "@heroui/react";
+import { Card, Label, ListBox, Select, Skeleton } from "@heroui/react";
 
-import { Eyebrow } from "@/components/ui/Eyebrow";
+import { PageHero } from "@/components/ui/PageHero";
 import { ProductCard } from "@/features/shop/components/ProductCard";
 import { SearchBar } from "@/features/shop/components/SearchBar";
 import type { SortKey } from "@/features/shop/lib/catalog";
@@ -35,21 +35,15 @@ export function TiendaView({
   onSortChange,
 }: TiendaViewProps) {
   return (
-    <main className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
-      <Breadcrumbs>
-        <Breadcrumbs.Item href="/">Inicio</Breadcrumbs.Item>
-        <Breadcrumbs.Item>Tienda</Breadcrumbs.Item>
-      </Breadcrumbs>
-
-      <header className="space-y-3">
-        <Eyebrow>Tienda</Eyebrow>
-        <h1 className="font-display text-4xl text-foreground sm:text-5xl">Tienda Bioalergia</h1>
-        <p className="max-w-2xl text-muted leading-relaxed">
-          Productos seleccionados para el cuidado de la piel, hidratación y bienestar.
-        </p>
-      </header>
-
-      <SearchBar />
+    <>
+      <PageHero
+        crumbs={[{ label: "Inicio", href: "/" }, { label: "Tienda" }]}
+        eyebrow="Tienda"
+        lede="Productos seleccionados para el cuidado de la piel, hidratación y bienestar."
+        title="Tienda Bioalergia"
+      />
+      <main className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+        <SearchBar />
 
       <div className="flex items-center justify-between gap-3">
         <p className="text-muted text-sm">
@@ -108,6 +102,7 @@ export function TiendaView({
           ))}
         </div>
       )}
-    </main>
+      </main>
+    </>
   );
 }
