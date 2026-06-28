@@ -33,8 +33,8 @@ import { ContentError, ContentLoading } from "@/components/ContentState";
 import { JsonLd } from "@/components/JsonLd";
 import { PageShell } from "@/components/PageShell";
 import { ctaClass } from "@/components/ui/cta";
-import { PageHeader } from "@/components/ui/PageHeader";
-import { Photo } from "@/components/ui/Photo";
+import { PageHero } from "@/components/ui/PageHero";
+import { SectionBand } from "@/components/ui/SectionBand";
 import {
   reactivosBrands,
   reactivosServices,
@@ -71,18 +71,20 @@ function groupItems(items: ReactivoVitrinaItemDto[]): [string, ReactivoVitrinaIt
 
 function VitrinaCard({ item }: { item: ReactivoVitrinaItemDto }) {
   return (
-    <Card className="rounded-3xl" variant="default">
+    <Card className="h-full rounded-2xl border border-line bg-surface" variant="default">
       {item.imageUrl ? (
         <img
           alt={item.name}
-          className="h-44 w-full rounded-t-3xl object-cover"
+          className="h-44 w-full rounded-t-2xl object-cover"
           loading="lazy"
           src={item.imageUrl}
         />
       ) : null}
       <Card.Header className="gap-3">
         <div className="flex items-center justify-between gap-3">
-          <Card.Title className="text-lg">{item.name}</Card.Title>
+          <Card.Title className="font-display text-[1.4rem] text-foreground">
+            {item.name}
+          </Card.Title>
           {item.brand ? (
             <Chip size="sm" variant="secondary">
               {item.brand}
@@ -141,93 +143,111 @@ function VitrinaCard({ item }: { item: ReactivoVitrinaItemDto }) {
 function SupplierSection() {
   const s = reactivosSupplier;
   return (
-    <Section
-      eyebrow="Nuestro proveedor"
-      title={`En alianza con ${s.name}`}
-      subtitle={s.description}
-    >
-      <div className="grid gap-6 lg:grid-cols-3">
-        <Card className="rounded-3xl" variant="default">
-          <Card.Header className="gap-2">
-            <Card.Title className="text-lg">Trayectoria y calidad</Card.Title>
-            <Card.Description className="text-muted leading-relaxed">
-              +{s.yearsTrajectory} años en diagnóstico, dispositivos médicos y reactivos.
-            </Card.Description>
-          </Card.Header>
-          <Card.Content className="flex flex-wrap gap-2 pb-6">
-            {s.certifications.map((c) => (
-              <Chip key={c} size="sm" variant="secondary">
-                {c}
-              </Chip>
-            ))}
-          </Card.Content>
-        </Card>
-        <Card className="rounded-3xl" variant="default">
-          <Card.Header className="gap-2">
-            <Card.Title className="text-lg">Cumplimiento regulatorio</Card.Title>
-          </Card.Header>
-          <Card.Content className="grid gap-3 pb-6">
-            {s.regulatory.map((r) => (
-              <Bullet key={r}>{r}</Bullet>
-            ))}
-          </Card.Content>
-        </Card>
-        <Card className="rounded-3xl" variant="default">
-          <Card.Header className="gap-2">
-            <Card.Title className="text-lg">Compromiso sostenible</Card.Title>
-          </Card.Header>
-          <Card.Content className="grid gap-3 pb-6">
-            {s.sustainability.map((item) => (
-              <Bullet key={item}>{item}</Bullet>
-            ))}
-          </Card.Content>
-        </Card>
-      </div>
-    </Section>
+    <SectionBand borderTop tone="surface2">
+      <Section
+        eyebrow="Nuestro proveedor"
+        title={`En alianza con ${s.name}`}
+        subtitle={s.description}
+      >
+        <div className="grid gap-6 lg:grid-cols-3">
+          <Card className="h-full rounded-2xl border border-line bg-surface" variant="default">
+            <Card.Header className="gap-2">
+              <Card.Title className="font-display text-[1.4rem] text-foreground">
+                Trayectoria y calidad
+              </Card.Title>
+              <Card.Description className="text-muted leading-relaxed">
+                +{s.yearsTrajectory} años en diagnóstico, dispositivos médicos y reactivos.
+              </Card.Description>
+            </Card.Header>
+            <Card.Content className="flex flex-wrap gap-2 pb-6">
+              {s.certifications.map((c) => (
+                <Chip key={c} size="sm" variant="secondary">
+                  {c}
+                </Chip>
+              ))}
+            </Card.Content>
+          </Card>
+          <Card className="h-full rounded-2xl border border-line bg-surface" variant="default">
+            <Card.Header className="gap-2">
+              <Card.Title className="font-display text-[1.4rem] text-foreground">
+                Cumplimiento regulatorio
+              </Card.Title>
+            </Card.Header>
+            <Card.Content className="grid gap-3 pb-6">
+              {s.regulatory.map((r) => (
+                <Bullet key={r}>{r}</Bullet>
+              ))}
+            </Card.Content>
+          </Card>
+          <Card className="h-full rounded-2xl border border-line bg-surface" variant="default">
+            <Card.Header className="gap-2">
+              <Card.Title className="font-display text-[1.4rem] text-foreground">
+                Compromiso sostenible
+              </Card.Title>
+            </Card.Header>
+            <Card.Content className="grid gap-3 pb-6">
+              {s.sustainability.map((item) => (
+                <Bullet key={item}>{item}</Bullet>
+              ))}
+            </Card.Content>
+          </Card>
+        </div>
+      </Section>
+    </SectionBand>
   );
 }
 
 /** Servicios del proveedor + capacitaciones disponibles. */
 function ServicesAndTrainingSection() {
   return (
-    <Section
-      eyebrow="Servicios"
-      title="Más que reactivos"
-      subtitle="Droguería, distribución, capacitaciones y soporte técnico para tu laboratorio o clínica."
-    >
-      <div className="grid gap-6 lg:grid-cols-2">
-        {reactivosServices.map((service) => (
-          <Card className="rounded-3xl" key={service.slug} variant="default">
-            <Card.Header className="gap-2">
-              <Card.Title className="text-lg">{service.name}</Card.Title>
-              <Card.Description className="text-muted leading-relaxed">
-                {service.description}
-              </Card.Description>
-            </Card.Header>
-            <Card.Content className="grid gap-3 pb-6">
-              {service.details.map((d) => (
-                <Bullet key={d}>{d}</Bullet>
-              ))}
-            </Card.Content>
-          </Card>
-        ))}
-      </div>
-      <Card className="rounded-3xl" variant="secondary">
-        <Card.Header className="gap-2">
-          <Card.Title className="text-lg">Capacitaciones disponibles</Card.Title>
-          <Card.Description className="text-muted leading-relaxed">
-            Formación para equipos clínicos y de laboratorio.
-          </Card.Description>
-        </Card.Header>
-        <Card.Content className="flex flex-wrap gap-2 pb-6">
-          {reactivosTrainings.map((t) => (
-            <Chip key={t.name} size="sm" variant="soft">
-              {t.name}
-            </Chip>
+    <SectionBand tone="bg">
+      <Section
+        eyebrow="Servicios"
+        title="Más que reactivos"
+        subtitle="Droguería, distribución, capacitaciones y soporte técnico para tu laboratorio o clínica."
+      >
+        <div className="grid gap-6 lg:grid-cols-2">
+          {reactivosServices.map((service) => (
+            <Card
+              className="h-full rounded-2xl border border-line bg-surface"
+              key={service.slug}
+              variant="default"
+            >
+              <Card.Header className="gap-2">
+                <Card.Title className="font-display text-[1.4rem] text-foreground">
+                  {service.name}
+                </Card.Title>
+                <Card.Description className="text-muted leading-relaxed">
+                  {service.description}
+                </Card.Description>
+              </Card.Header>
+              <Card.Content className="grid gap-3 pb-6">
+                {service.details.map((d) => (
+                  <Bullet key={d}>{d}</Bullet>
+                ))}
+              </Card.Content>
+            </Card>
           ))}
-        </Card.Content>
-      </Card>
-    </Section>
+        </div>
+        <Card className="rounded-2xl border border-line bg-surface" variant="secondary">
+          <Card.Header className="gap-2">
+            <Card.Title className="font-display text-[1.4rem] text-foreground">
+              Capacitaciones disponibles
+            </Card.Title>
+            <Card.Description className="text-muted leading-relaxed">
+              Formación para equipos clínicos y de laboratorio.
+            </Card.Description>
+          </Card.Header>
+          <Card.Content className="flex flex-wrap gap-2 pb-6">
+            {reactivosTrainings.map((t) => (
+              <Chip key={t.name} size="sm" variant="soft">
+                {t.name}
+              </Chip>
+            ))}
+          </Card.Content>
+        </Card>
+      </Section>
+    </SectionBand>
   );
 }
 
@@ -278,9 +298,11 @@ function LeadForm({ vitrinaItems }: { vitrinaItems: ReactivoVitrinaItemDto[] }) 
 
   if (submitMutation.isSuccess) {
     return (
-      <Card className="rounded-3xl" variant="secondary">
+      <Card className="rounded-2xl border border-line bg-surface-2" variant="secondary">
         <Card.Header className="gap-2">
-          <Card.Title className="text-lg">¡Gracias! Te contactaremos</Card.Title>
+          <Card.Title className="font-display text-[1.4rem] text-foreground">
+            ¡Gracias! Te contactaremos
+          </Card.Title>
           <Card.Description className="text-muted leading-relaxed">
             Recibimos tu solicitud de reactivos. Nuestro equipo comercial se pondrá en contacto
             contigo a la brevedad para enviarte la cotización y resolver tus dudas.
@@ -291,9 +313,11 @@ function LeadForm({ vitrinaItems }: { vitrinaItems: ReactivoVitrinaItemDto[] }) 
   }
 
   return (
-    <Card className="rounded-3xl" variant="default">
+    <Card className="rounded-2xl border border-line bg-surface-2" variant="default">
       <Card.Header className="gap-2">
-        <Card.Title className="text-xl">Quiero cotizar</Card.Title>
+        <Card.Title className="font-display text-[1.5rem] text-foreground">
+          Quiero cotizar
+        </Card.Title>
         <Card.Description className="text-muted leading-relaxed">
           Cuéntanos sobre tu empresa o clínica y qué reactivos te interesan. Te enviaremos una
           cotización personalizada sin compromiso.
@@ -394,14 +418,14 @@ function VentaEmpresasPage() {
   const groups = useMemo(() => groupItems(items), [items]);
 
   return (
-    <PageShell>
+    <PageShell contained={false}>
       <JsonLd
         data={breadcrumbJsonLd([
           { name: "Inicio", path: "/" },
           { name: "Venta a empresas", path: "/venta-empresas" },
         ])}
       />
-      <PageHeader
+      <PageHero
         crumbs={[{ label: "Inicio", href: "/" }, { label: "Venta a empresas" }]}
         eyebrow="Venta B2B"
         title="Reactivos y diagnóstico para clínicas, laboratorios y empresas"
@@ -413,78 +437,79 @@ function VentaEmpresasPage() {
             y solicita una cotización a la medida de tu institución.
           </>
         }
+        photo="patchWide"
         actions={
-          <Button className={ctaClass("primary")} onPress={() => scrollToForm()}>
-            Quiero cotizar
-          </Button>
+          <>
+            <Button className={ctaClass("primary")} onPress={() => scrollToForm()}>
+              Quiero cotizar
+            </Button>
+            <div className="flex flex-wrap gap-2">
+              {reactivosBrands.map((brand) => (
+                <Chip key={brand} size="sm" variant="secondary">
+                  {brand}
+                </Chip>
+              ))}
+            </div>
+          </>
         }
-      />
-
-      <div className="flex flex-wrap gap-2">
-        {reactivosBrands.map((brand) => (
-          <Chip key={brand} size="sm" variant="secondary">
-            {brand}
-          </Chip>
-        ))}
-      </div>
-
-      <Photo
-        className="aspect-[16/7] w-full rounded-3xl"
-        eager
-        name="patchWide"
-        sizes="(min-width: 1024px) 960px, 100vw"
       />
 
       <SupplierSection />
       <ServicesAndTrainingSection />
 
-      <Section
-        eyebrow="Catálogo"
-        title="Productos disponibles"
-        subtitle="Distribuimos el catálogo completo de Inmunodiagnóstico. Marca los productos que te interesan en el formulario para recibir una cotización."
-      >
-        {isLoading ? (
-          <ContentLoading />
-        ) : error || !data ? (
-          <ContentError />
-        ) : items.length === 0 ? (
-          <Card className="rounded-3xl" variant="secondary">
-            <Card.Header className="gap-2">
-              <Card.Title className="text-lg">Catálogo en preparación</Card.Title>
-              <Card.Description className="text-muted leading-relaxed">
-                Estamos actualizando nuestro catálogo de reactivos. Déjanos tu solicitud y te
-                enviaremos la información disponible.
-              </Card.Description>
-            </Card.Header>
-          </Card>
-        ) : (
-          <div className="grid gap-10">
-            {groups.map(([category, groupItemsList]) => (
-              <section className="grid gap-6" key={category}>
-                <div className="grid gap-3">
-                  <div className="flex items-center gap-3">
-                    <span className="size-2.5 rounded-full bg-brand-amber" />
-                    <h3 className="font-display text-[1.5rem] text-foreground">{category}</h3>
-                    <Chip size="sm" variant="soft">
-                      {groupItemsList.length}
-                    </Chip>
+      <SectionBand tone="surface2">
+        <Section
+          eyebrow="Catálogo"
+          title="Productos disponibles"
+          subtitle="Distribuimos el catálogo completo de Inmunodiagnóstico. Marca los productos que te interesan en el formulario para recibir una cotización."
+        >
+          {isLoading ? (
+            <ContentLoading />
+          ) : error || !data ? (
+            <ContentError />
+          ) : items.length === 0 ? (
+            <Card className="rounded-2xl border border-line bg-surface" variant="secondary">
+              <Card.Header className="gap-2">
+                <Card.Title className="font-display text-[1.4rem] text-foreground">
+                  Catálogo en preparación
+                </Card.Title>
+                <Card.Description className="text-muted leading-relaxed">
+                  Estamos actualizando nuestro catálogo de reactivos. Déjanos tu solicitud y te
+                  enviaremos la información disponible.
+                </Card.Description>
+              </Card.Header>
+            </Card>
+          ) : (
+            <div className="grid gap-10">
+              {groups.map(([category, groupItemsList]) => (
+                <section className="grid gap-6" key={category}>
+                  <div className="grid gap-3">
+                    <div className="flex items-center gap-3">
+                      <span className="size-2.5 rounded-full bg-brand-amber" />
+                      <h3 className="font-display text-[1.5rem] text-foreground">{category}</h3>
+                      <Chip size="sm" variant="soft">
+                        {groupItemsList.length}
+                      </Chip>
+                    </div>
+                    <Separator />
                   </div>
-                  <Separator />
-                </div>
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                  {groupItemsList.map((item) => (
-                    <VitrinaCard item={item} key={item.id} />
-                  ))}
-                </div>
-              </section>
-            ))}
-          </div>
-        )}
-      </Section>
+                  <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                    {groupItemsList.map((item) => (
+                      <VitrinaCard item={item} key={item.id} />
+                    ))}
+                  </div>
+                </section>
+              ))}
+            </div>
+          )}
+        </Section>
+      </SectionBand>
 
-      <section className="grid gap-3 scroll-mt-24" id={LEAD_FORM_ID}>
-        <LeadForm vitrinaItems={items} />
-      </section>
+      <SectionBand tone="surface">
+        <section className="grid scroll-mt-24 gap-3" id={LEAD_FORM_ID}>
+          <LeadForm vitrinaItems={items} />
+        </section>
+      </SectionBand>
     </PageShell>
   );
 }

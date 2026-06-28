@@ -4,46 +4,54 @@ import { createFileRoute } from "@tanstack/react-router";
 import { BookingCta } from "@/components/BookingCta";
 import { JsonLd } from "@/components/JsonLd";
 import { PageShell } from "@/components/PageShell";
-import { PageHeader } from "@/components/ui/PageHeader";
-import { Photo } from "@/components/ui/Photo";
+import { Container } from "@/components/ui/Container";
+import { Eyebrow } from "@/components/ui/Eyebrow";
+import { PageHero } from "@/components/ui/PageHero";
+import { SectionBand } from "@/components/ui/SectionBand";
 import { inmunoterapiaContent } from "@/data/immunotherapy";
 import { breadcrumbJsonLd } from "@/lib/seo";
-import { Section } from "@/sections/Section";
 
 function InmunoterapiaPage() {
   return (
-    <PageShell>
+    <PageShell contained={false}>
       <JsonLd
         data={breadcrumbJsonLd([
           { name: "Inicio", path: "/" },
           { name: "Inmunoterapia", path: "/inmunoterapia" },
         ])}
       />
-      <PageHeader
+
+      <PageHero
         crumbs={[{ label: "Inicio", href: "/" }, { label: "Inmunoterapia" }]}
         eyebrow="Tratamiento"
         lede={inmunoterapiaContent.intro}
+        photo="scitInjection"
         title="Inmunoterapia para alergias"
       />
 
-      <Photo
-        className="h-[clamp(14rem,32vw,22rem)]"
-        name="scitInjection"
-        rounded="rounded-3xl"
-        sizes="(min-width: 1024px) 1100px, 100vw"
-      />
-
-      <Section
-        eyebrow="Modalidades"
-        subtitle="Existen dos formas de administrar la inmunoterapia. Elegimos la modalidad adecuada según tu diagnóstico, tu edad, tu estilo de vida y criterios de seguridad clínica."
-        title="SCIT vs SLIT"
-      >
+      <SectionBand borderTop tone="surface2">
+        <div className="mb-9 grid max-w-3xl gap-3">
+          <Eyebrow>Modalidades</Eyebrow>
+          <h2 className="font-display text-[2rem] leading-[1.05] text-foreground sm:text-[2.5rem]">
+            SCIT vs SLIT
+          </h2>
+          <p className="text-[1.0625rem] leading-[1.6] text-muted">
+            Existen dos formas de administrar la inmunoterapia. Elegimos la modalidad adecuada según
+            tu diagnóstico, tu edad, tu estilo de vida y criterios de seguridad clínica.
+          </p>
+        </div>
         <div className="grid gap-6 lg:grid-cols-2">
           {inmunoterapiaContent.modalities.map((item) => (
-            <Card className="rounded-3xl" key={item.label} variant="default">
+            <Card
+              className="h-full rounded-2xl border border-line bg-surface"
+              key={item.label}
+              variant="default"
+            >
               <Card.Header className="gap-3 pb-5">
-                <Card.Title className="text-lg">{item.label}</Card.Title>
-                <Card.Description className="text-(--ink-muted) leading-relaxed">
+                <Card.Title className="font-display text-[1.4rem] text-foreground">
+                  {item.label}
+                </Card.Title>
+                <Card.Description className="text-muted leading-relaxed">
                   {item.detail}
                 </Card.Description>
               </Card.Header>
@@ -51,9 +59,11 @@ function InmunoterapiaPage() {
           ))}
         </div>
 
-        <Card className="rounded-3xl" variant="default">
+        <Card className="mt-6 rounded-2xl border border-line bg-surface" variant="default">
           <Card.Header className="gap-2">
-            <Card.Title className="text-xl">Comparativa clínica</Card.Title>
+            <Card.Title className="font-display text-[1.4rem] text-foreground">
+              Comparativa clínica
+            </Card.Title>
             <Card.Description className="text-muted">
               Diferencias clave para tomar una decisión informada junto a tu médico.
             </Card.Description>
@@ -89,90 +99,131 @@ function InmunoterapiaPage() {
             </div>
           </Card.Content>
         </Card>
-      </Section>
+      </SectionBand>
 
-      <Section
-        eyebrow="Alcance"
-        subtitle="La inmunoterapia puede indicarse frente a distintos alérgenos respiratorios y, en casos seleccionados, a veneno de insectos. Estos son los más frecuentes."
-        title="Alérgenos que tratamos"
-      >
+      <SectionBand tone="surface">
+        <div className="mb-9 grid max-w-3xl gap-3">
+          <Eyebrow>Alcance</Eyebrow>
+          <h2 className="font-display text-[2rem] leading-[1.05] text-foreground sm:text-[2.5rem]">
+            Alérgenos que tratamos
+          </h2>
+          <p className="text-[1.0625rem] leading-[1.6] text-muted">
+            La inmunoterapia puede indicarse frente a distintos alérgenos respiratorios y, en casos
+            seleccionados, a veneno de insectos. Estos son los más frecuentes.
+          </p>
+        </div>
         <div className="grid gap-6 md:grid-cols-2">
           {inmunoterapiaContent.allergens.map((allergen) => (
-            <Card className="rounded-3xl" key={allergen.name} variant="default">
+            <Card
+              className="h-full rounded-2xl border border-line bg-surface"
+              key={allergen.name}
+              variant="default"
+            >
               <Card.Header className="gap-3">
-                <Card.Title className="text-lg">{allergen.name}</Card.Title>
-                <Card.Description className="text-(--ink-muted) leading-relaxed">
+                <Card.Title className="font-display text-[1.4rem] text-foreground">
+                  {allergen.name}
+                </Card.Title>
+                <Card.Description className="text-muted leading-relaxed">
                   {allergen.detail}
                 </Card.Description>
               </Card.Header>
             </Card>
           ))}
         </div>
-      </Section>
+      </SectionBand>
 
-      <Section
-        eyebrow="A quién"
-        subtitle="La inmunoterapia se evalúa de forma individual. Estas son orientaciones generales que siempre se confirman en la consulta."
-        title="Consideraciones por edad"
-      >
+      <SectionBand tone="bg">
+        <div className="mb-9 grid max-w-3xl gap-3">
+          <Eyebrow>A quién</Eyebrow>
+          <h2 className="font-display text-[2rem] leading-[1.05] text-foreground sm:text-[2.5rem]">
+            Consideraciones por edad
+          </h2>
+          <p className="text-[1.0625rem] leading-[1.6] text-muted">
+            La inmunoterapia se evalúa de forma individual. Estas son orientaciones generales que
+            siempre se confirman en la consulta.
+          </p>
+        </div>
         <div className="grid gap-6 md:grid-cols-3">
           {inmunoterapiaContent.ages.map((age) => (
-            <Card className="rounded-3xl" key={age.label} variant="default">
+            <Card
+              className="h-full rounded-2xl border border-line bg-surface"
+              key={age.label}
+              variant="default"
+            >
               <Card.Header className="gap-3">
                 <div className="flex items-center justify-between gap-3">
-                  <Card.Title className="text-lg">{age.label}</Card.Title>
+                  <Card.Title className="font-display text-[1.4rem] text-foreground">
+                    {age.label}
+                  </Card.Title>
                   <Chip size="sm" variant="secondary">
                     Edad
                   </Chip>
                 </div>
-                <Card.Description className="text-(--ink-muted) leading-relaxed">
+                <Card.Description className="text-muted leading-relaxed">
                   {age.detail}
                 </Card.Description>
               </Card.Header>
             </Card>
           ))}
         </div>
-      </Section>
+      </SectionBand>
 
-      <Card className="rounded-3xl" variant="secondary">
-        <Card.Header className="gap-3">
-          <Card.Title className="text-xl">Beneficios de la inmunoterapia</Card.Title>
-          <Card.Description className="text-muted">
+      <SectionBand tone="surface2">
+        <div className="mb-9 grid max-w-3xl gap-3">
+          <Eyebrow>Por qué tratar</Eyebrow>
+          <h2 className="font-display text-[2rem] leading-[1.05] text-foreground sm:text-[2.5rem]">
+            Beneficios de la inmunoterapia
+          </h2>
+          <p className="text-[1.0625rem] leading-[1.6] text-muted">
             Un tratamiento modificador de la enfermedad, con impacto sostenido en el tiempo.
-          </Card.Description>
-        </Card.Header>
-        <Card.Content className="grid gap-4 pb-6">
-          {inmunoterapiaContent.benefits.map((benefit) => (
-            <div className="flex items-start gap-3 text-sm leading-relaxed" key={benefit}>
-              <span className="mt-2 rounded-full bg-brand-amber size-2" />
-              <span className="text-muted">{benefit}</span>
-            </div>
-          ))}
-        </Card.Content>
-      </Card>
+          </p>
+        </div>
+        <Card className="rounded-2xl border border-line bg-surface" variant="default">
+          <Card.Content className="grid gap-4 py-6">
+            {inmunoterapiaContent.benefits.map((benefit) => (
+              <div className="flex items-start gap-3 text-sm leading-relaxed" key={benefit}>
+                <span className="mt-2 size-2 rounded-full bg-brand-amber" />
+                <span className="text-muted">{benefit}</span>
+              </div>
+            ))}
+          </Card.Content>
+        </Card>
+      </SectionBand>
 
-      <Section eyebrow="Dudas frecuentes" title="Preguntas frecuentes">
+      <SectionBand tone="surface">
+        <div className="mb-9 grid max-w-3xl gap-3">
+          <Eyebrow>Dudas frecuentes</Eyebrow>
+          <h2 className="font-display text-[2rem] leading-[1.05] text-foreground sm:text-[2.5rem]">
+            Preguntas frecuentes
+          </h2>
+        </div>
         <div className="grid gap-4">
           {inmunoterapiaContent.faq.map((faq) => (
-            <Card className="rounded-3xl" key={faq.question} variant="default">
+            <Card
+              className="rounded-2xl border border-line bg-surface"
+              key={faq.question}
+              variant="default"
+            >
               <Card.Header className="gap-3">
-                <Card.Title className="text-base font-semibold text-foreground">
+                <Card.Title className="font-display text-[1.25rem] font-semibold text-foreground">
                   {faq.question}
                 </Card.Title>
-                <Card.Description className="text-(--ink-muted) leading-relaxed">
+                <Card.Description className="text-muted leading-relaxed">
                   {faq.answer}
                 </Card.Description>
               </Card.Header>
             </Card>
           ))}
         </div>
-      </Section>
+      </SectionBand>
 
-      <BookingCta
-        title="¿La inmunoterapia es para ti?"
-        description="Agenda una evaluación con nuestro equipo en Concepción. Revisamos tu historia clínica y diagnóstico para definir si la inmunoterapia y la modalidad adecuada se ajustan a tu caso."
-        location="inmunoterapia_page"
-      />
+      <Container className="pb-16">
+        <BookingCta
+          title="¿La inmunoterapia es para ti?"
+          description="Agenda una evaluación con nuestro equipo en Concepción. Revisamos tu historia clínica y diagnóstico para definir si la inmunoterapia y la modalidad adecuada se ajustan a tu caso."
+          location="inmunoterapia_page"
+        />
+      </Container>
     </PageShell>
   );
 }

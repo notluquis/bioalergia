@@ -13,16 +13,17 @@ import {
 } from "@heroui/react";
 import { useMutation } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, type ReactNode, useState } from "react";
 
 import { JsonLd } from "@/components/JsonLd";
 import { PageShell } from "@/components/PageShell";
 import { ctaClass } from "@/components/ui/cta";
-import { PageHeader } from "@/components/ui/PageHeader";
+import { Eyebrow } from "@/components/ui/Eyebrow";
+import { PageHero } from "@/components/ui/PageHero";
+import { SectionBand } from "@/components/ui/SectionBand";
 import { contactInfo } from "@/data/clinic";
 import { publicClinicClient } from "@/lib/orpc-client";
 import { breadcrumbJsonLd } from "@/lib/seo";
-import { Section } from "@/sections/Section";
 
 function ContactForm() {
   const [name, setName] = useState("");
@@ -160,60 +161,62 @@ function ContactForm() {
   );
 }
 
+function ContactRow({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="grid gap-1 border-line border-b py-4 last:border-b-0">
+      <Eyebrow tone="muted">{label}</Eyebrow>
+      {children}
+    </div>
+  );
+}
+
 function ContactoPage() {
   return (
-    <PageShell>
+    <PageShell contained={false}>
       <JsonLd
         data={breadcrumbJsonLd([
           { name: "Inicio", path: "/" },
           { name: "Contacto", path: "/contacto" },
         ])}
       />
-      <PageHeader
+      <PageHero
         crumbs={[{ label: "Inicio", href: "/" }, { label: "Contacto" }]}
         eyebrow="Contacto"
         lede="¿Tienes una consulta general o deseas agendar una atención? Escríbenos y te responderemos a la brevedad."
+        photo="doctorDesk"
         title="Contacto"
       />
 
-      <Section title="Datos de contacto">
-        <div className="grid gap-6 md:grid-cols-2">
-          <Card className="rounded-3xl" variant="default">
-            <Card.Content className="grid gap-0 py-2 text-sm">
-              <div className="grid gap-1 border-line border-b py-4">
-                <span className="text-eyebrow text-[0.7rem] uppercase tracking-[0.16em]">
-                  Dirección
-                </span>
+      <SectionBand borderTop tone="surface2">
+        <div className="grid items-start gap-10 lg:grid-cols-[0.9fr_1.1fr]">
+          <div>
+            <Eyebrow className="mb-3">Cómo ubicarnos</Eyebrow>
+            <h2 className="mb-6 font-display text-[1.875rem] leading-[1.1] text-foreground sm:text-[2.25rem]">
+              Datos de contacto
+            </h2>
+            <div className="grid text-sm">
+              <ContactRow label="Dirección">
                 <span className="text-foreground">{contactInfo.address}</span>
-              </div>
-              <div className="grid gap-1 border-line border-b py-4">
-                <span className="text-eyebrow text-[0.7rem] uppercase tracking-[0.16em]">
-                  Teléfonos
-                </span>
+              </ContactRow>
+              <ContactRow label="Teléfonos">
                 {contactInfo.phones.map((phone) => (
                   <span className="text-foreground" key={phone}>
                     {phone}
                   </span>
                 ))}
-              </div>
-              <div className="grid gap-1 border-line border-b py-4">
-                <span className="text-eyebrow text-[0.7rem] uppercase tracking-[0.16em]">
-                  Correo
-                </span>
+              </ContactRow>
+              <ContactRow label="Correo">
                 <Link className="w-fit text-brand-blue" href={`mailto:${contactInfo.email}`}>
                   {contactInfo.email}
                 </Link>
-              </div>
-              <div className="grid gap-1 py-4">
-                <span className="text-eyebrow text-[0.7rem] uppercase tracking-[0.16em]">
-                  Horario
-                </span>
+              </ContactRow>
+              <ContactRow label="Horario">
                 <span className="text-foreground">
                   Lunes a sábado, 10:00 a 17:00. Atención con cita previa.
                 </span>
-              </div>
-            </Card.Content>
-          </Card>
+              </ContactRow>
+            </div>
+          </div>
           <div className="grid gap-6">
             <Alert status="warning">
               <Alert.Content>
@@ -235,11 +238,11 @@ function ContactoPage() {
             </Alert>
           </div>
         </div>
-      </Section>
+      </SectionBand>
 
-      <section className="grid gap-3">
+      <SectionBand tone="surface">
         <ContactForm />
-      </section>
+      </SectionBand>
     </PageShell>
   );
 }

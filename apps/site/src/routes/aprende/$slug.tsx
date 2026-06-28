@@ -1,10 +1,12 @@
-import { Breadcrumbs, Card, Chip, Separator } from "@heroui/react";
+import { Card, Chip } from "@heroui/react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { BookingCta } from "@/components/BookingCta";
 import { JsonLd } from "@/components/JsonLd";
 import { PageShell } from "@/components/PageShell";
-import { Eyebrow } from "@/components/ui/Eyebrow";
+import { Container } from "@/components/ui/Container";
+import { PageHero } from "@/components/ui/PageHero";
+import { SectionBand } from "@/components/ui/SectionBand";
 import { type EducationBlock, getTopic, relatedTopics } from "@/data/education";
 import { breadcrumbJsonLd } from "@/lib/seo";
 import { titleFromSlug } from "@/lib/slug";
@@ -51,32 +53,25 @@ function TopicBody({ blocks }: { blocks: EducationBlock[] }) {
 
 function TopicNotFound() {
   return (
-    <PageShell>
-      <section className="grid gap-4">
-        <Breadcrumbs>
-          <Breadcrumbs.Item href="/">Inicio</Breadcrumbs.Item>
-          <Breadcrumbs.Item href="/aprende">Aprende</Breadcrumbs.Item>
-        </Breadcrumbs>
-        <Card className="rounded-2xl border border-line bg-surface" variant="secondary">
-          <Card.Header className="gap-3">
-            <Card.Title className="font-display text-[1.5rem] text-foreground leading-[1.15]">
-              Tema no encontrado
-            </Card.Title>
-            <Card.Description className="text-muted leading-relaxed">
-              No pudimos encontrar el tema que buscas. Puede que el enlace haya cambiado o que el
-              contenido ya no esté disponible.
-            </Card.Description>
-          </Card.Header>
-          <Card.Content className="pb-6">
-            <Link
-              className="font-semibold text-brand-blue text-sm no-underline hover:underline underline-offset-4"
-              to="/aprende"
-            >
-              ← Volver a Aprende
-            </Link>
-          </Card.Content>
-        </Card>
-      </section>
+    <PageShell contained={false}>
+      <PageHero
+        crumbs={[
+          { label: "Inicio", href: "/" },
+          { label: "Aprende", href: "/aprende" },
+          { label: "Tema no encontrado" },
+        ]}
+        eyebrow="Aprende"
+        lede="No pudimos encontrar el tema que buscas. Puede que el enlace haya cambiado o que el contenido ya no esté disponible."
+        title="Tema no encontrado"
+      />
+      <SectionBand borderTop tone="surface">
+        <Link
+          className="font-semibold text-brand-blue text-sm no-underline hover:underline underline-offset-4"
+          to="/aprende"
+        >
+          ← Volver a Aprende
+        </Link>
+      </SectionBand>
     </PageShell>
   );
 }
@@ -92,7 +87,7 @@ function TopicDetailPage() {
   const related = relatedTopics(topic.slug, 3);
 
   return (
-    <PageShell>
+    <PageShell contained={false}>
       <JsonLd
         data={breadcrumbJsonLd([
           { name: "Inicio", path: "/" },
@@ -100,47 +95,36 @@ function TopicDetailPage() {
           { name: topic.title, path: `/aprende/${topic.slug}` },
         ])}
       />
-      <article className="grid gap-6">
-        <Breadcrumbs>
-          <Breadcrumbs.Item href="/">Inicio</Breadcrumbs.Item>
-          <Breadcrumbs.Item href="/aprende">Aprende</Breadcrumbs.Item>
-          <Breadcrumbs.Item>{topic.title}</Breadcrumbs.Item>
-        </Breadcrumbs>
+      <PageHero
+        actions={<span className="text-muted text-sm">{topic.readingMinutes} min de lectura</span>}
+        crumbs={[
+          { label: "Inicio", href: "/" },
+          { label: "Aprende", href: "/aprende" },
+          { label: topic.title },
+        ]}
+        eyebrow={topic.category}
+        lede={topic.summary}
+        title={topic.title}
+      />
 
-        <header className="grid max-w-[720px] gap-4">
-          <Eyebrow>{topic.category}</Eyebrow>
-          <h1 className="font-display text-[2.5rem] text-foreground leading-[1.04] sm:text-[3.25rem]">
-            {topic.title}
-          </h1>
-          <div className="flex flex-wrap items-center gap-3 text-muted text-sm">
-            <Chip size="sm" variant="secondary">
-              {topic.category}
-            </Chip>
-            <Separator className="h-4" orientation="vertical" />
-            <span>{topic.readingMinutes} min de lectura</span>
-          </div>
-        </header>
+      <SectionBand borderTop tone="surface">
+        <div className="mx-auto max-w-[760px]">
+          <TopicBody blocks={topic.body} />
+          <Link
+            className="mt-8 inline-block font-semibold text-brand-blue text-sm no-underline hover:underline underline-offset-4"
+            to="/aprende"
+          >
+            ← Volver a Aprende
+          </Link>
+        </div>
+      </SectionBand>
 
-        <Separator />
-
-        <TopicBody blocks={topic.body} />
-
-        <Separator />
-
-        <Link
-          className="font-semibold text-brand-blue text-sm no-underline hover:underline underline-offset-4"
-          to="/aprende"
-        >
-          ← Volver a Aprende
-        </Link>
-      </article>
-
-      <section className="grid gap-5">
+      <SectionBand tone="surface2">
         <h2 className="font-display text-[1.75rem] text-foreground leading-[1.1] sm:text-[2rem]">
           Temas relacionados
         </h2>
         {related.length > 0 ? (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {related.map((item) => (
               <Link
                 className="no-underline"
@@ -165,7 +149,7 @@ function TopicDetailPage() {
             ))}
           </div>
         ) : null}
-        <p className="text-muted text-sm leading-relaxed">
+        <p className="mt-6 text-muted text-sm leading-relaxed">
           ¿Buscas diagnóstico o tratamiento? Revisa{" "}
           <Link
             className="font-semibold text-brand-blue no-underline hover:underline underline-offset-4"
@@ -181,13 +165,15 @@ function TopicDetailPage() {
             Inmunoterapia
           </Link>
         </p>
-      </section>
+      </SectionBand>
 
-      <BookingCta
-        title="¿Tienes dudas sobre tu caso?"
-        description="Agenda una evaluación con nuestro equipo y define el estudio o tratamiento adecuado para ti."
-        location="aprende_topic"
-      />
+      <Container className="pb-16">
+        <BookingCta
+          title="¿Tienes dudas sobre tu caso?"
+          description="Agenda una evaluación con nuestro equipo y define el estudio o tratamiento adecuado para ti."
+          location="aprende_topic"
+        />
+      </Container>
     </PageShell>
   );
 }

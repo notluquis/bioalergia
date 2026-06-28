@@ -8,7 +8,9 @@ import { BookingCta } from "@/components/BookingCta";
 import { ContentLoading } from "@/components/ContentState";
 import { JsonLd } from "@/components/JsonLd";
 import { PageShell } from "@/components/PageShell";
-import { PageHeader } from "@/components/ui/PageHeader";
+import { Container } from "@/components/ui/Container";
+import { PageHero } from "@/components/ui/PageHero";
+import { SectionBand } from "@/components/ui/SectionBand";
 import { polenContent, type PollenLevel } from "@/data/pollen";
 import { pollenClient } from "@/lib/orpc-client";
 import { breadcrumbJsonLd } from "@/lib/seo";
@@ -97,7 +99,7 @@ function PollenLiveWidget() {
   const todayYmd = new Date().toLocaleDateString("en-CA");
 
   return (
-    <section className="grid gap-6">
+    <div className="grid gap-6">
       <div className="grid gap-2">
         <h2 className="font-display text-[1.75rem] text-foreground leading-[1.1] sm:text-[2.25rem]">
           Pronóstico de gramíneas — Concepción
@@ -230,7 +232,7 @@ function PollenLiveWidget() {
 
           {/* Recomendaciones de salud del día (Google, es) — solo en vivo */}
           {liveToday && liveToday.healthRecommendations.length > 0 ? (
-            <Card className="rounded-2xl border border-line bg-surface-2" variant="secondary">
+            <Card className="rounded-2xl border border-line bg-surface" variant="secondary">
               <Card.Header className="gap-1">
                 <Card.Title className="font-display text-[1.25rem] text-foreground leading-[1.2]">
                   Recomendaciones para hoy
@@ -248,7 +250,7 @@ function PollenLiveWidget() {
           ) : null}
 
           {/* Qué representa el índice de gramíneas */}
-          <Card className="rounded-2xl border border-line bg-surface-2" variant="secondary">
+          <Card className="rounded-2xl border border-line bg-surface" variant="secondary">
             <Card.Header className="gap-1">
               <Card.Title className="font-display text-[1.25rem] text-foreground leading-[1.2]">
                 ¿Qué gramíneas mide este índice?
@@ -279,7 +281,7 @@ function PollenLiveWidget() {
           </p>
         </div>
       )}
-    </section>
+    </div>
   );
 }
 
@@ -297,24 +299,28 @@ const LEVEL_COLOR: Record<PollenLevel, "danger" | "warning" | "success"> = {
 
 function PolenPage() {
   return (
-    <PageShell>
+    <PageShell contained={false}>
       <JsonLd
         data={breadcrumbJsonLd([
           { name: "Inicio", path: "/" },
           { name: "Polen", path: "/polen" },
         ])}
       />
-      <PageHeader
+
+      <PageHero
         crumbs={[{ label: "Inicio", href: "/" }, { label: "Polen" }]}
         eyebrow="Educación · Aerobiología"
         lede={polenContent.intro}
+        photo="prickArm"
         title="Niveles de polen en Chile"
       />
 
-      <PollenLiveWidget />
+      <SectionBand borderTop tone="surface2">
+        <PollenLiveWidget />
+      </SectionBand>
 
-      <section className="grid gap-6">
-        <div className="grid gap-2">
+      <SectionBand tone="surface">
+        <div className="mb-6 grid gap-2">
           <h2 className="font-display text-[1.75rem] text-foreground leading-[1.1] sm:text-[2.25rem]">
             Escala del índice (UPI 0–5)
           </h2>
@@ -346,10 +352,10 @@ function PolenPage() {
             <p className="text-muted text-xs leading-relaxed">{polenContent.unit}</p>
           </Card.Content>
         </Card>
-      </section>
+      </SectionBand>
 
-      <section className="grid gap-6">
-        <div className="grid gap-2">
+      <SectionBand tone="bg">
+        <div className="mb-6 grid gap-2">
           <h2 className="font-display text-[1.75rem] text-foreground leading-[1.1] sm:text-[2.25rem]">
             Calendario polínico (referencial)
           </h2>
@@ -385,10 +391,10 @@ function PolenPage() {
             </Card>
           ))}
         </div>
-      </section>
+      </SectionBand>
 
-      <section className="grid gap-6">
-        <h2 className="font-display text-[1.75rem] text-foreground leading-[1.1] sm:text-[2.25rem]">
+      <SectionBand tone="surface2">
+        <h2 className="mb-6 font-display text-[1.75rem] text-foreground leading-[1.1] sm:text-[2.25rem]">
           Tipos de polen
         </h2>
         <div className="grid gap-6 md:grid-cols-3">
@@ -417,10 +423,10 @@ function PolenPage() {
             </Card>
           ))}
         </div>
-      </section>
+      </SectionBand>
 
-      <section className="grid gap-6">
-        <h2 className="font-display text-[1.75rem] text-foreground leading-[1.1] sm:text-[2.25rem]">
+      <SectionBand tone="surface">
+        <h2 className="mb-6 font-display text-[1.75rem] text-foreground leading-[1.1] sm:text-[2.25rem]">
           Cómo reducir la exposición
         </h2>
         <Card className="rounded-2xl border border-line bg-surface" variant="default">
@@ -433,9 +439,9 @@ function PolenPage() {
             ))}
           </Card.Content>
         </Card>
-      </section>
+      </SectionBand>
 
-      <section className="grid gap-6 lg:grid-cols-2">
+      <SectionBand tone="bg" innerClassName="grid gap-6 lg:grid-cols-2">
         <div className="grid gap-4">
           <h2 className="font-display text-[1.75rem] text-foreground leading-[1.1] sm:text-[2.25rem]">
             Cómo se miden
@@ -470,10 +476,10 @@ function PolenPage() {
             </Card.Content>
           </Card>
         </div>
-      </section>
+      </SectionBand>
 
-      <section className="grid gap-6">
-        <Card className="rounded-2xl border border-line bg-surface-2" variant="secondary">
+      <SectionBand tone="surface2">
+        <Card className="rounded-2xl border border-line bg-surface" variant="secondary">
           <Card.Header className="gap-3">
             <div className="flex items-center justify-between gap-3">
               <Card.Title className="font-display text-[1.5rem] text-foreground leading-[1.15]">
@@ -506,13 +512,15 @@ function PolenPage() {
             </p>
           </Card.Content>
         </Card>
-      </section>
+      </SectionBand>
 
-      <BookingCta
-        title="¿El polen empeora tus síntomas cada temporada?"
-        description="Si la primavera o el verano te traen rinitis o asma alérgica, evaluamos a qué pólenes reaccionas y definimos un plan de tratamiento e inmunoterapia a tu medida."
-        location="polen_page"
-      />
+      <Container className="pb-16">
+        <BookingCta
+          title="¿El polen empeora tus síntomas cada temporada?"
+          description="Si la primavera o el verano te traen rinitis o asma alérgica, evaluamos a qué pólenes reaccionas y definimos un plan de tratamiento e inmunoterapia a tu medida."
+          location="polen_page"
+        />
+      </Container>
     </PageShell>
   );
 }
