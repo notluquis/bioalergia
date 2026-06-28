@@ -1,5 +1,5 @@
 // oxlint-disable typescript/no-non-null-assertion -- TODO(strict-null): refactor each `!` to invariant() or explicit guard. Tracked in repo-wide non-null cleanup.
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { skipToken, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { waCloudORPCClient } from "../orpc";
 
@@ -636,8 +636,9 @@ export function useConversationAnalyticsExtended(
 ) {
   return useQuery({
     queryKey: [...KEY, "analytics-ext", input],
-    enabled: Boolean(input),
-    queryFn: () => waCloudORPCClient.getConversationAnalyticsExtended(input!),
+    // skipToken: never runs with null (even via manual refetch/prefetch) and
+    // drops the lying `input!` assertion. Golden TanStack v5 conditional query.
+    queryFn: input ? () => waCloudORPCClient.getConversationAnalyticsExtended(input) : skipToken,
     staleTime: 5 * 60_000,
   });
 }
