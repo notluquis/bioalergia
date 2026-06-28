@@ -49,14 +49,14 @@ export function DoctoraliaSettingsPage() {
 
   const ingestMutation = useMutation({
     mutationFn: triggerDoctoraliaEmailIngest,
-    onError: (err: Error) => showError(`Error al disparar la ingesta: ${err.message}`),
+    onError: (err: Error) => showError(`Error al reintentar WhatsApp: ${err.message}`),
     onSuccess: (result) => {
       if (result.status === "error") {
-        showError(result.message, "Ingesta fallida");
+        showError(result.message, "Retry fallido");
         return;
       }
 
-      showSuccess(result.message, "Ingesta completada");
+      showSuccess(result.message, "Retry completado");
       void queryClient.invalidateQueries({ queryKey: doctoraliaSettingsKeys.all });
     },
   });
@@ -229,7 +229,7 @@ export function DoctoraliaSettingsPage() {
                     Filtro de remitente
                   </Description>
                   <p className="mt-1 font-medium text-sm">
-                    {overview?.senderFilter ?? "doctoralia.com"}
+                    {overview?.senderFilter || "Sin configurar"}
                   </p>
                 </Surface>
 
@@ -304,7 +304,7 @@ export function DoctoraliaSettingsPage() {
                   variant="secondary"
                 >
                   <RefreshCw className="size-4" />
-                  Ejecutar ingesta
+                  Reintentar WhatsApp
                 </Button>
               </Card.Header>
               <Card.Content className="space-y-3">
@@ -327,10 +327,10 @@ export function DoctoraliaSettingsPage() {
                   title="Persistencia en base de datos"
                 />
                 <FlowStep
-                  body="Después, otros módulos como WhatsApp pueden consumir esos eventos y disparar mensajes automáticos."
+                  body="Después, WhatsApp puede enviar el link de abono si la automatización está configurada."
                   icon={Send}
                   step="04"
-                  title="Automatizaciones posteriores"
+                  title="WhatsApp y abono"
                 />
               </Card.Content>
             </Card>

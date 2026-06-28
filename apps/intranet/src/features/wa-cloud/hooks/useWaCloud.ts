@@ -85,6 +85,22 @@ export function useSyncTemplates() {
   });
 }
 
+export function useAbonoAutomationSettings() {
+  return useQuery({
+    queryKey: [...KEY, "abono-automation-settings"],
+    queryFn: () => waCloudORPCClient.getAbonoAutomationSettings({}),
+  });
+}
+
+export function useUpdateAbonoAutomationSettings() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Parameters<typeof waCloudORPCClient.updateAbonoAutomationSettings>[0]) =>
+      waCloudORPCClient.updateAbonoAutomationSettings(input),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: [...KEY, "abono-automation-settings"] }),
+  });
+}
+
 export function useUpsertPhoneNumber() {
   const qc = useQueryClient();
   return useMutation({

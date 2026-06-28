@@ -94,6 +94,20 @@ async function buildAccountWithPhones(id: number): Promise<AccountResponse["acco
   } as unknown as AccountResponse["account"];
 }
 
+export async function getWaPhoneNumberForAuth(id: number) {
+  return db.waPhoneNumber.findUnique({
+    where: { id },
+    select: { id: true, accountId: true },
+  });
+}
+
+export async function getWaBusinessAccountForMedia(id: number) {
+  return db.waBusinessAccount.findUnique({
+    where: { id },
+    select: { systemUserToken: true },
+  });
+}
+
 export async function listAccounts(): Promise<ListAccountsResponse> {
   const accs = await db.waBusinessAccount.findMany({
     include: { phoneNumbers: true },

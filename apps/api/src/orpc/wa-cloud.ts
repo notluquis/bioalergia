@@ -33,6 +33,8 @@ import {
   upsertSavedLocationInputSchema,
   conversationAnalyticsInputSchema,
   conversationAnalyticsResponseSchema,
+  abonoAutomationSettingsSchema,
+  updateAbonoAutomationSettingsInputSchema,
   registerPhoneInputSchema,
   sendAddressInputSchema,
   sendInteractiveListInputSchema,
@@ -111,7 +113,12 @@ import type { Context as HonoContext } from "hono";
 import { z } from "zod";
 import { getSessionUser, hasPermission } from "../lib/auth.ts";
 import { logError } from "../lib/logger.ts";
+import { getSetting, updateSettings } from "../lib/settings.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
+import {
+  ABONO_PAYMENT_SETTINGS,
+  ABONO_WHATSAPP_SETTINGS,
+} from "../lib/doctoralia/abono-whatsapp-settings.ts";
 import {
   getBusinessProfile,
   getConversationAnalytics,
@@ -247,6 +254,15 @@ function gate(action: "read" | "create" | "update" | "delete", subject: string) 
   });
 }
 
+function positiveIntOrNull(value: string | null): number | null {
+  const trimmed = value?.trim();
+  if (!trimmed) return null;
+  if (!/^\d+$/.test(trimmed)) return null;
+
+  const parsed = Number.parseInt(trimmed, 10);
+  return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : null;
+}
+
 const SUBJECT = "WaBusinessAccount";
 const readWa = gate("read", SUBJECT);
 const writeWa = gate("update", SUBJECT);
@@ -301,6 +317,87 @@ const waRouterBase = {
     .output(syncTemplatesResponseSchema)
     .handler(async ({ input }) => {
       return syncTemplatesService(input.id);
+    }),
+
+  getAbonoAutomationSettings: readWa
+    .route({ method: "GET", path: "/settings/abono-automation", tags: ["WA Cloud"] })
+    .input(z.object({}).optional())
+    .output(abonoAutomationSettingsSchema)
+    .handler(async () => {
+      const [
+        requestEnabled,
+        confirmationEnabled,
+        phoneNumberId,
+        requestTemplateName,
+        requestTemplateLanguage,
+        confirmationTemplatePrefix,
+        confirmationTemplateLanguage,
+        fonasaFullAmountClp,
+        particularFullAmountClp,
+        expirationDays,
+        publicBaseUrl,
+        statementDescriptor,
+      ] = await Promise.all([
+        getSetting(ABONO_WHATSAPP_SETTINGS.requestEnabled),
+        getSetting(ABONO_WHATSAPP_SETTINGS.confirmationEnabled),
+        getSetting(ABONO_WHATSAPP_SETTINGS.phoneNumberId),
+        getSetting(ABONO_WHATSAPP_SETTINGS.requestTemplateName),
+        getSetting(ABONO_WHATSAPP_SETTINGS.requestTemplateLanguage),
+        getSetting(ABONO_WHATSAPP_SETTINGS.confirmationTemplatePrefix),
+        getSetting(ABONO_WHATSAPP_SETTINGS.confirmationTemplateLanguage),
+        getSetting(ABONO_PAYMENT_SETTINGS.fonasaFullAmountClp),
+        getSetting(ABONO_PAYMENT_SETTINGS.particularFullAmountClp),
+        getSetting(ABONO_PAYMENT_SETTINGS.expirationDays),
+        getSetting(ABONO_PAYMENT_SETTINGS.publicBaseUrl),
+        getSetting(ABONO_PAYMENT_SETTINGS.statementDescriptor),
+      ]);
+
+      return {
+        requestEnabled: requestEnabled === "true",
+        confirmationEnabled: confirmationEnabled === "true",
+        phoneNumberId: positiveIntOrNull(phoneNumberId),
+        requestTemplateName: requestTemplateName ?? "",
+        requestTemplateLanguage: requestTemplateLanguage ?? "",
+        confirmationTemplatePrefix: confirmationTemplatePrefix ?? "",
+        confirmationTemplateLanguage: confirmationTemplateLanguage ?? "",
+        fonasaFullAmountClp: positiveIntOrNull(fonasaFullAmountClp),
+        particularFullAmountClp: positiveIntOrNull(particularFullAmountClp),
+        expirationDays: positiveIntOrNull(expirationDays),
+        publicBaseUrl: publicBaseUrl ?? "",
+        statementDescriptor: statementDescriptor ?? "",
+      };
+    }),
+
+  updateAbonoAutomationSettings: writeWa
+    .route({ method: "POST", path: "/settings/abono-automation", tags: ["WA Cloud"] })
+    .input(updateAbonoAutomationSettingsInputSchema)
+    .output(waOkResponseSchema)
+    .handler(async ({ input }) => {
+      await updateSettings({
+        [ABONO_WHATSAPP_SETTINGS.requestEnabled]: String(input.requestEnabled),
+        [ABONO_WHATSAPP_SETTINGS.confirmationEnabled]: String(input.confirmationEnabled),
+        [ABONO_WHATSAPP_SETTINGS.phoneNumberId]: input.phoneNumberId
+          ? String(input.phoneNumberId)
+          : "",
+        [ABONO_WHATSAPP_SETTINGS.requestTemplateName]: input.requestTemplateName.trim(),
+        [ABONO_WHATSAPP_SETTINGS.requestTemplateLanguage]: input.requestTemplateLanguage.trim(),
+        [ABONO_WHATSAPP_SETTINGS.confirmationTemplatePrefix]:
+          input.confirmationTemplatePrefix.trim(),
+        [ABONO_WHATSAPP_SETTINGS.confirmationTemplateLanguage]:
+          input.confirmationTemplateLanguage.trim(),
+        [ABONO_PAYMENT_SETTINGS.fonasaFullAmountClp]: input.fonasaFullAmountClp
+          ? String(input.fonasaFullAmountClp)
+          : "",
+        [ABONO_PAYMENT_SETTINGS.particularFullAmountClp]: input.particularFullAmountClp
+          ? String(input.particularFullAmountClp)
+          : "",
+        [ABONO_PAYMENT_SETTINGS.expirationDays]: input.expirationDays
+          ? String(input.expirationDays)
+          : "",
+        [ABONO_PAYMENT_SETTINGS.publicBaseUrl]: input.publicBaseUrl.trim(),
+        [ABONO_PAYMENT_SETTINGS.statementDescriptor]: input.statementDescriptor.trim(),
+      });
+      return { status: "ok" as const };
     }),
 
   upsertPhoneNumber: writeWa
@@ -1163,11 +1260,7 @@ export const waCloudOpenAPIHandler = new OpenAPIHandler(waCloudORPCRouter, {
       },
     }),
   ],
-  interceptors: [
-    onError((error) => {
-      logError(error, { module: "api", operation: "openapi.wa-cloud" });
-    }),
-  ],
+  interceptors: [onError((error) => logError("openapi.wa-cloud", error, { module: "api" }))],
 });
 
 export type WaCloudORPCRouter = typeof waCloudORPCRouter;

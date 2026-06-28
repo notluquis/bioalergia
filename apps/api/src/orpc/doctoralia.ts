@@ -7,10 +7,6 @@ import type { Context as HonoContext } from "hono";
 import { z } from "zod";
 import { getSessionUser, hasPermission } from "../lib/auth.ts";
 import type { DoctoraliaCalendarResponse } from "../lib/doctoralia/doctoralia-calendar-types.ts";
-import {
-  getDoctoraliaImapListenerStatus,
-  runDoctoraliaImapIngestOnce,
-} from "../lib/doctoralia/imap-idle.ts";
 import { logError, logEvent } from "../lib/logger.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
 import { listDoctoraliaSyncLogs } from "../services/doctoralia.ts";
@@ -759,10 +755,10 @@ const doctoraliaORPCRouterBase = {
       const imapHostConfigured = Boolean(process.env.DOCTORALIA_IMAP_HOST);
       const imapUserConfigured = Boolean(process.env.DOCTORALIA_IMAP_USER);
       const imapPassConfigured = Boolean(process.env.DOCTORALIA_IMAP_PASS);
-      const listener = {
-        ...getDoctoraliaImapListenerStatus(),
-        enabled: process.env.ENABLE_DOCTORALIA_IMAP === "true",
-      };
+      const { getDoctoraliaImapListenerStatus } = await import(
+        "../lib/doctoralia/imap-idle.ts"
+      );
+      const listener = getDoctoraliaImapListenerStatus();
 
       return {
         data: {
@@ -772,7 +768,7 @@ const doctoraliaORPCRouterBase = {
           imapReady: imapHostConfigured && imapUserConfigured && imapPassConfigured,
           imapUserConfigured,
           listener,
-          senderFilter: process.env.DOCTORALIA_EMAIL_SENDER_FILTER ?? "doctoralia",
+          senderFilter: process.env.DOCTORALIA_EMAIL_SENDER_FILTER?.trim() ?? "",
         },
         status: "ok",
       };
@@ -1057,26 +1053,21 @@ const doctoraliaORPCRouterBase = {
     .input(z.object({}))
     .output(emailNotificationsIngestResponseSchema)
     .handler(async () => {
-      try {
-        const result = await runDoctoraliaImapIngestOnce();
-        return {
-          data: result,
-          message: `Ingesta completada. Revisados: ${result.checked}, guardados: ${result.saved}, ya existentes: ${result.alreadyProcessed}, omitidos: ${result.skipped}, fallidos: ${result.failed}`,
-          status: "ok" as const,
-        };
-      } catch (error) {
-        return {
-          data: {
-            alreadyProcessed: 0,
-            checked: 0,
-            failed: 0,
-            saved: 0,
-            skipped: 0,
-          },
-          message: error instanceof Error ? error.message : "La ingesta de Doctoralia falló.",
-          status: "error" as const,
-        };
-      }
+      const { retryPendingAbonoWhatsapp } = await import("../lib/doctoralia/imap-idle.ts");
+      const { ensureContactAndConversation } = await import("../services/wa-contacts.ts");
+      const { sendTemplate } = await import("../services/wa-messages.ts");
+      const result = await retryPendingAbonoWhatsapp({ ensureContactAndConversation, sendTemplate });
+      return {
+        data: {
+          alreadyProcessed: 0,
+          checked: result.checked,
+          failed: result.failed,
+          saved: result.sent,
+          skipped: result.skipped,
+        },
+        message: `Retry WhatsApp: ${result.sent} enviados, ${result.skipped} omitidos, ${result.failed} fallidos.`,
+        status: result.failed > 0 ? ("error" as const) : ("ok" as const),
+      };
     }),
 
   scraperCookiesStatus: canManageDoctoraliaCalendar

@@ -1,6 +1,7 @@
 import { db, type JsonValue } from "@finanzas/db";
 
 import { auditRowChange } from "../audit-diff.ts";
+import { logError } from "../logger.ts";
 import { parseDoctoraliaDateTime } from "./doctoralia-date-parser.ts";
 import type {
   DoctoraliaAppointment,
@@ -8,6 +9,7 @@ import type {
   DoctoraliaCalendarSchedule,
   DoctoraliaWorkPeriod,
 } from "./doctoralia-calendar-types.ts";
+import { loadAbonoPricingSettings } from "./abono-whatsapp-settings.ts";
 
 function toJsonValue(value: unknown): JsonValue {
   return JSON.parse(JSON.stringify(value)) as JsonValue;
@@ -120,19 +122,17 @@ async function upsertAppointment(
     return "skipped";
   }
 
-  // El externalId es GLOBALMENTE único en Doctoralia (constraint
-  // `doctoralia_calendar_appointments_external_id_key`). Una cita puede MOVERSE
-  // de schedule (otro doctor/agenda) conservando su externalId. Buscar por el
-  // compuesto (scheduleId, externalId) devolvía null al moverse → create →
-  // 23505 dup key sobre external_id. La búsqueda y el update van por externalId
-  // solo; el scheduleId es un atributo que se actualiza si la cita migró.
+  let appointmentId: number;
+
   const existing = await db.doctoraliaCalendarAppointment.findUnique({
     where: { externalId: appointment.id },
   });
 
   if (existing) {
+    appointmentId = existing.id;
     const hasChanges = JSON.stringify(existing) !== JSON.stringify({ ...existing, ...data });
     if (!hasChanges) {
+      await linkPaymentTokenBestEffort(appointmentId, data);
       return "skipped";
     }
 
@@ -152,20 +152,24 @@ async function upsertAppointment(
       newRow: { ...existing, ...data } as Record<string, unknown>,
       fields: ["startAt", "endAt", "status", "attendance", "followUpDate"],
     });
+    await linkPaymentTokenBestEffort(appointmentId, data);
     return "updated";
   }
 
   try {
-    await db.doctoraliaCalendarAppointment.create({ data });
+    const created = await db.doctoraliaCalendarAppointment.create({ data });
+    appointmentId = created.id;
   } catch (error) {
     // Carrera: otra entrada del mismo batch (Promise.all) insertó esta cita
     // entre el findUnique y el create. external_id es único → 23505. Es
     // idempotente reintentar como update en vez de propagar el error.
     if (isUniqueViolation(error)) {
-      await db.doctoraliaCalendarAppointment.update({
+      const updated = await db.doctoraliaCalendarAppointment.update({
         where: { externalId: appointment.id },
         data,
       });
+      appointmentId = updated.id;
+      await linkPaymentTokenBestEffort(appointmentId, data);
       return "updated";
     }
     throw error;
@@ -173,7 +177,44 @@ async function upsertAppointment(
   console.log(
     `[DoctoraliaSync] appointment ${appointment.id} inserted (${appointment.title} @ ${appointment.start})`
   );
+  await linkPaymentTokenBestEffort(appointmentId, data);
   return "inserted";
+}
+
+async function linkPaymentTokenBestEffort(appointmentId: number, data: ReturnType<typeof mapAppointmentData>) {
+  if (!data.isPatientFirstTime || !data.patientPhone || !data.startAt) return;
+  const token = await db.appointmentPaymentToken.findFirst({
+    where: {
+      patientPhone: data.patientPhone,
+      appointmentDate: data.startAt,
+      status: "PENDING",
+    },
+  });
+  if (token) {
+    const isFonasa = !!data.insuranceName && data.insuranceName.toUpperCase().includes("FONASA");
+    let paymentSettings: Awaited<ReturnType<typeof loadAbonoPricingSettings>>;
+    try {
+      paymentSettings = await loadAbonoPricingSettings();
+    } catch (error) {
+      logError("doctoralia.calendar.payment_token_settings_error", error, {
+        appointmentId,
+        tokenId: token.id,
+      });
+      return;
+    }
+    const fullAmountClp = isFonasa
+      ? paymentSettings.fonasaFullAmountClp
+      : paymentSettings.particularFullAmountClp;
+    await db.appointmentPaymentToken.update({
+      where: { id: token.id },
+      data: {
+        calendarAppointmentId: appointmentId,
+        isFonasa,
+        fullAmountClp,
+        halfAmountClp: Math.round(fullAmountClp / 2),
+      },
+    });
+  }
 }
 
 function buildAlertPatch(alert: DoctoraliaCalendarAlert): {

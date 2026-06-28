@@ -7418,6 +7418,12 @@ export class SchemaType implements SchemaDef {
                     type: "DoctoraliaEmailNotification",
                     array: true,
                     relation: { opposite: "calendarAppointment" }
+                },
+                paymentToken: {
+                    name: "paymentToken",
+                    type: "AppointmentPaymentToken",
+                    optional: true,
+                    relation: { opposite: "calendarAppointment" }
                 }
             },
             idFields: ["id"],
@@ -7623,12 +7629,163 @@ export class SchemaType implements SchemaDef {
                     type: "DoctoraliaCalendarAppointment",
                     optional: true,
                     relation: { opposite: "emailNotifications", fields: ["calendarAppointmentId"], references: ["id"], onDelete: "SetNull" }
+                },
+                paymentToken: {
+                    name: "paymentToken",
+                    type: "AppointmentPaymentToken",
+                    optional: true,
+                    relation: { opposite: "emailNotification" }
                 }
             },
             idFields: ["id"],
             uniqueFields: {
                 id: { type: "String" },
                 emailMessageId: { type: "String" }
+            }
+        },
+        AppointmentPaymentToken: {
+            name: "AppointmentPaymentToken",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true,
+                    default: ExpressionUtils.call("cuid") as FieldDefault
+                },
+                emailNotificationId: {
+                    name: "emailNotificationId",
+                    type: "String",
+                    unique: true,
+                    optional: true,
+                    foreignKeyFor: [
+                        "emailNotification"
+                    ] as readonly string[]
+                },
+                calendarAppointmentId: {
+                    name: "calendarAppointmentId",
+                    type: "Int",
+                    unique: true,
+                    optional: true,
+                    foreignKeyFor: [
+                        "calendarAppointment"
+                    ] as readonly string[]
+                },
+                patientName: {
+                    name: "patientName",
+                    type: "String"
+                },
+                patientPhone: {
+                    name: "patientPhone",
+                    type: "String"
+                },
+                patientEmail: {
+                    name: "patientEmail",
+                    type: "String",
+                    optional: true
+                },
+                appointmentDate: {
+                    name: "appointmentDate",
+                    type: "DateTime"
+                },
+                doctorName: {
+                    name: "doctorName",
+                    type: "String"
+                },
+                serviceName: {
+                    name: "serviceName",
+                    type: "String"
+                },
+                isFonasa: {
+                    name: "isFonasa",
+                    type: "Boolean",
+                    default: false as FieldDefault
+                },
+                fullAmountClp: {
+                    name: "fullAmountClp",
+                    type: "Int"
+                },
+                halfAmountClp: {
+                    name: "halfAmountClp",
+                    type: "Int"
+                },
+                status: {
+                    name: "status",
+                    type: "String",
+                    default: "PENDING" as FieldDefault
+                },
+                paidAmountClp: {
+                    name: "paidAmountClp",
+                    type: "Int",
+                    optional: true
+                },
+                mpPaymentId: {
+                    name: "mpPaymentId",
+                    type: "String",
+                    optional: true
+                },
+                paidAt: {
+                    name: "paidAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                waSentAt: {
+                    name: "waSentAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                waConfirmSentAt: {
+                    name: "waConfirmSentAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                flowStep: {
+                    name: "flowStep",
+                    type: "String",
+                    optional: true
+                },
+                flowError: {
+                    name: "flowError",
+                    type: "String",
+                    optional: true
+                },
+                flowHistory: {
+                    name: "flowHistory",
+                    type: "Json",
+                    default: "[]" as FieldDefault
+                },
+                expiresAt: {
+                    name: "expiresAt",
+                    type: "DateTime"
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                emailNotification: {
+                    name: "emailNotification",
+                    type: "DoctoraliaEmailNotification",
+                    optional: true,
+                    relation: { opposite: "paymentToken", fields: ["emailNotificationId"], references: ["id"], onDelete: "SetNull" }
+                },
+                calendarAppointment: {
+                    name: "calendarAppointment",
+                    type: "DoctoraliaCalendarAppointment",
+                    optional: true,
+                    relation: { opposite: "paymentToken", fields: ["calendarAppointmentId"], references: ["id"], onDelete: "SetNull" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" },
+                emailNotificationId: { type: "String" },
+                calendarAppointmentId: { type: "Int" }
             }
         },
         DoctoraliaCookieStore: {

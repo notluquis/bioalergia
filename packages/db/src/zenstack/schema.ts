@@ -9037,6 +9037,12 @@ export class SchemaType implements SchemaDef {
                     type: "DoctoraliaEmailNotification",
                     array: true,
                     relation: { opposite: "calendarAppointment" }
+                },
+                paymentToken: {
+                    name: "paymentToken",
+                    type: "AppointmentPaymentToken",
+                    optional: true,
+                    relation: { opposite: "calendarAppointment" }
                 }
             },
             attributes: [
@@ -9304,6 +9310,12 @@ export class SchemaType implements SchemaDef {
                     optional: true,
                     attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("calendarAppointmentId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("SetNull") }] }] as readonly AttributeApplication[],
                     relation: { opposite: "emailNotifications", fields: ["calendarAppointmentId"], references: ["id"], onDelete: "SetNull" }
+                },
+                paymentToken: {
+                    name: "paymentToken",
+                    type: "AppointmentPaymentToken",
+                    optional: true,
+                    relation: { opposite: "emailNotification" }
                 }
             },
             attributes: [
@@ -9319,6 +9331,184 @@ export class SchemaType implements SchemaDef {
             uniqueFields: {
                 id: { type: "String" },
                 emailMessageId: { type: "String" }
+            }
+        },
+        AppointmentPaymentToken: {
+            name: "AppointmentPaymentToken",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("cuid") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("cuid") as FieldDefault
+                },
+                emailNotificationId: {
+                    name: "emailNotificationId",
+                    type: "String",
+                    unique: true,
+                    optional: true,
+                    attributes: [{ name: "@unique" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("email_notification_id") }] }] as readonly AttributeApplication[],
+                    foreignKeyFor: [
+                        "emailNotification"
+                    ] as readonly string[]
+                },
+                calendarAppointmentId: {
+                    name: "calendarAppointmentId",
+                    type: "Int",
+                    unique: true,
+                    optional: true,
+                    attributes: [{ name: "@unique" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("calendar_appointment_id") }] }] as readonly AttributeApplication[],
+                    foreignKeyFor: [
+                        "calendarAppointment"
+                    ] as readonly string[]
+                },
+                patientName: {
+                    name: "patientName",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("patient_name") }] }] as readonly AttributeApplication[]
+                },
+                patientPhone: {
+                    name: "patientPhone",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("patient_phone") }] }] as readonly AttributeApplication[]
+                },
+                patientEmail: {
+                    name: "patientEmail",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("patient_email") }] }] as readonly AttributeApplication[]
+                },
+                appointmentDate: {
+                    name: "appointmentDate",
+                    type: "DateTime",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("appointment_date") }] }, { name: "@db.Timestamptz", args: [{ name: "x", value: ExpressionUtils.literal(3) }] }] as readonly AttributeApplication[]
+                },
+                doctorName: {
+                    name: "doctorName",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("doctor_name") }] }] as readonly AttributeApplication[]
+                },
+                serviceName: {
+                    name: "serviceName",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("service_name") }] }] as readonly AttributeApplication[]
+                },
+                isFonasa: {
+                    name: "isFonasa",
+                    type: "Boolean",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("is_fonasa") }] }] as readonly AttributeApplication[],
+                    default: false as FieldDefault
+                },
+                fullAmountClp: {
+                    name: "fullAmountClp",
+                    type: "Int",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("full_amount_clp") }] }] as readonly AttributeApplication[]
+                },
+                halfAmountClp: {
+                    name: "halfAmountClp",
+                    type: "Int",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("half_amount_clp") }] }] as readonly AttributeApplication[]
+                },
+                status: {
+                    name: "status",
+                    type: "String",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("PENDING") }] }] as readonly AttributeApplication[],
+                    default: "PENDING" as FieldDefault
+                },
+                paidAmountClp: {
+                    name: "paidAmountClp",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("paid_amount_clp") }] }] as readonly AttributeApplication[]
+                },
+                mpPaymentId: {
+                    name: "mpPaymentId",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("mp_payment_id") }] }] as readonly AttributeApplication[]
+                },
+                paidAt: {
+                    name: "paidAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("paid_at") }] }, { name: "@db.Timestamptz", args: [{ name: "x", value: ExpressionUtils.literal(3) }] }] as readonly AttributeApplication[]
+                },
+                waSentAt: {
+                    name: "waSentAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("wa_sent_at") }] }] as readonly AttributeApplication[]
+                },
+                waConfirmSentAt: {
+                    name: "waConfirmSentAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("wa_confirm_sent_at") }] }] as readonly AttributeApplication[]
+                },
+                flowStep: {
+                    name: "flowStep",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("flow_step") }] }] as readonly AttributeApplication[]
+                },
+                flowError: {
+                    name: "flowError",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("flow_error") }] }] as readonly AttributeApplication[]
+                },
+                flowHistory: {
+                    name: "flowHistory",
+                    type: "Json",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("[]") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("flow_history") }] }] as readonly AttributeApplication[],
+                    default: "[]" as FieldDefault
+                },
+                expiresAt: {
+                    name: "expiresAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("expires_at") }] }, { name: "@db.Timestamptz", args: [{ name: "x", value: ExpressionUtils.literal(3) }] }] as readonly AttributeApplication[]
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }, { name: "@db.Timestamptz", args: [{ name: "x", value: ExpressionUtils.literal(3) }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }, { name: "@db.Timestamptz", args: [{ name: "x", value: ExpressionUtils.literal(3) }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                emailNotification: {
+                    name: "emailNotification",
+                    type: "DoctoraliaEmailNotification",
+                    optional: true,
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("emailNotificationId")]) }, { name: "references", value: ExpressionUtils.array("String", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("SetNull") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "paymentToken", fields: ["emailNotificationId"], references: ["id"], onDelete: "SetNull" }
+                },
+                calendarAppointment: {
+                    name: "calendarAppointment",
+                    type: "DoctoraliaCalendarAppointment",
+                    optional: true,
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("calendarAppointmentId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("SetNull") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "paymentToken", fields: ["calendarAppointmentId"], references: ["id"], onDelete: "SetNull" }
+                }
+            },
+            attributes: [
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("status")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("patientPhone")]) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("appointment_payment_tokens") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" },
+                emailNotificationId: { type: "String" },
+                calendarAppointmentId: { type: "Int" }
             }
         },
         DoctoraliaCookieStore: {

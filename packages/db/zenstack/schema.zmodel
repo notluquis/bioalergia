@@ -2503,6 +2503,7 @@ model DoctoraliaCalendarAppointment {
   updatedAt                  DateTime                     @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
   schedule                   DoctoraliaSchedule           @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
   emailNotifications         DoctoraliaEmailNotification[]
+  paymentToken               AppointmentPaymentToken?
 
   @@unique([scheduleId, externalId])
   @@index([scheduleId])
@@ -2582,6 +2583,7 @@ model DoctoraliaEmailNotification {
   createdAt               DateTime                       @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt               DateTime                       @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
   calendarAppointment     DoctoraliaCalendarAppointment? @relation(fields: [calendarAppointmentId], references: [id], onDelete: SetNull)
+  paymentToken            AppointmentPaymentToken?
 
   @@index([createdAt(sort: Desc)])
   @@index([eventType])
@@ -2597,6 +2599,66 @@ enum DoctoraliaEmailEventType {
   BOOKING
   MODIFICATION
   CANCELLATION
+}
+
+// ============================================================
+// APPOINTMENT PAYMENT TOKENS (primera visita)
+// ============================================================
+
+// Token de pago para pacientes nuevos auto-agendados vía Doctoralia.
+// Se genera al recibir el correo de Doctoralia (IMAP) y se usa en
+// /abono/{id} cobra el monto configurado en settings para primera visita.
+model AppointmentPaymentToken {
+  id                    String    @id @default(cuid())
+
+  // Fuente: email IMAP (llega primero) y/o scraper (llega después con más datos)
+  emailNotificationId   String?   @unique @map("email_notification_id")
+  calendarAppointmentId Int?      @unique @map("calendar_appointment_id")
+
+  // Datos del paciente (desnormalizados — página pública sin auth)
+  patientName           String    @map("patient_name")
+  patientPhone          String    @map("patient_phone")   // E.164
+  patientEmail          String?   @map("patient_email")
+
+  // Datos de la cita
+  appointmentDate       DateTime  @map("appointment_date") @db.Timestamptz(3)
+  doctorName            String    @map("doctor_name")
+  serviceName           String    @map("service_name")
+
+  // Precio (en pesos CLP)
+  isFonasa              Boolean   @default(false) @map("is_fonasa")
+  fullAmountClp         Int       @map("full_amount_clp")
+  halfAmountClp         Int       @map("half_amount_clp")
+
+  // Estado del pago
+  status                String    @default("PENDING")  // PENDING | APPROVED | REJECTED | EXPIRED
+  paidAmountClp         Int?      @map("paid_amount_clp")
+  mpPaymentId           String?   @map("mp_payment_id")
+  paidAt                DateTime? @map("paid_at") @db.Timestamptz(3)
+
+  // WA tracking
+  waSentAt              DateTime? @map("wa_sent_at")
+  waConfirmSentAt       DateTime? @map("wa_confirm_sent_at")
+
+  // Historial técnico del flujo: email -> token -> WA -> MP -> confirmación.
+  flowStep              String?   @map("flow_step")
+  flowError             String?   @map("flow_error")
+  flowHistory           Json      @default("[]") @map("flow_history")
+
+  expiresAt             DateTime  @map("expires_at") @db.Timestamptz(3)
+  createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt             DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  emailNotification     DoctoraliaEmailNotification?   @relation(fields: [emailNotificationId], references: [id], onDelete: SetNull)
+  calendarAppointment   DoctoraliaCalendarAppointment? @relation(fields: [calendarAppointmentId], references: [id], onDelete: SetNull)
+
+  // Acceso público sin auth — el CUID en la URL es el secreto
+  @@allow('read', true)
+  @@allow('create,update', true)
+
+  @@index([status])
+  @@index([patientPhone])
+  @@map("appointment_payment_tokens")
 }
 
 // Singleton (one row, label="default") storing the raw Doctoralia panel session

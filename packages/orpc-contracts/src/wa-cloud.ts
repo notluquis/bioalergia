@@ -1297,6 +1297,23 @@ export const conversationAnalyticsResponseSchema = z.object({
   ),
 });
 
+export const abonoAutomationSettingsSchema = z.object({
+  requestEnabled: z.boolean(),
+  confirmationEnabled: z.boolean(),
+  phoneNumberId: z.number().int().positive().nullable(),
+  requestTemplateName: z.string(),
+  requestTemplateLanguage: z.string(),
+  confirmationTemplatePrefix: z.string(),
+  confirmationTemplateLanguage: z.string(),
+  fonasaFullAmountClp: z.number().int().positive().nullable(),
+  particularFullAmountClp: z.number().int().positive().nullable(),
+  expirationDays: z.number().int().positive().nullable(),
+  publicBaseUrl: z.string(),
+  statementDescriptor: z.string(),
+});
+
+export const updateAbonoAutomationSettingsInputSchema = abonoAutomationSettingsSchema;
+
 // ── Contract ────────────────────────────────────────────────────────────────
 
 export const waCloudContract = {
@@ -1325,6 +1342,15 @@ export const waCloudContract = {
     .route({ method: "POST", path: "/accounts/sync-templates", tags: ["WA Cloud"] })
     .input(accountIdInput)
     .output(syncTemplatesResponseSchema),
+
+  getAbonoAutomationSettings: oc
+    .route({ method: "GET", path: "/settings/abono-automation", tags: ["WA Cloud"] })
+    .input(z.object({}).optional())
+    .output(abonoAutomationSettingsSchema),
+  updateAbonoAutomationSettings: oc
+    .route({ method: "POST", path: "/settings/abono-automation", tags: ["WA Cloud"] })
+    .input(updateAbonoAutomationSettingsInputSchema)
+    .output(waOkResponseSchema),
 
   // Phone numbers
   upsertPhoneNumber: oc

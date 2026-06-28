@@ -165,6 +165,17 @@ apps/api/*.ts
 playwright/.auth/
 **/playwright/.auth/
 
+# Local throwaway scripts / generated output from ad-hoc debugging
+/scratch*.ts
+/test-date.js
+/test-dates.ts
+/test.pdf
+
+# In-place Node/TS emit artifacts from running API source files directly
+apps/api/src/**/*.js
+apps/api/src/modules/wa-cloud/graph-client.d.ts
+apps/api/src/modules/wa-cloud/graph-client.d.ts.map
+
 # pnpm local store (set via env on some setups)
 .pnpm-store/
 

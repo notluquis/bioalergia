@@ -41,6 +41,35 @@ import {
   uploadMedia,
 } from "../modules/wa-cloud/graph-client.ts";
 
+export async function getWaMessagesForExport(conversationId: number) {
+  return db.waMessage.findMany({
+    where: { conversationId },
+    orderBy: { timestamp: "asc" },
+    select: {
+      id: true,
+      timestamp: true,
+      direction: true,
+      type: true,
+      body: true,
+      status: true,
+      metaMessageId: true,
+    },
+  });
+}
+
+export async function getWaMessageForMedia(messageId: number) {
+  return db.waMessage.findUnique({
+    where: { id: messageId },
+    select: {
+      id: true,
+      type: true,
+      mediaMimeType: true,
+      payload: true,
+      phoneNumber: { select: { accountId: true } },
+    },
+  });
+}
+
 const WINDOW_HOURS = 24;
 
 type SendMessageResponse = z.infer<typeof sendMessageResponseSchema>;
@@ -134,7 +163,7 @@ export async function sendText(
 
 export async function sendTemplate(
   payload: SendTemplatePayload,
-  sentByUserId: number
+  sentByUserId: number | null
 ): Promise<SendMessageResponse> {
   const conv = await loadConversation(payload.conversationId);
   if (conv.contact.blockedAt) {

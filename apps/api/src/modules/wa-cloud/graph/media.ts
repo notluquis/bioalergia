@@ -1,3 +1,4 @@
+import { DomainError } from "../../../lib/errors.ts";
 import { logWarn } from "../../../lib/logger.ts";
 import {
   GRAPH_BASE,
@@ -38,7 +39,7 @@ export async function uploadMedia(
       status: res.status,
       body: text.slice(0, 500),
     });
-    throw new Error(`Graph media upload ${res.status}: ${text.slice(0, 300)}`);
+    throw new DomainError("BAD_REQUEST", `Graph media upload ${res.status}: ${text.slice(0, 300)}`);
   }
   return JSON.parse(text) as { id: string };
 }

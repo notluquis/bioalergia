@@ -68,7 +68,11 @@ export async function graphPost<T>(
   });
   const text = await res.text();
   if (!res.ok) {
-    logWarn("[wa-cloud.graph] POST failed", { path, status: res.status, body: text.slice(0, 500) });
+    logWarn("[wa-cloud.graph] POST failed", {
+      path,
+      status: res.status,
+      body: text.slice(0, 500),
+    });
     throw new Error(`Graph API ${res.status}: ${text.slice(0, 300)}`);
   }
   return JSON.parse(text) as T;
@@ -80,7 +84,11 @@ export async function graphGet<T>(path: string, token: string, version: string):
   });
   const text = await res.text();
   if (!res.ok) {
-    logWarn("[wa-cloud.graph] GET failed", { path, status: res.status, body: text.slice(0, 500) });
+    logWarn("[wa-cloud.graph] GET failed", {
+      path,
+      status: res.status,
+      body: text.slice(0, 500),
+    });
     throw new Error(`Graph API ${res.status}: ${text.slice(0, 300)}`);
   }
   return JSON.parse(text) as T;

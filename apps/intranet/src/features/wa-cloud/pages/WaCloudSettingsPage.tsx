@@ -1,4 +1,4 @@
-import { Button, Card, Chip, Modal } from "@heroui/react";
+import { Button, Card, Chip, Modal, Switch } from "@heroui/react";
 import { WaSettingsSkeleton } from "../components/shared/Skeletons";
 import {
   Check,
@@ -13,7 +13,7 @@ import {
   Wrench,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { TextInput } from "@/features/outreach/components/FormField";
 import { toast } from "@/lib/toast-interceptor";
 import { CommerceCatalogCard } from "../components/settings/CommerceCatalogCard";
@@ -23,9 +23,11 @@ import { PhoneMigrationCard } from "../components/settings/PhoneMigrationCard";
 import { PhoneToolsModal } from "../components/modals/PhoneToolsModal";
 import {
   useAccounts,
+  useAbonoAutomationSettings,
   useDeleteAccount,
   useSyncPhones,
   useSyncTemplates,
+  useUpdateAbonoAutomationSettings,
   useUpsertAccount,
   useUpsertPhoneNumber,
   useValidateAccount,
@@ -77,12 +79,163 @@ export function WaCloudSettingsPage() {
         accounts.data.accounts.map((acc) => <AccountCard key={acc.id} acc={acc} />)
       )}
 
+      {accounts.data.accounts.length > 0 && <AbonoAutomationCard accounts={accounts.data} />}
       {accounts.data.accounts.length > 0 && <ConversationalAutomationCard />}
       {accounts.data.accounts.length > 0 && <CommerceCatalogCard />}
       {accounts.data.accounts.length > 0 && <PhoneMigrationCard />}
 
       <CreateAccountModal isOpen={createOpen} onClose={() => setCreateOpen(false)} />
     </div>
+  );
+}
+
+function AbonoAutomationCard({ accounts }: { accounts: AccountsData }) {
+  const settings = useAbonoAutomationSettings();
+  const save = useUpdateAbonoAutomationSettings();
+  const [draft, setDraft] = useState<NonNullable<typeof settings.data> | null>(null);
+  useEffect(() => {
+    if (settings.data) setDraft(settings.data);
+  }, [settings.data]);
+  const data = draft ?? settings.data;
+
+  if (!data) {
+    return (
+      <Card>
+        <Card.Content className="p-4 text-default-500 text-sm">
+          Cargando configuración de abonos...
+        </Card.Content>
+      </Card>
+    );
+  }
+
+  const phones = accounts.accounts.flatMap((account) =>
+    account.phoneNumbers.map((phone) => ({
+      id: phone.id,
+      label: `${phone.displayPhoneNumber}${phone.label ? ` · ${phone.label}` : ""}`,
+    }))
+  );
+
+  const set = <K extends keyof typeof data>(key: K, value: (typeof data)[K]) => {
+    setDraft({ ...data, [key]: value });
+  };
+
+  const numberValue = (value: number | null) => (value == null ? "" : String(value));
+  const parseNumber = (value: string) => {
+    const trimmed = value.trim();
+    if (!/^\d+$/.test(trimmed)) return null;
+
+    const parsed = Number.parseInt(trimmed, 10);
+    return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : null;
+  };
+
+  return (
+    <Card>
+      <Card.Header>
+        <Card.Title>Abono Doctoralia</Card.Title>
+        <Card.Description>
+          Configuración de mensajes WhatsApp y pago de primera visita.
+        </Card.Description>
+      </Card.Header>
+      <Card.Content className="grid gap-4 md:grid-cols-2">
+        <Switch
+          isSelected={data.requestEnabled}
+          onChange={(checked) => set("requestEnabled", checked)}
+        >
+          <Switch.Content>
+            <Switch.Control>
+              <Switch.Thumb />
+            </Switch.Control>
+            <span className="text-sm">Pedir abono por WhatsApp</span>
+          </Switch.Content>
+        </Switch>
+        <Switch
+          isSelected={data.confirmationEnabled}
+          onChange={(checked) => set("confirmationEnabled", checked)}
+        >
+          <Switch.Content>
+            <Switch.Control>
+              <Switch.Thumb />
+            </Switch.Control>
+            <span className="text-sm">Confirmar pago por WhatsApp</span>
+          </Switch.Content>
+        </Switch>
+
+        <label className="space-y-1">
+          <span className="font-medium text-sm">Número WhatsApp</span>
+          <select
+            className="h-10 w-full rounded-lg border border-default-300 bg-background px-3 text-sm"
+            value={data.phoneNumberId ?? ""}
+            onChange={(event) => set("phoneNumberId", parseNumber(event.target.value))}
+          >
+            <option value="">Sin configurar</option>
+            {phones.map((phone) => (
+              <option key={phone.id} value={phone.id}>
+                {phone.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <TextInput
+          label="URL pública del sitio"
+          value={data.publicBaseUrl}
+          onValueChange={(value) => set("publicBaseUrl", value)}
+          placeholder="https://..."
+        />
+        <TextInput
+          label="Descriptor MercadoPago"
+          value={data.statementDescriptor}
+          onValueChange={(value) => set("statementDescriptor", value)}
+        />
+        <TextInput
+          label="Template solicitud"
+          value={data.requestTemplateName}
+          onValueChange={(value) => set("requestTemplateName", value)}
+        />
+        <TextInput
+          label="Idioma solicitud"
+          value={data.requestTemplateLanguage}
+          onValueChange={(value) => set("requestTemplateLanguage", value)}
+          placeholder="es_CL"
+        />
+        <TextInput
+          label="Prefijo template confirmación"
+          value={data.confirmationTemplatePrefix}
+          onValueChange={(value) => set("confirmationTemplatePrefix", value)}
+        />
+        <TextInput
+          label="Idioma confirmación"
+          value={data.confirmationTemplateLanguage}
+          onValueChange={(value) => set("confirmationTemplateLanguage", value)}
+          placeholder="es_CL"
+        />
+        <TextInput
+          label="Monto FONASA"
+          value={numberValue(data.fonasaFullAmountClp)}
+          onValueChange={(value) => set("fonasaFullAmountClp", parseNumber(value))}
+        />
+        <TextInput
+          label="Monto particular / Isapre"
+          value={numberValue(data.particularFullAmountClp)}
+          onValueChange={(value) => set("particularFullAmountClp", parseNumber(value))}
+        />
+        <TextInput
+          label="Expiración link (días)"
+          value={numberValue(data.expirationDays)}
+          onValueChange={(value) => set("expirationDays", parseNumber(value))}
+        />
+      </Card.Content>
+      <Card.Footer className="flex justify-end border-default-200 border-t pt-4">
+        <Button
+          isPending={save.isPending}
+          onPress={() => {
+            void save.mutateAsync(data).then(() => toast.success("Configuración guardada"));
+          }}
+        >
+          <Check size={14} />
+          Guardar abono
+        </Button>
+      </Card.Footer>
+    </Card>
   );
 }
 
