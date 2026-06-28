@@ -58,8 +58,10 @@ test("typing in the search field filters results live and updates the URL", asyn
 
   // Debounced write-back lands the query in the URL.
   await expect(page).toHaveURL(/[?&]q=equipo/);
-  // The Equipo static page surfaces.
-  await expect(page.locator('a[href="/equipo"]').first()).toBeVisible();
+  // The Equipo static page surfaces in the results. Scope to `:visible` — the
+  // nav also carries an /equipo link inside a (hidden) dropdown, earlier in the
+  // DOM, which `.first()` would otherwise pick.
+  await expect(page.locator('a[href="/equipo"]:visible').first()).toBeVisible();
 });
 
 test("a no-match query shows the empty state", async ({ page }) => {

@@ -39,14 +39,12 @@ test("home page exposes the primary navigation", async ({ page }) => {
   await page.goto("/", { waitUntil: "domcontentloaded" });
   const nav = page.getByRole("navigation", { name: "Navegación principal" });
   await expect(nav).toBeVisible();
-  // Spot-check direct top-level links (Equipo/Aprende now live inside the
-  // "Sobre nosotros" / "Recursos" dropdowns, so they're not direct links).
-  for (const label of ["Servicios", "Exámenes", "Inmunoterapia"]) {
-    await expect(nav.getByRole("link", { name: label, exact: true }).first()).toBeVisible();
-  }
-  // The grouping dropdowns expose their triggers as buttons.
-  for (const group of ["Sobre nosotros", "Recursos"]) {
-    await expect(nav.getByRole("button", { name: group, exact: true })).toBeVisible();
+  // The nav exposes the core routes. Visibility varies by viewport (desktop
+  // groups some behind "Sobre nosotros"/"Recursos" dropdowns; mobile shows a
+  // flat swipe strip; both copies exist in the DOM), so assert the links are
+  // ATTACHED rather than visible.
+  for (const href of ["/servicios", "/examenes", "/inmunoterapia", "/equipo", "/botiquin"]) {
+    await expect(nav.locator(`a[href="${href}"]`).first()).toBeAttached();
   }
 });
 
