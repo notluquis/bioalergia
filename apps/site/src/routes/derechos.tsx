@@ -18,10 +18,11 @@ import { type FormEvent, useState } from "react";
 import { JsonLd } from "@/components/JsonLd";
 import { PageShell } from "@/components/PageShell";
 import { ctaClass } from "@/components/ui/cta";
-import { PageHeader } from "@/components/ui/PageHeader";
+import { Eyebrow } from "@/components/ui/Eyebrow";
+import { PageHero } from "@/components/ui/PageHero";
+import { SectionBand } from "@/components/ui/SectionBand";
 import { publicClinicClient } from "@/lib/orpc-client";
 import { breadcrumbJsonLd } from "@/lib/seo";
-import { Section } from "@/sections/Section";
 
 type RightType = CreatePublicDataRightsInput["type"];
 
@@ -56,6 +57,13 @@ const RIGHTS: { id: RightType; label: string; detail: string }[] = [
     label: "Bloqueo",
     detail: "Suspender temporalmente el tratamiento de un dato.",
   },
+];
+
+const CONSIDERATIONS = [
+  "Plazo: respondemos dentro de treinta días corridos contados desde el ingreso de la solicitud, prorrogables por una sola vez hasta por treinta días corridos adicionales.",
+  "Verificación de identidad: antes de responder verificamos la identidad de quien solicita; si actúa en representación, deberá acreditarla.",
+  "Límite por ficha clínica: la supresión no procede cuando la conservación es necesaria por obligación legal (la ficha clínica se conserva quince años); en esos casos puede proceder el bloqueo.",
+  "Reclamo ante la Agencia: si su solicitud es rechazada o no recibe respuesta, puede reclamar ante la Agencia de Protección de Datos Personales dentro de treinta días hábiles.",
 ];
 
 function DataRightsForm() {
@@ -205,24 +213,32 @@ function DataRightsForm() {
 
 function DerechosPage() {
   return (
-    <PageShell>
+    <PageShell contained={false}>
       <JsonLd
         data={breadcrumbJsonLd([
           { name: "Inicio", path: "/" },
           { name: "Ejercicio de derechos", path: "/derechos" },
         ])}
       />
-      <PageHeader
+      <PageHero
         crumbs={[{ label: "Inicio", href: "/" }, { label: "Ejercicio de derechos" }]}
         eyebrow="Protección de datos (Ley 21.719)"
         lede="La Ley N° 21.719 le reconoce derechos sobre sus datos personales. En Bioalergia puede ejercerlos de forma sencilla a través de esta página o escribiendo al delegado de protección de datos."
         title="Ejercicio de derechos del titular"
       />
 
-      <Section title="Qué derechos puede ejercer">
+      <SectionBand borderTop tone="surface2">
+        <Eyebrow className="mb-3">Tus derechos</Eyebrow>
+        <h2 className="mb-9 max-w-2xl font-display text-[1.875rem] leading-[1.1] text-foreground sm:text-[2.25rem]">
+          Qué derechos puede ejercer
+        </h2>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {RIGHTS.map((right) => (
-            <Card className="rounded-3xl" key={right.id} variant="default">
+            <Card
+              className="h-full rounded-2xl border border-line bg-surface"
+              key={right.id}
+              variant="default"
+            >
               <Card.Header className="gap-2">
                 <Card.Title className="font-display text-xl text-foreground">
                   {right.label}
@@ -234,46 +250,31 @@ function DerechosPage() {
             </Card>
           ))}
         </div>
-        <Card className="rounded-3xl" variant="secondary">
-          <Card.Content className="grid gap-3 py-6">
-            <div className="flex items-start gap-3 text-sm leading-relaxed">
-              <span className="mt-2 size-2 rounded-full bg-brand-amber" />
-              <span className="text-muted">
-                Plazo: respondemos dentro de treinta días corridos contados desde el ingreso de la
-                solicitud, prorrogables por una sola vez hasta por treinta días corridos
-                adicionales.
-              </span>
-            </div>
-            <div className="flex items-start gap-3 text-sm leading-relaxed">
-              <span className="mt-2 size-2 rounded-full bg-brand-amber" />
-              <span className="text-muted">
-                Verificación de identidad: antes de responder verificamos la identidad de quien
-                solicita; si actúa en representación, deberá acreditarla.
-              </span>
-            </div>
-            <div className="flex items-start gap-3 text-sm leading-relaxed">
-              <span className="mt-2 size-2 rounded-full bg-brand-amber" />
-              <span className="text-muted">
-                Límite por ficha clínica: la supresión no procede cuando la conservación es
-                necesaria por obligación legal (la ficha clínica se conserva quince años); en esos
-                casos puede proceder el bloqueo.
-              </span>
-            </div>
-            <div className="flex items-start gap-3 text-sm leading-relaxed">
-              <span className="mt-2 size-2 rounded-full bg-brand-amber" />
-              <span className="text-muted">
-                Reclamo ante la Agencia: si su solicitud es rechazada o no recibe respuesta, puede
-                reclamar ante la Agencia de Protección de Datos Personales dentro de treinta días
-                hábiles.
-              </span>
-            </div>
-          </Card.Content>
-        </Card>
-      </Section>
+      </SectionBand>
 
-      <section className="grid gap-3">
+      <SectionBand tone="bg">
+        <div className="mx-auto max-w-[760px]">
+          <Eyebrow className="mb-3">Antes de solicitar</Eyebrow>
+          <h2 className="mb-6 font-display text-[1.875rem] leading-[1.1] text-foreground sm:text-[2.25rem]">
+            Plazos y condiciones
+          </h2>
+          <ul className="grid">
+            {CONSIDERATIONS.map((item) => (
+              <li
+                className="flex items-start gap-3 border-line border-b py-4 text-[0.95rem] text-muted leading-relaxed last:border-b-0"
+                key={item}
+              >
+                <span className="mt-2 size-2 shrink-0 rounded-full bg-brand-amber" />
+                <span>{item}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </SectionBand>
+
+      <SectionBand tone="surface">
         <DataRightsForm />
-      </section>
+      </SectionBand>
     </PageShell>
   );
 }

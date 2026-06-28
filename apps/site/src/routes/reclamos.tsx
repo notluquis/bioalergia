@@ -18,24 +18,40 @@ import { type FormEvent, useState } from "react";
 import { JsonLd } from "@/components/JsonLd";
 import { PageShell } from "@/components/PageShell";
 import { ctaClass } from "@/components/ui/cta";
-import { PageHeader } from "@/components/ui/PageHeader";
+import { Eyebrow } from "@/components/ui/Eyebrow";
+import { PageHero } from "@/components/ui/PageHero";
+import { SectionBand } from "@/components/ui/SectionBand";
 import { publicClinicClient } from "@/lib/orpc-client";
 import { breadcrumbJsonLd } from "@/lib/seo";
-import { Section } from "@/sections/Section";
 
 const CATEGORIES = [
   { id: "Reclamo", label: "Reclamo" },
   { id: "Sugerencia", label: "Sugerencia" },
 ];
 
-function Bullet({ children }: { children: string }) {
-  return (
-    <div className="flex items-start gap-3 text-sm leading-relaxed">
-      <span className="mt-2 size-2 rounded-full bg-brand-amber" />
-      <span className="text-muted">{children}</span>
-    </div>
-  );
-}
+const STEPS = [
+  {
+    title: "Quién puede reclamar",
+    body: "Puede presentar un reclamo o una sugerencia la persona atendida, su representante legal o quien la persona designe. El establecimiento no condiciona la atención a la presentación o no de un reclamo.",
+  },
+  {
+    title: "Cómo se presenta",
+    body: "Mediante el formulario en línea de esta página, o por escrito en recepción, donde también está disponible el libro de sugerencias y reclamos. Indica tu identificación, un medio de respuesta, una descripción clara del hecho con su fecha y la petición concreta.",
+  },
+  {
+    title: "Plazo de respuesta",
+    body: "Respondemos por escrito dentro de quince días hábiles, contados desde el día hábil siguiente a la recepción (Decreto 35, artículo 11). La respuesta se refiere a todas las peticiones formuladas.",
+  },
+  {
+    title: "Superintendencia de Salud",
+    body: "Si la respuesta no le satisface, o si no se emite dentro del plazo, puede recurrir a la Intendencia de Prestadores de la Superintendencia de Salud dentro de cinco días hábiles. El establecimiento informa esta vía en su respuesta.",
+  },
+];
+
+const NOTES = [
+  "El reclamo queda registrado con número correlativo asignado por el sistema.",
+  "Se conserva copia del reclamo, de la respuesta y del documento que acredite su notificación.",
+];
 
 function ComplaintForm() {
   const [complainantName, setComplainantName] = useState("");
@@ -186,88 +202,59 @@ function ComplaintForm() {
 
 function ReclamosPage() {
   return (
-    <PageShell>
+    <PageShell contained={false}>
       <JsonLd
         data={breadcrumbJsonLd([
           { name: "Inicio", path: "/" },
           { name: "Reclamos", path: "/reclamos" },
         ])}
       />
-      <PageHeader
+      <PageHero
         crumbs={[{ label: "Inicio", href: "/" }, { label: "Reclamos" }]}
         eyebrow="Reclamos y sugerencias"
         lede="En Bioalergia recibimos, registramos, respondemos y derivamos los reclamos y sugerencias de las personas conforme al Decreto N° 35 de 2012 y a la Ley N° 20.584, asegurando una respuesta dentro de los plazos legales."
         title="Reclamos y sugerencias"
       />
 
-      <Section title="Cómo funciona">
+      <SectionBand borderTop tone="surface2">
+        <Eyebrow className="mb-3">El procedimiento</Eyebrow>
+        <h2 className="mb-9 max-w-2xl font-display text-[1.875rem] leading-[1.1] text-foreground sm:text-[2.25rem]">
+          Cómo funciona
+        </h2>
         <div className="grid gap-6 md:grid-cols-2">
-          <Card className="rounded-3xl" variant="default">
-            <Card.Header className="gap-2">
-              <Card.Title className="font-display text-xl text-foreground">
-                Quién puede reclamar
-              </Card.Title>
-              <Card.Description className="text-muted leading-relaxed">
-                Puede presentar un reclamo o una sugerencia la persona atendida, su representante
-                legal o quien la persona designe. El establecimiento no condiciona la atención a la
-                presentación o no de un reclamo.
-              </Card.Description>
-            </Card.Header>
-          </Card>
-          <Card className="rounded-3xl" variant="default">
-            <Card.Header className="gap-2">
-              <Card.Title className="font-display text-xl text-foreground">
-                Cómo se presenta
-              </Card.Title>
-              <Card.Description className="text-muted leading-relaxed">
-                Mediante el formulario en línea de esta página, o por escrito en recepción, donde
-                también está disponible el libro de sugerencias y reclamos. Indica tu
-                identificación, un medio de respuesta, una descripción clara del hecho con su fecha
-                y la petición concreta.
-              </Card.Description>
-            </Card.Header>
-          </Card>
-          <Card className="rounded-3xl" variant="default">
-            <Card.Header className="gap-2">
-              <Card.Title className="font-display text-xl text-foreground">
-                Plazo de respuesta
-              </Card.Title>
-              <Card.Description className="text-muted leading-relaxed">
-                Respondemos por escrito dentro de quince días hábiles, contados desde el día hábil
-                siguiente a la recepción (Decreto 35, artículo 11). La respuesta se refiere a todas
-                las peticiones formuladas.
-              </Card.Description>
-            </Card.Header>
-          </Card>
-          <Card className="rounded-3xl" variant="default">
-            <Card.Header className="gap-2">
-              <Card.Title className="font-display text-xl text-foreground">
-                Superintendencia de Salud
-              </Card.Title>
-              <Card.Description className="text-muted leading-relaxed">
-                Si la respuesta no le satisface, o si no se emite dentro del plazo, puede recurrir a
-                la Intendencia de Prestadores de la Superintendencia de Salud dentro de cinco días
-                hábiles. El establecimiento informa esta vía en su respuesta.
-              </Card.Description>
-            </Card.Header>
-          </Card>
+          {STEPS.map((step) => (
+            <Card
+              className="h-full rounded-2xl border border-line bg-surface"
+              key={step.title}
+              variant="default"
+            >
+              <Card.Header className="gap-2">
+                <Card.Title className="font-display text-xl text-foreground">
+                  {step.title}
+                </Card.Title>
+                <Card.Description className="text-muted leading-relaxed">
+                  {step.body}
+                </Card.Description>
+              </Card.Header>
+            </Card>
+          ))}
         </div>
-        <Card className="rounded-3xl" variant="secondary">
-          <Card.Content className="grid gap-3 py-6">
-            <Bullet>
-              El reclamo queda registrado con número correlativo asignado por el sistema.
-            </Bullet>
-            <Bullet>
-              Se conserva copia del reclamo, de la respuesta y del documento que acredite su
-              notificación.
-            </Bullet>
-          </Card.Content>
-        </Card>
-      </Section>
+        <ul className="mt-8 grid border-line border-t pt-2">
+          {NOTES.map((note) => (
+            <li
+              className="flex items-start gap-3 border-line border-b py-4 text-[0.95rem] text-muted leading-relaxed last:border-b-0"
+              key={note}
+            >
+              <span className="mt-2 size-2 shrink-0 rounded-full bg-brand-amber" />
+              <span>{note}</span>
+            </li>
+          ))}
+        </ul>
+      </SectionBand>
 
-      <section className="grid gap-3">
+      <SectionBand tone="surface">
         <ComplaintForm />
-      </section>
+      </SectionBand>
     </PageShell>
   );
 }

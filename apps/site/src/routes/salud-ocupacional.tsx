@@ -19,11 +19,11 @@ import { type FormEvent, useState } from "react";
 
 import { JsonLd } from "@/components/JsonLd";
 import { PageShell } from "@/components/PageShell";
-import { PageHeader } from "@/components/ui/PageHeader";
-import { Photo } from "@/components/ui/Photo";
+import { Eyebrow } from "@/components/ui/Eyebrow";
+import { PageHero } from "@/components/ui/PageHero";
+import { SectionBand, type BandTone } from "@/components/ui/SectionBand";
 import { occupationalClient } from "@/lib/orpc-client";
 import { breadcrumbJsonLd } from "@/lib/seo";
-import { Section } from "@/sections/Section";
 
 const LEAD_FORM_ID = "solicitar-informacion";
 
@@ -41,54 +41,84 @@ const SECTORS: { id: Sector; label: string }[] = [
 function Bullet({ children }: { children: string }) {
   return (
     <div className="flex items-start gap-3 text-sm leading-relaxed">
-      <span className="mt-2 rounded-full bg-(--accent) size-2" />
-      <span className="text-(--ink-muted)">{children}</span>
+      <span className="mt-2 size-2 rounded-full bg-brand-amber" />
+      <span className="text-muted">{children}</span>
+    </div>
+  );
+}
+
+/** Encabezado editorial de banda — eyebrow azul + título serif + lede. */
+function BandHeading({
+  eyebrow,
+  title,
+  subtitle,
+}: {
+  eyebrow?: string;
+  title: string;
+  subtitle?: string;
+}) {
+  return (
+    <div className="mb-9 grid max-w-3xl gap-3">
+      {eyebrow ? <Eyebrow>{eyebrow}</Eyebrow> : null}
+      <h2 className="font-display text-[2rem] leading-[1.05] text-foreground sm:text-[2.5rem]">
+        {title}
+      </h2>
+      {subtitle ? <p className="text-[1.0625rem] leading-[1.6] text-muted">{subtitle}</p> : null}
     </div>
   );
 }
 
 /** Cómo funciona + notas de cumplimiento (RIOHS, consentimiento, GC-MS, Ley 21.719). */
-function ComplianceSection() {
+function ComplianceSection({ tone }: { tone: BandTone }) {
   return (
-    <Section
-      eyebrow="Cómo funciona"
-      title="Un programa preventivo hecho con respaldo legal"
-      subtitle="El testeo de drogas y alcohol en el trabajo es lícito cuando es preventivo, despersonalizado y respeta los derechos del trabajador. Así lo hacemos."
-    >
+    <SectionBand borderTop tone={tone}>
+      <BandHeading
+        eyebrow="Cómo funciona"
+        subtitle="El testeo de drogas y alcohol en el trabajo es lícito cuando es preventivo, despersonalizado y respeta los derechos del trabajador. Así lo hacemos."
+        title="Un programa preventivo hecho con respaldo legal"
+      />
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card className="rounded-3xl" variant="default">
+        <Card className="h-full rounded-2xl border border-line bg-surface" variant="default">
           <Card.Header className="gap-2">
-            <Card.Title className="text-lg">Reglamento Interno (RIOHS)</Card.Title>
-            <Card.Description className="text-(--ink-muted) leading-relaxed">
+            <Card.Title className="font-display text-[1.4rem] text-foreground">
+              Reglamento Interno (RIOHS)
+            </Card.Title>
+            <Card.Description className="text-muted leading-relaxed">
               El control debe estar contemplado en el Reglamento Interno de Orden, Higiene y
               Seguridad de la empresa, con carácter preventivo y aplicado de forma despersonalizada
               (por sorteo o universo), no como medida dirigida a un trabajador en particular.
             </Card.Description>
           </Card.Header>
         </Card>
-        <Card className="rounded-3xl" variant="default">
+        <Card className="h-full rounded-2xl border border-line bg-surface" variant="default">
           <Card.Header className="gap-2">
-            <Card.Title className="text-lg">Consentimiento del trabajador</Card.Title>
-            <Card.Description className="text-(--ink-muted) leading-relaxed">
+            <Card.Title className="font-display text-[1.4rem] text-foreground">
+              Consentimiento del trabajador
+            </Card.Title>
+            <Card.Description className="text-muted leading-relaxed">
               La toma de muestra requiere el consentimiento informado del trabajador. Se le explica
               el procedimiento, su finalidad preventiva y el tratamiento que se dará a sus datos.
             </Card.Description>
           </Card.Header>
         </Card>
-        <Card className="rounded-3xl" variant="default">
+        <Card className="h-full rounded-2xl border border-line bg-surface" variant="default">
           <Card.Header className="gap-2">
-            <Card.Title className="text-lg">Confirmación por GC-MS</Card.Title>
-            <Card.Description className="text-(--ink-muted) leading-relaxed">
+            <Card.Title className="font-display text-[1.4rem] text-foreground">
+              Confirmación por GC-MS
+            </Card.Title>
+            <Card.Description className="text-muted leading-relaxed">
               Un tamizaje presuntivo positivo nunca se informa como positivo: se confirma siempre
               por cromatografía de gases con espectrometría de masas (GC-MS) antes de entregar
               cualquier resultado, evitando falsos positivos.
             </Card.Description>
           </Card.Header>
         </Card>
-        <Card className="rounded-3xl" variant="default">
+        <Card className="h-full rounded-2xl border border-line bg-surface" variant="default">
           <Card.Header className="gap-2">
-            <Card.Title className="text-lg">Datos sensibles (Ley 21.719)</Card.Title>
-            <Card.Description className="text-(--ink-muted) leading-relaxed">
+            <Card.Title className="font-display text-[1.4rem] text-foreground">
+              Datos sensibles (Ley 21.719)
+            </Card.Title>
+            <Card.Description className="text-muted leading-relaxed">
               Los resultados de salud son datos personales sensibles. Al empleador se le entrega un
               resultado de aptitud (apto / no apto), salvo que el trabajador consienta expresamente
               compartir el detalle. La cadena de custodia y la confidencialidad están aseguradas.
@@ -96,10 +126,12 @@ function ComplianceSection() {
           </Card.Header>
         </Card>
       </div>
-      <Card className="rounded-3xl" variant="secondary">
+      <Card className="mt-6 rounded-2xl border border-line bg-surface" variant="default">
         <Card.Header className="gap-2">
-          <Card.Title className="text-lg">Marco normativo de referencia</Card.Title>
-          <Card.Description className="text-(--ink-muted) leading-relaxed">
+          <Card.Title className="font-display text-[1.4rem] text-foreground">
+            Marco normativo de referencia
+          </Card.Title>
+          <Card.Description className="text-muted leading-relaxed">
             El DS 44/2024 establece la obligación de contar con una política preventiva en todo
             lugar de trabajo, lo que respalda la implementación de programas de control de consumo
             de alcohol y drogas.
@@ -115,57 +147,62 @@ function ComplianceSection() {
           </Bullet>
         </Card.Content>
       </Card>
-    </Section>
+    </SectionBand>
   );
 }
 
 /** Cobertura por sector productivo. */
-function SectorSection() {
+function SectorSection({ tone }: { tone: BandTone }) {
   return (
-    <Section
-      eyebrow="Cobertura por sector"
-      title="Adaptado a tu actividad"
-      subtitle="Diseñamos la cadencia y el panel de sustancias según el riesgo y la normativa específica de tu rubro."
-    >
+    <SectionBand tone={tone}>
+      <BandHeading
+        eyebrow="Cobertura por sector"
+        subtitle="Diseñamos la cadencia y el panel de sustancias según el riesgo y la normativa específica de tu rubro."
+        title="Adaptado a tu actividad"
+      />
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="rounded-3xl" variant="default">
+        <Card className="h-full rounded-2xl border border-line bg-surface" variant="default">
           <Card.Header className="gap-2">
-            <Card.Title className="text-lg">Minería</Card.Title>
-            <Card.Description className="text-(--ink-muted) leading-relaxed">
+            <Card.Title className="font-display text-[1.4rem] text-foreground">Minería</Card.Title>
+            <Card.Description className="text-muted leading-relaxed">
               Conforme al DS 132, el control puede realizarse a solicitud del supervisor cuando
               existan indicios, además del programa preventivo aleatorio.
             </Card.Description>
           </Card.Header>
         </Card>
-        <Card className="rounded-3xl" variant="default">
+        <Card className="h-full rounded-2xl border border-line bg-surface" variant="default">
           <Card.Header className="gap-2">
-            <Card.Title className="text-lg">Transporte</Card.Title>
-            <Card.Description className="text-(--ink-muted) leading-relaxed">
+            <Card.Title className="font-display text-[1.4rem] text-foreground">
+              Transporte
+            </Card.Title>
+            <Card.Description className="text-muted leading-relaxed">
               Cadencia configurable para conductores y operadores, con foco en alcohol y sustancias
               que afecten la conducción.
             </Card.Description>
           </Card.Header>
         </Card>
-        <Card className="rounded-3xl" variant="default">
+        <Card className="h-full rounded-2xl border border-line bg-surface" variant="default">
           <Card.Header className="gap-2">
-            <Card.Title className="text-lg">Construcción</Card.Title>
-            <Card.Description className="text-(--ink-muted) leading-relaxed">
+            <Card.Title className="font-display text-[1.4rem] text-foreground">
+              Construcción
+            </Card.Title>
+            <Card.Description className="text-muted leading-relaxed">
               Controles preventivos para faenas con maquinaria y trabajo en altura, integrables a tu
               programa de prevención de riesgos.
             </Card.Description>
           </Card.Header>
         </Card>
-        <Card className="rounded-3xl" variant="default">
+        <Card className="h-full rounded-2xl border border-line bg-surface" variant="default">
           <Card.Header className="gap-2">
-            <Card.Title className="text-lg">General</Card.Title>
-            <Card.Description className="text-(--ink-muted) leading-relaxed">
+            <Card.Title className="font-display text-[1.4rem] text-foreground">General</Card.Title>
+            <Card.Description className="text-muted leading-relaxed">
               Servicios, industria y administración: panel estándar de tamizaje y reactivos para tu
               programa preventivo.
             </Card.Description>
           </Card.Header>
         </Card>
       </div>
-    </Section>
+    </SectionBand>
   );
 }
 
@@ -210,10 +247,12 @@ function LeadForm() {
 
   if (submitMutation.isSuccess) {
     return (
-      <Card className="rounded-3xl" variant="secondary">
+      <Card className="rounded-2xl border border-line bg-surface" variant="secondary">
         <Card.Header className="gap-2">
-          <Card.Title className="text-lg">¡Gracias! Te contactaremos</Card.Title>
-          <Card.Description className="text-(--ink-muted) leading-relaxed">
+          <Card.Title className="font-display text-[1.4rem] text-foreground">
+            ¡Gracias! Te contactaremos
+          </Card.Title>
+          <Card.Description className="text-muted leading-relaxed">
             Recibimos tu solicitud de salud ocupacional. Nuestro equipo se pondrá en contacto
             contigo a la brevedad para diseñar tu programa preventivo y resolver tus dudas.
           </Card.Description>
@@ -223,10 +262,12 @@ function LeadForm() {
   }
 
   return (
-    <Card className="rounded-3xl" variant="default">
+    <Card className="rounded-2xl border border-line bg-surface" variant="default">
       <Card.Header className="gap-2">
-        <Card.Title className="text-xl">Solicitar información</Card.Title>
-        <Card.Description className="text-(--ink-muted) leading-relaxed">
+        <Card.Title className="font-display text-[1.4rem] text-foreground">
+          Solicitar información
+        </Card.Title>
+        <Card.Description className="text-muted leading-relaxed">
           Cuéntanos sobre tu empresa y te enviaremos una propuesta de programa preventivo a la
           medida, sin compromiso.
         </Card.Description>
@@ -325,18 +366,35 @@ function LeadForm() {
 
 function SaludOcupacionalPage() {
   return (
-    <PageShell>
+    <PageShell contained={false}>
       <JsonLd
         data={breadcrumbJsonLd([
           { name: "Inicio", path: "/" },
           { name: "Salud ocupacional", path: "/salud-ocupacional" },
         ])}
       />
-      <PageHeader
+
+      <PageHero
         actions={
-          <Button onPress={() => scrollToForm()} variant="primary">
-            Solicitar información
-          </Button>
+          <>
+            <Button onPress={() => scrollToForm()} variant="primary">
+              Solicitar información
+            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Chip size="sm" variant="secondary">
+                Confirmación GC-MS
+              </Chip>
+              <Chip size="sm" variant="secondary">
+                Cadena de custodia
+              </Chip>
+              <Chip size="sm" variant="secondary">
+                Ley 21.719
+              </Chip>
+              <Chip size="sm" variant="secondary">
+                Reactivos incluidos
+              </Chip>
+            </div>
+          </>
         }
         crumbs={[{ label: "Inicio", href: "/" }, { label: "Salud ocupacional" }]}
         eyebrow="Salud ocupacional B2B"
@@ -348,38 +406,21 @@ function SaludOcupacionalPage() {
             y resguardo de los datos de tus trabajadores.
           </>
         }
+        photo="patchWide"
         title="Salud ocupacional para empresas"
       />
-      <div className="flex flex-wrap gap-2">
-        <Chip size="sm" variant="secondary">
-          Confirmación GC-MS
-        </Chip>
-        <Chip size="sm" variant="secondary">
-          Cadena de custodia
-        </Chip>
-        <Chip size="sm" variant="secondary">
-          Ley 21.719
-        </Chip>
-        <Chip size="sm" variant="secondary">
-          Reactivos incluidos
-        </Chip>
-      </div>
 
-      <Photo
-        className="h-[clamp(14rem,32vw,22rem)]"
-        name="patchWide"
-        rounded="rounded-3xl"
-        sizes="(min-width: 1024px) 1100px, 100vw"
-      />
+      <ComplianceSection tone="surface2" />
+      <SectorSection tone="surface" />
 
-      <ComplianceSection />
-      <SectorSection />
-
-      <Section title="Reactivos para tu programa">
-        <Card className="rounded-3xl" variant="secondary">
+      <SectionBand tone="bg">
+        <BandHeading title="Reactivos para tu programa" />
+        <Card className="rounded-2xl border border-line bg-surface" variant="secondary">
           <Card.Header className="gap-2">
-            <Card.Title className="text-lg">Insumos y reactivos de tamizaje</Card.Title>
-            <Card.Description className="text-(--ink-muted) leading-relaxed">
+            <Card.Title className="font-display text-[1.4rem] text-foreground">
+              Insumos y reactivos de tamizaje
+            </Card.Title>
+            <Card.Description className="text-muted leading-relaxed">
               Además del servicio de testeo, suministramos los reactivos e insumos para programas de
               control de drogas y alcohol, con respaldo regulatorio y trazabilidad.
             </Card.Description>
@@ -391,11 +432,11 @@ function SaludOcupacionalPage() {
             </Button>
           </Card.Content>
         </Card>
-      </Section>
+      </SectionBand>
 
-      <section className="grid gap-3 scroll-mt-24" id={LEAD_FORM_ID}>
+      <SectionBand className="scroll-mt-24" id={LEAD_FORM_ID} tone="surface2">
         <LeadForm />
-      </section>
+      </SectionBand>
     </PageShell>
   );
 }

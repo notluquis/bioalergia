@@ -4,31 +4,41 @@ import { createFileRoute } from "@tanstack/react-router";
 import { BookingCta } from "@/components/BookingCta";
 import { JsonLd } from "@/components/JsonLd";
 import { PageShell } from "@/components/PageShell";
-import { PageHeader } from "@/components/ui/PageHeader";
+import { Container } from "@/components/ui/Container";
+import { PageHero } from "@/components/ui/PageHero";
+import { SectionBand, type BandTone } from "@/components/ui/SectionBand";
 import { botiquinContent } from "@/data/botiquin";
 import { breadcrumbJsonLd } from "@/lib/seo";
 
+const BAND_TONES: BandTone[] = ["surface2", "surface", "bg"];
+
 function BotiquinPage() {
   return (
-    <PageShell>
+    <PageShell contained={false}>
       <JsonLd
         data={breadcrumbJsonLd([
           { name: "Inicio", path: "/" },
           { name: "Botiquín", path: "/botiquin" },
         ])}
       />
-      <PageHeader
+
+      <PageHero
         crumbs={[{ label: "Inicio", href: "/" }, { label: "Botiquín" }]}
         eyebrow="Guía práctica"
         lede={botiquinContent.intro}
+        photo="extractsCase"
         title="Botiquín del alérgico"
       />
 
-      {botiquinContent.groups.map((group) => (
-        <section className="grid gap-6" key={group.category}>
-          <div className="grid gap-3">
+      {botiquinContent.groups.map((group, index) => (
+        <SectionBand
+          borderTop={index === 0}
+          key={group.category}
+          tone={BAND_TONES[index % BAND_TONES.length]}
+        >
+          <div className="mb-9 grid gap-3">
             <div className="flex items-center gap-3">
-              <span className="rounded-full bg-brand-amber size-2.5" />
+              <span className="size-2.5 rounded-full bg-brand-amber" />
               <h2 className="font-display text-[1.75rem] text-foreground sm:text-[2rem]">
                 {group.category}
               </h2>
@@ -41,15 +51,21 @@ function BotiquinPage() {
 
           <div className="grid gap-6 md:grid-cols-2">
             {group.items.map((item) => (
-              <Card className="rounded-3xl" key={item.name} variant="default">
+              <Card
+                className="h-full rounded-2xl border border-line bg-surface"
+                key={item.name}
+                variant="default"
+              >
                 <Card.Header className="gap-3">
                   <div className="flex items-center justify-between gap-3">
-                    <Card.Title className="text-lg">{item.name}</Card.Title>
+                    <Card.Title className="font-display text-[1.4rem] text-foreground">
+                      {item.name}
+                    </Card.Title>
                     <Chip size="sm" variant="secondary">
                       {group.category}
                     </Chip>
                   </div>
-                  <Card.Description className="text-(--ink-muted) leading-relaxed">
+                  <Card.Description className="text-muted leading-relaxed">
                     {item.why}
                   </Card.Description>
                 </Card.Header>
@@ -70,25 +86,29 @@ function BotiquinPage() {
               </Card>
             ))}
           </div>
-        </section>
+        </SectionBand>
       ))}
 
-      <section className="grid gap-3">
-        <Card className="rounded-3xl" variant="secondary">
+      <SectionBand tone={BAND_TONES[botiquinContent.groups.length % BAND_TONES.length]}>
+        <Card className="rounded-2xl border border-line bg-surface" variant="default">
           <Card.Header className="gap-2">
-            <Card.Title className="text-lg">Una nota de seguridad</Card.Title>
-            <Card.Description className="text-(--ink-muted) leading-relaxed">
+            <Card.Title className="font-display text-[1.4rem] text-foreground">
+              Una nota de seguridad
+            </Card.Title>
+            <Card.Description className="text-muted leading-relaxed">
               {botiquinContent.safetyNote}
             </Card.Description>
           </Card.Header>
         </Card>
-      </section>
+      </SectionBand>
 
-      <BookingCta
-        title="¿Quieres armar tu botiquín a tu medida?"
-        description="En consulta definimos qué medidas de control ambiental, medicamentos y plan de emergencia se ajustan a tu diagnóstico y a tu día a día."
-        location="botiquin_page"
-      />
+      <Container className="pb-16">
+        <BookingCta
+          title="¿Quieres armar tu botiquín a tu medida?"
+          description="En consulta definimos qué medidas de control ambiental, medicamentos y plan de emergencia se ajustan a tu diagnóstico y a tu día a día."
+          location="botiquin_page"
+        />
+      </Container>
     </PageShell>
   );
 }

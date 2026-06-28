@@ -4,10 +4,11 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { JsonLd } from "@/components/JsonLd";
 import { PageShell } from "@/components/PageShell";
-import { PageHeader } from "@/components/ui/PageHeader";
+import { Eyebrow } from "@/components/ui/Eyebrow";
+import { PageHero } from "@/components/ui/PageHero";
+import { SectionBand } from "@/components/ui/SectionBand";
 import { publicClinicClient } from "@/lib/orpc-client";
 import { breadcrumbJsonLd } from "@/lib/seo";
-import { Section } from "@/sections/Section";
 
 const CLP = new Intl.NumberFormat("es-CL", {
   style: "currency",
@@ -43,9 +44,9 @@ function groupByCategory(items: PriceRow[]): [string, PriceRow[]][] {
 
 function PriceGroup({ category, rows }: { category: string; rows: PriceRow[] }) {
   return (
-    <Card className="rounded-3xl" variant="default">
+    <Card className="h-full rounded-2xl border border-line bg-surface" variant="default">
       <Card.Header className="gap-1">
-        <Card.Title className="text-lg">{category}</Card.Title>
+        <Card.Title className="font-display text-[1.4rem] text-foreground">{category}</Card.Title>
       </Card.Header>
       <Card.Content className="grid gap-4 pb-6">
         {rows.map((row) => (
@@ -78,70 +79,83 @@ function PreciosPage() {
   const updatedAt = query.data?.updatedAt ?? null;
 
   return (
-    <PageShell>
+    <PageShell contained={false}>
       <JsonLd
         data={breadcrumbJsonLd([
           { name: "Inicio", path: "/" },
           { name: "Precios", path: "/precios" },
         ])}
       />
-      <PageHeader
+      <PageHero
         crumbs={[{ label: "Inicio", href: "/" }, { label: "Precios" }]}
         eyebrow="Aranceles a la vista"
         lede="Aranceles particulares vigentes, expresados en pesos chilenos (CLP), por prestación e incluyendo los insumos del procedimiento. La atención es particular (sin convenio) y el paciente recibe boleta o factura. Esta lista se mantiene a la vista del público conforme al derecho de información de la Ley N° 20.584."
         title="Lista de precios"
       />
-      {updatedAt ? (
-        <p className="text-muted text-sm">
-          Valores vigentes al{" "}
-          {updatedAt.toLocaleDateString("es-CL", {
-            day: "numeric",
-            month: "long",
-            year: "numeric",
-          })}
-          .
-        </p>
-      ) : null}
 
-      {query.isPending ? (
-        <div className="flex items-center gap-3 text-muted text-sm">
-          <Spinner size="sm" />
-          Cargando lista de precios…
+      <SectionBand borderTop tone="surface2">
+        <Eyebrow className="mb-3">Prestaciones y valores</Eyebrow>
+        <h2 className="font-display text-[2rem] leading-[1.05] text-foreground sm:text-[2.5rem]">
+          Aranceles particulares vigentes.
+        </h2>
+        {updatedAt ? (
+          <p className="mt-3 text-muted text-sm">
+            Valores vigentes al{" "}
+            {updatedAt.toLocaleDateString("es-CL", {
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            })}
+            .
+          </p>
+        ) : null}
+
+        <div className="mt-9">
+          {query.isPending ? (
+            <div className="flex items-center gap-3 text-muted text-sm">
+              <Spinner size="sm" />
+              Cargando lista de precios…
+            </div>
+          ) : query.isError ? (
+            <Card className="rounded-2xl border border-line bg-surface" variant="secondary">
+              <Card.Content className="grid gap-2 py-6">
+                <span className="font-medium text-foreground">
+                  No pudimos cargar la lista de precios
+                </span>
+                <span className="text-muted text-sm leading-relaxed">
+                  Vuelve a intentarlo en unos minutos o escríbenos a contacto@bioalergia.cl para
+                  consultar los aranceles vigentes.
+                </span>
+              </Card.Content>
+            </Card>
+          ) : items.length === 0 ? (
+            <Card className="rounded-2xl border border-line bg-surface" variant="secondary">
+              <Card.Content className="grid gap-2 py-6">
+                <span className="font-medium text-foreground">
+                  Lista de precios en actualización
+                </span>
+                <span className="text-muted text-sm leading-relaxed">
+                  Estamos actualizando los aranceles. Escríbenos a contacto@bioalergia.cl o llámanos
+                  para conocer los valores vigentes.
+                </span>
+              </Card.Content>
+            </Card>
+          ) : (
+            <div className="grid gap-6 md:grid-cols-2">
+              {groups.map(([category, rows]) => (
+                <PriceGroup category={category} key={category} rows={rows} />
+              ))}
+            </div>
+          )}
         </div>
-      ) : query.isError ? (
-        <Card className="rounded-3xl" variant="secondary">
-          <Card.Content className="grid gap-2 py-6">
-            <span className="font-medium text-foreground">
-              No pudimos cargar la lista de precios
-            </span>
-            <span className="text-muted text-sm leading-relaxed">
-              Vuelve a intentarlo en unos minutos o escríbenos a contacto@bioalergia.cl para
-              consultar los aranceles vigentes.
-            </span>
-          </Card.Content>
-        </Card>
-      ) : items.length === 0 ? (
-        <Card className="rounded-3xl" variant="secondary">
-          <Card.Content className="grid gap-2 py-6">
-            <span className="font-medium text-foreground">Lista de precios en actualización</span>
-            <span className="text-muted text-sm leading-relaxed">
-              Estamos actualizando los aranceles. Escríbenos a contacto@bioalergia.cl o llámanos
-              para conocer los valores vigentes.
-            </span>
-          </Card.Content>
-        </Card>
-      ) : (
-        <Section title="Prestaciones y valores">
-          <div className="grid gap-6 md:grid-cols-2">
-            {groups.map(([category, rows]) => (
-              <PriceGroup category={category} key={category} rows={rows} />
-            ))}
-          </div>
-        </Section>
-      )}
+      </SectionBand>
 
-      <Section title="Notas">
-        <Card className="rounded-3xl" variant="secondary">
+      <SectionBand tone="surface">
+        <Eyebrow className="mb-3">Importante</Eyebrow>
+        <h2 className="mb-9 font-display text-[2rem] leading-[1.05] text-foreground sm:text-[2.5rem]">
+          Notas
+        </h2>
+        <Card className="rounded-2xl border border-line bg-surface-2" variant="secondary">
           <Card.Content className="grid gap-3 py-6">
             <Separator className="mb-1" />
             {NOTES.map((note) => (
@@ -152,7 +166,7 @@ function PreciosPage() {
             ))}
           </Card.Content>
         </Card>
-      </Section>
+      </SectionBand>
     </PageShell>
   );
 }

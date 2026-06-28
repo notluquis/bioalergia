@@ -4,65 +4,71 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { BookingCta } from "@/components/BookingCta";
 import { JsonLd } from "@/components/JsonLd";
 import { PageShell } from "@/components/PageShell";
-import { PageHeader } from "@/components/ui/PageHeader";
+import { Container } from "@/components/ui/Container";
+import { PageHero } from "@/components/ui/PageHero";
+import { SectionBand } from "@/components/ui/SectionBand";
 import { conditions } from "@/data/conditions";
 import { breadcrumbJsonLd } from "@/lib/seo";
 
 function CondicionesIndexPage() {
   return (
-    <PageShell>
+    <PageShell contained={false}>
       <JsonLd
         data={breadcrumbJsonLd([
           { name: "Inicio", path: "/" },
           { name: "Condiciones", path: "/condiciones" },
         ])}
       />
-      <PageHeader
+      <PageHero
         crumbs={[{ label: "Inicio", href: "/" }, { label: "Condiciones" }]}
         eyebrow="Condiciones"
         lede="Información clara y referencial sobre las condiciones alérgicas más frecuentes: qué son, cómo se diagnostican y cómo se tratan en Concepción. Cada guía incluye una autoevaluación rápida."
         title="Alergias e inmunología: guías por condición"
       />
 
-      <section className="grid gap-6 md:grid-cols-2">
-        {conditions.map((condition) => (
-          <Card
-            className="rounded-2xl border border-line bg-surface transition hover:border-brand-amber"
-            key={condition.slug}
-            variant="default"
-          >
-            <Card.Header className="gap-2">
-              <Card.Title className="font-display text-[1.5rem] leading-[1.15]">
+      <SectionBand borderTop tone="surface2">
+        <div className="grid gap-6 md:grid-cols-2">
+          {conditions.map((condition) => (
+            <Card
+              className="rounded-2xl border border-line bg-surface transition hover:border-brand-amber"
+              key={condition.slug}
+              variant="default"
+            >
+              <Card.Header className="gap-2">
+                <Card.Title className="font-display text-[1.5rem] leading-[1.15]">
+                  <Link
+                    className="text-foreground no-underline hover:text-brand-blue"
+                    params={{ slug: condition.slug }}
+                    to="/condiciones/$slug"
+                  >
+                    {condition.title}
+                  </Link>
+                </Card.Title>
+                <Card.Description className="text-muted leading-relaxed">
+                  {condition.heroIntro}
+                </Card.Description>
+              </Card.Header>
+              <Card.Content className="pb-6">
                 <Link
-                  className="text-foreground no-underline hover:text-brand-blue"
+                  className="font-semibold text-brand-blue text-sm no-underline hover:underline underline-offset-4"
                   params={{ slug: condition.slug }}
                   to="/condiciones/$slug"
                 >
-                  {condition.title}
+                  Leer la guía →
                 </Link>
-              </Card.Title>
-              <Card.Description className="text-muted leading-relaxed">
-                {condition.heroIntro}
-              </Card.Description>
-            </Card.Header>
-            <Card.Content className="pb-6">
-              <Link
-                className="font-semibold text-brand-blue text-sm no-underline hover:underline underline-offset-4"
-                params={{ slug: condition.slug }}
-                to="/condiciones/$slug"
-              >
-                Leer la guía →
-              </Link>
-            </Card.Content>
-          </Card>
-        ))}
-      </section>
+              </Card.Content>
+            </Card>
+          ))}
+        </div>
+      </SectionBand>
 
-      <BookingCta
-        title="¿Reconoces tus síntomas?"
-        description="Agenda una evaluación y, con el estudio adecuado, identifiquemos qué desencadena tus molestias y el tratamiento que mejor se adapta a ti."
-        location="condiciones_index"
-      />
+      <Container className="pb-16">
+        <BookingCta
+          title="¿Reconoces tus síntomas?"
+          description="Agenda una evaluación y, con el estudio adecuado, identifiquemos qué desencadena tus molestias y el tratamiento que mejor se adapta a ti."
+          location="condiciones_index"
+        />
+      </Container>
     </PageShell>
   );
 }

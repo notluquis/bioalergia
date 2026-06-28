@@ -1,11 +1,12 @@
-import { Card, Link } from "@heroui/react";
+import { Link } from "@heroui/react";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { JsonLd } from "@/components/JsonLd";
 import { PageShell } from "@/components/PageShell";
-import { PageHeader } from "@/components/ui/PageHeader";
+import { Eyebrow } from "@/components/ui/Eyebrow";
+import { PageHero } from "@/components/ui/PageHero";
+import { SectionBand } from "@/components/ui/SectionBand";
 import { breadcrumbJsonLd } from "@/lib/seo";
-import { Section } from "@/sections/Section";
 
 const DERECHOS = [
   "Recibir un trato digno y respetuoso, sin discriminación.",
@@ -31,64 +32,78 @@ const DEBERES = [
   "Conocer el procedimiento para presentar reclamos y sugerencias.",
 ];
 
-function ListCard({ title, items }: { title: string; items: string[] }) {
+function EditorialList({
+  eyebrow,
+  title,
+  items,
+}: {
+  eyebrow: string;
+  title: string;
+  items: string[];
+}) {
   return (
-    <Card className="rounded-3xl" variant="default">
-      <Card.Header className="gap-1">
-        <Card.Title className="font-display text-xl text-foreground">{title}</Card.Title>
-      </Card.Header>
-      <Card.Content className="grid gap-3 pb-6">
+    <div>
+      <Eyebrow className="mb-3">{eyebrow}</Eyebrow>
+      <h2 className="mb-6 font-display text-[1.5rem] leading-[1.1] text-foreground sm:text-[1.75rem]">
+        {title}
+      </h2>
+      <ul className="grid">
         {items.map((item) => (
-          <div className="flex items-start gap-3 text-sm leading-relaxed" key={item}>
-            <span className="mt-2 size-2 rounded-full bg-brand-amber" />
-            <span className="text-muted">{item}</span>
-          </div>
+          <li
+            className="flex items-start gap-3 border-line border-b py-4 text-[0.95rem] text-muted leading-relaxed last:border-b-0"
+            key={item}
+          >
+            <span className="mt-2 size-2 shrink-0 rounded-full bg-brand-amber" />
+            <span>{item}</span>
+          </li>
         ))}
-      </Card.Content>
-    </Card>
+      </ul>
+    </div>
   );
 }
 
 function DerechosDeberesPage() {
   return (
-    <PageShell>
+    <PageShell contained={false}>
       <JsonLd
         data={breadcrumbJsonLd([
           { name: "Inicio", path: "/" },
           { name: "Derechos y deberes", path: "/derechos-deberes" },
         ])}
       />
-      <PageHeader
+      <PageHero
         crumbs={[{ label: "Inicio", href: "/" }, { label: "Derechos y deberes" }]}
         eyebrow="Ley 20.584"
         lede="En Bioalergia respetamos los derechos y deberes de las personas en su atención de salud, establecidos en la Ley N° 20.584. Esta carta se mantiene visible para todos los pacientes y sus acompañantes."
         title="Carta de Derechos y Deberes del Paciente"
       />
 
-      <Section title="Derechos y deberes">
-        <div className="grid gap-6 lg:grid-cols-2">
-          <ListCard items={DERECHOS} title="Usted tiene derecho a" />
-          <ListCard items={DEBERES} title="Usted tiene el deber de" />
+      <SectionBand borderTop tone="surface2">
+        <div className="grid gap-12 lg:grid-cols-2 lg:gap-16">
+          <EditorialList eyebrow="Derechos" items={DERECHOS} title="Usted tiene derecho a" />
+          <EditorialList eyebrow="Deberes" items={DEBERES} title="Usted tiene el deber de" />
         </div>
-      </Section>
+      </SectionBand>
 
-      <Section title="Reclamos y sugerencias">
-        <Card className="rounded-3xl" variant="secondary">
-          <Card.Header className="gap-2">
-            <Card.Description className="max-w-[760px] text-muted leading-relaxed">
-              Si usted no está conforme con la atención, puede presentar un reclamo. El
-              establecimiento lo registrará y le responderá por escrito dentro de quince días
-              hábiles. Si la respuesta no le satisface, puede recurrir a la Superintendencia de
-              Salud (Intendencia de Prestadores). Solicite el formulario de reclamo en recepción o
-              utilice el{" "}
-              <Link className="text-brand-blue" href="/reclamos">
-                formulario en línea
-              </Link>
-              .
-            </Card.Description>
-          </Card.Header>
-        </Card>
-      </Section>
+      <SectionBand tone="surface">
+        <div className="mx-auto max-w-[760px]">
+          <Eyebrow className="mb-3">Reclamos y sugerencias</Eyebrow>
+          <h2 className="mb-6 font-display text-[1.875rem] leading-[1.1] text-foreground sm:text-[2.25rem]">
+            Si no está conforme con la atención
+          </h2>
+          <p className="border-line border-t pt-6 text-[1.0625rem] text-muted leading-[1.75]">
+            Si usted no está conforme con la atención, puede presentar un reclamo. El
+            establecimiento lo registrará y le responderá por escrito dentro de quince días hábiles.
+            Si la respuesta no le satisface, puede recurrir a la Superintendencia de Salud
+            (Intendencia de Prestadores). Solicite el formulario de reclamo en recepción o utilice
+            el{" "}
+            <Link className="text-brand-blue" href="/reclamos">
+              formulario en línea
+            </Link>
+            .
+          </p>
+        </div>
+      </SectionBand>
     </PageShell>
   );
 }

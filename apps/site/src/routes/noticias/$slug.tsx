@@ -1,5 +1,5 @@
 import type { BodyBlock } from "@finanzas/orpc-contracts/site-content";
-import { Breadcrumbs, Card, Chip, Separator } from "@heroui/react";
+import { Chip, Separator } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 
@@ -7,6 +7,9 @@ import { BookingCta } from "@/components/BookingCta";
 import { ContentLoading } from "@/components/ContentState";
 import { JsonLd } from "@/components/JsonLd";
 import { PageShell } from "@/components/PageShell";
+import { Container } from "@/components/ui/Container";
+import { PageHero } from "@/components/ui/PageHero";
+import { SectionBand } from "@/components/ui/SectionBand";
 import { contentQueries } from "@/features/content/queries";
 import { articleJsonLd, breadcrumbJsonLd } from "@/lib/seo";
 import { titleFromSlug } from "@/lib/slug";
@@ -59,32 +62,25 @@ function ArticleBody({ blocks }: { blocks: BodyBlock[] }) {
 
 function ArticleNotFound() {
   return (
-    <PageShell>
-      <section className="grid gap-4">
-        <Breadcrumbs>
-          <Breadcrumbs.Item href="/">Inicio</Breadcrumbs.Item>
-          <Breadcrumbs.Item href="/noticias">Noticias</Breadcrumbs.Item>
-        </Breadcrumbs>
-        <Card className="rounded-2xl border border-line bg-surface" variant="secondary">
-          <Card.Header className="gap-3">
-            <Card.Title className="font-display text-[1.5rem] text-foreground leading-[1.15]">
-              Artículo no encontrado
-            </Card.Title>
-            <Card.Description className="text-muted leading-relaxed">
-              No pudimos encontrar el artículo que buscas. Puede que el enlace haya cambiado o que
-              el contenido ya no esté disponible.
-            </Card.Description>
-          </Card.Header>
-          <Card.Content className="pb-6">
-            <Link
-              className="font-semibold text-brand-blue text-sm no-underline hover:underline underline-offset-4"
-              to="/noticias"
-            >
-              ← Volver a noticias
-            </Link>
-          </Card.Content>
-        </Card>
-      </section>
+    <PageShell contained={false}>
+      <PageHero
+        crumbs={[
+          { label: "Inicio", href: "/" },
+          { label: "Noticias", href: "/noticias" },
+          { label: "Artículo no encontrado" },
+        ]}
+        eyebrow="Noticias"
+        lede="No pudimos encontrar el artículo que buscas. Puede que el enlace haya cambiado o que el contenido ya no esté disponible."
+        title="Artículo no encontrado"
+      />
+      <SectionBand borderTop tone="surface">
+        <Link
+          className="font-semibold text-brand-blue text-sm no-underline hover:underline underline-offset-4"
+          to="/noticias"
+        >
+          ← Volver a noticias
+        </Link>
+      </SectionBand>
     </PageShell>
   );
 }
@@ -95,14 +91,18 @@ function ArticleDetailPage() {
 
   if (isLoading) {
     return (
-      <PageShell>
-        <section className="grid gap-6">
-          <Breadcrumbs>
-            <Breadcrumbs.Item href="/">Inicio</Breadcrumbs.Item>
-            <Breadcrumbs.Item href="/noticias">Noticias</Breadcrumbs.Item>
-          </Breadcrumbs>
+      <PageShell contained={false}>
+        <PageHero
+          crumbs={[
+            { label: "Inicio", href: "/" },
+            { label: "Noticias", href: "/noticias" },
+          ]}
+          eyebrow="Noticias"
+          title="Cargando artículo…"
+        />
+        <SectionBand borderTop tone="surface">
           <ContentLoading />
-        </section>
+        </SectionBand>
       </PageShell>
     );
   }
@@ -116,7 +116,7 @@ function ArticleDetailPage() {
   const formattedDate = new Date(publishedAt).toLocaleDateString("es-CL", DATE_FORMAT);
 
   return (
-    <PageShell>
+    <PageShell contained={false}>
       <JsonLd
         data={articleJsonLd({
           title: article.title,
@@ -132,17 +132,8 @@ function ArticleDetailPage() {
           { name: article.title, path: `/noticias/${article.slug}` },
         ])}
       />
-      <article className="grid gap-6">
-        <Breadcrumbs>
-          <Breadcrumbs.Item href="/">Inicio</Breadcrumbs.Item>
-          <Breadcrumbs.Item href="/noticias">Noticias</Breadcrumbs.Item>
-          <Breadcrumbs.Item>{article.title}</Breadcrumbs.Item>
-        </Breadcrumbs>
-
-        <header className="grid max-w-[720px] gap-4">
-          <h1 className="font-display text-[2.5rem] text-foreground leading-[1.04] sm:text-[3.25rem]">
-            {article.title}
-          </h1>
+      <PageHero
+        actions={
           <div className="flex flex-wrap items-center gap-3 text-muted text-sm">
             <time dateTime={isoDate}>{formattedDate}</time>
             <Separator className="h-4" orientation="vertical" />
@@ -152,27 +143,35 @@ function ArticleDetailPage() {
             <Separator className="h-4" orientation="vertical" />
             <span>{article.reading_minutes} min de lectura</span>
           </div>
-        </header>
-
-        <Separator />
-
-        <ArticleBody blocks={article.body} />
-
-        <Separator />
-
-        <Link
-          className="font-semibold text-brand-blue text-sm no-underline hover:underline underline-offset-4"
-          to="/noticias"
-        >
-          ← Volver a noticias
-        </Link>
-      </article>
-
-      <BookingCta
-        title="¿Tienes dudas sobre tu caso?"
-        description="Agenda una evaluación con nuestro equipo y define el estudio o tratamiento adecuado para ti."
-        location="noticias_article"
+        }
+        crumbs={[
+          { label: "Inicio", href: "/" },
+          { label: "Noticias", href: "/noticias" },
+          { label: article.title },
+        ]}
+        eyebrow="Noticias"
+        title={article.title}
       />
+
+      <SectionBand borderTop tone="surface">
+        <div className="mx-auto max-w-[760px]">
+          <ArticleBody blocks={article.body} />
+          <Link
+            className="mt-8 inline-block font-semibold text-brand-blue text-sm no-underline hover:underline underline-offset-4"
+            to="/noticias"
+          >
+            ← Volver a noticias
+          </Link>
+        </div>
+      </SectionBand>
+
+      <Container className="pb-16">
+        <BookingCta
+          title="¿Tienes dudas sobre tu caso?"
+          description="Agenda una evaluación con nuestro equipo y define el estudio o tratamiento adecuado para ti."
+          location="noticias_article"
+        />
+      </Container>
     </PageShell>
   );
 }
