@@ -1242,7 +1242,17 @@ export const waCloudORPCRouter = base.prefix("/api/orpc/wa-cloud").router(waRout
 export const waCloudORPCHandler = new SuperJSONRPCHandler(waCloudORPCRouter, {
   interceptors: [
     onError((error) => {
-      logError(error, { module: "api", operation: "orpc.wa-cloud" });
+      // Enrich so a validation reject is diagnosable: log the ORPCError code +
+      // the Zod issues (field + message), not just "Input validation failed".
+      const details: Record<string, unknown> = { module: "api", operation: "orpc.wa-cloud" };
+      if (error instanceof ORPCError) {
+        details.code = error.code;
+        details.status = error.status;
+        const data = error.data as { issues?: unknown } | undefined;
+        if (data?.issues) details.issues = JSON.stringify(data.issues);
+        if (error.cause instanceof Error) details.cause = error.cause.message;
+      }
+      logError(error, details);
     }),
   ],
 });
