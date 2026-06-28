@@ -396,6 +396,13 @@ function toJsonValue(value: unknown): Exclude<JsonValue, null> | undefined {
 // horario). Cualquier diferencia de hora dispara el upsert (updated) en cada sync
 // aunque el DÍA no cambie. Anclar a medianoche UTC → estable e idéntico entre
 // syncs. Ver [[project_datetime_architecture]].
+// Las ofertas son día-granular. Varios adapters producen publishedAt/lastmod
+// no-determinista por la HORA: airavirtual/computrabajo/hirefront usan `now - días`
+// (cambia cada fetch) y muevete/trabajando parsean datetime. Anclar a medianoche
+// UTC → estable entre syncs. Se bindea con `::timestamptz` (convención del repo
+// para escribir Date por $qb a columnas `timestamp`; sin el cast node-pg lo
+// serializa en TZ local y lo shiftea vs la lectura UTC). Ver
+// [[project_datetime_architecture]].
 function floorToUtcDay(d: Date | null): Date | null {
   if (!d) return null;
   const t = d.getTime();
@@ -475,7 +482,7 @@ async function upsertSourceJobs(
       return sql`(
         gen_random_uuid()::text, ${job.source}, ${job.company}, ${job.externalId},
         ${job.title}, ${job.url}, ${job.department}, ${job.location}, ${job.remote},
-        ${job.salary}, ${job.descriptionHtml}, ${floorToUtcDay(job.publishedAt)}, ${floorToUtcDay(job.lastmod)},
+        ${job.salary}, ${job.descriptionHtml}, ${floorToUtcDay(job.publishedAt)}::timestamptz, ${floorToUtcDay(job.lastmod)}::timestamptz,
         'OPEN'::personal."JobPostingStatus", ${matchesProfile(job, filter)}, false,
         'NEW'::personal."JobApplicationStatus", ${now}, ${now},
         ${raw === undefined ? null : JSON.stringify(raw)}::jsonb
