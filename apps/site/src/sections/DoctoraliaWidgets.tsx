@@ -81,7 +81,7 @@ export function DoctoraliaBookingWidget() {
       className="h-fit overflow-hidden rounded-2xl border border-border bg-surface shadow-[0_24px_70px_rgba(0,0,0,0.18)]"
       variant="tertiary"
     >
-      <Card.Header className="flex flex-col items-start justify-start gap-4 px-4 pt-4 pb-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-5 sm:pt-5 md:px-6 md:pt-6">
+      <Card.Header className="flex flex-col items-start justify-start gap-4 px-3 pt-4 pb-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-4 sm:pt-5 md:pt-6">
         <div className="min-w-0 flex-1 space-y-2">
           <div className="text-(--ink-muted) text-xs uppercase tracking-[0.28em]">
             Reserva online
@@ -97,17 +97,14 @@ export function DoctoraliaBookingWidget() {
           Reserva inmediata
         </Chip>
       </Card.Header>
-      <Card.Content className="space-y-4 px-4 pb-4 sm:px-5 sm:pb-5 md:px-6 md:pb-6">
-        <div className="mx-auto w-full max-w-full rounded-2xl border border-border bg-white p-2 shadow-[0_18px_45px_rgba(0,0,0,0.12)] sm:p-3 md:p-4">
-          {/* `min-h` reserva espacio durante la carga. En desktop se capa la
-              altura (`lg:max-h`) + scroll interno para que el widget no
-              sobrepase la columna de copy (evita el hueco/void del hero); el
-              usuario hace scroll dentro para más horas. Skeleton mientras
-              `!loaded`. */}
-          <div
-            className="relative min-h-[25rem] lg:max-h-[30rem] lg:overflow-y-auto"
-            aria-busy={!loaded}
-          >
+      <Card.Content className="space-y-4 px-2 pb-3 sm:px-3 sm:pb-3 md:px-3">
+        <div className="mx-auto w-full max-w-full rounded-2xl border border-border bg-white p-1.5 shadow-[0_18px_45px_rgba(0,0,0,0.12)] sm:p-2">
+          {/* `min-h` reserva espacio durante la carga. SIN cap de altura: el
+              widget se muestra completo (la gente no descubre el scroll
+              interno). La columna de copy izquierda fluye natural y queda más
+              corta — sin hueco/void, sólo asimetría content-driven. Skeleton
+              mientras `!loaded`. */}
+          <div className="relative min-h-[25rem]" aria-busy={!loaded}>
             {!loaded ? (
               <div
                 aria-hidden="true"
