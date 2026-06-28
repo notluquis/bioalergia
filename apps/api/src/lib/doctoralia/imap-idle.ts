@@ -38,7 +38,8 @@ export interface ImapListenerDependencies {
       phoneNumberId: number;
       templateName: string;
       language: string;
-      bodyParams: string[];
+      bodyParams?: string[];
+      bodyNamedParams?: Array<{ name: string; text: string }>;
     },
     sentByUserId: null
   ) => Promise<unknown>;
@@ -191,6 +192,13 @@ export async function sendAbonoRequestWhatsapp(
   const firstName = token.patientName.split(" ")[0] ?? token.patientName;
   const dayStr = formatChile(token.appointmentDate, "dddd D de MMMM");
   const link = `${paymentSettings.publicBaseUrl}/abono/${token.id}`;
+  // Prices stated in the message (DB-authoritative, not hardcoded in Meta).
+  // Previsión is unknown at send time → list both tiers; the page lets the
+  // patient pick. Named params (Meta named-parameter template) — order-free.
+  const clp = (n: number) =>
+    new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP" }).format(n);
+  const particularFull = paymentSettings.particularFullAmountClp;
+  const fonasaFull = paymentSettings.fonasaFullAmountClp;
   const { conversationId } = await deps.ensureContactAndConversation(
     token.patientPhone,
     token.patientName,
@@ -203,7 +211,15 @@ export async function sendAbonoRequestWhatsapp(
       phoneNumberId: waPhone.id,
       templateName: waConfig.templateName,
       language: waConfig.language,
-      bodyParams: [firstName, dayStr, link],
+      bodyNamedParams: [
+        { name: "nombre", text: firstName },
+        { name: "dia", text: dayStr },
+        { name: "particular_total", text: clp(particularFull) },
+        { name: "particular_mitad", text: clp(Math.round(particularFull / 2)) },
+        { name: "fonasa_total", text: clp(fonasaFull) },
+        { name: "fonasa_mitad", text: clp(Math.round(fonasaFull / 2)) },
+        { name: "link", text: link },
+      ],
     },
     null
   );
@@ -400,6 +416,10 @@ async function connect(config: ImapConfig, deps: ImapListenerDependencies): Prom
     auth: { pass: config.pass, user: config.user },
     host: config.host,
     logger: false,
+    // Heartbeat: break+restart IDLE every 5 min so a half-open socket is
+    // detected (next command throws → reconnect) instead of hanging silently,
+    // and processUnseen runs at least every 5 min as a backstop.
+    maxIdleTime: 5 * 60_000,
     port: config.port,
     secure: config.secure,
   });
@@ -416,6 +436,9 @@ async function connect(config: ImapConfig, deps: ImapListenerDependencies): Prom
 
     const lock = await client.getMailboxLock(config.mailbox);
     try {
+      // Drain mail that arrived while the listener was down — IDLE only fires
+      // on NEW changes, so backlog would otherwise wait for an unrelated event.
+      await processUnseen(client, config, deps);
       while (!stopped) {
         await client.idle();
         await processUnseen(client, config, deps);

@@ -93,6 +93,14 @@ export async function startQueueRunner(): Promise<void> {
       identifier: "pollen_sync",
       options: { backfillPeriod: 0 },
     },
+    {
+      // Retry abono WhatsApp sends that failed transiently (request +
+      // confirmation). Bounded scans → no-op when nothing is pending.
+      task: "abono_wa_retry",
+      match: "*/10 * * * *",
+      identifier: "abono_wa_retry",
+      options: { backfillPeriod: 0 },
+    },
   ];
 
   // Breach / anomaly detection over audit_logs (ANCI 3h alert chain). Schedule

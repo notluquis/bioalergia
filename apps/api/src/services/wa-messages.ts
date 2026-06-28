@@ -74,7 +74,12 @@ const WINDOW_HOURS = 24;
 
 type SendMessageResponse = z.infer<typeof sendMessageResponseSchema>;
 type SendTextPayload = z.infer<typeof sendTextInputSchema>;
-type SendTemplatePayload = z.infer<typeof sendTemplateInputSchema>;
+// Internal extension: named body params (Meta named-parameter templates).
+// Not in the shared contract — only abono sends use it; the oRPC handler keeps
+// passing positional bodyParams (a valid subtype, the field is optional).
+type SendTemplatePayload = z.infer<typeof sendTemplateInputSchema> & {
+  bodyNamedParams?: Array<{ name: string; text: string }>;
+};
 type SendReactionPayload = z.infer<typeof sendReactionInputSchema>;
 type SendMediaPayload = z.infer<typeof sendMediaInputSchema> & {
   recordAdHocSticker?: boolean;
@@ -179,7 +184,16 @@ export async function sendTemplate(
       parameters: payload.headerParams.map((t) => ({ type: "text", text: t })),
     });
   }
-  if (payload.bodyParams?.length) {
+  if (payload.bodyNamedParams?.length) {
+    components.push({
+      type: "body",
+      parameters: payload.bodyNamedParams.map((p) => ({
+        type: "text",
+        parameter_name: p.name,
+        text: p.text,
+      })),
+    });
+  } else if (payload.bodyParams?.length) {
     components.push({
       type: "body",
       parameters: payload.bodyParams.map((t) => ({ type: "text", text: t })),

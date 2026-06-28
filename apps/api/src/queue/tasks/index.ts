@@ -8,6 +8,7 @@
 // Both enqueued by their oRPC handlers via enqueueJob() (mirrors outreach).
 
 import type { TaskList } from "graphile-worker";
+import { abono_wa_retry } from "./abono-wa-retry.ts";
 import { adherence_reminder_send } from "./adherence-reminder-send.ts";
 import { audit_anomaly } from "./audit-anomaly.ts";
 import { audit_chain_verify } from "./audit-chain-verify.ts";
@@ -42,4 +43,5 @@ export const taskList: TaskList = {
   social_publish,
   social_publish_tick,
   adherence_reminder_send,
+  abono_wa_retry,
 };

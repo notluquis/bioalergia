@@ -14,13 +14,9 @@ import { emitDte } from "../modules/haulmer/emit-dte.ts";
 import { refetchPayment } from "../modules/mercadopago-checkout/payment.ts";
 import { pushStockToMl } from "../modules/mercadolibre/sync.ts";
 import { consumeReservations, releaseReservations } from "../modules/reservations/index.ts";
-import { sendTemplateMessage } from "../modules/wa-cloud/graph-client.ts";
-import {
-  findAbonoWhatsappPhone,
-  loadAbonoWhatsappConfig,
-} from "../lib/doctoralia/abono-whatsapp-settings.ts";
+import { sendAbonoConfirmation } from "../services/abono-confirmation.ts";
 import { appendAbonoFlowHistory } from "../lib/doctoralia/abono-flow-history.ts";
-import { logError, logEvent } from "../lib/logger.ts";
+import { logError } from "../lib/logger.ts";
 import { attachDteToOrder, markOrderPaid } from "../services/orders.ts";
 export function registerMercadopagoCheckoutWebhook(app: Hono) {
   app.post("/api/mercadopago/webhook", async (c) => {
@@ -133,10 +129,8 @@ export function registerMercadopagoCheckoutWebhook(app: Hono) {
           (status === "rejected" || status === "cancelled") &&
           token.status === "PENDING"
         ) {
-          await db.appointmentPaymentToken.update({
-            where: { id: token.id },
-            data: { status: "REJECTED" },
-          });
+          // ponytail: a decline is NOT terminal — keep token PENDING so the
+          // patient can retry with another method. Only log the attempt.
           await appendAbonoFlowHistory(token.id, "mp_payment_rejected", { status });
         }
 
@@ -245,75 +239,5 @@ export function registerMercadopagoCheckoutWebhook(app: Hono) {
       console.error("[mp-webhook] error", e);
       return c.json({ error: msg }, 500);
     }
-  });
-}
-
-async function sendAbonoConfirmation(tokenId: string) {
-  const token = await db.appointmentPaymentToken.findUnique({ where: { id: tokenId } });
-  if (!token) return;
-  if (!token.patientPhone) {
-    await appendAbonoFlowHistory(token.id, "wa_confirmation_invalid_token", {
-      field: "patientPhone",
-    });
-    return;
-  }
-  if (token.waConfirmSentAt) return;
-
-  const waConfig = await loadAbonoWhatsappConfig("confirmation");
-  if (!waConfig.enabled) {
-    logEvent("mp-webhook.abono_wa_confirm_skipped", {
-      reason: "disabled_by_setting",
-      tokenId,
-    });
-    await appendAbonoFlowHistory(token.id, "wa_confirmation_disabled");
-    return;
-  }
-  if (!waConfig.templateName) {
-    throw new Error("Setting doctoralia.abono.whatsapp.confirmationTemplatePrefix requerido");
-  }
-  if (!waConfig.language) {
-    throw new Error("Setting doctoralia.abono.whatsapp.confirmationTemplateLanguage requerido");
-  }
-  if (!waConfig.phoneNumberId) {
-    throw new Error("Setting doctoralia.abono.whatsapp.phoneNumberId requerido");
-  }
-
-  const waPhone = await findAbonoWhatsappPhone(waConfig);
-  if (!waPhone) {
-    throw new Error(
-      `No active WA phone for abono confirmation (configured=${waConfig.phoneNumberId ?? "none"})`
-    );
-  }
-
-  const firstName = token.patientName.split(" ")[0] ?? token.patientName;
-
-  let pct = "50";
-  if (token.paidAmountClp && token.paidAmountClp >= token.fullAmountClp) {
-    pct = "100";
-  }
-
-  const tipo = token.isFonasa ? "fonasa" : "particular";
-  const templateName = `${waConfig.templateName}_${tipo}_${pct}`;
-
-  await sendTemplateMessage({
-    phoneNumberId: Number(waPhone.id),
-    toE164: token.patientPhone,
-    templateName,
-    language: waConfig.language,
-    components: [
-      {
-        type: "body",
-        parameters: [{ type: "text", text: firstName }],
-      },
-    ],
-  });
-
-  await db.appointmentPaymentToken.update({
-    where: { id: token.id },
-    data: { waConfirmSentAt: new Date() },
-  });
-  await appendAbonoFlowHistory(token.id, "wa_confirmation_sent", {
-    phoneNumberId: waPhone.id,
-    templateName,
   });
 }

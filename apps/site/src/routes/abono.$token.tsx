@@ -1,6 +1,6 @@
 import { Alert, Button, Card } from "@heroui/react";
-import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { ShopShell } from "@/components/ShopShell";
 import { Eyebrow } from "@/components/ui/Eyebrow";
 
@@ -47,7 +47,20 @@ export const Route = createFileRoute("/abono/$token")({
 function AbonoPage() {
   const data = Route.useLoaderData();
   const search = Route.useSearch() as { status?: string };
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+
+  // Returning from MP checkout, payment not yet registered → re-run the loader
+  // every 4s until the webhook flips the token to APPROVED. Stops after ~2 min.
+  useEffect(() => {
+    if (search.status !== "approved" || data.status === "APPROVED") return;
+    let polls = 0;
+    const id = setInterval(() => {
+      if (++polls > 30) return clearInterval(id);
+      void router.invalidate();
+    }, 4000);
+    return () => clearInterval(id);
+  }, [search.status, data.status, router]);
 
   // State for user selection
   const [insuranceType, setInsuranceType] = useState<"fonasa" | "particular">(

@@ -198,7 +198,7 @@ function AbonoAutomationCard({ accounts }: { accounts: AccountsData }) {
           placeholder="es_CL"
         />
         <TextInput
-          label="Prefijo template confirmación"
+          label="Template confirmación"
           value={data.confirmationTemplatePrefix}
           onValueChange={(value) => set("confirmationTemplatePrefix", value)}
         />
