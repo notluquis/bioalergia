@@ -11,9 +11,10 @@ export type Crumb = { label: string; href?: string };
 
 /**
  * Full-width editorial page hero — the content-page counterpart of the home
- * hero. Eyebrow + Instrument Serif H1 + lede on the left, an optional clinic
- * photo on the right, the molecular motif behind. Pages render it as their
- * first band (PageShell `contained={false}`).
+ * hero. Eyebrow + Instrument Serif H1 + lede on the left; the right column holds
+ * a clinic photo when given, otherwise a resolved molecular graphic so every
+ * hero reads balanced. Pages render it as their first band (PageShell
+ * `contained={false}`).
  */
 export function PageHero({
   eyebrow,
@@ -32,8 +33,10 @@ export function PageHero({
 }) {
   return (
     <section className="relative overflow-hidden bg-background">
-      <MoleculeMotif className="pointer-events-none absolute top-[-40px] right-[-30px] size-[420px] text-[#c9d8ea] opacity-30" />
-      <Container className="relative grid items-center gap-10 py-14 lg:gap-14 lg:py-[4.5rem] [&:has(.page-hero-photo)]:lg:grid-cols-[1.05fr_0.95fr]">
+      {photo ? (
+        <MoleculeMotif className="pointer-events-none absolute top-[-40px] right-[-30px] size-[420px] text-[#c9d8ea] opacity-30" />
+      ) : null}
+      <Container className="relative grid items-center gap-10 py-14 lg:grid-cols-[1.05fr_0.95fr] lg:gap-14 lg:py-[4.5rem]">
         <div>
           {crumbs && crumbs.length > 0 ? (
             <Breadcrumbs className="mb-5">
@@ -60,7 +63,13 @@ export function PageHero({
             name={photo}
             sizes="(min-width: 1024px) 540px, 100vw"
           />
-        ) : null}
+        ) : (
+          // No photo → a resolved molecular graphic owns the right column so the
+          // hero reads intentional, not a half-empty band with floating dots.
+          <div aria-hidden="true" className="hidden justify-center lg:flex">
+            <MoleculeMotif className="size-[360px] text-[#c9d8ea] opacity-60 dark:opacity-40" />
+          </div>
+        )}
       </Container>
     </section>
   );
