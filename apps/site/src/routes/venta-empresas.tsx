@@ -315,7 +315,7 @@ function LeadForm({ vitrinaItems }: { vitrinaItems: ReactivoVitrinaItemDto[] }) 
   return (
     <Card className="rounded-2xl border border-line bg-surface-2" variant="default">
       <Card.Header className="gap-2">
-        <Card.Title className="font-display text-[1.5rem] text-foreground">
+        <Card.Title className="font-display text-[1.4rem] text-foreground">
           Quiero cotizar
         </Card.Title>
         <Card.Description className="text-muted leading-relaxed">
@@ -486,7 +486,7 @@ function VentaEmpresasPage() {
                   <div className="grid gap-3">
                     <div className="flex items-center gap-3">
                       <span className="size-2.5 rounded-full bg-brand-amber" />
-                      <h3 className="font-display text-[1.5rem] text-foreground">{category}</h3>
+                      <h3 className="font-display text-[1.4rem] text-foreground">{category}</h3>
                       <Chip size="sm" variant="soft">
                         {groupItemsList.length}
                       </Chip>

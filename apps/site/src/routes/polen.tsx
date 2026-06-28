@@ -101,7 +101,7 @@ function PollenLiveWidget() {
   return (
     <div className="grid gap-6">
       <div className="grid gap-2">
-        <h2 className="font-display text-[1.75rem] text-foreground leading-[1.1] sm:text-[2.25rem]">
+        <h2 className="font-display text-[1.75rem] leading-[1.1] text-foreground sm:text-[2rem]">
           Pronóstico de gramíneas — Concepción
         </h2>
         <p className="max-w-3xl text-muted text-sm leading-relaxed">
@@ -234,7 +234,7 @@ function PollenLiveWidget() {
           {liveToday && liveToday.healthRecommendations.length > 0 ? (
             <Card className="rounded-2xl border border-line bg-surface" variant="secondary">
               <Card.Header className="gap-1">
-                <Card.Title className="font-display text-[1.25rem] text-foreground leading-[1.2]">
+                <Card.Title className="font-display text-[1.2rem] text-foreground">
                   Recomendaciones para hoy
                 </Card.Title>
               </Card.Header>
@@ -252,7 +252,7 @@ function PollenLiveWidget() {
           {/* Qué representa el índice de gramíneas */}
           <Card className="rounded-2xl border border-line bg-surface" variant="secondary">
             <Card.Header className="gap-1">
-              <Card.Title className="font-display text-[1.25rem] text-foreground leading-[1.2]">
+              <Card.Title className="font-display text-[1.2rem] text-foreground">
                 ¿Qué gramíneas mide este índice?
               </Card.Title>
             </Card.Header>
@@ -321,7 +321,7 @@ function PolenPage() {
 
       <SectionBand tone="surface">
         <div className="mb-6 grid gap-2">
-          <h2 className="font-display text-[1.75rem] text-foreground leading-[1.1] sm:text-[2.25rem]">
+          <h2 className="font-display text-[1.75rem] leading-[1.1] text-foreground sm:text-[2rem]">
             Escala del índice (UPI 0–5)
           </h2>
           <p className="max-w-3xl text-muted text-sm leading-relaxed">
@@ -356,7 +356,7 @@ function PolenPage() {
 
       <SectionBand tone="bg">
         <div className="mb-6 grid gap-2">
-          <h2 className="font-display text-[1.75rem] text-foreground leading-[1.1] sm:text-[2.25rem]">
+          <h2 className="font-display text-[1.75rem] leading-[1.1] text-foreground sm:text-[2rem]">
             Calendario polínico (referencial)
           </h2>
           <p className="max-w-3xl text-muted text-sm leading-relaxed">
@@ -374,7 +374,7 @@ function PolenPage() {
             >
               <Card.Header className="gap-3">
                 <div className="flex items-center justify-between gap-3">
-                  <Card.Title className="font-display text-[1.25rem] text-foreground leading-[1.2]">
+                  <Card.Title className="font-display text-[1.2rem] text-foreground">
                     {entry.season}
                   </Card.Title>
                   <Chip color={LEVEL_COLOR[entry.level]} size="sm" variant="soft">
@@ -394,7 +394,7 @@ function PolenPage() {
       </SectionBand>
 
       <SectionBand tone="surface2">
-        <h2 className="mb-6 font-display text-[1.75rem] text-foreground leading-[1.1] sm:text-[2.25rem]">
+        <h2 className="mb-6 font-display text-[1.75rem] leading-[1.1] text-foreground sm:text-[2rem]">
           Tipos de polen
         </h2>
         <div className="grid gap-6 md:grid-cols-3">
@@ -406,7 +406,7 @@ function PolenPage() {
             >
               <Card.Header className="gap-3">
                 <div className="flex items-center justify-between gap-3">
-                  <Card.Title className="font-display text-[1.25rem] text-foreground leading-[1.2]">
+                  <Card.Title className="font-display text-[1.2rem] text-foreground">
                     {type.name}
                   </Card.Title>
                   <Chip size="sm" variant="secondary">
@@ -426,7 +426,7 @@ function PolenPage() {
       </SectionBand>
 
       <SectionBand tone="surface">
-        <h2 className="mb-6 font-display text-[1.75rem] text-foreground leading-[1.1] sm:text-[2.25rem]">
+        <h2 className="mb-6 font-display text-[1.75rem] leading-[1.1] text-foreground sm:text-[2rem]">
           Cómo reducir la exposición
         </h2>
         <Card className="rounded-2xl border border-line bg-surface" variant="default">
@@ -443,7 +443,7 @@ function PolenPage() {
 
       <SectionBand tone="bg" innerClassName="grid gap-6 lg:grid-cols-2">
         <div className="grid gap-4">
-          <h2 className="font-display text-[1.75rem] text-foreground leading-[1.1] sm:text-[2.25rem]">
+          <h2 className="font-display text-[1.75rem] leading-[1.1] text-foreground sm:text-[2rem]">
             Cómo se miden
           </h2>
           <Card className="rounded-2xl border border-line bg-surface" variant="default">
@@ -458,7 +458,7 @@ function PolenPage() {
           </Card>
         </div>
         <div className="grid gap-4">
-          <h2 className="font-display text-[1.75rem] text-foreground leading-[1.1] sm:text-[2.25rem]">
+          <h2 className="font-display text-[1.75rem] leading-[1.1] text-foreground sm:text-[2rem]">
             Estaciones de monitoreo en Chile
           </h2>
           <Card className="rounded-2xl border border-line bg-surface" variant="default">
@@ -482,7 +482,7 @@ function PolenPage() {
         <Card className="rounded-2xl border border-line bg-surface" variant="secondary">
           <Card.Header className="gap-3">
             <div className="flex items-center justify-between gap-3">
-              <Card.Title className="font-display text-[1.5rem] text-foreground leading-[1.15]">
+              <Card.Title className="font-display text-[1.4rem] text-foreground">
                 Consulta los niveles de polen en tiempo real
               </Card.Title>
               <Chip size="sm" variant="tertiary">

@@ -74,7 +74,7 @@ function ServiciosPage() {
         <div className="grid items-start gap-10 lg:grid-cols-[0.8fr_1.2fr]">
           <div>
             <Eyebrow className="mb-3">Atención</Eyebrow>
-            <h2 className="font-display text-[1.875rem] leading-[1.1] text-foreground sm:text-[2.25rem]">
+            <h2 className="font-display text-[1.75rem] leading-[1.1] text-foreground sm:text-[2rem]">
               Horario y cómo atendemos.
             </h2>
           </div>

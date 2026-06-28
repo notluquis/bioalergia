@@ -78,7 +78,7 @@ export function DoctoraliaBookingWidget() {
 
   return (
     <Card
-      className="h-fit overflow-hidden rounded-3xl border border-border bg-surface shadow-[0_24px_70px_rgba(0,0,0,0.18)]"
+      className="h-fit overflow-hidden rounded-2xl border border-border bg-surface shadow-[0_24px_70px_rgba(0,0,0,0.18)]"
       variant="tertiary"
     >
       <Card.Header className="flex flex-col items-start justify-start gap-4 px-4 pt-4 pb-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-5 sm:pt-5 md:px-6 md:pt-6">
@@ -99,11 +99,15 @@ export function DoctoraliaBookingWidget() {
       </Card.Header>
       <Card.Content className="space-y-4 px-4 pb-4 sm:px-5 sm:pb-5 md:px-6 md:pb-6">
         <div className="mx-auto w-full max-w-full rounded-2xl border border-border bg-white p-2 shadow-[0_18px_45px_rgba(0,0,0,0.12)] sm:p-3 md:p-4">
-          {/* `min-h` reserva espacio durante la carga; el iframe de Doctoralia
-              crece a su alto natural (full). El hueco de la columna izquierda se
-              llena con el widget de polen, no capando este. Skeleton mientras
+          {/* `min-h` reserva espacio durante la carga. En desktop se capa la
+              altura (`lg:max-h`) + scroll interno para que el widget no
+              sobrepase la columna de copy (evita el hueco/void del hero); el
+              usuario hace scroll dentro para más horas. Skeleton mientras
               `!loaded`. */}
-          <div className="relative min-h-[25rem]" aria-busy={!loaded}>
+          <div
+            className="relative min-h-[25rem] lg:max-h-[30rem] lg:overflow-y-auto"
+            aria-busy={!loaded}
+          >
             {!loaded ? (
               <div
                 aria-hidden="true"

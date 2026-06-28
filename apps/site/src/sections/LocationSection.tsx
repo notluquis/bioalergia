@@ -24,7 +24,7 @@ export function LocationSection() {
       <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-14">
         <div>
           <Eyebrow className="mb-5">Visítanos</Eyebrow>
-          <h2 className="mb-[30px] font-display text-[2.125rem] leading-[1.05] text-foreground sm:text-[2.625rem]">
+          <h2 className="mb-[30px] font-display text-[2rem] leading-[1.05] text-foreground sm:text-[2.5rem]">
             En el corazón de Concepción.
           </h2>
           {rows.map((row, i) => (

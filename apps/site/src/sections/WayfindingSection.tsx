@@ -62,7 +62,7 @@ export function WayfindingSection({ onBook }: { onBook: () => void }) {
           >
             <Card.Header className="block p-0">
               <Eyebrow className="mb-[14px] text-[0.69rem]">{route.eyebrow}</Eyebrow>
-              <Card.Title className="mb-2 font-display text-[1.625rem] text-foreground">
+              <Card.Title className="mb-2 font-display text-[1.4rem] text-foreground">
                 {route.title}
               </Card.Title>
               <Card.Description className="text-[0.9rem] leading-[1.5] text-muted">

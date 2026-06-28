@@ -98,7 +98,7 @@ function DataRightsForm() {
 
   if (submitMutation.isSuccess) {
     return (
-      <Card className="rounded-3xl" variant="secondary">
+      <Card className="rounded-2xl" variant="secondary">
         <Card.Header className="gap-2">
           <Card.Title className="font-display text-2xl text-foreground">
             Recibimos tu solicitud
@@ -114,7 +114,7 @@ function DataRightsForm() {
   }
 
   return (
-    <Card className="rounded-3xl" variant="default">
+    <Card className="rounded-2xl" variant="default">
       <Card.Header className="gap-2">
         <Card.Title className="font-display text-2xl text-foreground">
           Solicitud de ejercicio de derechos
@@ -229,7 +229,7 @@ function DerechosPage() {
 
       <SectionBand borderTop tone="surface2">
         <Eyebrow className="mb-3">Tus derechos</Eyebrow>
-        <h2 className="mb-9 max-w-2xl font-display text-[1.875rem] leading-[1.1] text-foreground sm:text-[2.25rem]">
+        <h2 className="mb-9 max-w-2xl font-display text-[1.75rem] leading-[1.1] text-foreground sm:text-[2rem]">
           Qué derechos puede ejercer
         </h2>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -255,7 +255,7 @@ function DerechosPage() {
       <SectionBand tone="bg">
         <div className="mx-auto max-w-[760px]">
           <Eyebrow className="mb-3">Antes de solicitar</Eyebrow>
-          <h2 className="mb-6 font-display text-[1.875rem] leading-[1.1] text-foreground sm:text-[2.25rem]">
+          <h2 className="mb-6 font-display text-[1.75rem] leading-[1.1] text-foreground sm:text-[2rem]">
             Plazos y condiciones
           </h2>
           <ul className="grid">

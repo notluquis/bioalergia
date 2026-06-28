@@ -83,7 +83,7 @@ function ConditionDetail({ condition }: { condition: Condition }) {
         <div className="mx-auto grid max-w-[760px] gap-8">
           {condition.sections.map((section) => (
             <section className="grid gap-3" key={section.heading}>
-              <h2 className="font-display text-[1.6rem] text-foreground leading-[1.15] sm:text-[1.9rem]">
+              <h2 className="font-display text-[1.75rem] leading-[1.1] text-foreground sm:text-[2rem]">
                 {section.heading}
               </h2>
               <p className="text-base text-muted leading-relaxed">{section.body}</p>
@@ -103,7 +103,7 @@ function ConditionDetail({ condition }: { condition: Condition }) {
           {condition.relatedExams.length > 0 ? (
             <Card className="rounded-2xl border border-line bg-surface-2" variant="secondary">
               <Card.Header className="gap-2">
-                <Card.Title className="font-display text-[1.35rem] text-foreground leading-[1.15]">
+                <Card.Title className="font-display text-[1.4rem] text-foreground">
                   Exámenes relacionados
                 </Card.Title>
               </Card.Header>
@@ -126,7 +126,7 @@ function ConditionDetail({ condition }: { condition: Condition }) {
       </SectionBand>
 
       <SectionBand borderTop tone="surface2">
-        <h2 className="font-display text-[1.75rem] text-foreground leading-[1.1] sm:text-[2.25rem]">
+        <h2 className="font-display text-[1.75rem] leading-[1.1] text-foreground sm:text-[2rem]">
           Preguntas frecuentes
         </h2>
         <div className="mt-6 grid gap-4">
@@ -137,7 +137,7 @@ function ConditionDetail({ condition }: { condition: Condition }) {
               variant="default"
             >
               <Card.Header className="gap-2">
-                <Card.Title className="font-display text-[1.3rem] text-foreground leading-[1.2]">
+                <Card.Title className="font-display text-[1.4rem] text-foreground">
                   {item.question}
                 </Card.Title>
                 <Card.Description className="text-muted leading-relaxed">
@@ -150,7 +150,7 @@ function ConditionDetail({ condition }: { condition: Condition }) {
       </SectionBand>
 
       <SectionBand tone="bg">
-        <h2 className="font-display text-[1.75rem] text-foreground leading-[1.1] sm:text-[2.25rem]">
+        <h2 className="font-display text-[1.75rem] leading-[1.1] text-foreground sm:text-[2rem]">
           Autoevaluación rápida
         </h2>
         <div className="mt-6">

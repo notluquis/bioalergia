@@ -60,7 +60,7 @@ function ContactForm() {
 
   if (submitMutation.isSuccess) {
     return (
-      <Card className="rounded-3xl" variant="secondary">
+      <Card className="rounded-2xl" variant="secondary">
         <Card.Header className="gap-2">
           <Card.Title className="font-display text-2xl text-foreground">
             ¡Gracias por escribirnos!
@@ -75,7 +75,7 @@ function ContactForm() {
   }
 
   return (
-    <Card className="rounded-3xl" variant="default">
+    <Card className="rounded-2xl" variant="default">
       <Card.Header className="gap-2">
         <Card.Title className="font-display text-2xl text-foreground">Escríbenos</Card.Title>
         <Card.Description className="text-muted leading-relaxed">
@@ -191,7 +191,7 @@ function ContactoPage() {
         <div className="grid items-start gap-10 lg:grid-cols-[0.9fr_1.1fr]">
           <div>
             <Eyebrow className="mb-3">Cómo ubicarnos</Eyebrow>
-            <h2 className="mb-6 font-display text-[1.875rem] leading-[1.1] text-foreground sm:text-[2.25rem]">
+            <h2 className="mb-6 font-display text-[1.75rem] leading-[1.1] text-foreground sm:text-[2rem]">
               Datos de contacto
             </h2>
             <div className="grid text-sm">

@@ -149,7 +149,7 @@ function AbonoPage() {
           </Alert>
         )}
 
-        <Card className="rounded-3xl border-line bg-surface p-6" variant="default">
+        <Card className="rounded-2xl border-line bg-surface p-6" variant="default">
           <dl className="space-y-2 text-sm text-foreground">
             <div className="flex justify-between">
               <dt className="text-muted">Servicio</dt>
@@ -178,7 +178,9 @@ function AbonoPage() {
               }`}
             >
               <span className="block font-medium">FONASA</span>
-              <span className="text-sm">Valor total: {formatClp(data.pricing.fonasaFullAmountClp)}</span>
+              <span className="text-sm">
+                Valor total: {formatClp(data.pricing.fonasaFullAmountClp)}
+              </span>
             </button>
             <button
               onClick={() => setInsuranceType("particular")}
@@ -205,7 +207,7 @@ function AbonoPage() {
         </section>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Card className="rounded-3xl border-line bg-surface p-6 text-center" variant="default">
+          <Card className="rounded-2xl border-line bg-surface p-6 text-center" variant="default">
             <h3 className="mb-2 font-display text-lg">Abonar 50%</h3>
             <p className="mb-4 text-2xl font-bold">{formatClp(currentHalfAmount)}</p>
             <p className="mb-6 text-sm text-muted">
@@ -222,7 +224,7 @@ function AbonoPage() {
             </Button>
           </Card>
 
-          <Card className="rounded-3xl border-line bg-surface p-6 text-center" variant="default">
+          <Card className="rounded-2xl border-line bg-surface p-6 text-center" variant="default">
             <h3 className="mb-2 font-display text-lg">Pagar 100%</h3>
             <p className="mb-4 text-2xl font-bold">{formatClp(currentFullAmount)}</p>
             <p className="mb-6 text-sm text-muted">

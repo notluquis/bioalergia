@@ -106,7 +106,7 @@ function ResultCard({
     </Card.Header>
   );
   return (
-    <Card className="rounded-3xl transition-shadow hover:shadow-md" variant="default">
+    <Card className="rounded-2xl transition-shadow hover:shadow-md" variant="default">
       {children(content)}
     </Card>
   );
@@ -185,7 +185,9 @@ function BuscarPage() {
         <div className="grid gap-12">
           {pageMatches.length > 0 ? (
             <section className="grid gap-4">
-              <h2 className="font-display text-[1.75rem] text-foreground">Páginas</h2>
+              <h2 className="font-display text-[1.75rem] leading-[1.1] text-foreground sm:text-[2rem]">
+                Páginas
+              </h2>
               <Separator />
               <div className="grid gap-6 md:grid-cols-2">
                 {pageMatches.map((page) => (
@@ -203,7 +205,9 @@ function BuscarPage() {
 
           {topicMatches.length > 0 ? (
             <section className="grid gap-4">
-              <h2 className="font-display text-[1.75rem] text-foreground">Aprende</h2>
+              <h2 className="font-display text-[1.75rem] leading-[1.1] text-foreground sm:text-[2rem]">
+                Aprende
+              </h2>
               <Separator />
               <div className="grid gap-6 md:grid-cols-2">
                 {topicMatches.map((topic) => (
@@ -230,7 +234,9 @@ function BuscarPage() {
 
           {showNewsSection ? (
             <section className="grid gap-4">
-              <h2 className="font-display text-[1.75rem] text-foreground">Noticias</h2>
+              <h2 className="font-display text-[1.75rem] leading-[1.1] text-foreground sm:text-[2rem]">
+                Noticias
+              </h2>
               <Separator />
               {isLoading ? (
                 <ContentLoading />
@@ -264,7 +270,7 @@ function BuscarPage() {
           ) : null}
 
           {showEmptyState ? (
-            <Card className="rounded-3xl" variant="secondary">
+            <Card className="rounded-2xl" variant="secondary">
               <Card.Header className="gap-2">
                 <Card.Title className="text-lg">Sin resultados</Card.Title>
                 <Card.Description className="text-muted leading-relaxed">

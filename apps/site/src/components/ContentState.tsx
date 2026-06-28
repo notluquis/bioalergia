@@ -11,7 +11,7 @@ export function ContentLoading() {
       </div>
       <div className="grid gap-6 md:grid-cols-2">
         {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton className="h-40 w-full rounded-3xl" key={i} />
+          <Skeleton className="h-40 w-full rounded-2xl" key={i} />
         ))}
       </div>
     </div>
@@ -21,7 +21,7 @@ export function ContentLoading() {
 /** Friendly fallback when a content block fails to load. */
 export function ContentError() {
   return (
-    <Card className="rounded-3xl" variant="secondary">
+    <Card className="rounded-2xl" variant="secondary">
       <Card.Header className="gap-2">
         <Card.Title className="text-lg">No pudimos cargar esta sección</Card.Title>
         <Card.Description className="text-(--ink-muted) leading-relaxed">

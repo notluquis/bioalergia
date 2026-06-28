@@ -24,7 +24,7 @@ export function ProcessSection() {
       <div className="grid items-center gap-12 lg:grid-cols-[1.05fr_1fr] lg:gap-16">
         <div>
           <Eyebrow className="mb-5">Cómo te acompañamos</Eyebrow>
-          <h2 className="mb-9 font-display text-[2.25rem] leading-[1.05] text-foreground sm:text-[2.75rem]">
+          <h2 className="mb-9 font-display text-[2rem] leading-[1.05] text-foreground sm:text-[2.5rem]">
             Un proceso clínico de principio a fin.
           </h2>
           <div className="flex flex-col gap-7">

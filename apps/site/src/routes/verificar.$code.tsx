@@ -134,7 +134,7 @@ function Shell({ children }: { children: React.ReactNode }) {
   return (
     <ShopShell>
       <div className="flex items-center justify-center bg-surface-2 px-4 py-16">
-        <div className="w-full max-w-lg rounded-3xl border border-line bg-surface p-6 shadow-sm sm:p-8">
+        <div className="w-full max-w-lg rounded-2xl border border-line bg-surface p-6 shadow-sm sm:p-8">
           {children}
         </div>
       </div>

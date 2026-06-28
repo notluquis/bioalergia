@@ -66,7 +66,7 @@ function AprendeIndexPage() {
                         <Chip size="sm" variant="secondary">
                           {topic.category}
                         </Chip>
-                        <Card.Title className="font-display text-[1.35rem] text-foreground leading-[1.15]">
+                        <Card.Title className="font-display text-[1.4rem] text-foreground">
                           {topic.title}
                         </Card.Title>
                         <Card.Description className="text-muted leading-relaxed">

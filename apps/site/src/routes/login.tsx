@@ -96,7 +96,7 @@ function LoginPage() {
             </Alert.Content>
           </Alert>
         ) : (
-          <Card className="rounded-3xl border-line bg-surface">
+          <Card className="rounded-2xl border-line bg-surface">
             <Card.Content className="space-y-4">
               <TextField onChange={setEmail} value={email}>
                 <Label>Email</Label>

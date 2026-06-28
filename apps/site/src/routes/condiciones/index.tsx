@@ -35,7 +35,7 @@ function CondicionesIndexPage() {
               variant="default"
             >
               <Card.Header className="gap-2">
-                <Card.Title className="font-display text-[1.5rem] leading-[1.15]">
+                <Card.Title className="font-display text-[1.4rem] text-foreground">
                   <Link
                     className="text-foreground no-underline hover:text-brand-blue"
                     params={{ slug: condition.slug }}

@@ -205,7 +205,7 @@ function InmunoterapiaPage() {
               variant="default"
             >
               <Card.Header className="gap-3">
-                <Card.Title className="font-display text-[1.25rem] font-semibold text-foreground">
+                <Card.Title className="font-display text-[1.2rem] font-semibold text-foreground">
                   {faq.question}
                 </Card.Title>
                 <Card.Description className="text-muted leading-relaxed">
