@@ -79,6 +79,8 @@ type SendTextPayload = z.infer<typeof sendTextInputSchema>;
 // passing positional bodyParams (a valid subtype, the field is optional).
 type SendTemplatePayload = z.infer<typeof sendTemplateInputSchema> & {
   bodyNamedParams?: Array<{ name: string; text: string }>;
+  // Dynamic suffix for a single URL button (template URL = static base + {{1}}).
+  urlButtonSuffix?: string;
 };
 type SendReactionPayload = z.infer<typeof sendReactionInputSchema>;
 type SendMediaPayload = z.infer<typeof sendMediaInputSchema> & {
@@ -197,6 +199,15 @@ export async function sendTemplate(
     components.push({
       type: "body",
       parameters: payload.bodyParams.map((t) => ({ type: "text", text: t })),
+    });
+  }
+  // Single dynamic URL button (template URL = static base + {{1}}).
+  if (payload.urlButtonSuffix) {
+    components.push({
+      type: "button",
+      sub_type: "url",
+      index: 0,
+      parameters: [{ type: "text", text: payload.urlButtonSuffix }],
     });
   }
   // Carousel template (Meta 2026): build cards array with per-card image header

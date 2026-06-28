@@ -40,6 +40,7 @@ export interface ImapListenerDependencies {
       language: string;
       bodyParams?: string[];
       bodyNamedParams?: Array<{ name: string; text: string }>;
+      urlButtonSuffix?: string;
     },
     sentByUserId: null
   ) => Promise<unknown>;
@@ -190,15 +191,12 @@ export async function sendAbonoRequestWhatsapp(
   }
 
   const firstName = token.patientName.split(" ")[0] ?? token.patientName;
-  const dayStr = formatChile(token.appointmentDate, "dddd D de MMMM");
-  const link = `${paymentSettings.publicBaseUrl}/abono/${token.id}`;
-  // Prices stated in the message (DB-authoritative, not hardcoded in Meta).
-  // Previsión is unknown at send time → list both tiers; the page lets the
-  // patient pick. Named params (Meta named-parameter template) — order-free.
+  const fechaHora = formatChile(token.appointmentDate, "dddd D [de] MMMM [a las] HH:mm [hrs]");
+  // Prices come from settings (single source of truth — same values the page
+  // charges). Named params + dynamic URL button suffix (the token id; the
+  // template URL base is static). The page handles previsión selection.
   const clp = (n: number) =>
     new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP" }).format(n);
-  const particularFull = paymentSettings.particularFullAmountClp;
-  const fonasaFull = paymentSettings.fonasaFullAmountClp;
   const { conversationId } = await deps.ensureContactAndConversation(
     token.patientPhone,
     token.patientName,
@@ -212,14 +210,12 @@ export async function sendAbonoRequestWhatsapp(
       templateName: waConfig.templateName,
       language: waConfig.language,
       bodyNamedParams: [
-        { name: "nombre", text: firstName },
-        { name: "dia", text: dayStr },
-        { name: "particular_total", text: clp(particularFull) },
-        { name: "particular_mitad", text: clp(Math.round(particularFull / 2)) },
-        { name: "fonasa_total", text: clp(fonasaFull) },
-        { name: "fonasa_mitad", text: clp(Math.round(fonasaFull / 2)) },
-        { name: "link", text: link },
+        { name: "nombre_paciente", text: firstName },
+        { name: "fecha_hora", text: fechaHora },
+        { name: "fonasa_total", text: clp(paymentSettings.fonasaFullAmountClp) },
+        { name: "particular_total", text: clp(paymentSettings.particularFullAmountClp) },
       ],
+      urlButtonSuffix: token.id,
     },
     null
   );
