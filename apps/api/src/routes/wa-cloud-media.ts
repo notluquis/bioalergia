@@ -353,8 +353,15 @@ waCloudMediaRoutes.get("/:messageId", async (c) => {
     const accToken = decryptSecret(account?.systemUserToken);
     if (!accToken) return c.text("Account token missing", 500);
 
+    // Forward the browser Range header to Meta's CDN (it supports ranges) so
+    // audio/video can seek and opus duration resolves on not-yet-persisted
+    // media (e.g. a just-forwarded voice note before its R2 copy exists).
+    const rangeHeader = c.req.header("range");
     const upstream = await fetch(meta.url, {
-      headers: { Authorization: `Bearer ${accToken}` },
+      headers: {
+        Authorization: `Bearer ${accToken}`,
+        ...(rangeHeader ? { Range: rangeHeader } : {}),
+      },
     });
     if (!upstream.ok || !upstream.body) {
       const body = await upstream.text().catch(() => "");
@@ -408,18 +415,24 @@ waCloudMediaRoutes.get("/:messageId", async (c) => {
       wantsDownload || !inlineSafe
         ? `attachment; filename="${safeFilename}"`
         : `inline; filename="${safeFilename}"`;
-    return new Response(upstream.body, {
-      status: 200,
-      headers: {
-        "Content-Type": contentType,
-        "Content-Disposition": disposition,
-        // Don't let the browser MIME-sniff around the declared content-type.
-        "X-Content-Type-Options": "nosniff",
-        // Allow same-origin iframe embedding for the PDF viewer modal.
-        "X-Frame-Options": "SAMEORIGIN",
-        "Cache-Control": "private, max-age=300",
-      },
-    });
+    // Relay Meta's range response so the browser gets the same seek semantics
+    // as the R2 path (206 + Content-Range when partial, else 200).
+    const upstreamRange = upstream.headers.get("content-range");
+    const upstreamLen = upstream.headers.get("content-length");
+    const isPartial = upstream.status === 206 && Boolean(upstreamRange);
+    const headers: Record<string, string> = {
+      "Content-Type": contentType,
+      "Content-Disposition": disposition,
+      // Don't let the browser MIME-sniff around the declared content-type.
+      "X-Content-Type-Options": "nosniff",
+      // Allow same-origin iframe embedding for the PDF viewer modal.
+      "X-Frame-Options": "SAMEORIGIN",
+      "Cache-Control": "private, max-age=300",
+      "Accept-Ranges": "bytes",
+    };
+    if (upstreamLen) headers["Content-Length"] = upstreamLen;
+    if (isPartial && upstreamRange) headers["Content-Range"] = upstreamRange;
+    return new Response(upstream.body, { status: isPartial ? 206 : 200, headers });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     const isExpired = msg.includes("does not exist") || msg.includes("GraphMethodException");
