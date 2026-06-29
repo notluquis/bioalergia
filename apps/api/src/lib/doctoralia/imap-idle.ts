@@ -166,7 +166,9 @@ export async function sendAbonoRequestWhatsapp(
     return "disabled";
   }
   if (!waConfig.templateName || !waConfig.language || !waConfig.phoneNumberId) {
-    logError("doctoralia.abono.whatsapp_config_missing", new Error("Missing request WA setting"), {
+    // warn, not error: the request template being unset is an incomplete
+    // (optional) config, not a runtime failure — don't page Sentry every tick.
+    logWarn("doctoralia.abono.whatsapp_config_missing", {
       hasLanguage: Boolean(waConfig.language),
       hasPhoneNumberId: Boolean(waConfig.phoneNumberId),
       hasTemplateName: Boolean(waConfig.templateName),

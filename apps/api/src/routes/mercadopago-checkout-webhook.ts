@@ -155,6 +155,10 @@ export function registerMercadopagoCheckoutWebhook(app: Hono) {
           // ponytail: a decline is NOT terminal — keep token PENDING so the
           // patient can retry with another method. Only log the attempt.
           await appendAbonoFlowHistory(token.id, "mp_payment_rejected", { status });
+        } else if (status === "refunded" || status === "charged_back") {
+          // Refund/chargeback after approval — log for visibility (no REFUNDED
+          // token state today; surfaced in flow_history so staff can act).
+          await appendAbonoFlowHistory(token.id, "mp_payment_refunded", { status });
         } else if (token.status === "PENDING") {
           // in_process / pending / authorized — MP is still settling. Log it
           // (visible in flow_history) but do NOT mark the event processed below,
@@ -170,7 +174,8 @@ export function registerMercadopagoCheckoutWebhook(app: Hono) {
           status === "approved" ||
           status === "rejected" ||
           status === "cancelled" ||
-          status === "refunded"
+          status === "refunded" ||
+          status === "charged_back"
         ) {
           await db.webhookEvent.updateMany({
             where: { provider: "mercadopago", topic, externalId: String(dataId) },
