@@ -266,25 +266,47 @@ type UnsupportedShape = {
   poll?: unknown;
   event?: unknown;
   interactive?: { type?: string };
+  // Meta's real signal for unsupported messages: the original subtype, e.g.
+  // { type: "video_note" | "poll_creation" | "unknown" }. This is far more
+  // reliable than guessing from the (generic) error title.
+  unsupported?: { type?: string };
 };
 
 export function UnsupportedBubble({ payload }: { payload: Payload }) {
   const p = payload as UnsupportedShape | null;
-  const rawType = p?.type ?? "unknown";
+  // Prefer Meta's explicit subtype (payload.unsupported.type); fall back to the
+  // top-level type, then error-title heuristics.
+  const subtype = (p?.unsupported?.type ?? p?.type ?? "unknown").toLowerCase();
 
-  // Poll detection (Meta sends polls as unsupported with hint in errors or raw type)
+  // Video note (PTV / round video): Cloud API can't deliver the media, but it
+  // tells us the subtype so we can label it instead of a generic fallback.
+  const isVideoNote = subtype.includes("video_note") || subtype.includes("ptv");
+
+  // Poll detection (Meta sends polls as unsupported; subtype = poll_creation)
   const isPoll =
-    rawType === "poll" ||
+    subtype.includes("poll") ||
     Boolean(p?.poll) ||
     p?.interactive?.type === "poll" ||
     p?.errors?.some((e) => /poll/i.test(e.title ?? "") || /poll/i.test(e.message ?? ""));
 
   // Event detection (calendar invites, WhatsApp events)
   const isEvent =
-    rawType === "event" ||
+    subtype.includes("event") ||
     Boolean(p?.event) ||
     p?.interactive?.type === "event" ||
     p?.errors?.some((e) => /event/i.test(e.title ?? ""));
+
+  if (isVideoNote) {
+    return (
+      <div className="flex w-64 max-w-full items-center gap-2">
+        <Video size={18} className="shrink-0 text-accent" />
+        <div className="min-w-0">
+          <p className="font-medium text-sm">Nota de video</p>
+          <p className="text-default-500 text-xs">No descargable vía Cloud API</p>
+        </div>
+      </div>
+    );
+  }
 
   if (isPoll) {
     return (

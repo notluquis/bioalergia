@@ -497,7 +497,10 @@ function AudioPlayer({
   const [playing, setPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
   const [current, setCurrent] = useState(0);
-  const [loaded, setLoaded] = useState(false);
+  // "playable" (can press play) is decoupled from "duration known": canplay can
+  // fire before the opus duration probe resolves. Time/slider stay gated on a
+  // finite duration so the probe's 1e10 seek never shows as "166666666:40".
+  const [playable, setPlayable] = useState(false);
   const [speed, setSpeed] = useState<Speed>(1);
   const probedRef = useRef(false);
   // Voice-note waveform: instant synthetic bars, upgraded to real amplitude on
@@ -530,7 +533,7 @@ function AudioPlayer({
     const onDurChange = () => {
       if (Number.isFinite(a.duration) && a.duration > 0) {
         setDuration(a.duration);
-        setLoaded(true);
+        setPlayable(true);
         a.currentTime = 0;
         a.removeEventListener("durationchange", onDurChange);
       }
@@ -578,11 +581,11 @@ function AudioPlayer({
       <button
         type="button"
         onClick={toggle}
-        disabled={!loaded}
+        disabled={!playable}
         className={`flex size-9 shrink-0 items-center justify-center rounded-full ${iconBg} transition hover:opacity-90 disabled:opacity-50`}
         aria-label={playing ? "Pausar" : "Reproducir"}
       >
-        {!loaded ? (
+        {!playable ? (
           <Spinner size="sm" />
         ) : playing ? (
           <Pause size={16} />
@@ -611,7 +614,7 @@ function AudioPlayer({
             step={0.1}
             value={current}
             onChange={seek}
-            disabled={!loaded}
+            disabled={!playable}
             className="absolute inset-0 size-full cursor-pointer opacity-0"
             aria-label="Posición"
           />
@@ -623,7 +626,7 @@ function AudioPlayer({
       <button
         type="button"
         onClick={cycleSpeed}
-        disabled={!loaded}
+        disabled={!playable}
         className={`shrink-0 rounded-full px-2 py-0.5 font-mono text-xs tabular-nums transition disabled:opacity-50 ${speedBg}`}
         aria-label={`Velocidad ${speed}×`}
         title="Cambiar velocidad"
@@ -641,12 +644,12 @@ function AudioPlayer({
         // Enable the controls as soon as the audio is playable, even if the
         // duration hasn't resolved yet — otherwise opus voice notes whose
         // duration probe is slow leave the play button stuck on a spinner.
-        onCanPlay={() => setLoaded(true)}
+        onCanPlay={() => setPlayable(true)}
         onLoadedMetadata={(e) => {
           const d = e.currentTarget.duration;
           if (Number.isFinite(d) && d > 0) {
             setDuration(d);
-            setLoaded(true);
+            setPlayable(true);
           } else {
             // Trigger Chrome opus duration workaround
             probeDuration();
@@ -656,14 +659,14 @@ function AudioPlayer({
           const d = e.currentTarget.duration;
           if (Number.isFinite(d) && d > 0) {
             setDuration(d);
-            setLoaded(true);
+            setPlayable(true);
           }
         }}
         onTimeUpdate={(e) => {
-          // Ignore updates until duration is known. The opus duration probe
-          // seeks currentTime to 1e10, which would otherwise leak into the
-          // display as "166666666:40" before the real duration resolves.
-          if (loaded) setCurrent(e.currentTarget.currentTime);
+          // Gate on a *finite duration*, not on "playable": the opus duration
+          // probe seeks currentTime to 1e10, which would otherwise leak into
+          // the display as "166666666:40" before the real duration resolves.
+          if (duration > 0) setCurrent(e.currentTarget.currentTime);
         }}
         onError={onError}
       >
