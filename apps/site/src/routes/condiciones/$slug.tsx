@@ -110,17 +110,25 @@ function ConditionDetail({ condition }: { condition: Condition }) {
                   Exámenes relacionados
                 </Card.Title>
               </Card.Header>
-              <Card.Content className="flex flex-wrap gap-2 pb-6">
+              <Card.Content className="flex flex-wrap items-center gap-2 pb-6">
                 {condition.relatedExams.map((exam) => (
-                  <Chip key={exam} size="sm" variant="soft">
-                    {exam}
-                  </Chip>
+                  <Link
+                    aria-label={`Ver examen: ${exam.label}`}
+                    className="no-underline"
+                    hash={exam.id}
+                    key={exam.id}
+                    to="/examenes"
+                  >
+                    <Chip size="sm" variant="soft">
+                      {exam.label}
+                    </Chip>
+                  </Link>
                 ))}
                 <Link
                   className="ml-1 self-center font-semibold text-brand-blue text-sm no-underline hover:underline underline-offset-4"
                   to="/examenes"
                 >
-                  Ver exámenes →
+                  Ver todos →
                 </Link>
               </Card.Content>
             </Card>

@@ -43,6 +43,7 @@ import {
 } from "@/data/reactivos";
 import { reactivosClient } from "@/lib/orpc-client";
 import { breadcrumbJsonLd } from "@/lib/seo";
+import { isEmail } from "@/lib/validation";
 import { Section } from "@/sections/Section";
 
 const LEAD_FORM_ID = "quiero-reactivos";
@@ -278,7 +279,7 @@ function LeadForm({ vitrinaItems }: { vitrinaItems: ReactivoVitrinaItemDto[] }) 
   const canSubmit =
     empresa.trim().length >= 1 &&
     contactName.trim().length >= 1 &&
-    email.includes("@") &&
+    isEmail(email) &&
     !submitMutation.isPending;
 
   const onSubmit = (e: FormEvent) => {

@@ -25,6 +25,7 @@ import { SectionBand } from "@/components/ui/SectionBand";
 import { contactInfo } from "@/data/clinic";
 import { publicClinicClient } from "@/lib/orpc-client";
 import { breadcrumbJsonLd } from "@/lib/seo";
+import { isEmail } from "@/lib/validation";
 
 function ContactForm() {
   const [name, setName] = useState("");
@@ -41,7 +42,7 @@ function ContactForm() {
 
   const canSubmit =
     name.trim().length >= 1 &&
-    email.includes("@") &&
+    isEmail(email) &&
     message.trim().length >= 1 &&
     consent &&
     !submitMutation.isPending;

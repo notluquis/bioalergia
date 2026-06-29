@@ -7,6 +7,7 @@ import { PageShell } from "@/components/PageShell";
 import { Container } from "@/components/ui/Container";
 import { Eyebrow } from "@/components/ui/Eyebrow";
 import { PageHero } from "@/components/ui/PageHero";
+import { Photo } from "@/components/ui/Photo";
 import { SectionBand } from "@/components/ui/SectionBand";
 import { inmunoterapiaContent } from "@/data/immunotherapy";
 import { breadcrumbJsonLd } from "@/lib/seo";
@@ -58,6 +59,13 @@ function InmunoterapiaPage() {
             </Card>
           ))}
         </div>
+
+        <Photo
+          className="mt-6 h-[280px] w-full rounded-2xl border border-line sm:h-[340px]"
+          name="scitSyringe"
+          rounded="rounded-2xl"
+          sizes="(min-width: 1024px) 1100px, 100vw"
+        />
 
         <Card className="mt-6 rounded-2xl border border-line bg-surface" variant="default">
           <Card.Header className="gap-2">

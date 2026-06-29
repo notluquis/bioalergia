@@ -8,6 +8,7 @@ import { Eyebrow } from "@/components/ui/Eyebrow";
 import { ctaClass } from "@/components/ui/cta";
 import { accountKeys } from "@/features/account/queries";
 import { siteAuthClient } from "@/lib/orpc-client";
+import { isEmail } from "@/lib/validation";
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -56,7 +57,7 @@ function LoginPage() {
       setError(err instanceof Error ? err.message : "No se pudo verificar la passkey"),
   });
 
-  const canSubmit = email.includes("@");
+  const canSubmit = isEmail(email);
   const passkeyAvailable = typeof window !== "undefined" && Boolean(window.PublicKeyCredential);
 
   function onContinue() {

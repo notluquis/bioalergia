@@ -23,6 +23,7 @@ import { PageHero } from "@/components/ui/PageHero";
 import { SectionBand, type BandTone } from "@/components/ui/SectionBand";
 import { occupationalClient } from "@/lib/orpc-client";
 import { breadcrumbJsonLd } from "@/lib/seo";
+import { isEmail } from "@/lib/validation";
 
 const LEAD_FORM_ID = "solicitar-informacion";
 
@@ -198,7 +199,7 @@ function LeadForm() {
   const canSubmit =
     empresa.trim().length >= 1 &&
     contactName.trim().length >= 1 &&
-    email.includes("@") &&
+    isEmail(email) &&
     !submitMutation.isPending;
 
   const onSubmit = (e: FormEvent) => {

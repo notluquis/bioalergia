@@ -2,8 +2,7 @@ import { Card, Chip, Link } from "@heroui/react";
 import { usePostHog } from "posthog-js/react";
 import { useEffect, useState } from "react";
 
-const doctoraliaUrl =
-  "https://www.doctoralia.cl/jose-manuel-martinez-martinez/inmunologo-alergologo/concepcion";
+import { doctoraliaLink } from "@/lib/doctoralia";
 
 function useDoctoraliaScript() {
   useEffect(() => {
@@ -115,7 +114,7 @@ export function DoctoraliaBookingWidget() {
             <a
               id="zl-url-booking"
               className="zl-url block"
-              href={doctoraliaUrl}
+              href={doctoraliaLink}
               rel="nofollow"
               data-zlw-doctor="jose-manuel-martinez-martinez"
               data-zlw-type="big_with_calendar"
@@ -135,7 +134,7 @@ export function DoctoraliaBookingWidget() {
           </div>
         </div>
         <noscript>
-          <Link className="text-sm" href={doctoraliaUrl} rel="nofollow">
+          <Link className="text-sm" href={doctoraliaLink} rel="nofollow">
             Ver disponibilidad en Doctoralia
           </Link>
         </noscript>

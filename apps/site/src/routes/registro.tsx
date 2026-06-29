@@ -8,6 +8,7 @@ import { Eyebrow } from "@/components/ui/Eyebrow";
 import { ctaClass } from "@/components/ui/cta";
 import { accountKeys } from "@/features/account/queries";
 import { siteAuthClient } from "@/lib/orpc-client";
+import { isEmail } from "@/lib/validation";
 
 function RegistroPage() {
   const navigate = useNavigate();
@@ -42,7 +43,7 @@ function RegistroPage() {
 
   const usePassword = password.length > 0;
   const canSubmit =
-    email.includes("@") && name.length >= 2 && terms && (!usePassword || password.length >= 8);
+    isEmail(email) && name.length >= 2 && terms && (!usePassword || password.length >= 8);
 
   return (
     <ShopShell>
