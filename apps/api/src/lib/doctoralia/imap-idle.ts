@@ -333,17 +333,17 @@ async function processUnseen(
   logEvent("doctoralia.imap.found", { count: freshUids.length, sinceUid: highWater.lastUid });
 
   let newLastUid = highWater.lastUid;
+  let blocked = false;
   for (const uid of freshUids) {
     if (stopped) break;
 
+    let ok = false;
     let messageId: string | undefined;
     try {
       const msg = await client.fetchOne(uid, { envelope: true, source: true }, { uid: true });
-      if (!msg) continue;
+      messageId = msg ? msg.envelope?.messageId : undefined;
 
-      messageId = msg.envelope?.messageId;
-
-      if (msg.source) {
+      if (msg && msg.source) {
         const raw = msg.source.toString("utf-8");
         const parsed = await simpleParser(raw);
         const textContent = parsed.text ?? htmlToText(parsed.html || "");
@@ -456,20 +456,31 @@ async function processUnseen(
         }
       }
 
+      ok = true;
       listenerStatus.lastProcessedAt = new Date().toISOString();
     } catch (dbErr) {
       listenerStatus.lastErrorAt = new Date().toISOString();
       listenerStatus.lastErrorMessage = dbErr instanceof Error ? dbErr.message : String(dbErr);
       logError("doctoralia.imap.db_error", dbErr, { messageId });
-    } finally {
-      // Advance the high-water mark past this UID regardless of per-email
-      // outcome — one unparseable email must not wedge the listener and block
-      // every newer booking. Failures are logged above and recoverable.
-      newLastUid = Math.max(newLastUid, uid);
-      await setImapHighWater(newLastUid, uidValidity).catch((err) =>
-        logError("doctoralia.imap.highwater_persist_error", err, { uid })
-      );
     }
+
+    // Advance the high-water mark only across the contiguous run of
+    // successfully-processed UIDs. The first failure (transient DB/IMAP error)
+    // freezes the mark so that UID — and everything after it — stays retryable
+    // on the next scan; a booking that hit a transient error is never skipped.
+    // Parse misses don't throw (they fall through as success), so a non-booking
+    // email still advances the mark and can't wedge the queue.
+    if (ok && !blocked) {
+      newLastUid = uid;
+    } else if (!ok) {
+      blocked = true;
+    }
+  }
+
+  if (newLastUid > highWater.lastUid) {
+    await setImapHighWater(newLastUid, uidValidity).catch((err) =>
+      logError("doctoralia.imap.highwater_persist_error", err, { lastUid: newLastUid })
+    );
   }
 }
 
