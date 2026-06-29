@@ -58,14 +58,7 @@ async function scanForCriticalViolations(page: Page, route: string): Promise<voi
   // Let the SPA shell + lazy sections settle before scanning so axe sees the
   // mounted landmarks/headings (avoids racing React).
   //
-  // /checkout renders WITHOUT an <h1> when VITE_MERCADOPAGO_PUBLIC_KEY is unset
-  // (it shows a config alert instead) — so for that route we settle on the main
-  // landmark rather than the heading.
-  if (route === "/checkout") {
-    await expect(page.getByRole("main")).toBeVisible();
-  } else {
-    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-  }
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
 
   const results = await new AxeBuilder({ page }).withTags(TAGS).analyze();
 

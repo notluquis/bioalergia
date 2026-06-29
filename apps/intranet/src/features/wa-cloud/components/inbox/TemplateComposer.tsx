@@ -167,7 +167,7 @@ export function TemplateComposer({
                   }
                 />
                 {rawName && (
-                  <p className="pl-0.5 font-mono text-[11px] text-default-400">{`{{${rawName}}}`}</p>
+                  <p className="pl-0.5 font-mono text-xs text-default-400">{`{{${rawName}}}`}</p>
                 )}
               </div>
             );

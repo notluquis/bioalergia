@@ -108,18 +108,11 @@ test("adding a product to the cart reflects on /carrito", async ({ page }) => {
 test("/checkout renders its contact + shipping form for a populated cart", async ({ page }) => {
   await page.goto("/checkout", { waitUntil: "domcontentloaded" });
 
-  // VITE_MERCADOPAGO_PUBLIC_KEY may be unset in the preview build; in that case
-  // the page renders a "Falta VITE_MERCADOPAGO_PUBLIC_KEY" alert instead of the
-  // form. Accept either: the route mounted and reacted to the (mocked) cart.
-  const heading = page.getByRole("heading", { level: 1, name: "Checkout" });
-  const missingKeyAlert = page.getByText(/Falta .*VITE_MERCADOPAGO_PUBLIC_KEY/);
-
-  await expect(heading.or(missingKeyAlert).first()).toBeVisible();
-
-  if (await heading.isVisible().catch(() => false)) {
-    // Full form path: contact section + the email field render.
-    await expect(page.getByText("1. Contacto")).toBeVisible();
-    await expect(page.getByLabel("Email")).toBeVisible();
-    await expect(page.getByText("2. Envío")).toBeVisible();
-  }
+  // Checkout Pro: no client MP key/brick — the page always renders the form for a
+  // populated cart, then a "Pagar con Mercado Pago" button redirects to MP.
+  await expect(page.getByRole("heading", { level: 1, name: "Checkout" })).toBeVisible();
+  await expect(page.getByText("Paso 1")).toBeVisible();
+  await expect(page.getByLabel("Email")).toBeVisible();
+  await expect(page.getByText("Paso 2")).toBeVisible();
+  await expect(page.getByText("Paso 3")).toBeVisible();
 });
