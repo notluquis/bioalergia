@@ -69,6 +69,12 @@
       "import": "./dist/calendar.js",
       "default": "./dist/calendar.js"
     },
+    "./orders-admin": {
+      "development": "./src/orders-admin.ts",
+      "types": "./dist/orders-admin.d.ts",
+      "import": "./dist/orders-admin.js",
+      "default": "./dist/orders-admin.js"
+    },
     "./cart": {
       "development": "./src/cart.ts",
       "types": "./dist/cart.d.ts",

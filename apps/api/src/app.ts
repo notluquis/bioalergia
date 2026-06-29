@@ -74,6 +74,7 @@ import { haulmerDteOpenAPIHandler, haulmerDteORPCHandler } from "./orpc/haulmer-
 import { imagesOpenAPIHandler, imagesORPCHandler } from "./orpc/images.ts";
 import { integrationsOpenAPIHandler, integrationsORPCHandler } from "./orpc/integrations.ts";
 import { inventoryOpenAPIHandler, inventoryORPCHandler } from "./orpc/inventory.ts";
+import { ordersAdminORPCHandler } from "./orpc/orders-admin.ts";
 import { loansOpenAPIHandler, loansORPCHandler } from "./orpc/loans.ts";
 import { mercadopagoOpenAPIHandler, mercadopagoORPCHandler } from "./orpc/mercadopago.ts";
 import { mlOpenAPIHandler, mlORPCHandler } from "./orpc/ml-sync.ts";
@@ -1629,6 +1630,19 @@ registerAbonoRoutes(app);
 app.use("/api/orpc/inventory/rpc/*", async (c, next) => {
   const { matched, response } = await inventoryORPCHandler.handle(createHonoORPCRequest(c), {
     prefix: "/api/orpc/inventory/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
+app.use("/api/orpc/orders-admin/rpc/*", async (c, next) => {
+  const { matched, response } = await ordersAdminORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/orders-admin/rpc",
     context: { hono: c },
   });
 

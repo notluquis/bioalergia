@@ -248,6 +248,7 @@ export async function syncPermissions() {
   // 2. Define virtual/logical subjects that don't map directly to models
   const virtualSubjects = [
     "Report",
+    "ShopOrder",
     "Dashboard",
     "Backup",
     "BulkData",

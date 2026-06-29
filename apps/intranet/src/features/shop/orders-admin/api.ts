@@ -1,0 +1,40 @@
+import { compactORPCInput } from "@/lib/orpc-input";
+import { ordersAdminORPCClient, toOrdersAdminApiError } from "./orpc";
+import { orderDetailResponseSchema, ordersListResponseSchema } from "./schemas";
+import type { OrderDetail, OrdersListFilters, OrdersListResult } from "./types";
+
+export async function fetchOrders(filters: OrdersListFilters = {}): Promise<OrdersListResult> {
+  try {
+    const res = ordersListResponseSchema.parse(
+      await ordersAdminORPCClient.list(
+        compactORPCInput({
+          limit: filters.limit ?? 100,
+          cursor: filters.cursor,
+          status: filters.status,
+          search: filters.search?.trim() || undefined,
+        }) ?? {}
+      )
+    );
+    return res.data;
+  } catch (error) {
+    throw toOrdersAdminApiError(error);
+  }
+}
+
+export async function fetchOrderDetail(id: number): Promise<OrderDetail> {
+  try {
+    const res = orderDetailResponseSchema.parse(await ordersAdminORPCClient.detail({ id }));
+    return res.data;
+  } catch (error) {
+    throw toOrdersAdminApiError(error);
+  }
+}
+
+export async function markOrderFulfilled(id: number): Promise<OrderDetail> {
+  try {
+    const res = orderDetailResponseSchema.parse(await ordersAdminORPCClient.markFulfilled({ id }));
+    return res.data;
+  } catch (error) {
+    throw toOrdersAdminApiError(error);
+  }
+}
