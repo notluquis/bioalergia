@@ -148,16 +148,18 @@ export function OrdersPage() {
           const orders = result.pages.flatMap((p) => p.orders);
           return (
             <div className="surface-elevated flex flex-col gap-3 rounded-2xl p-4">
+              {/* No client pagination: the cursor "Cargar más" below IS the
+                  pagination. Client paging auto-resets to page 1 on each append,
+                  hiding the just-loaded rows. The list scrolls instead. */}
               <DataTable
                 columns={columns}
                 containerVariant="plain"
                 data={orders}
                 enableExport={false}
                 enableGlobalFilter={false}
-                enablePagination
+                enablePagination={false}
                 meta={meta}
                 noDataMessage="No hay pedidos registrados."
-                pageSizeOptions={[10, 20, 50]}
                 scrollMaxHeight="min(68dvh, 760px)"
               />
               {ordersQuery.hasNextPage ? (
