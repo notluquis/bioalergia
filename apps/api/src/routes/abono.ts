@@ -117,12 +117,10 @@ export function registerAbonoRoutes(app: Hono) {
           payer: token.patientEmail ? { email: token.patientEmail } : undefined,
           back_urls: { success: successUrl, failure: failureUrl, pending: successUrl },
           auto_return: "approved",
-          // Per-preference webhook URL — takes priority over the dashboard
-          // config (MP docs), so abono payments always notify our handler even
-          // if the dashboard webhook isn't set. PUBLIC_URL = the api origin.
-          ...(process.env.PUBLIC_URL
-            ? { notification_url: `${process.env.PUBLIC_URL}/api/mercadopago/webhook` }
-            : {}),
+          // No notification_url on purpose: the dashboard webhook delivers
+          // payment events with a valid x-signature. A per-preference
+          // notification_url ALSO triggers legacy IPN-style deliveries
+          // (topic=merchant_order) with no valid signature → 401 noise.
           ...(paymentSettings.statementDescriptor
             ? { statement_descriptor: paymentSettings.statementDescriptor }
             : {}),
