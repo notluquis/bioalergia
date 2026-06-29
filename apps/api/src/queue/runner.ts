@@ -101,6 +101,15 @@ export async function startQueueRunner(): Promise<void> {
       identifier: "abono_wa_retry",
       options: { backfillPeriod: 0 },
     },
+    {
+      // Expire stale stock reservations (TTL passed) so declined/abandoned
+      // checkouts return held stock without waiting for the next reserve()
+      // lazy-cleanup. TZ-insensitive interval.
+      task: "reservation_sweep",
+      match: "*/10 * * * *",
+      identifier: "reservation_sweep",
+      options: { backfillPeriod: 0 },
+    },
   ];
 
   // Breach / anomaly detection over audit_logs (ANCI 3h alert chain). Schedule
