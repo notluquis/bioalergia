@@ -584,6 +584,9 @@ export function ContactsSendModal({
       name: { formatted_name: string; first_name?: string; last_name?: string };
       phones?: { phone: string; type?: string }[];
       emails?: { email: string; type?: string }[];
+      urls?: { url: string; type?: string }[];
+      addresses?: { street?: string; city?: string; country?: string; type?: string }[];
+      birthday?: string;
     }[];
   }) => void;
   isPending: boolean;
@@ -591,12 +594,22 @@ export function ContactsSendModal({
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
+  const [website, setWebsite] = useState("");
+  const [birthday, setBirthday] = useState("");
+  const [street, setStreet] = useState("");
+  const [city, setCity] = useState("");
+  const [country, setCountry] = useState("");
 
   useEffect(() => {
     if (!isOpen) {
       setName("");
       setPhone("");
       setEmail("");
+      setWebsite("");
+      setBirthday("");
+      setStreet("");
+      setCity("");
+      setCountry("");
     }
   }, [isOpen]);
 
@@ -609,10 +622,36 @@ export function ContactsSendModal({
       toast.error("Nombre obligatorio");
       return;
     }
+    const bday = birthday.trim();
+    if (bday) {
+      // Shape + real-calendar-date check (regex alone passes 1990-13-40).
+      const d = new Date(`${bday}T00:00:00Z`);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(bday) || d.toISOString().slice(0, 10) !== bday) {
+        toast.error("Cumpleaños inválido (AAAA-MM-DD)");
+        return;
+      }
+    }
+    // The contract requires an absolute URL; prepend https:// when the operator
+    // types a bare domain so the send doesn't 400 after the modal closes.
+    const site = website.trim();
+    const siteUrl = site ? (/^https?:\/\//i.test(site) ? site : `https://${site}`) : "";
+    const hasAddress = street.trim() || city.trim() || country.trim();
     const card = {
       name: { formatted_name: name.trim() },
       phones: phone.trim() ? [{ phone: phone.trim(), type: "CELL" }] : undefined,
       emails: email.trim() ? [{ email: email.trim(), type: "WORK" }] : undefined,
+      urls: siteUrl ? [{ url: siteUrl, type: "WORK" }] : undefined,
+      addresses: hasAddress
+        ? [
+            {
+              street: street.trim() || undefined,
+              city: city.trim() || undefined,
+              country: country.trim() || undefined,
+              type: "WORK",
+            },
+          ]
+        : undefined,
+      birthday: bday || undefined,
     };
     onSend({ conversationId, phoneNumberId, contacts: [card] });
     onClose();
@@ -652,6 +691,24 @@ export function ContactsSendModal({
                 onValueChange={setEmail}
                 placeholder="contacto@bioalergia.cl"
               />
+              <TextInput
+                label="Sitio web"
+                type="url"
+                value={website}
+                onValueChange={setWebsite}
+                placeholder="https://bioalergia.cl"
+              />
+              <TextInput
+                label="Cumpleaños (AAAA-MM-DD)"
+                value={birthday}
+                onValueChange={setBirthday}
+                placeholder="1990-05-18"
+              />
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                <TextInput label="Calle" value={street} onValueChange={setStreet} />
+                <TextInput label="Ciudad" value={city} onValueChange={setCity} />
+                <TextInput label="País" value={country} onValueChange={setCountry} />
+              </div>
             </Modal.Body>
             <Modal.Footer className="mt-4 flex justify-end gap-2">
               <Button variant="outline" onPress={onClose}>
