@@ -189,6 +189,15 @@ export async function sendTemplate(
   const locationHeader =
     payload.locationHeader ??
     (payload.includeClinicLocationHeader ? await loadClinicLocation() : null);
+  // The composer promised the operator the clinic location would be attached.
+  // If ClinicSettings has no lat/lng, dropping the header silently would 400 at
+  // Meta (missing required header param) — fail here with a fixable message.
+  if (payload.includeClinicLocationHeader && !locationHeader) {
+    throw new DomainError(
+      "BAD_REQUEST",
+      "Configura la ubicación de la clínica (latitud/longitud) en Ajustes antes de enviar esta plantilla."
+    );
+  }
   if (locationHeader) {
     components.push({
       type: "header",
