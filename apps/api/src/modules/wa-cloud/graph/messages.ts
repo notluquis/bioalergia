@@ -40,6 +40,10 @@ export type TemplateComponentParam = (
   | { type: "image"; image: { link?: string; id?: string } }
   | { type: "document"; document: { link?: string; id?: string; filename?: string } }
   | { type: "video"; video: { link?: string; id?: string } }
+  | {
+      type: "location";
+      location: { latitude: string; longitude: string; name: string; address: string };
+    }
   // Meta 2026: COPY_CODE button parameter — value the patient gets
   // copied to clipboard with one tap. Used for coupon codes, order ids,
   // pre-filled RUTs, etc.

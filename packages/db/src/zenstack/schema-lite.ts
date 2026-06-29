@@ -16052,6 +16052,16 @@ export class SchemaType implements SchemaDef {
                     type: "String",
                     default: "San Mart\u00EDn 870, Edificio Caram, Torre B, Of. 208 A \u2013 208 B, Concepci\u00F3n" as FieldDefault
                 },
+                latitude: {
+                    name: "latitude",
+                    type: "Decimal",
+                    optional: true
+                },
+                longitude: {
+                    name: "longitude",
+                    type: "Decimal",
+                    optional: true
+                },
                 phoneWhatsapp: {
                     name: "phoneWhatsapp",
                     type: "String",

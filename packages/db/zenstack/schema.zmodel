@@ -6201,6 +6201,10 @@ model ClinicSettings {
   id                Int      @id @default(1)
   name              String   @default("Bioalergia")
   address           String   @default("San Martín 870, Edificio Caram, Torre B, Of. 208 A – 208 B, Concepción")
+  // Coordenadas para el header de ubicación de WhatsApp (mapa). Editable desde
+  // admin; vacío → el envío omite el header en vez de fallar.
+  latitude          Decimal? @db.Decimal(10, 7)
+  longitude         Decimal? @db.Decimal(10, 7)
   phoneWhatsapp     String   @default("+569 30963316") @map("phone_whatsapp")
   phoneLandline     String   @default("(41) 33355293") @map("phone_landline")
   email             String   @default("contacto@bioalergia.cl")

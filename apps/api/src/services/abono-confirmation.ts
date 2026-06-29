@@ -12,6 +12,7 @@ import { db } from "@finanzas/db";
 import {
   findAbonoWhatsappPhone,
   loadAbonoWhatsappConfig,
+  loadClinicLocation,
 } from "../lib/doctoralia/abono-whatsapp-settings.ts";
 import { appendAbonoFlowHistory } from "../lib/doctoralia/abono-flow-history.ts";
 import { logError, logEvent } from "../lib/logger.ts";
@@ -61,18 +62,28 @@ export async function sendAbonoConfirmation(tokenId: string): Promise<void> {
   const consultaText = clp(token.fullAmountClp);
   const templateName = waConfig.templateName;
 
+  const clinicLocation = await loadClinicLocation();
+
   await sendTemplateMessage({
     phoneNumberId: Number(waPhone.id),
     toE164: token.patientPhone,
     templateName,
     language: waConfig.language,
     components: [
+      ...(clinicLocation
+        ? [
+            {
+              type: "header" as const,
+              parameters: [{ type: "location" as const, location: clinicLocation }],
+            },
+          ]
+        : []),
       {
-        type: "body",
+        type: "body" as const,
         parameters: [
-          { type: "text", parameter_name: "nombre", text: firstName },
-          { type: "text", parameter_name: "monto_pagado", text: paidText },
-          { type: "text", parameter_name: "valor_consulta", text: consultaText },
+          { type: "text" as const, parameter_name: "nombre", text: firstName },
+          { type: "text" as const, parameter_name: "monto_pagado", text: paidText },
+          { type: "text" as const, parameter_name: "valor_consulta", text: consultaText },
         ],
       },
     ],

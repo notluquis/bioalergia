@@ -82,6 +82,8 @@ type SendTemplatePayload = z.infer<typeof sendTemplateInputSchema> & {
   bodyNamedParams?: Array<{ name: string; text: string }>;
   // Dynamic suffix for a single URL button (template URL = static base + {{1}}).
   urlButtonSuffix?: string;
+  // Location header (template with a LOCATION header component).
+  locationHeader?: { latitude: string; longitude: string; name: string; address: string };
 };
 type SendReactionPayload = z.infer<typeof sendReactionInputSchema>;
 type SendMediaPayload = z.infer<typeof sendMediaInputSchema> & {
@@ -181,6 +183,12 @@ export async function sendTemplate(
     );
   }
   const components: Array<Record<string, unknown>> = [];
+  if (payload.locationHeader) {
+    components.push({
+      type: "header",
+      parameters: [{ type: "location", location: payload.locationHeader }],
+    });
+  }
   if (payload.headerParams?.length) {
     components.push({
       type: "header",

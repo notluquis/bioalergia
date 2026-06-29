@@ -19,6 +19,25 @@ export const ABONO_PAYMENT_SETTINGS = {
   statementDescriptor: "doctoralia.abono.mercadopago.statementDescriptor",
 } as const;
 
+// Clinic location for the WhatsApp template LOCATION header, read from the
+// ClinicSettings singleton (DB) — name + address + lat/lng. Returns null when
+// coordinates aren't set yet, so the send skips the header instead of failing.
+export async function loadClinicLocation(): Promise<{
+  latitude: string;
+  longitude: string;
+  name: string;
+  address: string;
+} | null> {
+  const c = await db.clinicSettings.findUnique({ where: { id: 1 } });
+  if (!c?.latitude || !c?.longitude) return null;
+  return {
+    latitude: c.latitude.toString(),
+    longitude: c.longitude.toString(),
+    name: c.name,
+    address: c.address,
+  };
+}
+
 export type AbonoWhatsappNotice = "request" | "confirmation";
 
 export type AbonoWhatsappConfig = {

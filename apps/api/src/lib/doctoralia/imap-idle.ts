@@ -21,6 +21,7 @@ import {
   findAbonoWhatsappPhone,
   loadAbonoPaymentSettings,
   loadAbonoWhatsappConfig,
+  loadClinicLocation,
 } from "./abono-whatsapp-settings.ts";
 import { appendAbonoFlowHistory } from "./abono-flow-history.ts";
 
@@ -41,6 +42,7 @@ export interface ImapListenerDependencies {
       bodyParams?: string[];
       bodyNamedParams?: Array<{ name: string; text: string }>;
       urlButtonSuffix?: string;
+      locationHeader?: { latitude: string; longitude: string; name: string; address: string };
     },
     sentByUserId: null
   ) => Promise<unknown>;
@@ -200,6 +202,7 @@ export async function sendAbonoRequestWhatsapp(
   // settings (no drift). The button URL is the per-token /abono page (template
   // base + {{1}} = token id) — REQUIRED for the webhook to attribute the
   // payment (a static MP link can't be auto-confirmed).
+  const clinicLocation = await loadClinicLocation();
   const { conversationId } = await deps.ensureContactAndConversation(
     token.patientPhone,
     token.patientName,
@@ -212,6 +215,7 @@ export async function sendAbonoRequestWhatsapp(
       phoneNumberId: waPhone.id,
       templateName: waConfig.templateName,
       language: waConfig.language,
+      ...(clinicLocation ? { locationHeader: clinicLocation } : {}),
       bodyNamedParams: [
         { name: "nombre_paciente", text: token.patientName },
         { name: "fecha_hora", text: fechaHora },

@@ -19565,6 +19565,18 @@ export class SchemaType implements SchemaDef {
                     attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("San Mart\u00EDn 870, Edificio Caram, Torre B, Of. 208 A \u2013 208 B, Concepci\u00F3n") }] }] as readonly AttributeApplication[],
                     default: "San Mart\u00EDn 870, Edificio Caram, Torre B, Of. 208 A \u2013 208 B, Concepci\u00F3n" as FieldDefault
                 },
+                latitude: {
+                    name: "latitude",
+                    type: "Decimal",
+                    optional: true,
+                    attributes: [{ name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(10) }, { name: "s", value: ExpressionUtils.literal(7) }] }] as readonly AttributeApplication[]
+                },
+                longitude: {
+                    name: "longitude",
+                    type: "Decimal",
+                    optional: true,
+                    attributes: [{ name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(10) }, { name: "s", value: ExpressionUtils.literal(7) }] }] as readonly AttributeApplication[]
+                },
                 phoneWhatsapp: {
                     name: "phoneWhatsapp",
                     type: "String",
