@@ -40,6 +40,7 @@ import {
   sendTextMessage,
   uploadMedia,
 } from "../modules/wa-cloud/graph-client.ts";
+import { loadClinicLocation } from "../lib/doctoralia/abono-whatsapp-settings.ts";
 
 export async function getWaMessagesForExport(conversationId: number) {
   return db.waMessage.findMany({
@@ -183,10 +184,15 @@ export async function sendTemplate(
     );
   }
   const components: Array<Record<string, unknown>> = [];
-  if (payload.locationHeader) {
+  // Location header: explicit payload (abono flow) or resolved from clinic
+  // settings when the chat composer flags a LOCATION-header template.
+  const locationHeader =
+    payload.locationHeader ??
+    (payload.includeClinicLocationHeader ? await loadClinicLocation() : null);
+  if (locationHeader) {
     components.push({
       type: "header",
-      parameters: [{ type: "location", location: payload.locationHeader }],
+      parameters: [{ type: "location", location: locationHeader }],
     });
   }
   if (payload.headerParams?.length) {
