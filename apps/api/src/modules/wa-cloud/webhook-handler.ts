@@ -477,6 +477,7 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
         FIELD === "account_update" ||
         FIELD === "business_capability_update" ||
         FIELD === "business_status_update" ||
+        FIELD === "messaging_limit_tier_update" ||
         FIELD === "automatic_events" ||
         FIELD === "security" ||
         FIELD === "partner_solutions" ||
@@ -763,7 +764,12 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
       }
 
       // ── messages (default Cloud API webhook field) ──
-      if (FIELD !== "messages") continue;
+      // Anything that reached here matched no handler above — log it so a new
+      // Meta field isn't dropped silently (instead of a blind `continue`).
+      if (FIELD !== "messages") {
+        logWarn("[wa-cloud.webhook] unhandled field", { field: FIELD });
+        continue;
+      }
 
       // Inbound messages
       if (v.messages?.length) {
