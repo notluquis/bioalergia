@@ -1,5 +1,5 @@
-import { Label, ListBox, SearchField, Select } from "@heroui/react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Button, Label, ListBox, SearchField, Select } from "@heroui/react";
+import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ShoppingBag } from "lucide-react";
 import { useEffect, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
@@ -46,7 +46,7 @@ export function OrdersPage() {
     };
   }, [searchInput]);
 
-  const ordersQuery = useQuery(
+  const ordersQuery = useInfiniteQuery(
     orderKeys.list({
       status: statusFilter === "ALL" ? undefined : statusFilter,
       search: search || undefined,
@@ -141,25 +141,40 @@ export function OrdersPage() {
         query={ordersQuery}
         emptyDescription="No hay pedidos que coincidan con los filtros."
         emptyTitle="Sin pedidos"
-        isEmpty={(result) => result.orders.length === 0}
+        isEmpty={(result) => result.pages.every((p) => p.orders.length === 0)}
         loadingLabel="Cargando pedidos"
       >
-        {(result) => (
-          <div className="surface-elevated rounded-2xl p-4">
-            <DataTable
-              columns={columns}
-              containerVariant="plain"
-              data={result.orders}
-              enableExport={false}
-              enableGlobalFilter={false}
-              enablePagination
-              meta={meta}
-              noDataMessage="No hay pedidos registrados."
-              pageSizeOptions={[10, 20, 50]}
-              scrollMaxHeight="min(68dvh, 760px)"
-            />
-          </div>
-        )}
+        {(result) => {
+          const orders = result.pages.flatMap((p) => p.orders);
+          return (
+            <div className="surface-elevated flex flex-col gap-3 rounded-2xl p-4">
+              <DataTable
+                columns={columns}
+                containerVariant="plain"
+                data={orders}
+                enableExport={false}
+                enableGlobalFilter={false}
+                enablePagination
+                meta={meta}
+                noDataMessage="No hay pedidos registrados."
+                pageSizeOptions={[10, 20, 50]}
+                scrollMaxHeight="min(68dvh, 760px)"
+              />
+              {ordersQuery.hasNextPage ? (
+                <Button
+                  className="self-center"
+                  isPending={ordersQuery.isFetchingNextPage}
+                  onPress={() => {
+                    void ordersQuery.fetchNextPage();
+                  }}
+                  variant="secondary"
+                >
+                  Cargar más pedidos
+                </Button>
+              ) : null}
+            </div>
+          );
+        }}
       </PageState>
 
       <OrderDetailModal onClose={() => setDetailId(null)} orderId={detailId} />
