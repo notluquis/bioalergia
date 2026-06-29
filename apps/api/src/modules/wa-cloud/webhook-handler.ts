@@ -419,9 +419,10 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
         out.events += 1;
         try {
           const tplPayload = v as unknown as {
-            message_template_id?: string;
+            message_template_id?: string | number;
             message_template_name?: string;
             message_template_language?: string;
+            message_template_category?: string;
             event?: string;
             new_quality_score?: string;
             new_category?: string;
@@ -446,6 +447,7 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
                 PENDING: "PENDING",
                 PAUSED: "PAUSED",
                 DISABLED: "DISABLED",
+                PENDING_DELETION: "DISABLED",
               };
               data.status = statusMap[tplPayload.event] ?? tplPayload.event;
             }
@@ -455,10 +457,28 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
             if (FIELD === "template_category_update" && tplPayload.new_category) {
               data.category = tplPayload.new_category;
             }
-            const existing = await db.waTemplate.findUnique({ where });
-            if (existing) {
-              await db.waTemplate.update({ where, data });
+            // Category for the create branch (status webhook carries it).
+            if (tplPayload.message_template_category && !data.category) {
+              data.category = tplPayload.message_template_category;
             }
+            // Upsert (not update-if-exists): a freshly-approved template that was
+            // never synced still lands in the DB straight from the webhook — no
+            // manual "Sincronizar" needed. Components backfill on the next sync
+            // (not needed to list/select/send). The payload always carries
+            // name + language + category.
+            await db.waTemplate.upsert({
+              where,
+              update: data,
+              create: {
+                accountId: account.id,
+                name: tplPayload.message_template_name,
+                language: tplPayload.message_template_language,
+                ...(tplPayload.message_template_id
+                  ? { metaTemplateId: String(tplPayload.message_template_id) }
+                  : {}),
+                ...data,
+              } as never,
+            });
           }
           logEvent("[wa-cloud.webhook] template event", { field: FIELD, ...tplPayload });
         } catch (err) {
