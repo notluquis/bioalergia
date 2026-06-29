@@ -159,6 +159,76 @@ export async function sendReactivoLeadNotification(args: {
   });
 }
 
+function storeUrl(): string {
+  return (process.env.STOREFRONT_BASE_URL || "https://bioalergia.cl").replace(/\/+$/, "");
+}
+
+function clp(n: number): string {
+  return new Intl.NumberFormat("es-CL", {
+    style: "currency",
+    currency: "CLP",
+    maximumFractionDigits: 0,
+  }).format(n);
+}
+
+/**
+ * Shop order confirmation — sent to the buyer once MercadoPago approves the
+ * payment (webhook). Order summary + DTE (boleta/factura) + a link to track the
+ * order. Best-effort at the call site: a send failure must not break the webhook.
+ */
+export async function sendOrderConfirmationEmail(args: {
+  to: string;
+  orderNumber: string;
+  totalClp: number;
+  items: Array<{ name: string; qty: number; unitPriceClp: number }>;
+  dteType?: string;
+  dteFolio?: string;
+  dtePdfUrl?: string;
+}): Promise<EmailSendResult> {
+  const statusUrl = `${storeUrl()}/pedido/${encodeURIComponent(args.orderNumber)}?email=${encodeURIComponent(args.to)}`;
+  const itemRows = args.items
+    .map(
+      (it) =>
+        `<tr><td style="padding:6px 12px">${esc(it.name)}</td><td style="padding:6px 12px;text-align:center">${it.qty}</td><td style="padding:6px 12px;text-align:right">${clp(it.unitPriceClp * it.qty)}</td></tr>`
+    )
+    .join("");
+  const dteLine =
+    args.dteFolio && args.dteType
+      ? `<p style="margin-top:12px">${args.dteType === "FACTURA" ? "Factura" : "Boleta"} electrónica N° ${esc(args.dteFolio)}${
+          args.dtePdfUrl
+            ? ` · <a href="${esc(args.dtePdfUrl)}" style="color:#0e64b7">Descargar</a>`
+            : ""
+        }</p>`
+      : "";
+  const html = shell(
+    "¡Gracias por tu compra!",
+    `<p>Confirmamos el pago de tu pedido <strong>${esc(args.orderNumber)}</strong>.</p>
+     <table style="border-collapse:collapse;width:100%;background:#f9fafb;border-radius:8px;margin-top:12px">
+       <thead><tr><th style="padding:6px 12px;text-align:left;color:#6b7280">Producto</th><th style="padding:6px 12px;color:#6b7280">Cant.</th><th style="padding:6px 12px;text-align:right;color:#6b7280">Total</th></tr></thead>
+       <tbody>${itemRows}</tbody>
+     </table>
+     <p style="margin-top:12px;text-align:right;font-weight:600">Total: ${clp(args.totalClp)}</p>
+     ${dteLine}
+     <p style="margin-top:16px"><a href="${statusUrl}" style="color:#0e64b7">Ver el estado de tu pedido</a></p>`
+  );
+  const text = [
+    `Confirmamos el pago de tu pedido ${args.orderNumber}.`,
+    ...args.items.map((it) => `- ${it.qty}× ${it.name}: ${clp(it.unitPriceClp * it.qty)}`),
+    `Total: ${clp(args.totalClp)}`,
+    ...(args.dteFolio
+      ? [`${args.dteType === "FACTURA" ? "Factura" : "Boleta"} N° ${args.dteFolio}`]
+      : []),
+    `Estado: ${statusUrl}`,
+  ].join("\n");
+  return sendEmail({
+    to: args.to,
+    subject: `Confirmación de tu pedido ${args.orderNumber} — Bioalergia`,
+    html,
+    text,
+    idempotencyKey: `order-confirmation/${args.orderNumber}`,
+  });
+}
+
 // Fecha legible es-CL para los avisos internos (plazos legales).
 function fmtDate(d: Date): string {
   return new Intl.DateTimeFormat("es-CL", { dateStyle: "long" }).format(d);

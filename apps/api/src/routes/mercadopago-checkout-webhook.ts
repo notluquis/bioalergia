@@ -19,6 +19,7 @@ import {
   reserveStockForOrder,
 } from "../modules/reservations/index.ts";
 import { sendAbonoConfirmation } from "../services/abono-confirmation.ts";
+import { sendOrderConfirmationEmail } from "../services/email/transactional.ts";
 import { appendAbonoFlowHistory } from "../lib/doctoralia/abono-flow-history.ts";
 import { logError } from "../lib/logger.ts";
 import { attachDteToOrder, markOrderPaid } from "../services/orders.ts";
@@ -261,6 +262,7 @@ export function registerMercadopagoCheckoutWebhook(app: Hono) {
         }
 
         // DTE emission — falla aquí NO debe perder la venta; log y sigue.
+        let dtePdfUrl: string | undefined;
         try {
           const order = await db.order.findUnique({
             where: { id: orderId },
@@ -283,10 +285,37 @@ export function registerMercadopagoCheckoutWebhook(app: Hono) {
                 };
               }),
             });
+            dtePdfUrl = dte.pdfUrl;
             await attachDteToOrder(orderId, dte);
           }
         } catch (e) {
           console.error("[mp-webhook] DTE emit failed", e);
+        }
+
+        // Order confirmation email to the buyer (best-effort — never break the
+        // webhook). Sent after DTE so the boleta/factura folio + PDF can ride
+        // along; sends regardless of whether DTE succeeded.
+        try {
+          const order = await db.order.findUnique({
+            where: { id: orderId },
+            include: { items: true },
+          });
+          if (order) {
+            await sendOrderConfirmationEmail({
+              to: order.customerEmail,
+              orderNumber: order.number,
+              totalClp: order.totalClp,
+              items: order.items.map((i: (typeof order.items)[number]) => {
+                const snap = i.productSnapshot as { name: string };
+                return { name: snap.name, qty: i.qty, unitPriceClp: i.unitPriceClp };
+              }),
+              ...(order.dteType ? { dteType: order.dteType } : {}),
+              ...(order.dteFolio ? { dteFolio: order.dteFolio } : {}),
+              ...(dtePdfUrl ? { dtePdfUrl } : {}),
+            });
+          }
+        } catch (e) {
+          logError("mp-webhook.order_confirmation_email_failed", e, { orderId });
         }
 
         // Push stock a ML (best-effort).
