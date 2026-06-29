@@ -622,16 +622,25 @@ export function ContactsSendModal({
       toast.error("Nombre obligatorio");
       return;
     }
-    if (birthday.trim() && !/^\d{4}-\d{2}-\d{2}$/.test(birthday.trim())) {
-      toast.error("Cumpleaños debe ser AAAA-MM-DD");
-      return;
+    const bday = birthday.trim();
+    if (bday) {
+      // Shape + real-calendar-date check (regex alone passes 1990-13-40).
+      const d = new Date(`${bday}T00:00:00Z`);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(bday) || d.toISOString().slice(0, 10) !== bday) {
+        toast.error("Cumpleaños inválido (AAAA-MM-DD)");
+        return;
+      }
     }
+    // The contract requires an absolute URL; prepend https:// when the operator
+    // types a bare domain so the send doesn't 400 after the modal closes.
+    const site = website.trim();
+    const siteUrl = site ? (/^https?:\/\//i.test(site) ? site : `https://${site}`) : "";
     const hasAddress = street.trim() || city.trim() || country.trim();
     const card = {
       name: { formatted_name: name.trim() },
       phones: phone.trim() ? [{ phone: phone.trim(), type: "CELL" }] : undefined,
       emails: email.trim() ? [{ email: email.trim(), type: "WORK" }] : undefined,
-      urls: website.trim() ? [{ url: website.trim(), type: "WORK" }] : undefined,
+      urls: siteUrl ? [{ url: siteUrl, type: "WORK" }] : undefined,
       addresses: hasAddress
         ? [
             {
@@ -642,7 +651,7 @@ export function ContactsSendModal({
             },
           ]
         : undefined,
-      birthday: birthday.trim() || undefined,
+      birthday: bday || undefined,
     };
     onSend({ conversationId, phoneNumberId, contacts: [card] });
     onClose();
