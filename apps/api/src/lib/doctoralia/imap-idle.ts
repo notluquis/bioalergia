@@ -268,30 +268,82 @@ export async function retryPendingAbonoWhatsapp(
   return result;
 }
 
+// High-water mark by IMAP UID (persisted in settings). We can't rely on the
+// \Seen flag for "already processed" because a human mail client reading
+// clinica@bioalergia.cl marks every Doctoralia email \Seen before the listener
+// runs — which silently blinded the listener. UID is monotonic per mailbox;
+// we process only UIDs above the mark and never touch flags. Message-ID dedup
+// (below) remains the idempotency backstop.
+const IMAP_LAST_UID_KEY = "doctoralia:imap:lastUid";
+const IMAP_UIDVALIDITY_KEY = "doctoralia:imap:uidValidity";
+
+async function getImapHighWater(): Promise<{ lastUid: number; uidValidity: number } | null> {
+  const [uidRow, validityRow] = await Promise.all([
+    db.setting.findUnique({ where: { key: IMAP_LAST_UID_KEY } }),
+    db.setting.findUnique({ where: { key: IMAP_UIDVALIDITY_KEY } }),
+  ]);
+  if (!uidRow?.value || !validityRow?.value) return null;
+  const lastUid = Number(uidRow.value);
+  const uidValidity = Number(validityRow.value);
+  if (!Number.isFinite(lastUid) || !Number.isFinite(uidValidity)) return null;
+  return { lastUid, uidValidity };
+}
+
+async function setImapHighWater(lastUid: number, uidValidity: number): Promise<void> {
+  await db.setting.upsert({
+    where: { key: IMAP_LAST_UID_KEY },
+    create: { key: IMAP_LAST_UID_KEY, value: String(lastUid) },
+    update: { value: String(lastUid) },
+  });
+  await db.setting.upsert({
+    where: { key: IMAP_UIDVALIDITY_KEY },
+    create: { key: IMAP_UIDVALIDITY_KEY, value: String(uidValidity) },
+    update: { value: String(uidValidity) },
+  });
+}
+
 async function processUnseen(
   client: ImapFlow,
   config: ImapConfig,
   deps: ImapListenerDependencies
 ): Promise<void> {
-  const uids = await client.search({ from: config.senderFilter, seen: false });
-  if (uids === false || uids.length === 0) return;
+  const uidValidity = Number(
+    client.mailbox && typeof client.mailbox === "object" ? client.mailbox.uidValidity : 0
+  );
+  // uid:true — search/fetch by UID, not sequence number. Sequence numbers
+  // shift on expunge and would corrupt the high-water mark; UIDs are stable.
+  const allUids = await client.search({ from: config.senderFilter }, { uid: true });
+  if (allUids === false) return;
+  const maxUid = allUids.length > 0 ? Math.max(...allUids) : 0;
 
-  logEvent("doctoralia.imap.found", { count: uids.length });
+  const highWater = await getImapHighWater();
+  // First run ever, or mailbox UIDVALIDITY rotated (rare; mailbox recreated):
+  // anchor the mark at the current max and skip the backlog. We only want to
+  // act on bookings that arrive AFTER the listener is healthy — never blast
+  // weeks of already-handled appointments with payment requests.
+  if (!highWater || highWater.uidValidity !== uidValidity) {
+    await setImapHighWater(maxUid, uidValidity);
+    logEvent("doctoralia.imap.highwater_init", { maxUid, uidValidity });
+    return;
+  }
 
-  for (const uid of uids) {
+  const freshUids = allUids.filter((uid) => uid > highWater.lastUid).sort((a, b) => a - b);
+  if (freshUids.length === 0) return;
+
+  logEvent("doctoralia.imap.found", { count: freshUids.length, sinceUid: highWater.lastUid });
+
+  let newLastUid = highWater.lastUid;
+  let blocked = false;
+  for (const uid of freshUids) {
     if (stopped) break;
 
+    let ok = false;
     let messageId: string | undefined;
     try {
-      const msg = await client.fetchOne(uid, {
-        envelope: true,
-        source: true,
-      });
-      if (!msg) continue;
+      const msg = await client.fetchOne(uid, { envelope: true, source: true }, { uid: true });
+      messageId = msg ? msg.envelope?.messageId : undefined;
 
-      messageId = msg.envelope?.messageId;
-
-      if (msg.source) {
+      if (msg && msg.source) {
         const raw = msg.source.toString("utf-8");
         const parsed = await simpleParser(raw);
         const textContent = parsed.text ?? htmlToText(parsed.html || "");
@@ -404,14 +456,31 @@ async function processUnseen(
         }
       }
 
-      // Mark as seen so we don't process it again (if not already handled by IDLE)
-      await client.messageFlagsAdd(msg.uid, ["\\Seen"], { uid: true });
+      ok = true;
       listenerStatus.lastProcessedAt = new Date().toISOString();
     } catch (dbErr) {
       listenerStatus.lastErrorAt = new Date().toISOString();
       listenerStatus.lastErrorMessage = dbErr instanceof Error ? dbErr.message : String(dbErr);
       logError("doctoralia.imap.db_error", dbErr, { messageId });
     }
+
+    // Advance the high-water mark only across the contiguous run of
+    // successfully-processed UIDs. The first failure (transient DB/IMAP error)
+    // freezes the mark so that UID — and everything after it — stays retryable
+    // on the next scan; a booking that hit a transient error is never skipped.
+    // Parse misses don't throw (they fall through as success), so a non-booking
+    // email still advances the mark and can't wedge the queue.
+    if (ok && !blocked) {
+      newLastUid = uid;
+    } else if (!ok) {
+      blocked = true;
+    }
+  }
+
+  if (newLastUid > highWater.lastUid) {
+    await setImapHighWater(newLastUid, uidValidity).catch((err) =>
+      logError("doctoralia.imap.highwater_persist_error", err, { lastUid: newLastUid })
+    );
   }
 }
 
