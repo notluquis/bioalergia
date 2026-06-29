@@ -192,11 +192,12 @@ export async function sendAbonoRequestWhatsapp(
 
   const firstName = token.patientName.split(" ")[0] ?? token.patientName;
   const fechaHora = formatChile(token.appointmentDate, "dddd D [de] MMMM [a las] HH:mm [hrs]");
-  // Prices come from settings (single source of truth — same values the page
-  // charges). Named params + dynamic URL button suffix (the token id; the
-  // template URL base is static). The page handles previsión selection.
   const clp = (n: number) =>
     new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP" }).format(n);
+  // Fully personalized named body params + dynamic URL button. Prices from
+  // settings (no drift). The button URL is the per-token /abono page (template
+  // base + {{1}} = token id) — REQUIRED for the webhook to attribute the
+  // payment (a static MP link can't be auto-confirmed).
   const { conversationId } = await deps.ensureContactAndConversation(
     token.patientPhone,
     token.patientName,
