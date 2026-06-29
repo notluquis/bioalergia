@@ -10,8 +10,14 @@
 
 import { db } from "@finanzas/db";
 import { logEvent } from "../lib/logger.ts";
-import { downloadMediaBytes } from "../modules/wa-cloud/graph-client.ts";
+import { downloadMediaBytes, downloadMediaUrl } from "../modules/wa-cloud/graph-client.ts";
 import { putR2Object } from "../modules/cloudflare/r2.ts";
+
+// ponytail: 25MB cap — downloadMediaBytes buffers the whole file in memory and
+// the api heap is 1GB; Meta inbound docs go up to 100MB, which × concurrent
+// jobs would OOM. Over-cap media stays on live-proxy (works while fresh).
+// Raise this only if persist switches to streaming R2 upload.
+const MAX_PERSIST_BYTES = 25 * 1024 * 1024;
 
 const MEDIA_KEYS = ["image", "sticker", "video", "audio", "document"] as const;
 
@@ -39,6 +45,12 @@ export async function persistInboundMedia(
   if (!mediaId) return "no_media";
 
   const accountId = message.phoneNumber.accountId;
+  // Cheap metadata GET first → skip oversized media before buffering it.
+  const info = await downloadMediaUrl(mediaId, accountId);
+  if (info.file_size > MAX_PERSIST_BYTES) {
+    logEvent("wa.media.skip_too_large", { messageId, fileSize: info.file_size });
+    return "skipped";
+  }
   const { bytes, mimeType } = await downloadMediaBytes(mediaId, accountId);
   const r2Key = `wa-media/${accountId}/${messageId}`;
   await putR2Object(r2Key, bytes, mimeType || message.mediaMimeType || "application/octet-stream");
