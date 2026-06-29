@@ -181,10 +181,13 @@ export async function sendOrderConfirmationEmail(args: {
   orderNumber: string;
   totalClp: number;
   items: Array<{ name: string; qty: number; unitPriceClp: number }>;
-  dteType?: string;
+  // Use the order's billing enum for the label — `dteType` from emitDte is the
+  // SII code ("33" factura / "39" boleta), not "FACTURA"/"BOLETA".
+  billingType?: "BOLETA" | "FACTURA";
   dteFolio?: string;
   dtePdfUrl?: string;
 }): Promise<EmailSendResult> {
+  const docLabel = args.billingType === "FACTURA" ? "Factura" : "Boleta";
   const statusUrl = `${storeUrl()}/pedido/${encodeURIComponent(args.orderNumber)}?email=${encodeURIComponent(args.to)}`;
   const itemRows = args.items
     .map(
@@ -192,14 +195,13 @@ export async function sendOrderConfirmationEmail(args: {
         `<tr><td style="padding:6px 12px">${esc(it.name)}</td><td style="padding:6px 12px;text-align:center">${it.qty}</td><td style="padding:6px 12px;text-align:right">${clp(it.unitPriceClp * it.qty)}</td></tr>`
     )
     .join("");
-  const dteLine =
-    args.dteFolio && args.dteType
-      ? `<p style="margin-top:12px">${args.dteType === "FACTURA" ? "Factura" : "Boleta"} electrónica N° ${esc(args.dteFolio)}${
-          args.dtePdfUrl
-            ? ` · <a href="${esc(args.dtePdfUrl)}" style="color:#0e64b7">Descargar</a>`
-            : ""
-        }</p>`
-      : "";
+  const dteLine = args.dteFolio
+    ? `<p style="margin-top:12px">${docLabel} electrónica N° ${esc(args.dteFolio)}${
+        args.dtePdfUrl
+          ? ` · <a href="${esc(args.dtePdfUrl)}" style="color:#0e64b7">Descargar</a>`
+          : ""
+      }</p>`
+    : "";
   const html = shell(
     "¡Gracias por tu compra!",
     `<p>Confirmamos el pago de tu pedido <strong>${esc(args.orderNumber)}</strong>.</p>
@@ -215,9 +217,7 @@ export async function sendOrderConfirmationEmail(args: {
     `Confirmamos el pago de tu pedido ${args.orderNumber}.`,
     ...args.items.map((it) => `- ${it.qty}× ${it.name}: ${clp(it.unitPriceClp * it.qty)}`),
     `Total: ${clp(args.totalClp)}`,
-    ...(args.dteFolio
-      ? [`${args.dteType === "FACTURA" ? "Factura" : "Boleta"} N° ${args.dteFolio}`]
-      : []),
+    ...(args.dteFolio ? [`${docLabel} N° ${args.dteFolio}`] : []),
     `Estado: ${statusUrl}`,
   ].join("\n");
   return sendEmail({

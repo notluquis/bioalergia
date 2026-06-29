@@ -92,24 +92,29 @@ export async function consumeReservations(orderId: number): Promise<void> {
 }
 
 export async function releaseReservations(orderId: number): Promise<void> {
-  // Re-incrementa stock y marca como RELEASED.
+  // Re-incrementa stock y marca como RELEASED. Flip-first per row (lock the
+  // reservation row before the product) to match the sweep/lazy-cleanup lock
+  // order — the opposite order can deadlock if release + sweep run concurrently —
+  // and to skip rows a concurrent consume already moved off ACTIVE.
   await db.$transaction(async (tx) => {
     const active = await tx.stockReservation.findMany({
       where: { orderId, status: "ACTIVE" },
     });
     for (const r of active) {
-      await tx.product.update({
-        where: { id: r.productId },
-        data: {
-          availableQty: { increment: r.qty },
-          version: { increment: 1 },
-        },
+      const flipped = await tx.stockReservation.updateMany({
+        where: { id: r.id, status: "ACTIVE" },
+        data: { status: "RELEASED" },
       });
+      if (flipped.count === 1) {
+        await tx.product.update({
+          where: { id: r.productId },
+          data: {
+            availableQty: { increment: r.qty },
+            version: { increment: 1 },
+          },
+        });
+      }
     }
-    await tx.stockReservation.updateMany({
-      where: { orderId, status: "ACTIVE" },
-      data: { status: "RELEASED" },
-    });
   });
 }
 
