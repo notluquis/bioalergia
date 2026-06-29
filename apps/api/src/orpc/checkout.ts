@@ -14,12 +14,13 @@ import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
 import { getCookie } from "hono/cookie";
+import { randomUUID } from "node:crypto";
 
 import { chilexpressConfig } from "../lib/config.ts";
 import { logError } from "../lib/logger.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
 import { getCommunes, getRegions, quoteCourier } from "../modules/chilexpress/client.ts";
-import { createCheckoutOrder } from "../modules/mercadopago-checkout/payment.ts";
+import { createCheckoutPreference } from "../modules/mercadopago-checkout/payment.ts";
 import { reserveStockForOrder } from "../modules/reservations/index.ts";
 import { createOrderFromCart, getOrderByNumber } from "../services/orders.ts";
 
@@ -174,37 +175,29 @@ const startRoute = base
       })),
     });
 
-    const [firstName, ...rest] = input.customer.name.split(" ");
-    const lastName = rest.join(" ") || undefined;
-
-    const mpOrder = await createCheckoutOrder({
+    // Checkout Pro: create the MP preference (hosted checkout, every method) and
+    // a PENDING payment row the shared webhook updates once MP confirms.
+    const { preferenceId, initPoint } = await createCheckoutPreference({
       orderId: order.id,
       orderNumber: order.number,
-      amountClp: order.totalClp,
-      brick: input.brick,
+      customerEmail: input.customer.email,
+      shippingClp,
       items: order.items.map((i: OrderItem) => ({
         sku: i.product.sku,
         title: i.product.name,
-        ...(i.product.shortDescription ? { description: i.product.shortDescription } : {}),
         qty: i.qty,
         unitPriceClp: i.unitPriceClp,
       })),
-      payer: {
-        email: input.customer.email,
-        ...(firstName ? { firstName } : {}),
-        ...(lastName ? { lastName } : {}),
-        ...(input.customer.rut ? { rut: input.customer.rut } : {}),
-      },
     });
 
     await db.payment.create({
       data: {
         orderId: order.id,
         provider: "MERCADO_PAGO",
-        providerPaymentId: mpOrder.orderId,
-        idempotencyKey: mpOrder.idempotencyKey,
+        providerPaymentId: preferenceId,
+        idempotencyKey: randomUUID(),
         amountClp: order.totalClp,
-        status: mpOrder.status === "approved" ? "APPROVED" : "PENDING",
+        status: "PENDING",
       },
     });
 
@@ -212,10 +205,8 @@ const startRoute = base
       data: {
         order_id: order.id,
         order_number: order.number,
-        mp_order_id: mpOrder.orderId,
-        mp_status: mpOrder.status,
-        mp_status_detail: mpOrder.statusDetail,
         total_clp: order.totalClp,
+        init_point: initPoint,
       },
       status: "ok" as const,
     };

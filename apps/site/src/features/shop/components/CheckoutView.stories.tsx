@@ -3,11 +3,11 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { SHOP_FIXTURES } from "../../../../.storybook/msw-handlers";
 import { CheckoutView } from "./CheckoutView";
 
-// Snapshotea el checkout en sus estados (formulario / carrito vacío / falta MP
-// key / cargando) para que Chromatic detecte regresiones del formulario de
-// contacto, el bloque de envío y el resumen. No monta el brick de MercadoPago
-// porque por defecto el formulario está vacío (customerReady=false). El carrito
-// sale de los fixtures anclados al contrato (cart).
+// Snapshotea el checkout en sus estados (formulario / carrito vacío / cargando)
+// para que Chromatic detecte regresiones del formulario de contacto, el bloque
+// de envío y el resumen. El pago es Checkout Pro (un botón que redirige a
+// MercadoPago), así que no se monta ningún brick. El carrito sale de los
+// fixtures anclados al contrato (cart).
 const meta: Meta<typeof CheckoutView> = {
   title: "Shop/CheckoutView",
   component: CheckoutView,
@@ -21,8 +21,6 @@ const meta: Meta<typeof CheckoutView> = {
       { code: "CCP", name: "Concepción", region: "Biobío" },
       { code: "VINA", name: "Viña del Mar", region: "Valparaíso" },
     ],
-    // Stubs: the brick (MercadoPago) only mounts once the form is filled, so
-    // these are never invoked in the default snapshots.
     onQuote: () =>
       Promise.resolve(
         SHOP_FIXTURES.checkoutQuote.data.options.map((o) => ({
@@ -42,7 +40,6 @@ type Story = StoryObj<typeof CheckoutView>;
 
 export const Form: Story = {
   args: {
-    publicKey: "TEST-fake-public-key",
     cart: SHOP_FIXTURES.cart.data,
     isCartLoading: false,
   },
@@ -50,23 +47,13 @@ export const Form: Story = {
 
 export const EmptyCart: Story = {
   args: {
-    publicKey: "TEST-fake-public-key",
     cart: SHOP_FIXTURES.emptyCart.data,
-    isCartLoading: false,
-  },
-};
-
-export const MissingPublicKey: Story = {
-  args: {
-    publicKey: null,
-    cart: SHOP_FIXTURES.cart.data,
     isCartLoading: false,
   },
 };
 
 export const Loading: Story = {
   args: {
-    publicKey: "TEST-fake-public-key",
     cart: undefined,
     isCartLoading: true,
   },

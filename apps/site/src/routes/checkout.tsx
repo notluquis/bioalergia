@@ -1,17 +1,12 @@
-import { initMercadoPago } from "@mercadopago/sdk-react";
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { createFileRoute } from "@tanstack/react-router";
 
 import { ShopShell } from "@/components/ShopShell";
 import { CheckoutView } from "@/features/shop/components/CheckoutView";
 import { shopKeys } from "@/features/shop/queries";
 import { checkoutClient } from "@/lib/orpc-client";
 
-const PUBLIC_KEY = import.meta.env.VITE_MERCADOPAGO_PUBLIC_KEY as string | undefined;
-
 function CheckoutPage() {
-  const navigate = useNavigate();
   const cartQ = useQuery(shopKeys.cart());
   const cart = cartQ.data?.data;
   // Static list (communes change ~never) → cache hard so the picker is instant.
@@ -20,12 +15,6 @@ function CheckoutPage() {
     queryFn: async () => (await checkoutClient.communes()).data.communes,
     staleTime: Infinity,
   });
-
-  useEffect(() => {
-    if (PUBLIC_KEY) {
-      initMercadoPago(PUBLIC_KEY, { locale: "es-CL" });
-    }
-  }, []);
 
   return (
     <ShopShell>
@@ -37,7 +26,7 @@ function CheckoutPage() {
           const res = await checkoutClient.quote({ destination_county_code: county });
           return res.data.options;
         }}
-        onStart={async ({ customer, shipping, brick }) => {
+        onStart={async ({ customer, shipping }) => {
           const res = await checkoutClient.start({
             customer: {
               email: customer.email,
@@ -54,16 +43,11 @@ function CheckoutPage() {
                     address: shipping.address ?? { street: "", city: "", region: "" },
                     ...(shipping.serviceCode ? { service_code: shipping.serviceCode } : {}),
                   },
-            brick,
           });
-          const num = res.data.order_number;
-          void navigate({
-            to: "/pedido/$number",
-            params: { number: num },
-            search: { email: customer.email },
-          });
+          // Checkout Pro: hand off to the MP-hosted checkout (all payment methods).
+          // It redirects back to /pedido/$number (back_urls) where status polls.
+          window.location.href = res.data.init_point;
         }}
-        publicKey={PUBLIC_KEY}
       />
     </ShopShell>
   );
