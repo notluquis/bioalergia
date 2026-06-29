@@ -638,6 +638,10 @@ function AudioPlayer({
         onPlay={() => setPlaying(true)}
         onPause={() => setPlaying(false)}
         onEnded={() => setPlaying(false)}
+        // Enable the controls as soon as the audio is playable, even if the
+        // duration hasn't resolved yet — otherwise opus voice notes whose
+        // duration probe is slow leave the play button stuck on a spinner.
+        onCanPlay={() => setLoaded(true)}
         onLoadedMetadata={(e) => {
           const d = e.currentTarget.duration;
           if (Number.isFinite(d) && d > 0) {
