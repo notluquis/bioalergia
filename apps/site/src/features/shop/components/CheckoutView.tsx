@@ -1,6 +1,16 @@
 import type { CartContract } from "@finanzas/orpc-contracts/cart";
 import type { CheckoutContract } from "@finanzas/orpc-contracts/checkout";
-import { Alert, Breadcrumbs, Button, Card, Input, Label, TextField } from "@heroui/react";
+import {
+  Alert,
+  Breadcrumbs,
+  Button,
+  Card,
+  ComboBox,
+  Input,
+  Label,
+  ListBox,
+  TextField,
+} from "@heroui/react";
 import { Payment } from "@mercadopago/sdk-react";
 import type { InferContractRouterOutputs } from "@orpc/contract";
 import { Link } from "@tanstack/react-router";
@@ -38,6 +48,8 @@ export type CheckoutShipping = {
   method: "pickup" | "chilexpress";
   serviceCode: string | null;
   address?: { street: string; city: string; region: string };
+  /** Chilexpress coverage code of the chosen comuna (server re-quotes with it). */
+  countyCode?: string;
 };
 
 export type CheckoutViewProps = {
@@ -45,6 +57,8 @@ export type CheckoutViewProps = {
   publicKey: string | null | undefined;
   cart: Cart | undefined;
   isCartLoading: boolean;
+  /** Chilexpress communes (name → coverage code + region) for the comuna picker. */
+  communes: Array<{ code: string; name: string; region: string }>;
   /** Quote a county; resolves to the available shipping options. */
   onQuote: (county: string) => Promise<QuoteOption[]>;
   /** Start the order with the collected customer/shipping + MP brick payload. */
@@ -59,6 +73,7 @@ export function CheckoutView({
   publicKey,
   cart,
   isCartLoading,
+  communes,
   onQuote,
   onStart,
 }: CheckoutViewProps) {
@@ -203,9 +218,6 @@ export function CheckoutView({
           </div>
 
           {shippingMethod === "chilexpress" && (
-            // ponytail: región/comuna are free text + a manual coverage code. A
-            // comuna selector that yields code+name+region (one Chilexpress
-            // coverage fetch) is the upgrade if order volume justifies it.
             <div className="space-y-2">
               <TextField isRequired onChange={setStreet} value={street}>
                 <Label>Calle y número</Label>
@@ -215,25 +227,43 @@ export function CheckoutView({
                   placeholder="Av. Siempre Viva 742"
                 />
               </TextField>
-              <TextField isRequired onChange={setCity} value={city}>
-                <Label>Comuna / Ciudad</Label>
-                <Input autoComplete="address-level2" maxLength={80} placeholder="Concepción" />
-              </TextField>
-              <TextField isRequired onChange={setRegion} value={region}>
-                <Label>Región</Label>
-                <Input autoComplete="address-level1" maxLength={80} placeholder="Biobío" />
-              </TextField>
-              <TextField onChange={setComuna} value={comuna}>
-                <Label>Código comuna (para cotizar)</Label>
-                <Input placeholder="STGO / NUO / VINA…" />
-              </TextField>
+              <ComboBox
+                onSelectionChange={(key) => {
+                  const c = communes.find((x) => x.code === key);
+                  setComuna(c?.code ?? "");
+                  setCity(c?.name ?? "");
+                  setRegion(c?.region ?? "");
+                  // comuna changed → previous quote no longer applies.
+                  setQuoteOptions([]);
+                  setServiceCode(null);
+                  setShippingClp(0);
+                }}
+                selectedKey={comuna || null}
+              >
+                <Label>Comuna</Label>
+                <ComboBox.InputGroup>
+                  <Input placeholder="Escribe tu comuna…" />
+                  <ComboBox.Trigger />
+                </ComboBox.InputGroup>
+                <ComboBox.Popover>
+                  <ListBox items={communes}>
+                    {(c: { code: string; name: string; region: string }) => (
+                      <ListBox.Item id={c.code} textValue={c.name}>
+                        {c.name}
+                        {c.region ? ` · ${c.region}` : ""}
+                        <ListBox.ItemIndicator />
+                      </ListBox.Item>
+                    )}
+                  </ListBox>
+                </ComboBox.Popover>
+              </ComboBox>
               <Button
                 isDisabled={!comuna || isQuoting}
                 onPress={runQuote}
                 size="sm"
                 variant="secondary"
               >
-                {isQuoting ? "Cotizando…" : "Cotizar"}
+                {isQuoting ? "Cotizando…" : "Cotizar envío"}
               </Button>
               {quoteError && <p className="text-danger text-sm">{quoteError}</p>}
               {quoteOptions.map((o) => (
@@ -337,6 +367,7 @@ export function CheckoutView({
                       serviceCode,
                       ...(shippingMethod === "chilexpress"
                         ? {
+                            countyCode: comuna,
                             address: {
                               street: street.trim(),
                               city: city.trim(),

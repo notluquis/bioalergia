@@ -16,6 +16,11 @@ const meta: Meta<typeof CheckoutView> = {
     chromatic: { viewports: [1280, 390] },
   },
   args: {
+    communes: [
+      { code: "STGO", name: "Santiago", region: "Metropolitana de Santiago" },
+      { code: "CCP", name: "Concepción", region: "Biobío" },
+      { code: "VINA", name: "Viña del Mar", region: "Valparaíso" },
+    ],
     // Stubs: the brick (MercadoPago) only mounts once the form is filled, so
     // these are never invoked in the default snapshots.
     onQuote: () =>

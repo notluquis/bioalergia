@@ -10,11 +10,14 @@
 
 import { Route as rootRouteImport } from "./routes/__root";
 import { Route as VentaEmpresasRouteImport } from "./routes/venta-empresas";
+import { Route as UserDataDeletionRouteImport } from "./routes/user-data-deletion";
+import { Route as TermsOfServiceRouteImport } from "./routes/terms-of-service";
 import { Route as TermsRouteImport } from "./routes/terms";
 import { Route as ServiciosRouteImport } from "./routes/servicios";
 import { Route as SaludOcupacionalRouteImport } from "./routes/salud-ocupacional";
 import { Route as RegistroRouteImport } from "./routes/registro";
 import { Route as ReclamosRouteImport } from "./routes/reclamos";
+import { Route as PrivacyPolicyRouteImport } from "./routes/privacy-policy";
 import { Route as PrivacyRouteImport } from "./routes/privacy";
 import { Route as PreciosRouteImport } from "./routes/precios";
 import { Route as PolenRouteImport } from "./routes/polen";
@@ -27,6 +30,7 @@ import { Route as EquipoRouteImport } from "./routes/equipo";
 import { Route as DerechosDeberesRouteImport } from "./routes/derechos-deberes";
 import { Route as DerechosRouteImport } from "./routes/derechos";
 import { Route as DenunciasRouteImport } from "./routes/denuncias";
+import { Route as DataDeletionInstructionsRouteImport } from "./routes/data-deletion-instructions";
 import { Route as DataDeletionRouteImport } from "./routes/data-deletion";
 import { Route as ContactoRouteImport } from "./routes/contacto";
 import { Route as CompromisoSocialRouteImport } from "./routes/compromiso-social";
@@ -60,6 +64,16 @@ const VentaEmpresasRoute = VentaEmpresasRouteImport.update({
   path: "/venta-empresas",
   getParentRoute: () => rootRouteImport,
 } as any);
+const UserDataDeletionRoute = UserDataDeletionRouteImport.update({
+  id: "/user-data-deletion",
+  path: "/user-data-deletion",
+  getParentRoute: () => rootRouteImport,
+} as any);
+const TermsOfServiceRoute = TermsOfServiceRouteImport.update({
+  id: "/terms-of-service",
+  path: "/terms-of-service",
+  getParentRoute: () => rootRouteImport,
+} as any);
 const TermsRoute = TermsRouteImport.update({
   id: "/terms",
   path: "/terms",
@@ -83,6 +97,11 @@ const RegistroRoute = RegistroRouteImport.update({
 const ReclamosRoute = ReclamosRouteImport.update({
   id: "/reclamos",
   path: "/reclamos",
+  getParentRoute: () => rootRouteImport,
+} as any);
+const PrivacyPolicyRoute = PrivacyPolicyRouteImport.update({
+  id: "/privacy-policy",
+  path: "/privacy-policy",
   getParentRoute: () => rootRouteImport,
 } as any);
 const PrivacyRoute = PrivacyRouteImport.update({
@@ -143,6 +162,11 @@ const DerechosRoute = DerechosRouteImport.update({
 const DenunciasRoute = DenunciasRouteImport.update({
   id: "/denuncias",
   path: "/denuncias",
+  getParentRoute: () => rootRouteImport,
+} as any);
+const DataDeletionInstructionsRoute = DataDeletionInstructionsRouteImport.update({
+  id: "/data-deletion-instructions",
+  path: "/data-deletion-instructions",
   getParentRoute: () => rootRouteImport,
 } as any);
 const DataDeletionRoute = DataDeletionRouteImport.update({
@@ -290,6 +314,7 @@ export interface FileRoutesByFullPath {
   "/compromiso-social": typeof CompromisoSocialRoute;
   "/contacto": typeof ContactoRoute;
   "/data-deletion": typeof DataDeletionRoute;
+  "/data-deletion-instructions": typeof DataDeletionInstructionsRoute;
   "/denuncias": typeof DenunciasRoute;
   "/derechos": typeof DerechosRoute;
   "/derechos-deberes": typeof DerechosDeberesRoute;
@@ -302,11 +327,14 @@ export interface FileRoutesByFullPath {
   "/polen": typeof PolenRoute;
   "/precios": typeof PreciosRoute;
   "/privacy": typeof PrivacyRoute;
+  "/privacy-policy": typeof PrivacyPolicyRoute;
   "/reclamos": typeof ReclamosRoute;
   "/registro": typeof RegistroRoute;
   "/salud-ocupacional": typeof SaludOcupacionalRoute;
   "/servicios": typeof ServiciosRoute;
   "/terms": typeof TermsRoute;
+  "/terms-of-service": typeof TermsOfServiceRoute;
+  "/user-data-deletion": typeof UserDataDeletionRoute;
   "/venta-empresas": typeof VentaEmpresasRoute;
   "/abono/$token": typeof AbonoTokenRoute;
   "/aprende/$slug": typeof AprendeSlugRoute;
@@ -337,6 +365,7 @@ export interface FileRoutesByTo {
   "/compromiso-social": typeof CompromisoSocialRoute;
   "/contacto": typeof ContactoRoute;
   "/data-deletion": typeof DataDeletionRoute;
+  "/data-deletion-instructions": typeof DataDeletionInstructionsRoute;
   "/denuncias": typeof DenunciasRoute;
   "/derechos": typeof DerechosRoute;
   "/derechos-deberes": typeof DerechosDeberesRoute;
@@ -348,11 +377,14 @@ export interface FileRoutesByTo {
   "/polen": typeof PolenRoute;
   "/precios": typeof PreciosRoute;
   "/privacy": typeof PrivacyRoute;
+  "/privacy-policy": typeof PrivacyPolicyRoute;
   "/reclamos": typeof ReclamosRoute;
   "/registro": typeof RegistroRoute;
   "/salud-ocupacional": typeof SaludOcupacionalRoute;
   "/servicios": typeof ServiciosRoute;
   "/terms": typeof TermsRoute;
+  "/terms-of-service": typeof TermsOfServiceRoute;
+  "/user-data-deletion": typeof UserDataDeletionRoute;
   "/venta-empresas": typeof VentaEmpresasRoute;
   "/abono/$token": typeof AbonoTokenRoute;
   "/aprende/$slug": typeof AprendeSlugRoute;
@@ -384,6 +416,7 @@ export interface FileRoutesById {
   "/compromiso-social": typeof CompromisoSocialRoute;
   "/contacto": typeof ContactoRoute;
   "/data-deletion": typeof DataDeletionRoute;
+  "/data-deletion-instructions": typeof DataDeletionInstructionsRoute;
   "/denuncias": typeof DenunciasRoute;
   "/derechos": typeof DerechosRoute;
   "/derechos-deberes": typeof DerechosDeberesRoute;
@@ -396,11 +429,14 @@ export interface FileRoutesById {
   "/polen": typeof PolenRoute;
   "/precios": typeof PreciosRoute;
   "/privacy": typeof PrivacyRoute;
+  "/privacy-policy": typeof PrivacyPolicyRoute;
   "/reclamos": typeof ReclamosRoute;
   "/registro": typeof RegistroRoute;
   "/salud-ocupacional": typeof SaludOcupacionalRoute;
   "/servicios": typeof ServiciosRoute;
   "/terms": typeof TermsRoute;
+  "/terms-of-service": typeof TermsOfServiceRoute;
+  "/user-data-deletion": typeof UserDataDeletionRoute;
   "/venta-empresas": typeof VentaEmpresasRoute;
   "/abono/$token": typeof AbonoTokenRoute;
   "/aprende/$slug": typeof AprendeSlugRoute;
@@ -433,6 +469,7 @@ export interface FileRouteTypes {
     | "/compromiso-social"
     | "/contacto"
     | "/data-deletion"
+    | "/data-deletion-instructions"
     | "/denuncias"
     | "/derechos"
     | "/derechos-deberes"
@@ -445,11 +482,14 @@ export interface FileRouteTypes {
     | "/polen"
     | "/precios"
     | "/privacy"
+    | "/privacy-policy"
     | "/reclamos"
     | "/registro"
     | "/salud-ocupacional"
     | "/servicios"
     | "/terms"
+    | "/terms-of-service"
+    | "/user-data-deletion"
     | "/venta-empresas"
     | "/abono/$token"
     | "/aprende/$slug"
@@ -480,6 +520,7 @@ export interface FileRouteTypes {
     | "/compromiso-social"
     | "/contacto"
     | "/data-deletion"
+    | "/data-deletion-instructions"
     | "/denuncias"
     | "/derechos"
     | "/derechos-deberes"
@@ -491,11 +532,14 @@ export interface FileRouteTypes {
     | "/polen"
     | "/precios"
     | "/privacy"
+    | "/privacy-policy"
     | "/reclamos"
     | "/registro"
     | "/salud-ocupacional"
     | "/servicios"
     | "/terms"
+    | "/terms-of-service"
+    | "/user-data-deletion"
     | "/venta-empresas"
     | "/abono/$token"
     | "/aprende/$slug"
@@ -526,6 +570,7 @@ export interface FileRouteTypes {
     | "/compromiso-social"
     | "/contacto"
     | "/data-deletion"
+    | "/data-deletion-instructions"
     | "/denuncias"
     | "/derechos"
     | "/derechos-deberes"
@@ -538,11 +583,14 @@ export interface FileRouteTypes {
     | "/polen"
     | "/precios"
     | "/privacy"
+    | "/privacy-policy"
     | "/reclamos"
     | "/registro"
     | "/salud-ocupacional"
     | "/servicios"
     | "/terms"
+    | "/terms-of-service"
+    | "/user-data-deletion"
     | "/venta-empresas"
     | "/abono/$token"
     | "/aprende/$slug"
@@ -574,6 +622,7 @@ export interface RootRouteChildren {
   CompromisoSocialRoute: typeof CompromisoSocialRoute;
   ContactoRoute: typeof ContactoRoute;
   DataDeletionRoute: typeof DataDeletionRoute;
+  DataDeletionInstructionsRoute: typeof DataDeletionInstructionsRoute;
   DenunciasRoute: typeof DenunciasRoute;
   DerechosRoute: typeof DerechosRoute;
   DerechosDeberesRoute: typeof DerechosDeberesRoute;
@@ -586,11 +635,14 @@ export interface RootRouteChildren {
   PolenRoute: typeof PolenRoute;
   PreciosRoute: typeof PreciosRoute;
   PrivacyRoute: typeof PrivacyRoute;
+  PrivacyPolicyRoute: typeof PrivacyPolicyRoute;
   ReclamosRoute: typeof ReclamosRoute;
   RegistroRoute: typeof RegistroRoute;
   SaludOcupacionalRoute: typeof SaludOcupacionalRoute;
   ServiciosRoute: typeof ServiciosRoute;
   TermsRoute: typeof TermsRoute;
+  TermsOfServiceRoute: typeof TermsOfServiceRoute;
+  UserDataDeletionRoute: typeof UserDataDeletionRoute;
   VentaEmpresasRoute: typeof VentaEmpresasRoute;
   AbonoTokenRoute: typeof AbonoTokenRoute;
   AprendeSlugRoute: typeof AprendeSlugRoute;
@@ -614,6 +666,20 @@ declare module "@tanstack/react-router" {
       path: "/venta-empresas";
       fullPath: "/venta-empresas";
       preLoaderRoute: typeof VentaEmpresasRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/user-data-deletion": {
+      id: "/user-data-deletion";
+      path: "/user-data-deletion";
+      fullPath: "/user-data-deletion";
+      preLoaderRoute: typeof UserDataDeletionRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/terms-of-service": {
+      id: "/terms-of-service";
+      path: "/terms-of-service";
+      fullPath: "/terms-of-service";
+      preLoaderRoute: typeof TermsOfServiceRouteImport;
       parentRoute: typeof rootRouteImport;
     };
     "/terms": {
@@ -649,6 +715,13 @@ declare module "@tanstack/react-router" {
       path: "/reclamos";
       fullPath: "/reclamos";
       preLoaderRoute: typeof ReclamosRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/privacy-policy": {
+      id: "/privacy-policy";
+      path: "/privacy-policy";
+      fullPath: "/privacy-policy";
+      preLoaderRoute: typeof PrivacyPolicyRouteImport;
       parentRoute: typeof rootRouteImport;
     };
     "/privacy": {
@@ -733,6 +806,13 @@ declare module "@tanstack/react-router" {
       path: "/denuncias";
       fullPath: "/denuncias";
       preLoaderRoute: typeof DenunciasRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/data-deletion-instructions": {
+      id: "/data-deletion-instructions";
+      path: "/data-deletion-instructions";
+      fullPath: "/data-deletion-instructions";
+      preLoaderRoute: typeof DataDeletionInstructionsRouteImport;
       parentRoute: typeof rootRouteImport;
     };
     "/data-deletion": {
@@ -966,6 +1046,7 @@ const rootRouteChildren: RootRouteChildren = {
   CompromisoSocialRoute: CompromisoSocialRoute,
   ContactoRoute: ContactoRoute,
   DataDeletionRoute: DataDeletionRoute,
+  DataDeletionInstructionsRoute: DataDeletionInstructionsRoute,
   DenunciasRoute: DenunciasRoute,
   DerechosRoute: DerechosRoute,
   DerechosDeberesRoute: DerechosDeberesRoute,
@@ -978,11 +1059,14 @@ const rootRouteChildren: RootRouteChildren = {
   PolenRoute: PolenRoute,
   PreciosRoute: PreciosRoute,
   PrivacyRoute: PrivacyRoute,
+  PrivacyPolicyRoute: PrivacyPolicyRoute,
   ReclamosRoute: ReclamosRoute,
   RegistroRoute: RegistroRoute,
   SaludOcupacionalRoute: SaludOcupacionalRoute,
   ServiciosRoute: ServiciosRoute,
   TermsRoute: TermsRoute,
+  TermsOfServiceRoute: TermsOfServiceRoute,
+  UserDataDeletionRoute: UserDataDeletionRoute,
   VentaEmpresasRoute: VentaEmpresasRoute,
   AbonoTokenRoute: AbonoTokenRoute,
   AprendeSlugRoute: AprendeSlugRoute,
