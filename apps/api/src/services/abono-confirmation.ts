@@ -17,6 +17,7 @@ import {
 import { appendAbonoFlowHistory } from "../lib/doctoralia/abono-flow-history.ts";
 import { logError, logEvent } from "../lib/logger.ts";
 import { sendTemplateMessage } from "../modules/wa-cloud/graph-client.ts";
+import { ensureContactAndConversation } from "./wa-contacts.ts";
 
 export async function sendAbonoConfirmation(tokenId: string): Promise<void> {
   const token = await db.appointmentPaymentToken.findUnique({ where: { id: tokenId } });
@@ -64,7 +65,7 @@ export async function sendAbonoConfirmation(tokenId: string): Promise<void> {
 
   const clinicLocation = await loadClinicLocation();
 
-  await sendTemplateMessage({
+  const apiResp = await sendTemplateMessage({
     phoneNumberId: Number(waPhone.id),
     toE164: token.patientPhone,
     templateName,
@@ -88,6 +89,39 @@ export async function sendAbonoConfirmation(tokenId: string): Promise<void> {
       },
     ],
   });
+
+  // Persist to the WA inbox — Meta does NOT echo our own outbound messages via
+  // webhook, so an unrecorded template send never appears in a conversation.
+  // Best-effort: the WA already sent; a persist failure must not break the flow.
+  const metaId = apiResp.messages?.[0]?.id ?? null;
+  try {
+    const { contactId, conversationId } = await ensureContactAndConversation(
+      token.patientPhone,
+      token.patientName,
+      Number(waPhone.id)
+    );
+    const now = new Date();
+    await db.waMessage.create({
+      data: {
+        conversationId,
+        contactId,
+        phoneNumberId: Number(waPhone.id),
+        metaMessageId: metaId,
+        direction: "OUTBOUND",
+        type: "TEMPLATE",
+        status: "SENT",
+        body: `Confirmación de abono — ${paidText}`,
+        timestamp: now,
+        payload: { template: templateName, language: waConfig.language } as never,
+      },
+    });
+    await db.waConversation.update({
+      where: { id: conversationId },
+      data: { lastMessageAt: now, lastMessagePreview: `Pago confirmado — ${paidText}`.slice(0, 200) },
+    });
+  } catch (e) {
+    logError("mp-webhook.abono_wa_persist_failed", e, { tokenId });
+  }
 
   await db.appointmentPaymentToken.update({
     where: { id: token.id },
