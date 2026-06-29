@@ -36,7 +36,9 @@ import {
   MapPin,
   Mic,
   Paperclip,
+  Pause,
   Pencil,
+  Play,
   Plus,
   Send,
   Settings2,
@@ -51,6 +53,13 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { AppModal } from "@/components/ui/AppModal";
 import { SelectInput, TextInput } from "@/features/outreach/components/FormField";
+// opus-media-recorder asset URLs (Vite emits + serves them). The encoder runs
+// in a worker; the WASM binaries are fetched lazily by the lib when recording
+// starts. These are just URL strings — the heavy lib code is dynamically
+// imported on first record so it never lands in the main bundle.
+import encoderWorkerUrl from "opus-media-recorder/encoderWorker.umd.js?url";
+import oggWasmUrl from "opus-media-recorder/OggOpusEncoder.wasm?url";
+import webmWasmUrl from "opus-media-recorder/WebMOpusEncoder.wasm?url";
 import { toast } from "@/lib/toast-interceptor";
 import { EmojiPickerButton } from "./EmojiPickerButton";
 import { StickerPickerButton } from "./StickerPickerButton";
@@ -945,7 +954,10 @@ function VoiceRecorderButton({
   const [recording, setRecording] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [preview, setPreview] = useState<{ blob: Blob; url: string } | null>(null);
-  const recorderRef = useRef<MediaRecorder | null>(null);
+  const [previewPlaying, setPreviewPlaying] = useState(false);
+  // OpusMediaRecorder has the same surface we use as MediaRecorder.
+  const recorderRef = useRef<{ state: string; stop(): void } | null>(null);
+  const previewRef = useRef<HTMLAudioElement>(null);
   const chunksRef = useRef<Blob[]>([]);
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startedAtRef = useRef<number>(0);
@@ -964,19 +976,26 @@ function VoiceRecorderButton({
   const start = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mime = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-        ? "audio/webm;codecs=opus"
-        : MediaRecorder.isTypeSupported("audio/mp4")
-          ? "audio/mp4"
-          : "";
-      const rec = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+      // Record straight to Ogg/Opus via opus-media-recorder (WASM). Chrome's
+      // native MediaRecorder only makes audio/webm, which WhatsApp rejects
+      // (error 131053); ogg/opus is the cross-browser container Meta accepts.
+      const { default: OpusMediaRecorder } = await import("opus-media-recorder");
+      const rec = new OpusMediaRecorder(
+        stream,
+        { mimeType: "audio/ogg" },
+        {
+          encoderWorkerFactory: () => new Worker(encoderWorkerUrl),
+          OggOpusEncoderWasmPath: oggWasmUrl,
+          WebMOpusEncoderWasmPath: webmWasmUrl,
+        }
+      );
       chunksRef.current = [];
       rec.ondataavailable = (e) => {
         if (e.data.size > 0) chunksRef.current.push(e.data);
       };
       rec.onstop = () => {
         stream.getTracks().forEach((t) => t.stop());
-        const blob = new Blob(chunksRef.current, { type: rec.mimeType || "audio/webm" });
+        const blob = new Blob(chunksRef.current, { type: "audio/ogg" });
         const url = URL.createObjectURL(blob);
         setPreview({ blob, url });
         setRecording(false);
@@ -985,6 +1004,7 @@ function VoiceRecorderButton({
           tickRef.current = null;
         }
       };
+      rec.onerror = () => toast.error("Error al grabar la nota de voz");
       recorderRef.current = rec;
       rec.start();
       startedAtRef.current = Date.now();
@@ -1007,17 +1027,23 @@ function VoiceRecorderButton({
   const cancel = () => {
     if (preview?.url) URL.revokeObjectURL(preview.url);
     setPreview(null);
+    setPreviewPlaying(false);
+  };
+
+  const togglePreview = () => {
+    const a = previewRef.current;
+    if (!a) return;
+    if (a.paused) void a.play();
+    else a.pause();
   };
 
   const send = () => {
     if (!preview) return;
-    const ext = preview.blob.type.includes("mp4") ? "m4a" : "ogg";
-    const file = new File([preview.blob], `voice-${Date.now()}.${ext}`, {
-      type: preview.blob.type,
-    });
+    const file = new File([preview.blob], `voice-${Date.now()}.ogg`, { type: "audio/ogg" });
     onSend(file);
     URL.revokeObjectURL(preview.url);
     setPreview(null);
+    setPreviewPlaying(false);
   };
 
   const fmt = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
@@ -1025,14 +1051,30 @@ function VoiceRecorderButton({
   if (preview) {
     return (
       <div className="flex items-center gap-1 rounded-full border border-default-200 bg-content2 px-2 py-1">
+        {/* Custom controls (no native <audio controls>): Safari's media-control
+            glyphs (airplay/pip placards) fail to load on blob/ogg sources and
+            spam the console. A play/pause button avoids them entirely. */}
         <audio
+          ref={previewRef}
           src={preview.url}
-          controls
           aria-label="Previsualización de nota de voz"
-          className="h-8"
+          className="hidden"
+          onEnded={() => setPreviewPlaying(false)}
+          onPlay={() => setPreviewPlaying(true)}
+          onPause={() => setPreviewPlaying(false)}
         >
           <track kind="captions" />
         </audio>
+        <Button
+          size="sm"
+          variant="outline"
+          isIconOnly
+          aria-label={previewPlaying ? "Pausar" : "Reproducir"}
+          onPress={togglePreview}
+        >
+          {previewPlaying ? <Pause size={14} /> : <Play size={14} />}
+        </Button>
+        <span className="px-1 font-mono text-default-600 text-xs tabular-nums">{fmt(elapsed)}</span>
         <Button
           size="sm"
           variant="outline"

@@ -123,6 +123,10 @@ export async function markConversationRead(payload: MarkReadPayload): Promise<vo
       conversationId: payload.conversationId,
       direction: "INBOUND",
       metaMessageId: { not: null },
+      // Meta rejects mark-read for UNSUPPORTED (e.g. video notes) and REACTION
+      // wamids ("Message ID does not exist"). Target the latest *readable*
+      // message — marking it read covers everything before it anyway.
+      type: { notIn: ["UNSUPPORTED", "REACTION"] },
     },
     orderBy: { timestamp: "desc" },
     select: { metaMessageId: true, phoneNumberId: true },
@@ -172,6 +176,8 @@ export async function setConversationTyping(
       conversationId,
       direction: "INBOUND",
       metaMessageId: { not: null },
+      // Same as mark-read: skip UNSUPPORTED/REACTION wamids Meta won't accept.
+      type: { notIn: ["UNSUPPORTED", "REACTION"] },
     },
     orderBy: { timestamp: "desc" },
     select: { metaMessageId: true, phoneNumberId: true },
