@@ -7,7 +7,7 @@
 import type { Task } from "graphile-worker";
 import { z } from "zod";
 import { logEvent, logWarn } from "../../lib/logger.ts";
-import { persistInboundMedia } from "../../services/wa-message-media.ts";
+import { persistMessageMedia } from "../../services/wa-message-media.ts";
 
 const payloadSchema = z.object({ messageId: z.number().int().positive() });
 
@@ -18,7 +18,7 @@ export const wa_persist_media: Task = async (payload) => {
     return;
   }
   const { messageId } = parsed.data;
-  const result = await persistInboundMedia(messageId);
+  const result = await persistMessageMedia(messageId);
   logEvent("queue.wa_persist_media", { messageId, result });
 };
 

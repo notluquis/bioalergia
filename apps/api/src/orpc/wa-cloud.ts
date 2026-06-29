@@ -131,6 +131,7 @@ import {
 import { waBroadcastJobKey } from "../modules/wa-cloud/broadcast-runner.ts";
 import { enqueueJob } from "../queue/runner.ts";
 import { waScheduledJobKey } from "../queue/tasks/wa-scheduled-send.ts";
+import { waPersistMediaJobKey } from "../queue/tasks/wa-persist-media.ts";
 import {
   cancelBroadcast as cancelBroadcastService,
   createBroadcast as createBroadcastService,
@@ -504,7 +505,17 @@ const waRouterBase = {
     .input(sendMediaInputSchema)
     .output(sendMessageResponseSchema)
     .handler(async ({ context, input }) => {
-      return sendMediaService(input, context.user.id);
+      const res = await sendMediaService(input, context.user.id);
+      // Persist a durable R2 copy (Meta media id expires). Only by-mediaId sends
+      // have a re-fetchable Meta media; link sends are skipped.
+      if (input.mediaId && res.message?.id) {
+        await enqueueJob(
+          "wa_persist_media",
+          { messageId: res.message.id },
+          { jobKey: waPersistMediaJobKey(res.message.id) }
+        );
+      }
+      return res;
     }),
 
   sendFlow: writeWa

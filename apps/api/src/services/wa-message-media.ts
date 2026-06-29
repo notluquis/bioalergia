@@ -1,4 +1,4 @@
-// Persist inbound WhatsApp media to R2 (durable copy).
+// Persist WhatsApp message media to R2 (durable copy) — inbound or outbound.
 //
 // Meta media ids/URLs are ephemeral (download URL ~5 min, media itself deleted
 // after a while), so the live-proxy loses old media. Per Meta's guidance we
@@ -25,7 +25,7 @@ function mediaIdFromPayload(payload: unknown): string | null {
   return null;
 }
 
-export async function persistInboundMedia(
+export async function persistMessageMedia(
   messageId: number
 ): Promise<"persisted" | "skipped" | "no_media"> {
   const message = await db.waMessage.findUnique({
