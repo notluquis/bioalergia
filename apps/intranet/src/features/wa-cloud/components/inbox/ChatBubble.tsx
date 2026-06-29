@@ -34,6 +34,8 @@ export type ChatBubbleRow = {
   } | null;
   reactions?: { emoji: string; out: boolean }[];
   payload?: unknown;
+  // Optimistic local media preview (object URL) for a pending outbound bubble.
+  localPreviewUrl?: string | null;
   // Consecutive-message grouping flags (default true = standalone bubble).
   groupStart?: boolean;
   groupEnd?: boolean;
@@ -249,12 +251,13 @@ export function ChatBubble({
                 {row.templateName ?? "Plantilla"}
               </span>
             </div>
-          ) : isMedia && row.messageId ? (
+          ) : isMedia && (row.messageId || row.localPreviewUrl) ? (
             <MediaAttachment
               messageId={row.messageId}
               type={row.type}
               caption={row.body}
               out={out}
+              localSrc={row.localPreviewUrl}
             />
           ) : (
             <p className="whitespace-pre-wrap break-words text-sm leading-snug">

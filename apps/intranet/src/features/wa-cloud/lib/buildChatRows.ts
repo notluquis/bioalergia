@@ -59,6 +59,10 @@ export type PendingRaw = {
   body: string;
   timestamp: Date;
   status: "PENDING" | "FAILED";
+  // Optimistic media: the message type + a local object-URL preview so the
+  // bubble renders instantly (before upload/send completes). Defaults to TEXT.
+  type?: string;
+  previewUrl?: string | null;
 };
 
 export type ReactionInfo = { emoji: string; out: boolean };
@@ -88,6 +92,9 @@ export type ChatMessageRow = {
   } | null;
   reactions?: ReactionInfo[];
   payload?: unknown;
+  // Local object-URL for an optimistic (pending) media bubble; rendered in place
+  // of the server media proxy until the real message arrives.
+  localPreviewUrl?: string | null;
   groupStart: boolean;
   groupEnd: boolean;
 };
@@ -126,6 +133,7 @@ export function buildChatRows(messages: RawMessage[], pending: PendingRaw[]): Ch
     metaMessageId: string | null;
     contextMetaMessageId: string | null;
     payload?: unknown;
+    previewUrl?: string | null;
   };
 
   const serverMsgs: Combined[] = messages
@@ -151,11 +159,12 @@ export function buildChatRows(messages: RawMessage[], pending: PendingRaw[]): Ch
     id: p.cid,
     direction: "OUTBOUND",
     body: p.body,
-    type: "TEXT",
+    type: p.type ?? "TEXT",
     timestamp: p.timestamp,
     status: p.status,
     metaMessageId: null,
     contextMetaMessageId: null,
+    previewUrl: p.previewUrl ?? null,
   }));
 
   const combined = [...serverMsgs, ...pendingMsgs].sort((a, b) => +a.timestamp - +b.timestamp);
@@ -217,6 +226,7 @@ export function buildChatRows(messages: RawMessage[], pending: PendingRaw[]): Ch
       quotedSnippet: quoted,
       reactions: m.metaMessageId ? reactionsByTarget.get(m.metaMessageId) : undefined,
       payload: m.payload,
+      localPreviewUrl: m.src === "pending" ? (m.previewUrl ?? null) : null,
       groupStart: !continuation,
       groupEnd: true,
     };

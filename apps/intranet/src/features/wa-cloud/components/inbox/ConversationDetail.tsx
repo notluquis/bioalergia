@@ -127,12 +127,25 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
   // brings the real message back.
   // Optimistic outbound text, retained with the original input so a FAILED
   // send can be retried in place.
+  type MediaKind = "image" | "document" | "audio" | "video" | "sticker";
   type Pending = {
     cid: string;
     body: string;
     timestamp: Date;
     status: "PENDING" | "FAILED";
-    input: { kind: "text"; body: string; contextMetaMessageId?: string };
+    // "TEXT" (default) or a media type (IMAGE/VIDEO/…) for optimistic media.
+    type?: string;
+    // Local object-URL preview for optimistic media bubbles.
+    previewUrl?: string;
+    input:
+      | { kind: "text"; body: string; contextMetaMessageId?: string }
+      | {
+          kind: "media";
+          file: File;
+          mediaType: MediaKind;
+          caption?: string;
+          contextMetaMessageId?: string;
+        };
   };
   const [pending, setPending] = useState<Pending[]>([]);
 
@@ -339,10 +352,25 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
   // 30s and no longer at the bottom, remove.
   useEffect(() => {
     if (pending.length === 0 || !conv.data) return;
-    const serverBodies = new Set(
-      conv.data.messages.filter((m) => m.direction === "OUTBOUND").map((m) => m.body)
+    const outbound = conv.data.messages.filter((m) => m.direction === "OUTBOUND");
+    const serverBodies = new Set(outbound.map((m) => m.body));
+    setPending((prev) =>
+      prev.filter((p) => {
+        if (p.status === "FAILED") return true;
+        // Text: drop once its body shows up server-side. Media (often no body):
+        // drop once a server outbound of the same type lands at/after its time.
+        const landed =
+          !p.type || p.type === "TEXT"
+            ? serverBodies.has(p.body)
+            : outbound.some(
+                (m) =>
+                  m.type === p.type &&
+                  new Date(m.timestamp).getTime() >= p.timestamp.getTime() - 1000
+              );
+        if (landed && p.previewUrl) URL.revokeObjectURL(p.previewUrl);
+        return !landed;
+      })
     );
-    setPending((prev) => prev.filter((p) => p.status === "FAILED" || !serverBodies.has(p.body)));
   }, [conv.data, pending.length]);
 
   if (conv.isLoading || !conv.data) {
@@ -398,28 +426,50 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
     const p = pending.find((x) => x.cid === cid);
     if (!p || !phoneId) return;
     const pn = Number.parseInt(phoneId, 10);
+    const input = p.input;
     setPending((prev) =>
       prev.map((x) => (x.cid === cid ? { ...x, status: "PENDING" as const } : x))
     );
+    const markFailed = (err: unknown) => {
+      setPending((prev) =>
+        prev.map((x) => (x.cid === cid ? { ...x, status: "FAILED" as const } : x))
+      );
+      toast.error(err instanceof Error ? err.message : "Error al reintentar");
+    };
+    if (input.kind === "media") {
+      void (async () => {
+        try {
+          const upload = await uploadWaMedia(input.file, pn);
+          await sendMedia.mutateAsync({
+            conversationId,
+            phoneNumberId: pn,
+            type: input.mediaType,
+            mediaId: upload.id,
+            caption: input.caption,
+            filename: input.mediaType === "document" ? input.file.name : undefined,
+            ...(input.contextMetaMessageId
+              ? { contextMetaMessageId: input.contextMetaMessageId }
+              : {}),
+          });
+          void qc.invalidateQueries({ queryKey: ["wa-cloud", "conversation", conversationId] });
+        } catch (err) {
+          markFailed(err);
+        }
+      })();
+      return;
+    }
     sendText.mutate(
       {
         conversationId,
         phoneNumberId: pn,
-        body: p.input.body,
-        ...(p.input.contextMetaMessageId
-          ? { contextMetaMessageId: p.input.contextMetaMessageId }
-          : {}),
+        body: input.body,
+        ...(input.contextMetaMessageId ? { contextMetaMessageId: input.contextMetaMessageId } : {}),
       },
       {
         onSuccess: () => {
           void qc.invalidateQueries({ queryKey: ["wa-cloud", "conversation", conversationId] });
         },
-        onError: (err) => {
-          setPending((prev) =>
-            prev.map((x) => (x.cid === cid ? { ...x, status: "FAILED" as const } : x))
-          );
-          toast.error(err instanceof Error ? err.message : "Error al reintentar");
-        },
+        onError: markFailed,
       }
     );
   };
@@ -441,26 +491,50 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
     }
     const pn = Number.parseInt(phoneId, 10);
     const mime = file.type || "application/octet-stream";
-    let type: "image" | "document" | "audio" | "video" | "sticker" = "document";
+    let type: MediaKind = "document";
     if (mime.startsWith("image/")) type = mime === "image/webp" ? "sticker" : "image";
     else if (mime.startsWith("video/")) type = "video";
     else if (mime.startsWith("audio/")) type = "audio";
+    const caption = body.trim() || undefined;
+    const ctxId = replyTo?.metaMessageId;
+    // Optimistic bubble: show the file (local object-URL preview) instantly with
+    // a PENDING tick; reconcile/drop it once the server message arrives.
+    const cid = `tmp-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const previewUrl = URL.createObjectURL(file);
+    setBody("");
+    setReplyTo(null);
+    setPending((p) => [
+      ...p,
+      {
+        cid,
+        body: caption ?? "",
+        timestamp: new Date(),
+        status: "PENDING",
+        type: type.toUpperCase(),
+        previewUrl,
+        input: {
+          kind: "media",
+          file,
+          mediaType: type,
+          caption,
+          ...(ctxId ? { contextMetaMessageId: ctxId } : {}),
+        },
+      },
+    ]);
     try {
-      toast.info("Subiendo archivo…");
       const upload = await uploadWaMedia(file, pn);
       await sendMedia.mutateAsync({
         conversationId,
         phoneNumberId: pn,
         type,
         mediaId: upload.id,
-        caption: body.trim() || undefined,
+        caption,
         filename: type === "document" ? file.name : undefined,
-        ...(replyTo?.metaMessageId ? { contextMetaMessageId: replyTo.metaMessageId } : {}),
+        ...(ctxId ? { contextMetaMessageId: ctxId } : {}),
       });
-      setBody("");
-      setReplyTo(null);
-      toast.success("Archivo enviado");
+      void qc.invalidateQueries({ queryKey: ["wa-cloud", "conversation", conversationId] });
     } catch (err) {
+      setPending((p) => p.map((it) => (it.cid === cid ? { ...it, status: "FAILED" } : it)));
       toast.error(err instanceof Error ? err.message : "Error al subir archivo");
     }
   };
