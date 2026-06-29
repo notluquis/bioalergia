@@ -21,7 +21,7 @@ import {
   findAbonoWhatsappPhone,
   loadAbonoPaymentSettings,
   loadAbonoWhatsappConfig,
-  loadClinicLocation,
+  loadClinicAddress,
 } from "./abono-whatsapp-settings.ts";
 import { appendAbonoFlowHistory } from "./abono-flow-history.ts";
 
@@ -199,10 +199,11 @@ export async function sendAbonoRequestWhatsapp(
   const clp = (n: number) =>
     new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP" }).format(n);
   // Fully personalized named body params + dynamic URL button. Prices from
-  // settings (no drift). The button URL is the per-token /abono page (template
-  // base + {{1}} = token id) — REQUIRED for the webhook to attribute the
-  // payment (a static MP link can't be auto-confirmed).
-  const clinicLocation = await loadClinicLocation();
+  // settings (no drift). Address as a {{direccion}} body var from the DB
+  // (single source) — this template has no location header. The button URL is
+  // the per-token /abono page (template base + {{1}} = token id) — REQUIRED for
+  // the webhook to attribute the payment (a static MP link can't be confirmed).
+  const direccion = await loadClinicAddress();
   const { conversationId } = await deps.ensureContactAndConversation(
     token.patientPhone,
     token.patientName,
@@ -215,10 +216,10 @@ export async function sendAbonoRequestWhatsapp(
       phoneNumberId: waPhone.id,
       templateName: waConfig.templateName,
       language: waConfig.language,
-      ...(clinicLocation ? { locationHeader: clinicLocation } : {}),
       bodyNamedParams: [
         { name: "nombre_paciente", text: token.patientName },
         { name: "fecha_hora", text: fechaHora },
+        { name: "direccion", text: direccion },
         { name: "fonasa_total", text: clp(paymentSettings.fonasaFullAmountClp) },
         { name: "particular_total", text: clp(paymentSettings.particularFullAmountClp) },
       ],

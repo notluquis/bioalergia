@@ -38,6 +38,13 @@ export async function loadClinicLocation(): Promise<{
   };
 }
 
+// Clinic address (DB single source) for templates that show it as a body var
+// instead of a location header. Returns "" when unset (template var tolerates it).
+export async function loadClinicAddress(): Promise<string> {
+  const c = await db.clinicSettings.findUnique({ where: { id: 1 } });
+  return c?.address ?? "";
+}
+
 export type AbonoWhatsappNotice = "request" | "confirmation";
 
 export type AbonoWhatsappConfig = {
