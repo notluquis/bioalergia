@@ -169,8 +169,8 @@ export function useCommerceProducts(
 ) {
   return useQuery({
     queryKey: [...KEY, "commerce-products", input],
-    enabled: Boolean(input?.accountId),
-    queryFn: () => waCloudORPCClient.listCommerceProducts(input!),
+    // skipToken: never fires with null/undefined input (same fix as analytics).
+    queryFn: input?.accountId ? () => waCloudORPCClient.listCommerceProducts(input) : skipToken,
     staleTime: 60_000,
   });
 }
