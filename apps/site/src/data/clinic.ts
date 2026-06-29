@@ -38,7 +38,7 @@ export const contactInfo = {
   clinicalEmail: "clinica@bioalergia.cl",
   // Primario primero (termina en 3316) — lo usa el FAB de WhatsApp y los CTAs.
   phones: ["+56 9 3096 3316", "+56 9 3254 5883"],
-  address: "Avenida Prat 199, Oficina A603, Edificio Centro Costanera, Concepción",
+  address: "Avenida Arturo Prat 199, Oficina A603, Concepción",
   // Atención por agenda: el horario es la ventana, no atención continua.
   hours: "Lunes a viernes, 10:00–19:00",
   hoursNote: "Atención según agenda",

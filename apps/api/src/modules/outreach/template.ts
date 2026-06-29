@@ -68,7 +68,7 @@ Quedo a su disposición para cualquier consulta.
 
 Atentamente,
 Equipo Bioalergia
-San Martín 870 Of. 208B, Concepción
+Avenida Arturo Prat 199, Oficina A603, Concepción
 +56 41 335 5293 | contacto@bioalergia.cl`,
   cuerpoHtml: `<p>Estimado/a <strong>{{nombre_director}}</strong>,</p>
 <p>Me dirijo a usted en nombre de <strong>Bioalergia</strong>, centro especializado en alergología e inmunología clínica ubicado en Concepción.</p>
@@ -78,6 +78,6 @@ San Martín 870 Of. 208B, Concepción
 <p>Quedo a su disposición para cualquier consulta.</p>
 <p>Atentamente,<br/>
 <strong>Equipo Bioalergia</strong><br/>
-San Martín 870 Of. 208B, Concepción<br/>
+Avenida Arturo Prat 199, Oficina A603, Concepción<br/>
 +56 41 335 5293 | <a href="mailto:contacto@bioalergia.cl">contacto@bioalergia.cl</a></p>`,
 };

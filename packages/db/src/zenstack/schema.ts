@@ -19562,8 +19562,8 @@ export class SchemaType implements SchemaDef {
                 address: {
                     name: "address",
                     type: "String",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("San Mart\u00EDn 870, Edificio Caram, Torre B, Of. 208 A \u2013 208 B, Concepci\u00F3n") }] }] as readonly AttributeApplication[],
-                    default: "San Mart\u00EDn 870, Edificio Caram, Torre B, Of. 208 A \u2013 208 B, Concepci\u00F3n" as FieldDefault
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("Avenida Arturo Prat 199, Oficina A603, Concepci\u00F3n") }] }] as readonly AttributeApplication[],
+                    default: "Avenida Arturo Prat 199, Oficina A603, Concepci\u00F3n" as FieldDefault
                 },
                 latitude: {
                     name: "latitude",

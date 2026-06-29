@@ -138,6 +138,8 @@ function serialiseSettings(s: SettingsRow) {
   return {
     ...s,
     papuleThresholdMm: decimal(s.papuleThresholdMm) ?? 3,
+    latitude: decimal(s.latitude),
+    longitude: decimal(s.longitude),
     updatedAt: s.updatedAt.toISOString(),
   };
 }

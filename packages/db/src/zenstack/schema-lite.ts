@@ -16050,7 +16050,7 @@ export class SchemaType implements SchemaDef {
                 address: {
                     name: "address",
                     type: "String",
-                    default: "San Mart\u00EDn 870, Edificio Caram, Torre B, Of. 208 A \u2013 208 B, Concepci\u00F3n" as FieldDefault
+                    default: "Avenida Arturo Prat 199, Oficina A603, Concepci\u00F3n" as FieldDefault
                 },
                 latitude: {
                     name: "latitude",

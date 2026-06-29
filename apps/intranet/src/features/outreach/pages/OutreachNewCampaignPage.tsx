@@ -17,7 +17,7 @@ La charla es completamente sin costo, tiene una duración de 45-60 minutos y pue
 
 Atentamente,
 Equipo Bioalergia
-San Martín 870 Of. 208B, Concepción
+Avenida Arturo Prat 199, Oficina A603, Concepción
 +56 41 335 5293 | contacto@bioalergia.cl`;
 
 const DEFAULT_HTML = DEFAULT_TEXT.split("\n\n")

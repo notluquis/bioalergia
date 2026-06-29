@@ -198,6 +198,9 @@ export const clinicSettingsSchema = z.object({
   logoUrl: z.string().nullable(),
   secondaryLogoUrl: z.string().nullable(),
   papuleThresholdMm: z.number(),
+  // Coordenadas para el header de ubicación de WhatsApp (mapa del abono).
+  latitude: z.number().nullable(),
+  longitude: z.number().nullable(),
   // Prestador Superintendencia de Salud N — printed under doctor's
   // signature block on every exam-report PDF.
   superintendenciaNumber: z.string().nullable(),

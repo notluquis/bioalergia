@@ -146,5 +146,5 @@ export const defaultDoctorInfo = {
   title: "Director Médico Bioalergia",
   rut: "11.896.644-9",
   email: "contacto@bioalergia.cl",
-  address: "Avenida Prat 199, Oficina A603, Concepción",
+  address: "Avenida Arturo Prat 199, Oficina A603, Concepción",
 };

@@ -6200,7 +6200,7 @@ model ClinicSettings {
   // Singleton — id pinned to 1 by application code; never insert another row.
   id                Int      @id @default(1)
   name              String   @default("Bioalergia")
-  address           String   @default("San Martín 870, Edificio Caram, Torre B, Of. 208 A – 208 B, Concepción")
+  address           String   @default("Avenida Arturo Prat 199, Oficina A603, Concepción")
   // Coordenadas para el header de ubicación de WhatsApp (mapa). Editable desde
   // admin; vacío → el envío omite el header en vez de fallar.
   latitude          Decimal? @db.Decimal(10, 7)

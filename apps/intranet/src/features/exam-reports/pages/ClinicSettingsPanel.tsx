@@ -40,6 +40,8 @@ const FIELDS: { key: keyof FormState; label: string; placeholder?: string }[] = 
     label: "Prestador Superintendencia de Salud N°",
     placeholder: "Ej. 123456",
   },
+  { key: "latitude", label: "Latitud (mapa WhatsApp)", placeholder: "-36.8332559" },
+  { key: "longitude", label: "Longitud (mapa WhatsApp)", placeholder: "-73.0565137" },
 ];
 
 interface FormState {
@@ -60,6 +62,8 @@ interface FormState {
   secondaryLogoUrl: string;
   superintendenciaNumber: string;
   papuleThresholdMm: number;
+  latitude: string;
+  longitude: string;
 }
 
 const ASSET_MIME = ["image/png", "image/jpeg"];
@@ -91,6 +95,8 @@ export function ClinicSettingsPanel() {
       secondaryLogoUrl: settingsQ.data.secondaryLogoUrl ?? "",
       superintendenciaNumber: settingsQ.data.superintendenciaNumber ?? "",
       papuleThresholdMm: settingsQ.data.papuleThresholdMm,
+      latitude: settingsQ.data.latitude != null ? String(settingsQ.data.latitude) : "",
+      longitude: settingsQ.data.longitude != null ? String(settingsQ.data.longitude) : "",
     });
   }, [settingsQ.data, form]);
 
@@ -107,6 +113,8 @@ export function ClinicSettingsPanel() {
         logoUrl: form.logoUrl || null,
         secondaryLogoUrl: form.secondaryLogoUrl || null,
         superintendenciaNumber: form.superintendenciaNumber || null,
+        latitude: form.latitude ? Number(form.latitude) : null,
+        longitude: form.longitude ? Number(form.longitude) : null,
       });
     },
     onSuccess: () => {
