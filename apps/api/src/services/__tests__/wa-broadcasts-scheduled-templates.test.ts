@@ -26,8 +26,6 @@ const { mockDb, graphMock } = vi.hoisted(() => {
     listAccountTemplates: vi.fn(),
     createTemplate: vi.fn(),
     deleteTemplate: vi.fn(),
-    cloneTemplateFromLibrary: vi.fn(),
-    listTemplateLibrary: vi.fn(),
   };
   return { mockDb, graphMock };
 });
@@ -47,14 +45,9 @@ const { createBroadcast, listBroadcasts, getBroadcastDetail, startBroadcast, can
   await import("../wa-broadcasts.ts");
 const { createScheduledMessage, listScheduledForConversation, cancelScheduledMessage } =
   await import("../wa-scheduled.ts");
-const {
-  syncTemplates,
-  listTemplates,
-  createTemplate,
-  listTemplateLibrary,
-  cloneTemplateFromLibrary,
-  deleteTemplate,
-} = await import("../wa-templates.ts");
+const { syncTemplates, listTemplates, createTemplate, deleteTemplate } = await import(
+  "../wa-templates.ts"
+);
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -370,48 +363,6 @@ describe("createTemplate", () => {
       components: [{ type: "BODY", text: "x" }],
     });
     expect(out.id).toBe("g2");
-  });
-});
-
-describe("listTemplateLibrary", () => {
-  it("devuelve el catálogo de Meta cuando responde", async () => {
-    graphMock.listTemplateLibrary.mockResolvedValue([{ id: "lib1" }]);
-    const out = await listTemplateLibrary({ accountId: 1 });
-    expect(out).toEqual({ templates: [{ id: "lib1" }] });
-  });
-
-  it("degrada a [] cuando Meta dice 'nonexisting field' (tier sin catálogo)", async () => {
-    graphMock.listTemplateLibrary.mockRejectedValue(
-      new Error("(#100) Tried accessing nonexisting field (message_template_library)")
-    );
-    const out = await listTemplateLibrary({ accountId: 1 });
-    expect(out).toEqual({ templates: [] });
-  });
-
-  it("propaga errores que NO son de tier", async () => {
-    graphMock.listTemplateLibrary.mockRejectedValue(new Error("network boom"));
-    const err = await listTemplateLibrary({ accountId: 1 }).catch((e: unknown) => e);
-    expect((err as Error).message).toBe("network boom");
-  });
-});
-
-describe("cloneTemplateFromLibrary", () => {
-  it("clona en Meta y persiste con newName cuando se da", async () => {
-    graphMock.cloneTemplateFromLibrary.mockResolvedValue({
-      id: "c1",
-      status: "APPROVED",
-      category: "MARKETING",
-    });
-    mockDb.waTemplate.upsert.mockResolvedValue({});
-    const out = await cloneTemplateFromLibrary({
-      accountId: 1,
-      libraryTemplateName: "src",
-      newName: "dst",
-      language: "es",
-      category: "MARKETING",
-    });
-    expect(out).toEqual({ id: "c1", status: "APPROVED", category: "MARKETING" });
-    expect(mockDb.waTemplate.upsert.mock.calls[0]![0].create.name).toBe("dst");
   });
 });
 

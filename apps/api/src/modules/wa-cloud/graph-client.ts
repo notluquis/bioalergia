@@ -69,12 +69,6 @@ export {
   updateConversationalAutomation,
 } from "./graph/conversational-automation.ts";
 export {
-  type CloneFromLibraryInput,
-  type LibraryTemplate,
-  cloneTemplateFromLibrary,
-  listTemplateLibrary,
-} from "./graph/template-library.ts";
-export {
   type CommerceProduct,
   type SendSingleProductInput,
   listCommerceProducts,

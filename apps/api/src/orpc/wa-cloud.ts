@@ -70,16 +70,12 @@ import {
   searchMessagesResponseSchema,
   markReadInputSchema,
   setMuteInputSchema,
-  cloneTemplateFromLibraryInputSchema,
-  cloneTemplateFromLibraryResponseSchema,
   listCommerceProductsInputSchema,
   listCommerceProductsResponseSchema,
   sendSingleProductInputSchema,
   setCommerceCatalogInputSchema,
   conversationalAutomationSchema,
   embeddedSignupInputSchema,
-  listTemplateLibraryInputSchema,
-  listTemplateLibraryResponseSchema,
   requestPhoneCodeInputSchema,
   sendMultiProductInputSchema,
   verifyPhoneCodeInputSchema,
@@ -149,10 +145,8 @@ import {
   listScheduledForConversation as listScheduledForConversationService,
 } from "../services/wa-scheduled.ts";
 import {
-  cloneTemplateFromLibrary as cloneTemplateFromLibraryService,
   createTemplate as createTemplateService,
   deleteTemplate as deleteTemplateService,
-  listTemplateLibrary as listTemplateLibraryService,
   listTemplates as listTemplatesService,
   syncTemplates as syncTemplatesService,
 } from "../services/wa-templates.ts";
@@ -575,33 +569,6 @@ const waRouterBase = {
     .output(createTemplateResponseSchema)
     .handler(async ({ input }) => {
       return createTemplateService(input);
-    }),
-
-  // Template library (Meta-curated catalog, no approval review).
-  //
-  // The Graph endpoint /{waba}/message_template_library is NOT exposed
-  // on the public WhatsApp Business API tier — Meta returns
-  // `(#100) Tried accessing nonexisting field (message_template_library)`.
-  // Browsing the catalog is only available in Meta Business Suite UI;
-  // programmatic access is gated behind Solution Partner / Tech Provider
-  // status. Cloning by name (cloneTemplateFromLibrary below, POST to
-  // /{waba}/message_templates with `source: "library"`) does work on
-  // every tier, so we keep that path live and degrade `listTemplateLibrary`
-  // to return an empty catalog with a hint instead of bubbling the 400.
-  listTemplateLibrary: readWa
-    .route({ method: "POST", path: "/templates/library/list", tags: ["WA Cloud"] })
-    .input(listTemplateLibraryInputSchema)
-    .output(listTemplateLibraryResponseSchema)
-    .handler(async ({ input }) => {
-      return listTemplateLibraryService(input);
-    }),
-
-  cloneTemplateFromLibrary: createWa
-    .route({ method: "POST", path: "/templates/library/clone", tags: ["WA Cloud"] })
-    .input(cloneTemplateFromLibraryInputSchema)
-    .output(cloneTemplateFromLibraryResponseSchema)
-    .handler(async ({ input }) => {
-      return cloneTemplateFromLibraryService(input);
     }),
 
   deleteTemplate: deleteWa

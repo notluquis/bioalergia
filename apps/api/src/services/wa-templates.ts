@@ -5,26 +5,20 @@
 
 import { db } from "@finanzas/db";
 import type {
-  cloneTemplateFromLibraryInputSchema,
   createTemplateInputSchema,
-  listTemplateLibraryInputSchema,
   listTemplatesResponseSchema,
   syncTemplatesResponseSchema,
   waTemplateSchema,
 } from "@finanzas/orpc-contracts/wa-cloud";
 import type { z } from "zod";
-import { logError, logEvent } from "../lib/logger.ts";
+import { logError } from "../lib/logger.ts";
 import {
-  cloneTemplateFromLibrary as graphCloneTemplateFromLibrary,
   createTemplate as graphCreateTemplate,
   deleteTemplate as graphDeleteTemplate,
   listAccountTemplates,
-  listTemplateLibrary as graphListTemplateLibrary,
 } from "../modules/wa-cloud/graph-client.ts";
 
 type CreateTemplatePayload = z.infer<typeof createTemplateInputSchema>;
-type CloneTemplatePayload = z.infer<typeof cloneTemplateFromLibraryInputSchema>;
-type ListTemplateLibraryPayload = z.infer<typeof listTemplateLibraryInputSchema>;
 
 type TemplateRow = Awaited<ReturnType<typeof db.waTemplate.findMany>>[number];
 type WaTemplateStatus = "PENDING" | "APPROVED" | "REJECTED" | "DISABLED" | "PAUSED";
@@ -134,67 +128,6 @@ export async function createTemplate(payload: CreateTemplatePayload) {
   return r;
 }
 
-// El endpoint /{waba}/message_template_library NO está expuesto en el tier
-// público de WhatsApp Business API (Meta devuelve "nonexisting field"). En ese
-// caso degradamos a catálogo vacío en vez de propagar el 400. Cualquier otro
-// error sí se propaga.
-export async function listTemplateLibrary(payload: ListTemplateLibraryPayload) {
-  try {
-    const templates = await graphListTemplateLibrary(payload.accountId, {
-      category: payload.category,
-      topic: payload.topic,
-      industry: payload.industry,
-      language: payload.language,
-      search: payload.search,
-    });
-    return { templates };
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    const isTierError =
-      message.includes("nonexisting field") || message.includes("message_template_library");
-    if (!isTierError) throw err;
-    logEvent("[wa-cloud.listTemplateLibrary] catalog browse not available", { message });
-    return { templates: [] };
-  }
-}
-
-// Clona una plantilla curada de la librería de Meta y la persiste localmente.
-export async function cloneTemplateFromLibrary(payload: CloneTemplatePayload) {
-  const r = await graphCloneTemplateFromLibrary({
-    accountId: payload.accountId,
-    libraryTemplateName: payload.libraryTemplateName,
-    newName: payload.newName,
-    language: payload.language,
-    category: payload.category,
-  });
-  try {
-    await db.waTemplate.upsert({
-      where: {
-        accountId_name_language: {
-          accountId: payload.accountId,
-          name: payload.newName ?? payload.libraryTemplateName,
-          language: payload.language,
-        },
-      },
-      create: {
-        accountId: payload.accountId,
-        metaTemplateId: r.id,
-        name: payload.newName ?? payload.libraryTemplateName,
-        language: payload.language,
-        category: payload.category,
-        status: r.status as WaTemplateStatus,
-        components: [] as never,
-      },
-      update: {
-        metaTemplateId: r.id,
-        status: r.status as WaTemplateStatus,
-      },
-    });
-  } catch (err) {
-    logError("[wa-cloud.cloneTemplateFromLibrary] persist failed", { err });
-  }
-  return r;
-}
 
 // Borra la plantilla en Meta y limpia la copia local (best-effort).
 export async function deleteTemplate(
