@@ -23,6 +23,7 @@ import { PageHero } from "@/components/ui/PageHero";
 import { SectionBand } from "@/components/ui/SectionBand";
 import { publicClinicClient } from "@/lib/orpc-client";
 import { breadcrumbJsonLd } from "@/lib/seo";
+import { isEmail } from "@/lib/validation";
 
 type RightType = CreatePublicDataRightsInput["type"];
 
@@ -81,7 +82,7 @@ function DataRightsForm() {
   });
 
   const canSubmit =
-    requesterName.trim().length >= 1 && requesterEmail.includes("@") && !submitMutation.isPending;
+    requesterName.trim().length >= 1 && isEmail(requesterEmail) && !submitMutation.isPending;
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();

@@ -7,6 +7,7 @@ import { PageShell } from "@/components/PageShell";
 import { Container } from "@/components/ui/Container";
 import { Eyebrow } from "@/components/ui/Eyebrow";
 import { PageHero } from "@/components/ui/PageHero";
+import { Photo } from "@/components/ui/Photo";
 import { SectionBand } from "@/components/ui/SectionBand";
 import { examenesContent } from "@/data/exams";
 import { breadcrumbJsonLd } from "@/lib/seo";
@@ -34,10 +35,15 @@ function ExamenesPage() {
         <h2 className="mb-9 max-w-2xl font-display text-[2rem] leading-[1.05] text-foreground sm:text-[2.5rem]">
           Pruebas y estudios disponibles.
         </h2>
+        <div className="mb-9 grid gap-4 sm:grid-cols-2">
+          <Photo className="h-[220px]" name="prickDrops" sizes="(min-width: 640px) 50vw, 100vw" />
+          <Photo className="h-[220px]" name="prickDark" sizes="(min-width: 640px) 50vw, 100vw" />
+        </div>
         <div className="grid gap-6 md:grid-cols-2">
           {examenesContent.items.map((exam) => (
             <Card
-              className="h-full rounded-2xl border border-line bg-surface"
+              className="h-full scroll-mt-28 rounded-2xl border border-line bg-surface"
+              id={exam.id}
               key={exam.id}
               variant="default"
             >

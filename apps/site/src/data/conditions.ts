@@ -16,6 +16,13 @@ export interface ConditionFaq {
   answer: string;
 }
 
+export interface RelatedExam {
+  /** stable exam id from `data/exams.ts` — used for the `/examenes#<id>` anchor */
+  id: string;
+  /** display label shown on the chip */
+  label: string;
+}
+
 export interface Condition {
   slug: string;
   title: string;
@@ -25,7 +32,7 @@ export interface Condition {
   heroIntro: string;
   sections: ConditionSection[];
   faq: ConditionFaq[];
-  relatedExams: string[];
+  relatedExams: RelatedExam[];
   quiz: QuizContent;
   lastReviewed: string;
   reviewedBy: string;
@@ -101,7 +108,10 @@ export const conditions: Condition[] = [
           "Sí. Comparten mecanismo y muchos pacientes tienen ambas. Controlar la rinitis ayuda al control del asma.",
       },
     ],
-    relatedExams: ["Test cutáneo (Prick test)", "Test ALEX2 — diagnóstico molecular"],
+    relatedExams: [
+      { id: "prick", label: "Test cutáneo (Prick test)" },
+      { id: "alex2", label: "Test ALEX2 — diagnóstico molecular" },
+    ],
     quiz: {
       disclaimer: QUIZ_DISCLAIMER,
       questions: [
@@ -231,7 +241,10 @@ export const conditions: Condition[] = [
           "Son parte de la misma enfermedad de la vía aérea. Tratar la rinitis mejora el control del asma; por eso se estudian en conjunto.",
       },
     ],
-    relatedExams: ["Test cutáneo (Prick test)", "Test ALEX2 — diagnóstico molecular"],
+    relatedExams: [
+      { id: "prick", label: "Test cutáneo (Prick test)" },
+      { id: "alex2", label: "Test ALEX2 — diagnóstico molecular" },
+    ],
     quiz: {
       disclaimer: QUIZ_DISCLAIMER,
       questions: [
@@ -362,7 +375,7 @@ export const conditions: Condition[] = [
           "Sí. Frotar libera más mediadores de la alergia y aumenta la picazón e inflamación. Las compresas frías son una mejor opción.",
       },
     ],
-    relatedExams: ["Test cutáneo (Prick test)"],
+    relatedExams: [{ id: "prick", label: "Test cutáneo (Prick test)" }],
     quiz: {
       disclaimer: QUIZ_DISCLAIMER,
       questions: [
@@ -492,7 +505,10 @@ export const conditions: Condition[] = [
           "Si se acompaña de hinchazón de lengua o garganta, dificultad para respirar o mareo, puede ser una reacción grave: llama al 131 (SAMU) de inmediato.",
       },
     ],
-    relatedExams: ["Test de suero autólogo", "Test del cubito de hielo"],
+    relatedExams: [
+      { id: "suero-autologo", label: "Test de suero autólogo" },
+      { id: "cubito-hielo", label: "Test del cubito de hielo" },
+    ],
     quiz: {
       disclaimer: QUIZ_DISCLAIMER,
       questions: [
@@ -624,9 +640,9 @@ export const conditions: Condition[] = [
       },
     ],
     relatedExams: [
-      "Test ALEX2 — diagnóstico molecular",
-      "Test cutáneo (Prick test)",
-      "Prueba de provocación controlada",
+      { id: "alex2", label: "Test ALEX2 — diagnóstico molecular" },
+      { id: "prick", label: "Test cutáneo (Prick test)" },
+      { id: "provocacion", label: "Prueba de provocación controlada" },
     ],
     quiz: {
       disclaimer: QUIZ_DISCLAIMER,
@@ -757,7 +773,10 @@ export const conditions: Condition[] = [
           "No siempre. El estudio puede identificar antiinflamatorios alternativos que toleras, lo que es clave para el manejo del dolor.",
       },
     ],
-    relatedExams: ["Prueba intradérmica", "Prueba de provocación controlada"],
+    relatedExams: [
+      { id: "intradermica", label: "Prueba intradérmica" },
+      { id: "provocacion", label: "Prueba de provocación controlada" },
+    ],
     quiz: {
       disclaimer: QUIZ_DISCLAIMER,
       questions: [
@@ -895,9 +914,9 @@ export const conditions: Condition[] = [
       },
     ],
     relatedExams: [
-      "Test cutáneo (Prick test)",
-      "Prueba intradérmica",
-      "Test ALEX2 — diagnóstico molecular",
+      { id: "prick", label: "Test cutáneo (Prick test)" },
+      { id: "intradermica", label: "Prueba intradérmica" },
+      { id: "alex2", label: "Test ALEX2 — diagnóstico molecular" },
     ],
     quiz: {
       disclaimer: QUIZ_DISCLAIMER,
@@ -960,6 +979,142 @@ export const conditions: Condition[] = [
           title: "Antecedentes compatibles con anafilaxia",
           message:
             "Tus respuestas sugieren reacciones graves sin un plan definido. Te recomendamos una evaluación pronto para identificar el desencadenante y prescribir adrenalina. Ante una reacción en curso, llama al 131.",
+        },
+      ],
+    },
+    lastReviewed: LAST_REVIEWED,
+    reviewedBy: REVIEWED_BY,
+  },
+  {
+    slug: "dermatitis-atopica",
+    title: "Dermatitis atópica",
+    metaTitle: "Dermatitis atópica (eccema) en Concepción · Bioalergia",
+    metaDescription:
+      "Piel seca, picazón intensa y brotes de eccema en Concepción. Causas, desencadenantes, diagnóstico y tratamiento de la dermatitis atópica con especialistas.",
+    synonyms: ["eccema atópico", "eczema", "dermatitis del lactante"],
+    heroIntro:
+      "La dermatitis atópica es una enfermedad inflamatoria crónica de la piel que cursa con sequedad y picazón intensa, con brotes de eccema. Es muy frecuente en la infancia y se asocia a una barrera cutánea más frágil y a otras condiciones alérgicas como rinitis o asma.",
+    sections: [
+      {
+        heading: "¿Qué es?",
+        body: "Una inflamación crónica de la piel en la que la barrera cutánea funciona de forma deficiente y el sistema inmune reacciona de manera exagerada. Suele iniciarse en la infancia y puede persistir o reaparecer en la adultez. Forma parte de la llamada 'marcha atópica', junto con la rinitis alérgica y el asma.",
+      },
+      {
+        heading: "Síntomas",
+        body: "El picor es el síntoma principal y la piel se ve seca y reactiva:",
+        bullets: [
+          "Piel seca y áspera de forma generalizada.",
+          "Picazón intensa, que suele empeorar de noche.",
+          "Placas rojas, descamación y, en los brotes, lesiones que pueden supurar.",
+          "Localización típica en pliegues de codos y rodillas, cuello y cara según la edad.",
+          "Engrosamiento de la piel (liquenificación) en zonas que se rascan de forma repetida.",
+        ],
+      },
+      {
+        heading: "Causas y desencadenantes",
+        body: "Intervienen factores genéticos, una barrera cutánea alterada y la respuesta del sistema inmune. Los brotes pueden gatillarse por jabones irritantes, ropa de fibras ásperas, sudor, cambios de temperatura, ambientes secos, estrés y, en algunos casos, ciertos alérgenos. Identificar qué empeora cada caso ayuda a espaciar los brotes.",
+      },
+      {
+        heading: "Diagnóstico",
+        body: "Es fundamentalmente clínico, basado en la historia y el aspecto de las lesiones. Cuando se sospecha una alergia de contacto que mantiene el eccema, el test de parche identifica el agente responsable. El estudio alérgico (prick test o IgE específica) ayuda a definir sensibilizaciones asociadas cuando coexisten rinitis, asma o alergia alimentaria.",
+      },
+      {
+        heading: "Tratamiento",
+        body: "La base es la hidratación diaria y constante de la piel para reforzar su barrera, junto con el tratamiento de los brotes y la reducción de irritantes. Según la intensidad existen distintas opciones, desde tratamientos tópicos hasta terapias avanzadas en casos graves. El plan se define de forma individual en la consulta médica.",
+      },
+      {
+        heading: "¿Cuándo consultar?",
+        body: "Consulta si el picor o las lesiones afectan tu sueño o tu rutina, si los brotes son frecuentes o extensos, o si aparecen signos de infección en la piel como costras amarillentas, dolor o aumento del enrojecimiento. Una evaluación especializada permite ordenar el cuidado y descartar factores asociados.",
+      },
+    ],
+    faq: [
+      {
+        question: "¿La dermatitis atópica se cura?",
+        answer:
+          "No tiene una cura definitiva, pero se controla muy bien. Con una rutina de hidratación, el tratamiento adecuado de los brotes y la reducción de irritantes, la mayoría logra una piel tranquila la mayor parte del tiempo. En muchos niños mejora con la edad.",
+      },
+      {
+        question: "¿La dermatitis atópica es una alergia?",
+        answer:
+          "No es una alergia en sí misma, sino una enfermedad inflamatoria de la piel con base genética y de barrera. Sí se asocia a un terreno alérgico y puede coexistir con rinitis, asma o alergia alimentaria, por lo que a veces conviene estudiarlas en conjunto.",
+      },
+      {
+        question: "¿Sirve hacer pruebas de alergia alimentaria?",
+        answer:
+          "No de forma rutinaria. Solo se estudian alimentos cuando la historia sugiere que gatillan brotes o reacciones. Retirar alimentos 'por las dudas' no mejora el eccema y puede ser perjudicial; cualquier restricción debe basarse en una evaluación.",
+      },
+      {
+        question: "¿Para qué sirve el test de parche en el eccema?",
+        answer:
+          "Ayuda cuando se sospecha una dermatitis de contacto sobreañadida (por metales, fragancias, conservantes o cosméticos) que mantiene o empeora las lesiones. Identificar y evitar ese agente puede ser clave para controlar un eccema persistente.",
+      },
+    ],
+    relatedExams: [
+      { id: "parche", label: "Test de parche (Patch test)" },
+      { id: "prick", label: "Test cutáneo (Prick test)" },
+      { id: "alex2", label: "Test ALEX2 — diagnóstico molecular" },
+    ],
+    quiz: {
+      disclaimer: QUIZ_DISCLAIMER,
+      questions: [
+        {
+          id: "picazon",
+          text: "¿Tienes picazón en la piel que reaparece y suele empeorar de noche?",
+          options: [
+            { label: "Sí, con frecuencia", score: 2 },
+            { label: "A veces", score: 1 },
+            { label: "No", score: 0 },
+          ],
+        },
+        {
+          id: "sequedad",
+          text: "¿Tu piel está habitualmente seca, áspera o se descama?",
+          options: [
+            { label: "Sí", score: 2 },
+            { label: "A veces", score: 1 },
+            { label: "No", score: 0 },
+          ],
+        },
+        {
+          id: "pliegues",
+          text: "¿Te aparecen placas rojas en pliegues de codos, rodillas, cuello o cara?",
+          options: [
+            { label: "Sí", score: 2 },
+            { label: "No estoy seguro/a", score: 1 },
+            { label: "No", score: 0 },
+          ],
+        },
+        {
+          id: "atopia",
+          text: "¿Tú o tu familia tienen rinitis, asma u otras alergias?",
+          options: [
+            { label: "Sí", score: 2 },
+            { label: "Quizás", score: 1 },
+            { label: "No", score: 0 },
+          ],
+        },
+      ],
+      results: [
+        {
+          level: "bajo",
+          upTo: 2,
+          title: "Pocas señales de dermatitis atópica",
+          message:
+            "Tus respuestas muestran pocos síntomas compatibles. Si la piel te molesta de forma persistente, una consulta puede orientarte.",
+        },
+        {
+          level: "posible",
+          upTo: 5,
+          title: "Hay señales que conviene evaluar",
+          message:
+            "Algunas respuestas son compatibles con dermatitis atópica. Una evaluación puede ordenar el cuidado de tu piel y revisar factores asociados.",
+        },
+        {
+          level: "alto",
+          upTo: null,
+          title: "Varias señales compatibles con dermatitis atópica",
+          message:
+            "Tus respuestas reúnen varias señales frecuentes. Te recomendamos una evaluación para definir el plan de cuidado y descartar desencadenantes.",
         },
       ],
     },

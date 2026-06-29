@@ -20,6 +20,7 @@ import { TrustBlock } from "@/features/shop/components/TrustBlock";
 import { computeOrderTotal, pickCheapestShippingOption } from "@/features/shop/lib/checkout-math";
 import { lineTotalClp } from "@/features/shop/lib/cart-math";
 import { CLP_FORMATTER } from "@/features/shop/lib/shop-config";
+import { isEmail } from "@/lib/validation";
 
 // Presentational view for /checkout. Owns the local FORM state (contact fields,
 // shipping selection, quote options) because that is pure UI state, but takes
@@ -96,7 +97,7 @@ export function CheckoutView({
     );
   }
 
-  const customerReady = email.includes("@") && name.length >= 2;
+  const customerReady = isEmail(email) && name.length >= 2;
   // Street must carry a number — Chilexpress can't deliver to a street with no
   // house number (we can't verify it against their API yet; this is the cheap
   // client check). The comuna itself is already validated (from the coverage list).
