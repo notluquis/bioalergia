@@ -43,7 +43,7 @@ function CheckoutPage() {
                 ? { method: "pickup" }
                 : {
                     method: "chilexpress",
-                    address: { street: "—", city: "—", region: "—" },
+                    address: shipping.address ?? { street: "", city: "", region: "" },
                     ...(shipping.serviceCode ? { service_code: shipping.serviceCode } : {}),
                   },
             brick,

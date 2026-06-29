@@ -34,7 +34,11 @@ export type BrickSubmission = {
 };
 
 export type CheckoutCustomer = { email: string; name: string; rut: string };
-export type CheckoutShipping = { method: "pickup" | "chilexpress"; serviceCode: string | null };
+export type CheckoutShipping = {
+  method: "pickup" | "chilexpress";
+  serviceCode: string | null;
+  address?: { street: string; city: string; region: string };
+};
 
 export type CheckoutViewProps = {
   /** MercadoPago public key; null/undefined renders the "missing key" alert. */
@@ -62,6 +66,9 @@ export function CheckoutView({
   const [name, setName] = useState("");
   const [rut, setRut] = useState("");
   const [comuna, setComuna] = useState("");
+  const [street, setStreet] = useState("");
+  const [city, setCity] = useState("");
+  const [region, setRegion] = useState("");
   const [shippingMethod, setShippingMethod] = useState<"pickup" | "chilexpress">("pickup");
   const [shippingClp, setShippingClp] = useState(0);
   const [quoteOptions, setQuoteOptions] = useState<QuoteOption[]>([]);
@@ -108,6 +115,13 @@ export function CheckoutView({
   }
 
   const customerReady = email.includes("@") && name.length >= 2;
+  // Chilexpress needs a real address (contract min(2)) + a chosen service before paying.
+  const shippingReady =
+    shippingMethod === "pickup" ||
+    (Boolean(serviceCode) &&
+      street.trim().length >= 2 &&
+      city.trim().length >= 2 &&
+      region.trim().length >= 2);
 
   const runQuote = () => {
     setIsQuoting(true);
@@ -189,9 +203,28 @@ export function CheckoutView({
           </div>
 
           {shippingMethod === "chilexpress" && (
+            // ponytail: región/comuna are free text + a manual coverage code. A
+            // comuna selector that yields code+name+region (one Chilexpress
+            // coverage fetch) is the upgrade if order volume justifies it.
             <div className="space-y-2">
+              <TextField isRequired onChange={setStreet} value={street}>
+                <Label>Calle y número</Label>
+                <Input
+                  autoComplete="street-address"
+                  maxLength={160}
+                  placeholder="Av. Siempre Viva 742"
+                />
+              </TextField>
+              <TextField isRequired onChange={setCity} value={city}>
+                <Label>Comuna / Ciudad</Label>
+                <Input autoComplete="address-level2" maxLength={80} placeholder="Concepción" />
+              </TextField>
+              <TextField isRequired onChange={setRegion} value={region}>
+                <Label>Región</Label>
+                <Input autoComplete="address-level1" maxLength={80} placeholder="Biobío" />
+              </TextField>
               <TextField onChange={setComuna} value={comuna}>
-                <Label>Código comuna</Label>
+                <Label>Código comuna (para cotizar)</Label>
                 <Input placeholder="STGO / NUO / VINA…" />
               </TextField>
               <Button
@@ -268,15 +301,19 @@ export function CheckoutView({
           </Card.Description>
         </Card.Header>
         <Card.Content>
-          {!customerReady && (
+          {!(customerReady && shippingReady) && (
             <Alert status="accent">
               <Alert.Content>
-                <Alert.Description>Completa tu email y nombre arriba.</Alert.Description>
+                <Alert.Description>
+                  {!customerReady
+                    ? "Completa tu email y nombre arriba."
+                    : "Completa tu dirección de envío y elige un servicio Chilexpress."}
+                </Alert.Description>
               </Alert.Content>
             </Alert>
           )}
 
-          {customerReady && (
+          {customerReady && shippingReady && (
             <Payment
               initialization={{
                 amount: totalClp,
@@ -295,7 +332,19 @@ export function CheckoutView({
                 try {
                   await onStart({
                     customer: { email, name, rut },
-                    shipping: { method: shippingMethod, serviceCode },
+                    shipping: {
+                      method: shippingMethod,
+                      serviceCode,
+                      ...(shippingMethod === "chilexpress"
+                        ? {
+                            address: {
+                              street: street.trim(),
+                              city: city.trim(),
+                              region: region.trim(),
+                            },
+                          }
+                        : {}),
+                    },
                     brick: {
                       token: formData.token,
                       payment_method_id: formData.payment_method_id,

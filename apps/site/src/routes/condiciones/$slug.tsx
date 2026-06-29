@@ -8,6 +8,7 @@ import { PageShell } from "@/components/PageShell";
 import { PageHero } from "@/components/ui/PageHero";
 import { SectionBand } from "@/components/ui/SectionBand";
 import { type Condition, getCondition } from "@/data/conditions";
+import { getTopic } from "@/data/education";
 import { breadcrumbJsonLd, faqJsonLd, medicalWebPageJsonLd } from "@/lib/seo";
 
 function ConditionNotFound() {
@@ -36,6 +37,8 @@ function ConditionNotFound() {
 }
 
 function ConditionDetail({ condition }: { condition: Condition }) {
+  // Matching educational topic (same slug) for a general-explanation cross-link.
+  const topic = getTopic(condition.slug);
   return (
     <PageShell contained={false}>
       <JsonLd
@@ -121,6 +124,16 @@ function ConditionDetail({ condition }: { condition: Condition }) {
                 </Link>
               </Card.Content>
             </Card>
+          ) : null}
+
+          {topic ? (
+            <Link
+              className="w-fit font-semibold text-brand-blue text-sm no-underline hover:underline underline-offset-4"
+              params={{ slug: topic.slug }}
+              to="/aprende/$slug"
+            >
+              Aprende más sobre {condition.title.toLowerCase()} →
+            </Link>
           ) : null}
         </div>
       </SectionBand>

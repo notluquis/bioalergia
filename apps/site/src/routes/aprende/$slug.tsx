@@ -7,6 +7,7 @@ import { PageShell } from "@/components/PageShell";
 import { Container } from "@/components/ui/Container";
 import { PageHero } from "@/components/ui/PageHero";
 import { SectionBand } from "@/components/ui/SectionBand";
+import { getCondition } from "@/data/conditions";
 import { type EducationBlock, getTopic, relatedTopics } from "@/data/education";
 import { breadcrumbJsonLd } from "@/lib/seo";
 import { titleFromSlug } from "@/lib/slug";
@@ -85,6 +86,8 @@ function TopicDetailPage() {
   }
 
   const related = relatedTopics(topic.slug, 3);
+  // Same slug may have a richer condition guide (diagnosis + self-test). Cross-link it.
+  const condition = getCondition(topic.slug);
 
   return (
     <PageShell contained={false}>
@@ -110,6 +113,15 @@ function TopicDetailPage() {
       <SectionBand borderTop tone="surface">
         <div className="mx-auto max-w-[760px]">
           <TopicBody blocks={topic.body} />
+          {condition ? (
+            <Link
+              className="mt-8 block w-fit rounded-2xl border border-line bg-surface-2 px-5 py-4 font-semibold text-brand-blue no-underline hover:border-brand-amber"
+              params={{ slug: condition.slug }}
+              to="/condiciones/$slug"
+            >
+              Diagnóstico y autoevaluación: guía de {condition.title} →
+            </Link>
+          ) : null}
           <Link
             className="mt-8 inline-block font-semibold text-brand-blue text-sm no-underline hover:underline underline-offset-4"
             to="/aprende"
@@ -187,6 +199,9 @@ export const Route = createFileRoute("/aprende/$slug")({
     const titleHuman = topic?.title ?? titleFromSlug(params.slug);
     const title = `${titleHuman} · Aprende Bioalergia`;
     const description = topic?.summary ?? `${titleHuman} en la sección educativa de Bioalergia.`;
+    // Same slug exists as a richer /condiciones guide → canonicalize there to avoid
+    // the two pages cannibalizing each other in search.
+    const canonical = getCondition(params.slug) ? `${origin}/condiciones/${params.slug}` : url;
     return {
       meta: [
         { title },
@@ -200,7 +215,7 @@ export const Route = createFileRoute("/aprende/$slug")({
         { name: "twitter:card", content: "summary_large_image" },
         { name: "twitter:image", content: `${origin}/og-image.png` },
       ],
-      links: [{ rel: "canonical", href: url }],
+      links: [{ rel: "canonical", href: canonical }],
     };
   },
 });
