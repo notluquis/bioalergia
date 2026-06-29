@@ -8,6 +8,7 @@ export const SkinTestImportStatusSchema = z.enum([
   "ERROR",
   "SKIPPED",
   "TEMPLATE",
+  "MOVED_TO_RECORD",
 ]);
 
 export type SkinTestImportStatus = z.infer<typeof SkinTestImportStatusSchema>;

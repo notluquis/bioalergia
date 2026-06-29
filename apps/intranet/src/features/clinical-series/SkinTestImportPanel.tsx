@@ -67,12 +67,14 @@ const STATUS_FILTER_OPTIONS: Array<{ label: string; value: "ALL" | SkinTestImpor
   { label: "Rechazados", value: "REJECTED" },
   { label: "Omitidos", value: "SKIPPED" },
   { label: "Plantillas", value: "TEMPLATE" },
+  { label: "Movidos a ficha", value: "MOVED_TO_RECORD" },
 ];
 
 const STATUS_LABELS: Record<SkinTestImportStatus, string> = {
   DISCOVERED: "Descubierto",
   ERROR: "Error",
   IMPORTED: "Importado",
+  MOVED_TO_RECORD: "Movido a ficha",
   PENDING_REVIEW: "Pendiente",
   REJECTED: "Rechazado",
   SKIPPED: "Omitido",
@@ -83,6 +85,7 @@ const STATUS_COLORS: Record<SkinTestImportStatus, "danger" | "default" | "succes
   DISCOVERED: "default",
   ERROR: "danger",
   IMPORTED: "success",
+  MOVED_TO_RECORD: "default",
   PENDING_REVIEW: "warning",
   REJECTED: "danger",
   SKIPPED: "default",

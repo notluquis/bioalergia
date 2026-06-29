@@ -9,6 +9,10 @@ export const skinTestImportStatusSchema = z.enum([
   "ERROR",
   "SKIPPED",
   "TEMPLATE",
+  // Audit breadcrumb: a REJECTED row reclassified into clinical_record_imports
+  // (filename matched ficha clínica pattern). DB enum has it; the contract must too
+  // or the list output fails validation when such a row lands in a page.
+  "MOVED_TO_RECORD",
 ]);
 
 export const clinicalDocumentImportKindSchema = z.enum(["CLINICAL_RECORD", "VISIT_SHEET", "OTHER"]);
