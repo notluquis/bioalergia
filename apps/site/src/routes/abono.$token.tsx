@@ -75,15 +75,20 @@ function AbonoPage() {
 
   const formatClp = (num: number) =>
     new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP" }).format(num);
-  const formatDate = (dateStr: string) =>
-    new Intl.DateTimeFormat("es-CL", {
+  const formatDate = (dateStr: string) => {
+    // 24h (Chile) → sin "a. m./p. m."; capitalizamos solo la inicial en JS
+    // (el CSS `capitalize` ponía "De"/"A.m." en cada palabra).
+    const s = new Intl.DateTimeFormat("es-CL", {
       weekday: "long",
       year: "numeric",
       month: "long",
       day: "numeric",
       hour: "2-digit",
       minute: "2-digit",
+      hour12: false,
     }).format(new Date(dateStr));
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  };
 
   const handlePay = async (amount: "half" | "full") => {
     setIsLoading(true);
@@ -161,7 +166,7 @@ function AbonoPage() {
             </div>
             <div className="flex justify-between">
               <dt className="text-muted">Fecha y hora</dt>
-              <dd className="font-medium capitalize">{formatDate(data.appointmentDate)}</dd>
+              <dd className="font-medium">{formatDate(data.appointmentDate)}</dd>
             </div>
           </dl>
         </Card>
@@ -207,36 +212,44 @@ function AbonoPage() {
         </section>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Card className="rounded-2xl border-line bg-surface p-6 text-center" variant="default">
-            <h3 className="mb-2 font-display text-lg">Abonar 50%</h3>
-            <p className="mb-4 text-2xl font-bold">{formatClp(currentHalfAmount)}</p>
-            <p className="mb-6 text-sm text-muted">
-              Pagas el resto ({formatClp(currentFullAmount - currentHalfAmount)}) presencialmente en
-              la clínica.
+          {/* Pago total — primero + destacado (recomendado) */}
+          <Card
+            className="relative rounded-2xl border-2 border-brand-green bg-brand-green/5 p-6 text-center shadow-sm"
+            variant="default"
+          >
+            <span className="-top-3 -translate-x-1/2 absolute left-1/2 rounded-full bg-brand-green px-3 py-0.5 font-semibold text-white text-xs">
+              Recomendado
+            </span>
+            <h3 className="mb-2 font-display text-lg">Pagar 100%</h3>
+            <p className="mb-4 font-bold text-3xl text-brand-green">{formatClp(currentFullAmount)}</p>
+            <p className="mb-6 text-muted text-sm">
+              Dejas la consulta completamente pagada. No te preocupas de nada el día de tu cita.
             </p>
             <Button
               className="w-full"
               variant="primary"
-              onPress={() => handlePay("half")}
-              isDisabled={isLoading}
-            >
-              {isLoading ? "Iniciando pago..." : "Pagar abono"}
-            </Button>
-          </Card>
-
-          <Card className="rounded-2xl border-line bg-surface p-6 text-center" variant="default">
-            <h3 className="mb-2 font-display text-lg">Pagar 100%</h3>
-            <p className="mb-4 text-2xl font-bold">{formatClp(currentFullAmount)}</p>
-            <p className="mb-6 text-sm text-muted">
-              Dejas la consulta completamente pagada y no te preocupas de nada el día de tu cita.
-            </p>
-            <Button
-              className="w-full"
-              variant="secondary"
               onPress={() => handlePay("full")}
               isDisabled={isLoading}
             >
               {isLoading ? "Iniciando pago..." : "Pagar total"}
+            </Button>
+          </Card>
+
+          {/* Abono parcial — segundo, menos prominente */}
+          <Card className="rounded-2xl border-line bg-surface p-6 text-center" variant="default">
+            <h3 className="mb-2 font-display text-lg">Abonar 50%</h3>
+            <p className="mb-4 font-bold text-2xl">{formatClp(currentHalfAmount)}</p>
+            <p className="mb-6 text-muted text-sm">
+              Pagas el resto ({formatClp(currentFullAmount - currentHalfAmount)}) en la clínica el
+              día de tu cita.
+            </p>
+            <Button
+              className="w-full"
+              variant="secondary"
+              onPress={() => handlePay("half")}
+              isDisabled={isLoading}
+            >
+              {isLoading ? "Iniciando pago..." : "Abonar 50%"}
             </Button>
           </Card>
         </div>
