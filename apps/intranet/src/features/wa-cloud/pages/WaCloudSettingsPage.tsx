@@ -27,6 +27,7 @@ import {
   useDeleteAccount,
   useSyncPhones,
   useSyncTemplates,
+  useTemplates,
   useUpdateAbonoAutomationSettings,
   useUpsertAccount,
   useUpsertPhoneNumber,
@@ -98,6 +99,13 @@ function AbonoAutomationCard({ accounts }: { accounts: AccountsData }) {
   }, [settings.data]);
   const data = draft ?? settings.data;
 
+  // Templates of the configured phone's account → dropdown (no manual typing).
+  const selectedAccountId = accounts.accounts.find((a) =>
+    a.phoneNumbers.some((p) => p.id === data?.phoneNumberId)
+  )?.id;
+  const templates = useTemplates(selectedAccountId);
+  const tplOptions = (templates.data?.templates ?? []).filter((t) => t.status === "APPROVED");
+
   if (!data) {
     return (
       <Card>
@@ -117,6 +125,11 @@ function AbonoAutomationCard({ accounts }: { accounts: AccountsData }) {
 
   const set = <K extends keyof typeof data>(key: K, value: (typeof data)[K]) => {
     setDraft({ ...data, [key]: value });
+  };
+  // Pick a template by name → set the name + auto-fill its language in one go.
+  const pickTemplate = (nameKey: keyof typeof data, langKey: keyof typeof data, name: string) => {
+    const tpl = tplOptions.find((t) => t.name === name);
+    setDraft({ ...data, [nameKey]: name, ...(tpl ? { [langKey]: tpl.language } : {}) });
   };
 
   const numberValue = (value: number | null) => (value == null ? "" : String(value));
@@ -186,22 +199,62 @@ function AbonoAutomationCard({ accounts }: { accounts: AccountsData }) {
           value={data.statementDescriptor}
           onValueChange={(value) => set("statementDescriptor", value)}
         />
-        <TextInput
-          label="Template solicitud"
-          value={data.requestTemplateName}
-          onValueChange={(value) => set("requestTemplateName", value)}
-        />
+        <label className="space-y-1">
+          <span className="font-medium text-sm">Template solicitud</span>
+          <select
+            className="h-10 w-full rounded-lg border border-default-300 bg-background px-3 text-sm"
+            value={data.requestTemplateName}
+            onChange={(e) =>
+              pickTemplate("requestTemplateName", "requestTemplateLanguage", e.target.value)
+            }
+          >
+            <option value="">Sin configurar</option>
+            {data.requestTemplateName &&
+              !tplOptions.some((t) => t.name === data.requestTemplateName) && (
+                <option value={data.requestTemplateName}>
+                  {data.requestTemplateName} (actual)
+                </option>
+              )}
+            {tplOptions.map((t) => (
+              <option key={t.id} value={t.name}>
+                {t.name} ({t.language})
+              </option>
+            ))}
+          </select>
+        </label>
         <TextInput
           label="Idioma solicitud"
           value={data.requestTemplateLanguage}
           onValueChange={(value) => set("requestTemplateLanguage", value)}
           placeholder="es_CL"
         />
-        <TextInput
-          label="Template confirmación"
-          value={data.confirmationTemplatePrefix}
-          onValueChange={(value) => set("confirmationTemplatePrefix", value)}
-        />
+        <label className="space-y-1">
+          <span className="font-medium text-sm">Template confirmación</span>
+          <select
+            className="h-10 w-full rounded-lg border border-default-300 bg-background px-3 text-sm"
+            value={data.confirmationTemplatePrefix}
+            onChange={(e) =>
+              pickTemplate(
+                "confirmationTemplatePrefix",
+                "confirmationTemplateLanguage",
+                e.target.value
+              )
+            }
+          >
+            <option value="">Sin configurar</option>
+            {data.confirmationTemplatePrefix &&
+              !tplOptions.some((t) => t.name === data.confirmationTemplatePrefix) && (
+                <option value={data.confirmationTemplatePrefix}>
+                  {data.confirmationTemplatePrefix} (actual)
+                </option>
+              )}
+            {tplOptions.map((t) => (
+              <option key={t.id} value={t.name}>
+                {t.name} ({t.language})
+              </option>
+            ))}
+          </select>
+        </label>
         <TextInput
           label="Idioma confirmación"
           value={data.confirmationTemplateLanguage}
