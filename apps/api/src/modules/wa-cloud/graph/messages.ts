@@ -130,6 +130,9 @@ export type SendMediaInput = {
   mediaId?: string;
   caption?: string;
   filename?: string;
+  // Render audio as a voice note (waveform + transcription) rather than a basic
+  // audio file. Meta requires the media be ogg/opus. Ignored for non-audio.
+  voice?: boolean;
 };
 
 export async function sendMediaMessage(input: SendMediaInput) {
@@ -142,6 +145,8 @@ export async function sendMediaMessage(input: SendMediaInput) {
   if (input.caption && input.type !== "audio" && input.type !== "sticker")
     media.caption = input.caption;
   if (input.filename && input.type === "document") media.filename = input.filename;
+  // Voice note flag (audio only) — makes WA render the waveform/transcription UI.
+  if (input.type === "audio" && input.voice) media.voice = true;
 
   const payload = {
     messaging_product: "whatsapp",

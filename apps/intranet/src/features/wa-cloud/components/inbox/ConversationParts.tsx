@@ -940,16 +940,28 @@ export function ScheduleSendModal({
 async function toWaAudio(blob: Blob): Promise<{ blob: Blob; ext: string }> {
   const base = (blob.type.split(";")[0] || "").trim();
   if (base === "audio/ogg") return { blob, ext: "ogg" };
+  // Try to produce ogg/opus so it sends as a voice note: webm is a pure remux
+  // (copy Opus); mp4/aac needs a transcode (WebCodecs Opus encoder). If no
+  // encoder is available (e.g. Safari), Conversion.isValid is false and we fall
+  // back to the original container as a basic audio file (WA still accepts mp4).
+  try {
+    const { Input, Output, Conversion, BlobSource, BufferTarget, OggOutputFormat, ALL_FORMATS } =
+      await import("mediabunny");
+    const input = new Input({ source: new BlobSource(blob), formats: ALL_FORMATS });
+    const output = new Output({ format: new OggOutputFormat(), target: new BufferTarget() });
+    const conversion = await Conversion.init({ input, output });
+    if (conversion.isValid) {
+      await conversion.execute();
+      const buffer = output.target.buffer;
+      if (buffer) return { blob: new Blob([buffer], { type: "audio/ogg" }), ext: "ogg" };
+    }
+  } catch {
+    // fall through to basic-audio fallback
+  }
   if (base === "audio/mp4" || base === "audio/aac") return { blob, ext: "m4a" };
-  const { Input, Output, Conversion, BlobSource, BufferTarget, OggOutputFormat, WEBM } =
-    await import("mediabunny");
-  const input = new Input({ source: new BlobSource(blob), formats: [WEBM] });
-  const output = new Output({ format: new OggOutputFormat(), target: new BufferTarget() });
-  const conversion = await Conversion.init({ input, output });
-  await conversion.execute();
-  const buffer = output.target.buffer;
-  if (!buffer) throw new Error("audio remux produced no output");
-  return { blob: new Blob([buffer], { type: "audio/ogg" }), ext: "ogg" };
+  // webm that couldn't be remuxed has no WA-acceptable container — fail loudly
+  // (caught in send() → toast) instead of uploading bytes Meta will reject.
+  throw new Error("No se pudo convertir el audio a un formato compatible");
 }
 
 function VoiceRecorderButton({
@@ -967,6 +979,8 @@ function VoiceRecorderButton({
   const [elapsed, setElapsed] = useState(0);
   const [preview, setPreview] = useState<{ blob: Blob; url: string } | null>(null);
   const [previewPlaying, setPreviewPlaying] = useState(false);
+  // True while the remux+handoff runs, so a second tap can't send a duplicate.
+  const [sending, setSending] = useState(false);
   // OpusMediaRecorder has the same surface we use as MediaRecorder.
   const recorderRef = useRef<{ state: string; stop(): void } | null>(null);
   const previewRef = useRef<HTMLAudioElement>(null);
@@ -1047,18 +1061,21 @@ function VoiceRecorderButton({
   };
 
   const send = async () => {
-    if (!preview) return;
+    if (!preview || sending) return;
+    setSending(true);
     try {
       const { blob, ext } = await toWaAudio(preview.blob);
       const file = new File([blob], `voice-${Date.now()}.${ext}`, { type: blob.type });
       onSend(file);
     } catch {
       toast.error("No se pudo procesar la nota de voz");
+      setSending(false);
       return;
     }
     URL.revokeObjectURL(preview.url);
     setPreview(null);
     setPreviewPlaying(false);
+    setSending(false);
   };
 
   const fmt = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
@@ -1096,10 +1113,18 @@ function VoiceRecorderButton({
           isIconOnly
           aria-label="Descartar nota de voz"
           onPress={cancel}
+          isDisabled={sending}
         >
           <Trash2 size={14} />
         </Button>
-        <Button size="sm" isIconOnly aria-label="Enviar nota de voz" onPress={() => void send()}>
+        <Button
+          size="sm"
+          isIconOnly
+          aria-label="Enviar nota de voz"
+          onPress={() => void send()}
+          isPending={sending}
+          isDisabled={sending}
+        >
           <Send size={14} />
         </Button>
       </div>

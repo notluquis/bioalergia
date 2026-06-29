@@ -272,6 +272,9 @@ export const sendMediaInputSchema = z.object({
   link: z.string().url().optional(),
   caption: z.string().max(1024).optional(),
   filename: z.string().max(120).optional(),
+  // Render audio as a WhatsApp voice note (waveform, transcription) instead of
+  // a basic audio file. Meta requires the media to be ogg/opus for this.
+  voice: z.boolean().optional(),
   contextMetaMessageId: z.string().optional(),
 });
 
