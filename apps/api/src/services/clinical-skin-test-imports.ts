@@ -115,7 +115,8 @@ export type SkinTestImportStatus =
   | "PENDING_REVIEW"
   | "REJECTED"
   | "SKIPPED"
-  | "TEMPLATE";
+  | "TEMPLATE"
+  | "MOVED_TO_RECORD";
 
 const MATERIALIZED_SKIN_TEST_IMPORT_STATUSES = new Set<SkinTestImportStatus>(["IMPORTED"]);
 
