@@ -976,6 +976,10 @@ function VoiceRecorderButton({
   const start = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // opus-media-recorder's module references a Node-style `global` at load
+      // (global.AudioContext, new global.Event(...)) and throws in the browser.
+      // Alias it to globalThis just before importing the encoder.
+      (globalThis as { global?: unknown }).global ??= globalThis;
       // Record straight to Ogg/Opus via opus-media-recorder (WASM). Chrome's
       // native MediaRecorder only makes audio/webm, which WhatsApp rejects
       // (error 131053); ogg/opus is the cross-browser container Meta accepts.

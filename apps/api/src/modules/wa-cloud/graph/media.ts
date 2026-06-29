@@ -25,10 +25,18 @@ export async function uploadMedia(
   const phone = await getAccountForPhoneNumber(phoneNumberId);
   const v = phone.account.graphApiVersion;
   const token = requireSystemUserToken(phone);
+  // Meta validates the bare MIME type and rejects parameterized values like
+  // "audio/ogg; codecs=opus" (#100 "Param file must be a file with one of the
+  // following types"). Inbound voice notes arrive with exactly that codecs
+  // suffix, so forwarding one — or uploading a browser-recorded blob whose type
+  // carries codecs — fails. Strip params and re-wrap the blob's own type to the
+  // bare value (the multipart part's Content-Type is what Meta checks).
+  const cleanType = (mimeType.split(";")[0] || "").trim() || "application/octet-stream";
+  const cleanFile = file.type === cleanType ? file : new Blob([file], { type: cleanType });
   const form = new FormData();
   form.append("messaging_product", "whatsapp");
-  form.append("type", mimeType);
-  form.append("file", file, filename);
+  form.append("type", cleanType);
+  form.append("file", cleanFile, filename);
   const res = await fetch(`${GRAPH_BASE}/${v}/${phone.phoneNumberId}/media`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}` },

@@ -464,6 +464,11 @@ function VideoLightbox({ src, onError }: { src: string; onError: () => void }) {
                 src={src}
                 controls
                 autoPlay
+                // Suppress Safari's AirPlay/PiP control glyphs — they load as
+                // blob: placards that 404 and spam the console on our proxied
+                // media; we don't support casting/PiP for inbox media anyway.
+                disablePictureInPicture
+                disableRemotePlayback
                 aria-label="Reproductor de video"
                 className="max-h-[92vh] max-w-[92vw] rounded-lg"
               >
