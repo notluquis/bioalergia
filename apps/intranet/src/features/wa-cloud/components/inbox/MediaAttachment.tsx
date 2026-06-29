@@ -17,13 +17,16 @@ import { decodeWaveform, syntheticWaveform } from "../../lib/decodeWaveform";
 import { formatBytes, renderPdfFirstPage } from "../../lib/pdfRender";
 
 type Props = {
-  messageId: number;
+  messageId?: number | null;
   type: string;
   caption?: string | null;
   out?: boolean;
+  // Optimistic local preview (object URL) for a pending outbound media message,
+  // shown before it's uploaded/sent. When set, the server media proxy is skipped.
+  localSrc?: string | null;
 };
 
-export function MediaAttachment({ messageId, type, caption, out = false }: Props) {
+export function MediaAttachment({ messageId, type, caption, out = false, localSrc }: Props) {
   const [visible, setVisible] = useState(false);
   const [errored, setErrored] = useState(false);
   // Bumped on retry to cache-bust the media URL. WhatsApp/Meta media ids expire
@@ -48,7 +51,7 @@ export function MediaAttachment({ messageId, type, caption, out = false }: Props
     return () => obs.disconnect();
   }, [visible]);
 
-  const url = `/api/wa-cloud/media/${messageId}${retryNonce ? `?r=${retryNonce}` : ""}`;
+  const url = localSrc ?? `/api/wa-cloud/media/${messageId}${retryNonce ? `?r=${retryNonce}` : ""}`;
   const retry = () => {
     setErrored(false);
     setRetryNonce((n) => n + 1);
@@ -127,7 +130,7 @@ export function MediaAttachment({ messageId, type, caption, out = false }: Props
             key={url}
             src={url}
             out={out}
-            seed={messageId}
+            seed={messageId ?? 0}
             onError={() => setErrored(true)}
           />
         ) : (
