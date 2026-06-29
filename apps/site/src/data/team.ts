@@ -1,3 +1,4 @@
+import type { ClinicPhotoName } from "./photos";
 import { founderProfile } from "./founder";
 
 export type TeamMember = {
@@ -8,6 +9,8 @@ export type TeamMember = {
   paragraphs: string[];
   email?: string;
   linkedin?: string;
+  /** Optional portrait shown beside the bio on the team page. */
+  photo?: ClinicPhotoName;
 };
 
 export const team: TeamMember[] = [
@@ -16,6 +19,7 @@ export const team: TeamMember[] = [
     role: "Director médico · Alergólogo e inmunólogo",
     badge: "Director médico",
     paragraphs: founderProfile.paragraphs,
+    photo: "founderPortrait",
     // Sin correo público por decisión del equipo.
   },
   {

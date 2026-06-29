@@ -329,29 +329,27 @@ function PolenPage() {
             0 a 5. Cada número y color de arriba corresponde a este nivel.
           </p>
         </div>
-        <Card className="rounded-2xl border border-line bg-surface" variant="default">
-          <Card.Content className="grid gap-3 py-6">
-            {UPI_SCALE.map((lvl) => (
-              <div
-                className="flex items-start gap-4 border-line border-b pb-3 last:border-0 last:pb-0"
-                key={lvl.value}
+        <div className="grid gap-3">
+          {UPI_SCALE.map((lvl) => (
+            <div
+              className="flex items-start gap-4 border-line border-b pb-3 last:border-0 last:pb-0"
+              key={lvl.value}
+            >
+              <span
+                aria-hidden="true"
+                className="flex size-9 shrink-0 items-center justify-center rounded-full font-semibold text-sm text-white"
+                style={{ backgroundColor: lvl.color }}
               >
-                <span
-                  aria-hidden="true"
-                  className="flex size-9 shrink-0 items-center justify-center rounded-full font-semibold text-sm text-white"
-                  style={{ backgroundColor: lvl.color }}
-                >
-                  {lvl.value}
-                </span>
-                <div className="grid gap-0.5">
-                  <span className="font-medium text-foreground text-sm">{lvl.label}</span>
-                  <span className="text-muted text-sm leading-relaxed">{lvl.description}</span>
-                </div>
+                {lvl.value}
+              </span>
+              <div className="grid gap-0.5">
+                <span className="font-medium text-foreground text-sm">{lvl.label}</span>
+                <span className="text-muted text-sm leading-relaxed">{lvl.description}</span>
               </div>
-            ))}
-            <p className="text-muted text-xs leading-relaxed">{polenContent.unit}</p>
-          </Card.Content>
-        </Card>
+            </div>
+          ))}
+          <p className="text-muted text-xs leading-relaxed">{polenContent.unit}</p>
+        </div>
       </SectionBand>
 
       <SectionBand tone="bg">
@@ -429,16 +427,14 @@ function PolenPage() {
         <h2 className="mb-6 font-display text-[1.75rem] leading-[1.1] text-foreground sm:text-[2rem]">
           Cómo reducir la exposición
         </h2>
-        <Card className="rounded-2xl border border-line bg-surface" variant="default">
-          <Card.Content className="grid gap-3 py-6">
-            {polenContent.tips.map((tip) => (
-              <div className="flex items-start gap-3 text-sm leading-relaxed" key={tip}>
-                <span className="mt-2 rounded-full bg-brand-amber size-2" />
-                <span className="text-muted">{tip}</span>
-              </div>
-            ))}
-          </Card.Content>
-        </Card>
+        <div className="grid gap-3">
+          {polenContent.tips.map((tip) => (
+            <div className="flex items-start gap-3 text-sm leading-relaxed" key={tip}>
+              <span className="mt-2 rounded-full bg-brand-amber size-2" />
+              <span className="text-muted">{tip}</span>
+            </div>
+          ))}
+        </div>
       </SectionBand>
 
       <SectionBand tone="bg" innerClassName="grid gap-6 lg:grid-cols-2">
@@ -446,35 +442,31 @@ function PolenPage() {
           <h2 className="font-display text-[1.75rem] leading-[1.1] text-foreground sm:text-[2rem]">
             Cómo se miden
           </h2>
-          <Card className="rounded-2xl border border-line bg-surface" variant="default">
-            <Card.Content className="grid gap-3 py-6">
-              {polenContent.howMeasured.map((step) => (
-                <div className="flex items-start gap-3 text-sm leading-relaxed" key={step}>
-                  <span className="mt-2 rounded-full bg-brand-amber size-2" />
-                  <span className="text-muted">{step}</span>
-                </div>
-              ))}
-            </Card.Content>
-          </Card>
+          <div className="grid gap-3">
+            {polenContent.howMeasured.map((step) => (
+              <div className="flex items-start gap-3 text-sm leading-relaxed" key={step}>
+                <span className="mt-2 rounded-full bg-brand-amber size-2" />
+                <span className="text-muted">{step}</span>
+              </div>
+            ))}
+          </div>
         </div>
         <div className="grid gap-4">
           <h2 className="font-display text-[1.75rem] leading-[1.1] text-foreground sm:text-[2rem]">
             Estaciones de monitoreo en Chile
           </h2>
-          <Card className="rounded-2xl border border-line bg-surface" variant="default">
-            <Card.Content className="grid gap-3 py-6">
-              {polenContent.stations.map((st) => (
-                <div
-                  className="flex items-center justify-between gap-3 border-line border-b pb-2 last:border-0 last:pb-0"
-                  key={st.city}
-                >
-                  <span className="font-medium text-foreground text-sm">{st.city}</span>
-                  <span className="text-muted text-xs">{st.region}</span>
-                </div>
-              ))}
-              <p className="text-muted text-xs leading-relaxed">{polenContent.stationsNote}</p>
-            </Card.Content>
-          </Card>
+          <div className="grid gap-3">
+            {polenContent.stations.map((st) => (
+              <div
+                className="flex items-center justify-between gap-3 border-line border-b pb-2 last:border-0 last:pb-0"
+                key={st.city}
+              >
+                <span className="font-medium text-foreground text-sm">{st.city}</span>
+                <span className="text-muted text-xs">{st.region}</span>
+              </div>
+            ))}
+            <p className="text-muted text-xs leading-relaxed">{polenContent.stationsNote}</p>
+          </div>
         </div>
       </SectionBand>
 

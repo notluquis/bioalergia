@@ -15,6 +15,7 @@ import { useMutation } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { type FormEvent, type ReactNode, useState } from "react";
 
+import { BookingCta } from "@/components/BookingCta";
 import { JsonLd } from "@/components/JsonLd";
 import { PageShell } from "@/components/PageShell";
 import { ctaClass } from "@/components/ui/cta";
@@ -79,8 +80,7 @@ function ContactForm() {
       <Card.Header className="gap-2">
         <Card.Title className="font-display text-2xl text-foreground">Escríbenos</Card.Title>
         <Card.Description className="text-muted leading-relaxed">
-          Para responder tu mensaje te pedimos solo los datos necesarios. No incluyas información de
-          salud en este formulario.
+          Para responder tu mensaje te pedimos solo los datos necesarios.
         </Card.Description>
       </Card.Header>
       <Card.Content>
@@ -200,9 +200,13 @@ function ContactoPage() {
               </ContactRow>
               <ContactRow label="Teléfonos">
                 {contactInfo.phones.map((phone) => (
-                  <span className="text-foreground" key={phone}>
+                  <Link
+                    className="w-fit text-foreground"
+                    href={`tel:${phone.replace(/\s/g, "")}`}
+                    key={phone}
+                  >
                     {phone}
-                  </span>
+                  </Link>
                 ))}
               </ContactRow>
               <ContactRow label="Correo">
@@ -212,7 +216,7 @@ function ContactoPage() {
               </ContactRow>
               <ContactRow label="Horario">
                 <span className="text-foreground">
-                  Lunes a sábado, 10:00 a 17:00. Atención con cita previa.
+                  {contactInfo.hours} · {contactInfo.hoursNote}
                 </span>
               </ContactRow>
             </div>
@@ -242,6 +246,14 @@ function ContactoPage() {
 
       <SectionBand tone="surface">
         <ContactForm />
+      </SectionBand>
+
+      <SectionBand borderTop tone="bg">
+        <BookingCta
+          title="¿Prefieres reservar directamente?"
+          description="Si lo que necesitas es agendar una atención, reserva tu hora en Doctoralia o escríbenos por WhatsApp y coordinamos."
+          location="contacto_page"
+        />
       </SectionBand>
     </PageShell>
   );
