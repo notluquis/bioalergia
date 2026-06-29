@@ -209,7 +209,16 @@ export function registerMercadopagoCheckoutWebhook(app: Hono) {
         },
       });
 
-      if (status === "approved") {
+      // Idempotency: MP can deliver several distinct `approved` notifications for
+      // the same payment. WebhookEvent dedup only catches identical ids, so guard
+      // on the order itself — if it's already paid, skip re-reserve/DTE/ML (a
+      // second re-reserve would double-decrement stock).
+      const alreadyPaid =
+        status === "approved" &&
+        (await db.order.findUnique({ where: { id: orderId }, select: { status: true } }))
+          ?.status !== "PENDING";
+
+      if (status === "approved" && !alreadyPaid) {
         // Checkout Pro is async — the buyer may approve after the 15-min
         // reservation expired (or after a rejected attempt that freed stock). If
         // the order has no ACTIVE reservation, re-acquire stock before marking

@@ -18,6 +18,7 @@ import { job_radar_sync } from "./job-radar-sync.ts";
 import { onedrive_renew } from "./onedrive-renew.ts";
 import { orphan_cleanup } from "./orphan-cleanup.ts";
 import { pollen_sync } from "./pollen-sync.ts";
+import { reservation_sweep } from "./reservation-sweep.ts";
 import { retention_sweep } from "./retention-sweep.ts";
 import { send_outreach_tick } from "./outreach-send.ts";
 import { send_wa_broadcast_tick } from "./wa-broadcast-tick.ts";
@@ -31,6 +32,7 @@ export const taskList: TaskList = {
   dte_sync,
   orphan_cleanup,
   pollen_sync,
+  reservation_sweep,
   retention_sweep,
   audit_chain_verify,
   audit_anomaly,
