@@ -940,16 +940,28 @@ export function ScheduleSendModal({
 async function toWaAudio(blob: Blob): Promise<{ blob: Blob; ext: string }> {
   const base = (blob.type.split(";")[0] || "").trim();
   if (base === "audio/ogg") return { blob, ext: "ogg" };
+  // Try to produce ogg/opus so it sends as a voice note: webm is a pure remux
+  // (copy Opus); mp4/aac needs a transcode (WebCodecs Opus encoder). If no
+  // encoder is available (e.g. Safari), Conversion.isValid is false and we fall
+  // back to the original container as a basic audio file (WA still accepts mp4).
+  try {
+    const { Input, Output, Conversion, BlobSource, BufferTarget, OggOutputFormat, ALL_FORMATS } =
+      await import("mediabunny");
+    const input = new Input({ source: new BlobSource(blob), formats: ALL_FORMATS });
+    const output = new Output({ format: new OggOutputFormat(), target: new BufferTarget() });
+    const conversion = await Conversion.init({ input, output });
+    if (conversion.isValid) {
+      await conversion.execute();
+      const buffer = output.target.buffer;
+      if (buffer) return { blob: new Blob([buffer], { type: "audio/ogg" }), ext: "ogg" };
+    }
+  } catch {
+    // fall through to basic-audio fallback
+  }
   if (base === "audio/mp4" || base === "audio/aac") return { blob, ext: "m4a" };
-  const { Input, Output, Conversion, BlobSource, BufferTarget, OggOutputFormat, WEBM } =
-    await import("mediabunny");
-  const input = new Input({ source: new BlobSource(blob), formats: [WEBM] });
-  const output = new Output({ format: new OggOutputFormat(), target: new BufferTarget() });
-  const conversion = await Conversion.init({ input, output });
-  await conversion.execute();
-  const buffer = output.target.buffer;
-  if (!buffer) throw new Error("audio remux produced no output");
-  return { blob: new Blob([buffer], { type: "audio/ogg" }), ext: "ogg" };
+  // Last resort (e.g. webm that couldn't be remuxed): send as-is; WA may reject,
+  // surfacing as a FAILED bubble the operator can retry.
+  return { blob, ext: "ogg" };
 }
 
 function VoiceRecorderButton({
