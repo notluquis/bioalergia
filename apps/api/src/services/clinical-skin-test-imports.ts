@@ -1878,6 +1878,7 @@ export async function rejectSkinTestImport(id: string, userId: number, notes?: s
 
 export async function reprocessSkinTestImport(id: string) {
   const result = await sql<{
+    status: SkinTestImportStatus;
     oneDriveDriveId: string | null;
     oneDriveItemId: string;
     oneDriveAccountId: string | null;
@@ -1887,6 +1888,7 @@ export async function reprocessSkinTestImport(id: string) {
     storedSha256: string | null;
   }>`
     SELECT
+      i.status,
       i.onedrive_drive_id AS "oneDriveDriveId",
       i.onedrive_item_id AS "oneDriveItemId",
       i.onedrive_account_id AS "oneDriveAccountId",
@@ -1904,6 +1906,13 @@ export async function reprocessSkinTestImport(id: string) {
   let accountId = result.rows[0]?.oneDriveAccountId;
 
   if (!itemId) throw new Error("Import no encontrado.");
+
+  // MOVED_TO_RECORD is a terminal audit breadcrumb (row reclassified into
+  // clinical_record_imports). Reprocessing would overwrite that provenance and
+  // could re-import a file already moved to records — refuse it.
+  if (result.rows[0]?.status === "MOVED_TO_RECORD") {
+    throw new Error("Este archivo fue movido a ficha clínica; no se puede reprocesar.");
+  }
 
   // Fallback for old records without accountId
   if (!accountId) {
