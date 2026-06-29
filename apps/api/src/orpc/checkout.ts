@@ -139,9 +139,11 @@ const startRoute = base
     // chosen service (fall back to the cheapest), so the amount can't be forged.
     let shippingClp = 0;
     if (input.shipping.method === "chilexpress") {
-      const options = await quoteShippingOptions(cart, input.shipping.county_code);
-      const chosen =
-        options.find((o) => o.service_code === input.shipping.service_code) ?? options[0];
+      // Capture the narrowed variant in a const: TS resets property-access
+      // narrowing across the `await` below, widening `input.shipping` back.
+      const ship = input.shipping;
+      const options = await quoteShippingOptions(cart, ship.county_code);
+      const chosen = options.find((o) => o.service_code === ship.service_code) ?? options[0];
       if (!chosen) {
         throw new ORPCError("BAD_REQUEST", {
           message: "No hay servicio de envío disponible para la comuna seleccionada",
