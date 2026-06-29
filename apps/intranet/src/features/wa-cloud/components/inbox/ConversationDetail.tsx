@@ -21,10 +21,12 @@ import { CommerceSelectorModal } from "../modals/CommerceSelectorModal";
 import {
   ContactsSendModal,
   ConvSettingsMenu,
+  CtaUrlModal,
   EditTextModal,
   FlowSelectorModal,
   InteractiveListSelectorModal,
   LabelStrip,
+  LocationRequestModal,
   LocationSelectorModal,
   MediaGalleryModal,
   ScheduleSendModal,
@@ -90,6 +92,8 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
   } | null>(null);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [listOpen, setListOpen] = useState(false);
+  const [ctaUrlOpen, setCtaUrlOpen] = useState(false);
+  const [locReqOpen, setLocReqOpen] = useState(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [commerceOpen, setCommerceOpen] = useState(false);
   const scheduleMsg = useScheduleMessage();
@@ -911,6 +915,8 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
               onOpenSchedule={() => setScheduleOpen(true)}
               onOpenList={() => setListOpen(true)}
               onOpenCommerce={() => setCommerceOpen(true)}
+              onOpenCtaUrl={() => setCtaUrlOpen(true)}
+              onOpenLocationRequest={() => setLocReqOpen(true)}
               onSendSnippet={(snippetId) => {
                 if (!phoneId) {
                   toast.error("Selecciona un número primero");
@@ -971,6 +977,18 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
       <LocationSelectorModal
         isOpen={locationOpen}
         onClose={() => setLocationOpen(false)}
+        conversationId={conversationId}
+        phoneNumberId={phoneId ? Number(phoneId) : null}
+      />
+      <CtaUrlModal
+        isOpen={ctaUrlOpen}
+        onClose={() => setCtaUrlOpen(false)}
+        conversationId={conversationId}
+        phoneNumberId={phoneId ? Number(phoneId) : null}
+      />
+      <LocationRequestModal
+        isOpen={locReqOpen}
+        onClose={() => setLocReqOpen(false)}
         conversationId={conversationId}
         phoneNumberId={phoneId ? Number(phoneId) : null}
       />
