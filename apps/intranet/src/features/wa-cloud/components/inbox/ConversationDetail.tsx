@@ -354,19 +354,31 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
     if (pending.length === 0 || !conv.data) return;
     const outbound = conv.data.messages.filter((m) => m.direction === "OUTBOUND");
     const serverBodies = new Set(outbound.map((m) => m.body));
+    // Each server message reconciles at most one pending: claim it so two media
+    // sends of the same type don't both get dropped by a single arrival (which
+    // would lose the second's FAILED/retry state).
+    const claimed = new Set<number | string>();
     setPending((prev) =>
       prev.filter((p) => {
         if (p.status === "FAILED") return true;
-        // Text: drop once its body shows up server-side. Media (often no body):
-        // drop once a server outbound of the same type lands at/after its time.
-        const landed =
-          !p.type || p.type === "TEXT"
-            ? serverBodies.has(p.body)
-            : outbound.some(
-                (m) =>
-                  m.type === p.type &&
-                  new Date(m.timestamp).getTime() >= p.timestamp.getTime() - 1000
-              );
+        let landed = false;
+        if (!p.type || p.type === "TEXT") {
+          // Text: drop once its body shows up server-side.
+          landed = serverBodies.has(p.body);
+        } else {
+          // Media (often no body): claim a not-yet-claimed server outbound of
+          // the same type that landed at/after this pending's timestamp.
+          const match = outbound.find(
+            (m) =>
+              m.type === p.type &&
+              !claimed.has(m.id) &&
+              new Date(m.timestamp).getTime() >= p.timestamp.getTime() - 1000
+          );
+          if (match) {
+            claimed.add(match.id);
+            landed = true;
+          }
+        }
         if (landed && p.previewUrl) URL.revokeObjectURL(p.previewUrl);
         return !landed;
       })
@@ -447,6 +459,9 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
             mediaId: upload.id,
             caption: input.caption,
             filename: input.mediaType === "document" ? input.file.name : undefined,
+            ...(input.mediaType === "audio" && /(ogg|opus)/i.test(input.file.type)
+              ? { voice: true }
+              : {}),
             ...(input.contextMetaMessageId
               ? { contextMetaMessageId: input.contextMetaMessageId }
               : {}),
@@ -497,6 +512,9 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
     else if (mime.startsWith("audio/")) type = "audio";
     const caption = body.trim() || undefined;
     const ctxId = replyTo?.metaMessageId;
+    // ogg/opus audio = voice note (waveform + transcription); other audio files
+    // stay basic audio. Meta only renders the voice-note UI for ogg/opus.
+    const voice = type === "audio" && /(ogg|opus)/i.test(mime);
     // Optimistic bubble: show the file (local object-URL preview) instantly with
     // a PENDING tick; reconcile/drop it once the server message arrives.
     const cid = `tmp-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -530,6 +548,7 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
         mediaId: upload.id,
         caption,
         filename: type === "document" ? file.name : undefined,
+        ...(voice ? { voice: true } : {}),
         ...(ctxId ? { contextMetaMessageId: ctxId } : {}),
       });
       void qc.invalidateQueries({ queryKey: ["wa-cloud", "conversation", conversationId] });

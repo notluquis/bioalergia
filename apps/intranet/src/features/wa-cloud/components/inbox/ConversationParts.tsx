@@ -967,6 +967,8 @@ function VoiceRecorderButton({
   const [elapsed, setElapsed] = useState(0);
   const [preview, setPreview] = useState<{ blob: Blob; url: string } | null>(null);
   const [previewPlaying, setPreviewPlaying] = useState(false);
+  // True while the remux+handoff runs, so a second tap can't send a duplicate.
+  const [sending, setSending] = useState(false);
   // OpusMediaRecorder has the same surface we use as MediaRecorder.
   const recorderRef = useRef<{ state: string; stop(): void } | null>(null);
   const previewRef = useRef<HTMLAudioElement>(null);
@@ -1047,18 +1049,21 @@ function VoiceRecorderButton({
   };
 
   const send = async () => {
-    if (!preview) return;
+    if (!preview || sending) return;
+    setSending(true);
     try {
       const { blob, ext } = await toWaAudio(preview.blob);
       const file = new File([blob], `voice-${Date.now()}.${ext}`, { type: blob.type });
       onSend(file);
     } catch {
       toast.error("No se pudo procesar la nota de voz");
+      setSending(false);
       return;
     }
     URL.revokeObjectURL(preview.url);
     setPreview(null);
     setPreviewPlaying(false);
+    setSending(false);
   };
 
   const fmt = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
@@ -1096,10 +1101,18 @@ function VoiceRecorderButton({
           isIconOnly
           aria-label="Descartar nota de voz"
           onPress={cancel}
+          isDisabled={sending}
         >
           <Trash2 size={14} />
         </Button>
-        <Button size="sm" isIconOnly aria-label="Enviar nota de voz" onPress={() => void send()}>
+        <Button
+          size="sm"
+          isIconOnly
+          aria-label="Enviar nota de voz"
+          onPress={() => void send()}
+          isPending={sending}
+          isDisabled={sending}
+        >
           <Send size={14} />
         </Button>
       </div>

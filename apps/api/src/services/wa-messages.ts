@@ -379,6 +379,7 @@ export async function sendMedia(
     link: payload.link,
     caption: payload.caption,
     filename: payload.filename,
+    voice: payload.voice,
   });
   const metaId = apiResp.messages?.[0]?.id ?? null;
   const now = new Date();
