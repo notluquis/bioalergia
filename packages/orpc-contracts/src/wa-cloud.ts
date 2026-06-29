@@ -197,7 +197,16 @@ export const sendTemplateInputSchema = z.object({
   templateName: z.string().min(1),
   language: z.string().min(2),
   bodyParams: z.array(z.string()).optional(),
+  // Named-parameter templates (Meta): body placeholders are {{nombre}} rather
+  // than positional {{1}}. Each param carries its name + operator-filled value.
+  bodyNamedParams: z
+    .array(z.object({ name: z.string().min(1), text: z.string() }))
+    .optional(),
   headerParams: z.array(z.string()).optional(),
+  // When the template has a LOCATION header, inject the clinic's location
+  // (lat/lng/name/address from ClinicSettings) server-side — same source the
+  // abono confirmation uses. Operator never types coordinates.
+  includeClinicLocationHeader: z.boolean().optional(),
   // Optional: when sending a CAROUSEL template, pass per-card payloads
   cards: z.array(carouselCardInputSchema).max(10).optional(),
   // Meta 2026: LIMITED_TIME_OFFER expiration (ms epoch). Pair with the

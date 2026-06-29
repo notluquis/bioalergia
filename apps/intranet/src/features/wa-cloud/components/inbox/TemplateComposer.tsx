@@ -21,6 +21,8 @@ export function TemplateComposer({
   tplOptions,
   tplVars,
   setTplVars,
+  tplVarNames,
+  tplHasLocationHeader,
   tplCards,
   setTplCards,
   tplLtoExpiration,
@@ -39,6 +41,10 @@ export function TemplateComposer({
   tplOptions: { value: string; label: string }[];
   tplVars: string[];
   setTplVars: React.Dispatch<React.SetStateAction<string[]>>;
+  // Placeholder name per var (named templates), or null for positional {{n}}.
+  tplVarNames?: (string | null)[];
+  // Template carries a LOCATION header — clinic location is auto-filled.
+  tplHasLocationHeader?: boolean;
   tplCards: CarouselCardState[];
   setTplCards: React.Dispatch<React.SetStateAction<CarouselCardState[]>>;
   // Local datetime string (YYYY-MM-DDTHH:mm) for LTO expiration. Empty
@@ -128,25 +134,34 @@ export function TemplateComposer({
           Enviar plantilla
         </Button>
       </div>
+      {tplHasLocationHeader && (
+        <p className="text-default-500 text-xs">
+          📍 La ubicación de la clínica se adjunta automáticamente.
+        </p>
+      )}
       {tplVars.length > 0 && (
         <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
-          {tplVars.map((v, i) => (
-            <TextInput
-              key={i}
-              label={`Variable {{${i + 1}}}`}
-              value={v}
-              isRequired
-              isInvalid={attempted && !v.trim()}
-              errorMessage={`La variable {{${i + 1}}} es obligatoria.`}
-              onValueChange={(val) =>
-                setTplVars((arr) => {
-                  const n = [...arr];
-                  n[i] = val;
-                  return n;
-                })
-              }
-            />
-          ))}
+          {tplVars.map((v, i) => {
+            const name = tplVarNames?.[i];
+            const label = name ? `${name}` : `Variable {{${i + 1}}}`;
+            return (
+              <TextInput
+                key={i}
+                label={label}
+                value={v}
+                isRequired
+                isInvalid={attempted && !v.trim()}
+                errorMessage={`${label} es obligatorio.`}
+                onValueChange={(val) =>
+                  setTplVars((arr) => {
+                    const n = [...arr];
+                    n[i] = val;
+                    return n;
+                  })
+                }
+              />
+            );
+          })}
         </div>
       )}
       {tplCards.length > 0 && (

@@ -655,7 +655,12 @@ function AudioPlayer({
             setLoaded(true);
           }
         }}
-        onTimeUpdate={(e) => setCurrent(e.currentTarget.currentTime)}
+        onTimeUpdate={(e) => {
+          // Ignore updates until duration is known. The opus duration probe
+          // seeks currentTime to 1e10, which would otherwise leak into the
+          // display as "166666666:40" before the real duration resolves.
+          if (loaded) setCurrent(e.currentTarget.currentTime);
+        }}
         onError={onError}
       >
         <track kind="captions" />

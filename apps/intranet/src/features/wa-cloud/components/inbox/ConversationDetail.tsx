@@ -109,6 +109,12 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
   const [mode, setMode] = useState<"text" | "template">("text");
   const [tplKey, setTplKey] = useState("");
   const [tplVars, setTplVars] = useState<string[]>([]);
+  // Parallel to tplVars: the placeholder name for named-parameter templates
+  // ({{nombre}}), or null for positional ({{1}}). Drives labels + send shape.
+  const [tplVarNames, setTplVarNames] = useState<(string | null)[]>([]);
+  // True when the template has a LOCATION header — backend injects the clinic
+  // location from settings (operator doesn't type coordinates).
+  const [tplHasLocationHeader, setTplHasLocationHeader] = useState(false);
   // Carousel template state — array of cards with image + per-card body vars
   const [tplCards, setTplCards] = useState<CarouselCardState[]>([]);
   // LTO + COPY_CODE per-template state. Detected from selected template's
@@ -179,6 +185,8 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
   useEffect(() => {
     if (!tplKey) {
       setTplVars([]);
+      setTplVarNames([]);
+      setTplHasLocationHeader(false);
       setTplCards([]);
       setHasLto(false);
       setCopyCodeButtonIndex(null);
@@ -191,14 +199,33 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
     type TplBtn = { type?: string };
     type TplComp = {
       type: string;
+      format?: string;
       text?: string;
       cards?: Array<{ components?: Array<{ type: string; text?: string }> }>;
       buttons?: TplBtn[];
     };
     const components = tpl.components as Array<TplComp>;
     const tplBody = components.find((c) => c.type === "BODY" || c.type === "body");
-    const matches = tplBody?.text?.match(/\{\{(\d+)\}\}/g) ?? [];
-    setTplVars(new Array(matches.length).fill(""));
+    // Body placeholders are either positional ({{1}}) or named ({{nombre}}).
+    // Capture the inner token: digits → positional (name=null), else named.
+    // Dedup so a name repeated in the text still maps to one parameter.
+    const names: (string | null)[] = [];
+    const seen = new Set<string>();
+    for (const m of (tplBody?.text ?? "").matchAll(/\{\{\s*([^}]+?)\s*\}\}/g)) {
+      const tok = (m[1] ?? "").trim();
+      if (!tok) continue;
+      const positional = /^\d+$/.test(tok);
+      const key = positional ? `#${tok}` : tok.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      names.push(positional ? null : tok);
+    }
+    setTplVars(new Array(names.length).fill(""));
+    setTplVarNames(names);
+
+    // LOCATION header → backend fills clinic location from settings.
+    const header = components.find((c) => c.type === "HEADER" || c.type === "header");
+    setTplHasLocationHeader((header?.format ?? "").toUpperCase() === "LOCATION");
 
     // Carousel detection (Meta 2026): top-level component type=CAROUSEL with
     // cards[]. Each card's BODY has its own variables.
@@ -476,7 +503,18 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
         phoneNumberId: Number.parseInt(phoneId, 10),
         templateName: name,
         language,
-        bodyParams: tplVars.length ? tplVars : undefined,
+        // Named-parameter templates ({{nombre}}) must send {name,text} pairs;
+        // positional ({{1}}) send a plain string array. Meta requires one or
+        // the other, never mixed — any detected name flips to the named shape.
+        ...(tplVarNames.some((n) => n)
+          ? {
+              bodyNamedParams: tplVars.map((text, i) => ({
+                name: tplVarNames[i] ?? `${i + 1}`,
+                text,
+              })),
+            }
+          : { bodyParams: tplVars.length ? tplVars : undefined }),
+        ...(tplHasLocationHeader ? { includeClinicLocationHeader: true } : {}),
         cards: tplCards.length
           ? tplCards.map((c) => ({
               cardIndex: c.cardIndex,
@@ -489,6 +527,8 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
       });
       setTplKey("");
       setTplVars([]);
+      setTplVarNames([]);
+      setTplHasLocationHeader(false);
       setTplCards([]);
       setTplLtoExpiration("");
       setTplCopyCode(null);
@@ -806,6 +846,8 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
               tplOptions={tplOptions}
               tplVars={tplVars}
               setTplVars={setTplVars}
+              tplVarNames={tplVarNames}
+              tplHasLocationHeader={tplHasLocationHeader}
               tplCards={tplCards}
               setTplCards={setTplCards}
               tplLtoExpiration={tplLtoExpiration}
