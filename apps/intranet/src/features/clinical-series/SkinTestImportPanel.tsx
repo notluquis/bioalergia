@@ -1274,14 +1274,18 @@ function SkinTestImportRow({
               </Button>
             </>
           )}
-          <Button
-            size="sm"
-            variant={item.status === "DISCOVERED" ? "secondary" : "ghost"}
-            onPress={() => void runAction("reprocess")}
-          >
-            <RefreshCw size={14} />
-            {item.status === "DISCOVERED" ? "Procesar" : "Reprocesar"}
-          </Button>
+          {/* MOVED_TO_RECORD is a terminal audit breadcrumb — reprocessing would
+              clobber its provenance, so the service rejects it; hide the action. */}
+          {item.status !== "MOVED_TO_RECORD" && (
+            <Button
+              size="sm"
+              variant={item.status === "DISCOVERED" ? "secondary" : "ghost"}
+              onPress={() => void runAction("reprocess")}
+            >
+              <RefreshCw size={14} />
+              {item.status === "DISCOVERED" ? "Procesar" : "Reprocesar"}
+            </Button>
+          )}
         </div>
       </div>
 
