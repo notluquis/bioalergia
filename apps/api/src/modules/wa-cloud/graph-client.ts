@@ -34,7 +34,6 @@ export {
   downloadMediaBytes,
   downloadMediaStream,
   downloadMediaUrl,
-  markMessageDelivered,
   markMessageRead,
   uploadMedia,
   uploadProfilePictureHandle,
