@@ -1,4 +1,4 @@
-import { Card, Chip } from "@heroui/react";
+import { Card } from "@heroui/react";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { BookingCta } from "@/components/BookingCta";
@@ -112,24 +112,14 @@ function InmunoterapiaPage() {
             seleccionados, a veneno de insectos. Estos son los más frecuentes.
           </p>
         </div>
-        <div className="grid gap-6 md:grid-cols-2">
+        <dl className="grid gap-x-8 gap-y-6 sm:grid-cols-2">
           {inmunoterapiaContent.allergens.map((allergen) => (
-            <Card
-              className="h-full rounded-2xl border border-line bg-surface"
-              key={allergen.name}
-              variant="default"
-            >
-              <Card.Header className="gap-3">
-                <Card.Title className="font-display text-[1.4rem] text-foreground">
-                  {allergen.name}
-                </Card.Title>
-                <Card.Description className="text-muted leading-relaxed">
-                  {allergen.detail}
-                </Card.Description>
-              </Card.Header>
-            </Card>
+            <div key={allergen.name}>
+              <dt className="font-semibold text-foreground">{allergen.name}</dt>
+              <dd className="mt-1 text-muted leading-relaxed">{allergen.detail}</dd>
+            </div>
           ))}
-        </div>
+        </dl>
       </SectionBand>
 
       <SectionBand tone="bg">
@@ -143,29 +133,14 @@ function InmunoterapiaPage() {
             siempre se confirman en la consulta.
           </p>
         </div>
-        <div className="grid gap-6 md:grid-cols-3">
+        <dl className="grid gap-x-8 gap-y-6 sm:grid-cols-2 lg:grid-cols-3">
           {inmunoterapiaContent.ages.map((age) => (
-            <Card
-              className="h-full rounded-2xl border border-line bg-surface"
-              key={age.label}
-              variant="default"
-            >
-              <Card.Header className="gap-3">
-                <div className="flex items-center justify-between gap-3">
-                  <Card.Title className="font-display text-[1.4rem] text-foreground">
-                    {age.label}
-                  </Card.Title>
-                  <Chip size="sm" variant="secondary">
-                    Edad
-                  </Chip>
-                </div>
-                <Card.Description className="text-muted leading-relaxed">
-                  {age.detail}
-                </Card.Description>
-              </Card.Header>
-            </Card>
+            <div key={age.label}>
+              <dt className="font-semibold text-foreground">{age.label}</dt>
+              <dd className="mt-1 text-muted leading-relaxed">{age.detail}</dd>
+            </div>
           ))}
-        </div>
+        </dl>
       </SectionBand>
 
       <SectionBand tone="surface2">
@@ -178,16 +153,14 @@ function InmunoterapiaPage() {
             Un tratamiento modificador de la enfermedad, con impacto sostenido en el tiempo.
           </p>
         </div>
-        <Card className="rounded-2xl border border-line bg-surface" variant="default">
-          <Card.Content className="grid gap-4 py-6">
-            {inmunoterapiaContent.benefits.map((benefit) => (
-              <div className="flex items-start gap-3 text-sm leading-relaxed" key={benefit}>
-                <span className="mt-2 size-2 rounded-full bg-brand-amber" />
-                <span className="text-muted">{benefit}</span>
-              </div>
-            ))}
-          </Card.Content>
-        </Card>
+        <div className="grid gap-4">
+          {inmunoterapiaContent.benefits.map((benefit) => (
+            <div className="flex items-start gap-3 text-sm leading-relaxed" key={benefit}>
+              <span className="mt-2 size-2 rounded-full bg-brand-amber" />
+              <span className="text-muted">{benefit}</span>
+            </div>
+          ))}
+        </div>
       </SectionBand>
 
       <SectionBand tone="surface">

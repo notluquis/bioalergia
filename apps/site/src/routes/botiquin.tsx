@@ -90,16 +90,10 @@ function BotiquinPage() {
       ))}
 
       <SectionBand tone={BAND_TONES[botiquinContent.groups.length % BAND_TONES.length]}>
-        <Card className="rounded-2xl border border-line bg-surface" variant="default">
-          <Card.Header className="gap-2">
-            <Card.Title className="font-display text-[1.4rem] text-foreground">
-              Una nota de seguridad
-            </Card.Title>
-            <Card.Description className="text-muted leading-relaxed">
-              {botiquinContent.safetyNote}
-            </Card.Description>
-          </Card.Header>
-        </Card>
+        <div className="grid gap-2">
+          <h2 className="font-display text-[1.4rem] text-foreground">Una nota de seguridad</h2>
+          <p className="text-muted leading-relaxed">{botiquinContent.safetyNote}</p>
+        </div>
       </SectionBand>
 
       <Container className="pb-16">

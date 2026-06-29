@@ -84,6 +84,8 @@ export function Reviews({ productId }: { productId: number }) {
   const [body, setBody] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Honeypot: bots fill it, humans never see it → drop the submission client-side.
+  const [website, setWebsite] = useState("");
 
   const reviewsKey = ["shop", "reviews", productId] as const;
   const reviewsQ = useQuery({
@@ -118,6 +120,11 @@ export function Reviews({ productId }: { productId: number }) {
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
+    if (website) {
+      setSubmitted(true);
+      setOpen(false);
+      return;
+    }
     setError(null);
     submitMutation.mutate();
   };
@@ -196,6 +203,20 @@ export function Reviews({ productId }: { productId: number }) {
                 <Label>Tu opinión</Label>
                 <TextArea maxLength={2000} minLength={10} rows={4} />
               </TextField>
+              {/* Honeypot anti-spam: invisible para humanos, los bots lo llenan. */}
+              <div aria-hidden="true" className="absolute left-[-9999px] size-0 overflow-hidden">
+                <label htmlFor="review-website-hp">No llenar este campo</label>
+                <input
+                  aria-label="No llenar este campo"
+                  autoComplete="off"
+                  id="review-website-hp"
+                  name="website"
+                  onChange={(e) => setWebsite(e.target.value)}
+                  tabIndex={-1}
+                  type="text"
+                  value={website}
+                />
+              </div>
               {error && (
                 <Alert status="danger">
                   <Alert.Content>

@@ -9,7 +9,6 @@ import {
   Label,
   ListBox,
   Select,
-  Separator,
   TextArea,
   TextField,
 } from "@heroui/react";
@@ -77,67 +76,53 @@ function ComplianceSection({ tone }: { tone: BandTone }) {
         subtitle="El testeo de drogas y alcohol en el trabajo es lícito cuando es preventivo, despersonalizado y respeta los derechos del trabajador. Así lo hacemos."
         title="Un programa preventivo hecho con respaldo legal"
       />
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card className="h-full rounded-2xl border border-line bg-surface" variant="default">
-          <Card.Header className="gap-2">
-            <Card.Title className="font-display text-[1.4rem] text-foreground">
-              Reglamento Interno (RIOHS)
-            </Card.Title>
-            <Card.Description className="text-muted leading-relaxed">
-              El control debe estar contemplado en el Reglamento Interno de Orden, Higiene y
-              Seguridad de la empresa, con carácter preventivo y aplicado de forma despersonalizada
-              (por sorteo o universo), no como medida dirigida a un trabajador en particular.
-            </Card.Description>
-          </Card.Header>
-        </Card>
-        <Card className="h-full rounded-2xl border border-line bg-surface" variant="default">
-          <Card.Header className="gap-2">
-            <Card.Title className="font-display text-[1.4rem] text-foreground">
-              Consentimiento del trabajador
-            </Card.Title>
-            <Card.Description className="text-muted leading-relaxed">
-              La toma de muestra requiere el consentimiento informado del trabajador. Se le explica
-              el procedimiento, su finalidad preventiva y el tratamiento que se dará a sus datos.
-            </Card.Description>
-          </Card.Header>
-        </Card>
-        <Card className="h-full rounded-2xl border border-line bg-surface" variant="default">
-          <Card.Header className="gap-2">
-            <Card.Title className="font-display text-[1.4rem] text-foreground">
-              Confirmación por GC-MS
-            </Card.Title>
-            <Card.Description className="text-muted leading-relaxed">
-              Un tamizaje presuntivo positivo nunca se informa como positivo: se confirma siempre
-              por cromatografía de gases con espectrometría de masas (GC-MS) antes de entregar
-              cualquier resultado, evitando falsos positivos.
-            </Card.Description>
-          </Card.Header>
-        </Card>
-        <Card className="h-full rounded-2xl border border-line bg-surface" variant="default">
-          <Card.Header className="gap-2">
-            <Card.Title className="font-display text-[1.4rem] text-foreground">
-              Datos sensibles (Ley 21.719)
-            </Card.Title>
-            <Card.Description className="text-muted leading-relaxed">
-              Los resultados de salud son datos personales sensibles. Al empleador se le entrega un
-              resultado de aptitud (apto / no apto), salvo que el trabajador consienta expresamente
-              compartir el detalle. La cadena de custodia y la confidencialidad están aseguradas.
-            </Card.Description>
-          </Card.Header>
-        </Card>
-      </div>
-      <Card className="mt-6 rounded-2xl border border-line bg-surface" variant="default">
-        <Card.Header className="gap-2">
-          <Card.Title className="font-display text-[1.4rem] text-foreground">
-            Marco normativo de referencia
-          </Card.Title>
-          <Card.Description className="text-muted leading-relaxed">
-            El DS 44/2024 establece la obligación de contar con una política preventiva en todo
-            lugar de trabajo, lo que respalda la implementación de programas de control de consumo
-            de alcohol y drogas.
-          </Card.Description>
-        </Card.Header>
-        <Card.Content className="grid gap-3 pb-6">
+      <dl className="grid gap-x-8 gap-y-6 lg:grid-cols-2">
+        <div>
+          <dt className="font-display text-[1.4rem] text-foreground">Reglamento Interno (RIOHS)</dt>
+          <dd className="mt-1 text-muted leading-relaxed">
+            El control debe estar contemplado en el Reglamento Interno de Orden, Higiene y Seguridad
+            de la empresa, con carácter preventivo y aplicado de forma despersonalizada (por sorteo
+            o universo), no como medida dirigida a un trabajador en particular.
+          </dd>
+        </div>
+        <div>
+          <dt className="font-display text-[1.4rem] text-foreground">
+            Consentimiento del trabajador
+          </dt>
+          <dd className="mt-1 text-muted leading-relaxed">
+            La toma de muestra requiere el consentimiento informado del trabajador. Se le explica el
+            procedimiento, su finalidad preventiva y el tratamiento que se dará a sus datos.
+          </dd>
+        </div>
+        <div>
+          <dt className="font-display text-[1.4rem] text-foreground">Confirmación por GC-MS</dt>
+          <dd className="mt-1 text-muted leading-relaxed">
+            Un tamizaje presuntivo positivo nunca se informa como positivo: se confirma siempre por
+            cromatografía de gases con espectrometría de masas (GC-MS) antes de entregar cualquier
+            resultado, evitando falsos positivos.
+          </dd>
+        </div>
+        <div>
+          <dt className="font-display text-[1.4rem] text-foreground">
+            Datos sensibles (Ley 21.719)
+          </dt>
+          <dd className="mt-1 text-muted leading-relaxed">
+            Los resultados de salud son datos personales sensibles. Al empleador se le entrega un
+            resultado de aptitud (apto / no apto), salvo que el trabajador consienta expresamente
+            compartir el detalle. La cadena de custodia y la confidencialidad están aseguradas.
+          </dd>
+        </div>
+      </dl>
+      <div className="mt-10">
+        <h3 className="font-display text-[1.4rem] text-foreground">
+          Marco normativo de referencia
+        </h3>
+        <p className="mt-2 text-muted leading-relaxed">
+          El DS 44/2024 establece la obligación de contar con una política preventiva en todo lugar
+          de trabajo, lo que respalda la implementación de programas de control de consumo de
+          alcohol y drogas.
+        </p>
+        <div className="mt-4 grid gap-3">
           <Bullet>DS 44/2024 — política preventiva obligatoria en todo lugar de trabajo.</Bullet>
           <Bullet>
             Ley 21.719 — protección de datos personales sensibles (resultados de salud).
@@ -145,8 +130,8 @@ function ComplianceSection({ tone }: { tone: BandTone }) {
           <Bullet>
             Confirmación analítica por GC-MS antes de informar cualquier resultado presuntivo.
           </Bullet>
-        </Card.Content>
-      </Card>
+        </div>
+      </div>
     </SectionBand>
   );
 }
@@ -160,48 +145,36 @@ function SectorSection({ tone }: { tone: BandTone }) {
         subtitle="Diseñamos la cadencia y el panel de sustancias según el riesgo y la normativa específica de tu rubro."
         title="Adaptado a tu actividad"
       />
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="h-full rounded-2xl border border-line bg-surface" variant="default">
-          <Card.Header className="gap-2">
-            <Card.Title className="font-display text-[1.4rem] text-foreground">Minería</Card.Title>
-            <Card.Description className="text-muted leading-relaxed">
-              Conforme al DS 132, el control puede realizarse a solicitud del supervisor cuando
-              existan indicios, además del programa preventivo aleatorio.
-            </Card.Description>
-          </Card.Header>
-        </Card>
-        <Card className="h-full rounded-2xl border border-line bg-surface" variant="default">
-          <Card.Header className="gap-2">
-            <Card.Title className="font-display text-[1.4rem] text-foreground">
-              Transporte
-            </Card.Title>
-            <Card.Description className="text-muted leading-relaxed">
-              Cadencia configurable para conductores y operadores, con foco en alcohol y sustancias
-              que afecten la conducción.
-            </Card.Description>
-          </Card.Header>
-        </Card>
-        <Card className="h-full rounded-2xl border border-line bg-surface" variant="default">
-          <Card.Header className="gap-2">
-            <Card.Title className="font-display text-[1.4rem] text-foreground">
-              Construcción
-            </Card.Title>
-            <Card.Description className="text-muted leading-relaxed">
-              Controles preventivos para faenas con maquinaria y trabajo en altura, integrables a tu
-              programa de prevención de riesgos.
-            </Card.Description>
-          </Card.Header>
-        </Card>
-        <Card className="h-full rounded-2xl border border-line bg-surface" variant="default">
-          <Card.Header className="gap-2">
-            <Card.Title className="font-display text-[1.4rem] text-foreground">General</Card.Title>
-            <Card.Description className="text-muted leading-relaxed">
-              Servicios, industria y administración: panel estándar de tamizaje y reactivos para tu
-              programa preventivo.
-            </Card.Description>
-          </Card.Header>
-        </Card>
-      </div>
+      <dl className="grid gap-x-8 gap-y-6 md:grid-cols-2 lg:grid-cols-4">
+        <div>
+          <dt className="font-display text-[1.4rem] text-foreground">Minería</dt>
+          <dd className="mt-1 text-muted leading-relaxed">
+            Conforme al DS 132, el control puede realizarse a solicitud del supervisor cuando
+            existan indicios, además del programa preventivo aleatorio.
+          </dd>
+        </div>
+        <div>
+          <dt className="font-display text-[1.4rem] text-foreground">Transporte</dt>
+          <dd className="mt-1 text-muted leading-relaxed">
+            Cadencia configurable para conductores y operadores, con foco en alcohol y sustancias
+            que afecten la conducción.
+          </dd>
+        </div>
+        <div>
+          <dt className="font-display text-[1.4rem] text-foreground">Construcción</dt>
+          <dd className="mt-1 text-muted leading-relaxed">
+            Controles preventivos para faenas con maquinaria y trabajo en altura, integrables a tu
+            programa de prevención de riesgos.
+          </dd>
+        </div>
+        <div>
+          <dt className="font-display text-[1.4rem] text-foreground">General</dt>
+          <dd className="mt-1 text-muted leading-relaxed">
+            Servicios, industria y administración: panel estándar de tamizaje y reactivos para tu
+            programa preventivo.
+          </dd>
+        </div>
+      </dl>
     </SectionBand>
   );
 }
@@ -415,23 +388,14 @@ function SaludOcupacionalPage() {
 
       <SectionBand tone="bg">
         <BandHeading title="Reactivos para tu programa" />
-        <Card className="rounded-2xl border border-line bg-surface" variant="secondary">
-          <Card.Header className="gap-2">
-            <Card.Title className="font-display text-[1.4rem] text-foreground">
-              Insumos y reactivos de tamizaje
-            </Card.Title>
-            <Card.Description className="text-muted leading-relaxed">
-              Además del servicio de testeo, suministramos los reactivos e insumos para programas de
-              control de drogas y alcohol, con respaldo regulatorio y trazabilidad.
-            </Card.Description>
-          </Card.Header>
-          <Card.Content className="pb-6">
-            <Separator className="mb-4" />
-            <Button onPress={() => scrollToForm()} variant="secondary">
-              Solicitar cotización
-            </Button>
-          </Card.Content>
-        </Card>
+        <h3 className="font-display text-[1.4rem] text-foreground">
+          Insumos y reactivos de tamizaje
+        </h3>
+        <p className="mt-2 max-w-3xl text-muted leading-relaxed">
+          Además del servicio de testeo, suministramos los reactivos e insumos para programas de
+          control de drogas y alcohol, con respaldo regulatorio y trazabilidad. Cotízalos junto con
+          tu programa preventivo en el formulario a continuación.
+        </p>
       </SectionBand>
 
       <SectionBand className="scroll-mt-24" id={LEAD_FORM_ID} tone="surface2">

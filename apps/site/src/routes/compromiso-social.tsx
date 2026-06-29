@@ -33,22 +33,12 @@ function CompromisoSocialPage() {
         <h2 className="mb-9 max-w-2xl font-display text-[2rem] leading-[1.05] text-foreground sm:text-[2.5rem]">
           Nuestros valores.
         </h2>
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-x-8 gap-y-8 md:grid-cols-2">
           {fundacionContent.values.map((value) => (
-            <Card
-              className="h-full rounded-2xl border border-line bg-surface"
-              key={value.title}
-              variant="default"
-            >
-              <Card.Header className="gap-3">
-                <Card.Title className="font-display text-[1.4rem] text-foreground">
-                  {value.title}
-                </Card.Title>
-                <Card.Description className="text-muted leading-relaxed">
-                  {value.detail}
-                </Card.Description>
-              </Card.Header>
-            </Card>
+            <div key={value.title}>
+              <h3 className="font-display text-[1.4rem] text-foreground">{value.title}</h3>
+              <p className="mt-2 text-muted leading-relaxed">{value.detail}</p>
+            </div>
           ))}
         </div>
       </SectionBand>

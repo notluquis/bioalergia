@@ -1,4 +1,4 @@
-import { Card, Separator, Spinner } from "@heroui/react";
+import { Card, Spinner } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
@@ -155,17 +155,17 @@ function PreciosPage() {
         <h2 className="mb-9 font-display text-[2rem] leading-[1.05] text-foreground sm:text-[2.5rem]">
           Notas
         </h2>
-        <Card className="rounded-2xl border border-line bg-surface-2" variant="secondary">
-          <Card.Content className="grid gap-3 py-6">
-            <Separator className="mb-1" />
-            {NOTES.map((note) => (
-              <div className="flex items-start gap-3 text-sm leading-relaxed" key={note}>
-                <span className="mt-2 size-2 rounded-full bg-brand-amber" />
-                <span className="text-muted">{note}</span>
-              </div>
-            ))}
-          </Card.Content>
-        </Card>
+        <ul className="grid">
+          {NOTES.map((note) => (
+            <li
+              className="flex items-start gap-3 border-line border-b py-4 text-sm text-muted leading-relaxed last:border-b-0"
+              key={note}
+            >
+              <span className="mt-2 size-2 shrink-0 rounded-full bg-brand-amber" />
+              <span>{note}</span>
+            </li>
+          ))}
+        </ul>
       </SectionBand>
     </PageShell>
   );

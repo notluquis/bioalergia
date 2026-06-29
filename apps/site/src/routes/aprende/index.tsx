@@ -97,22 +97,14 @@ function AprendeIndexPage() {
             Definiciones simples para comprender mejor tu diagnóstico y tratamiento.
           </p>
         </div>
-        <div className="mt-9 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <dl className="mt-9 grid gap-x-8 gap-y-6 sm:grid-cols-2 lg:grid-cols-3">
           {glossary.map((item) => (
-            <Card
-              className="h-full rounded-2xl border border-line bg-surface-2"
-              key={item.term}
-              variant="default"
-            >
-              <Card.Header className="gap-1.5">
-                <Card.Title className="text-[1.05rem] text-foreground">{item.term}</Card.Title>
-                <Card.Description className="text-muted text-sm leading-relaxed">
-                  {item.definition}
-                </Card.Description>
-              </Card.Header>
-            </Card>
+            <div key={item.term}>
+              <dt className="font-display text-[1.2rem] text-foreground">{item.term}</dt>
+              <dd className="mt-1 text-muted text-sm leading-relaxed">{item.definition}</dd>
+            </div>
           ))}
-        </div>
+        </dl>
       </SectionBand>
 
       <Container className="pb-16">

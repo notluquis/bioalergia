@@ -45,63 +45,63 @@ export function TiendaView({
       <main className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
         <SearchBar />
 
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-muted text-sm">
-          {productCount !== null ? `${productCount} productos` : null}
-        </p>
-        <Select
-          className="w-56"
-          onChange={(value) => {
-            if (!value) return;
-            onSortChange(value as SortKey);
-          }}
-          value={sort}
-        >
-          <Label className="sr-only">Ordenar</Label>
-          <Select.Trigger>
-            <Select.Value />
-            <Select.Indicator />
-          </Select.Trigger>
-          <Select.Popover>
-            <ListBox>
-              <ListBox.Item id="relevancia" textValue="Más relevantes">
-                Más relevantes
-                <ListBox.ItemIndicator />
-              </ListBox.Item>
-              <ListBox.Item id="precio_asc" textValue="Precio: menor a mayor">
-                Precio: menor a mayor
-                <ListBox.ItemIndicator />
-              </ListBox.Item>
-              <ListBox.Item id="precio_desc" textValue="Precio: mayor a menor">
-                Precio: mayor a menor
-                <ListBox.ItemIndicator />
-              </ListBox.Item>
-            </ListBox>
-          </Select.Popover>
-        </Select>
-      </div>
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-muted text-sm">
+            {productCount !== null ? `${productCount} productos` : null}
+          </p>
+          <Select
+            className="w-56"
+            onChange={(value) => {
+              if (!value) return;
+              onSortChange(value as SortKey);
+            }}
+            value={sort}
+          >
+            <Label className="sr-only">Ordenar</Label>
+            <Select.Trigger>
+              <Select.Value />
+              <Select.Indicator />
+            </Select.Trigger>
+            <Select.Popover>
+              <ListBox>
+                <ListBox.Item id="relevancia" textValue="Más relevantes">
+                  Más relevantes
+                  <ListBox.ItemIndicator />
+                </ListBox.Item>
+                <ListBox.Item id="precio_asc" textValue="Precio: menor a mayor">
+                  Precio: menor a mayor
+                  <ListBox.ItemIndicator />
+                </ListBox.Item>
+                <ListBox.Item id="precio_desc" textValue="Precio: mayor a menor">
+                  Precio: mayor a menor
+                  <ListBox.ItemIndicator />
+                </ListBox.Item>
+              </ListBox>
+            </Select.Popover>
+          </Select>
+        </div>
 
-      {isLoading && (
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <Skeleton className="h-96 w-full rounded-2xl" key={i} />
-          ))}
-        </div>
-      )}
-      {Boolean(error) && (
-        <Card className="rounded-2xl border-line" variant="secondary">
-          <Card.Content className="py-8 text-center text-muted">
-            No se pudieron cargar los productos.
-          </Card.Content>
-        </Card>
-      )}
-      {productCount !== null && (
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {products.map((p) => (
-            <ProductCard key={p.id} product={p} />
-          ))}
-        </div>
-      )}
+        {isLoading && (
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <Skeleton className="h-96 w-full rounded-2xl" key={i} />
+            ))}
+          </div>
+        )}
+        {Boolean(error) && (
+          <Card className="rounded-2xl border-line" variant="secondary">
+            <Card.Content className="py-8 text-center text-muted">
+              No se pudieron cargar los productos.
+            </Card.Content>
+          </Card>
+        )}
+        {productCount !== null && (
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {products.map((p) => (
+              <ProductCard key={p.id} product={p} />
+            ))}
+          </div>
+        )}
       </main>
     </>
   );

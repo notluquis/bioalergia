@@ -1,12 +1,12 @@
-import { Card, Chip, Link } from "@heroui/react";
+import { Link } from "@heroui/react";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { BookingCta } from "@/components/BookingCta";
 import { JsonLd } from "@/components/JsonLd";
 import { PageShell } from "@/components/PageShell";
-import { Container } from "@/components/ui/Container";
 import { Eyebrow } from "@/components/ui/Eyebrow";
 import { PageHero } from "@/components/ui/PageHero";
+import { Photo } from "@/components/ui/Photo";
 import { SectionBand } from "@/components/ui/SectionBand";
 import { clinicOverview } from "@/data/clinic";
 import { team } from "@/data/team";
@@ -25,44 +25,38 @@ function EquipoPage() {
       <PageHero
         crumbs={[{ label: "Inicio", href: "/" }, { label: "Equipo" }]}
         eyebrow="Equipo"
-        lede="Detrás de Bioalergia hay un equipo que combina experiencia clínica en alergología e inmunología con una gestión cercana y plataformas digitales propias, para ofrecer una atención precisa, ordenada y centrada en cada paciente."
+        lede="Experiencia clínica en alergología e inmunología, gestión cercana y plataformas digitales propias: un equipo pequeño que cuida cada detalle de tu atención."
         photo="doctorDesk"
         title="Nuestro equipo"
       />
 
       <SectionBand borderTop tone="surface2">
         <Eyebrow className="mb-3">Quiénes somos</Eyebrow>
-        <h2 className="mb-9 max-w-2xl font-display text-[2rem] leading-[1.05] text-foreground sm:text-[2.5rem]">
+        <h2 className="mb-10 max-w-2xl font-display text-[2rem] leading-[1.05] text-foreground sm:text-[2.5rem]">
           Las personas detrás de Bioalergia.
         </h2>
-        <div className="grid gap-6">
-          {team.map((member) => (
-            <Card
-              className="h-full rounded-2xl border border-line bg-surface"
+        <div className="grid gap-12">
+          {team.map((member, i) => (
+            <article
+              className={`grid gap-6 lg:grid-cols-[0.85fr_1.15fr] lg:gap-12 ${i > 0 ? "border-line border-t pt-12" : ""}`}
               key={member.name}
-              variant="default"
             >
-              <Card.Header className="gap-3">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <Card.Title className="font-display text-2xl text-foreground">
-                    {member.name}
-                  </Card.Title>
-                  <Chip size="sm" variant="secondary">
-                    {member.badge}
-                  </Chip>
-                </div>
-                <Card.Description className="text-eyebrow text-sm uppercase tracking-[0.18em]">
+              <div>
+                {member.photo ? (
+                  <Photo
+                    className="mb-5 h-[300px] rounded-md sm:h-[340px] lg:h-[380px]"
+                    name={member.photo}
+                    sizes="(min-width: 1024px) 420px, 100vw"
+                  />
+                ) : null}
+                <h3 className="font-display text-[1.75rem] text-foreground leading-[1.15]">
+                  {member.name}
+                </h3>
+                <p className="mt-2 text-eyebrow text-sm uppercase tracking-[0.18em]">
                   {member.role}
-                </Card.Description>
-              </Card.Header>
-              <Card.Content className="grid gap-4 pb-6">
-                {member.paragraphs.map((paragraph) => (
-                  <p className="text-base text-muted leading-relaxed" key={paragraph.slice(0, 40)}>
-                    {paragraph}
-                  </p>
-                ))}
-                {(member.email || member.linkedin) && (
-                  <div className="flex flex-wrap items-center gap-4 border-line border-t pt-4">
+                </p>
+                {member.email || member.linkedin ? (
+                  <div className="mt-4 flex flex-wrap items-center gap-4">
                     {member.email ? (
                       <Link
                         className="font-semibold text-brand-blue text-sm no-underline hover:underline"
@@ -83,70 +77,62 @@ function EquipoPage() {
                       </Link>
                     ) : null}
                   </div>
-                )}
-              </Card.Content>
-            </Card>
+                ) : null}
+              </div>
+              <div className="grid gap-4">
+                {member.paragraphs.map((paragraph) => (
+                  <p
+                    className="max-w-[62ch] text-[1.0625rem] text-muted leading-[1.7]"
+                    key={paragraph.slice(0, 40)}
+                  >
+                    {paragraph}
+                  </p>
+                ))}
+              </div>
+            </article>
           ))}
         </div>
       </SectionBand>
 
       <SectionBand tone="surface">
         <Eyebrow className="mb-3">Cómo trabajamos</Eyebrow>
-        <h2 className="mb-9 max-w-2xl font-display text-[2rem] leading-[1.05] text-foreground sm:text-[2.5rem]">
-          Una atención precisa, ordenada y cercana.
+        <h2 className="mb-10 max-w-2xl font-display text-[2rem] leading-[1.05] text-foreground sm:text-[2.5rem]">
+          Tres principios, en cada consulta.
         </h2>
-        <div className="grid gap-6 md:grid-cols-3">
+        <div className="grid gap-x-10 gap-y-8 sm:grid-cols-3">
           {clinicOverview.pillars.map((pillar) => (
-            <Card
-              className="h-full rounded-2xl border border-line bg-surface-2"
-              key={pillar.title}
-              variant="default"
-            >
-              <Card.Header className="gap-3">
-                <Card.Title className="font-display text-[1.4rem] text-foreground">
-                  {pillar.title}
-                </Card.Title>
-                <Card.Description className="text-muted leading-relaxed">
-                  {pillar.detail}
-                </Card.Description>
-              </Card.Header>
-            </Card>
+            <div className="border-brand-amber border-t-2 pt-4" key={pillar.title}>
+              <h3 className="font-display text-[1.4rem] text-foreground">{pillar.title}</h3>
+              <p className="mt-2 text-muted leading-relaxed">{pillar.detail}</p>
+            </div>
           ))}
         </div>
       </SectionBand>
 
       <SectionBand tone="bg">
-        <Eyebrow className="mb-3">Nuestro norte</Eyebrow>
-        <h2 className="mb-9 max-w-2xl font-display text-[2rem] leading-[1.05] text-foreground sm:text-[2.5rem]">
-          Misión y visión.
-        </h2>
-        <div className="grid gap-6 lg:grid-cols-2">
-          <Card className="h-full rounded-2xl border border-line bg-surface" variant="default">
-            <Card.Header className="gap-2">
-              <Card.Title className="font-display text-[1.4rem] text-foreground">Misión</Card.Title>
-              <Card.Description className="text-muted leading-relaxed">
-                {clinicOverview.mission}
-              </Card.Description>
-            </Card.Header>
-          </Card>
-          <Card className="h-full rounded-2xl border border-line bg-surface" variant="default">
-            <Card.Header className="gap-2">
-              <Card.Title className="font-display text-[1.4rem] text-foreground">Visión</Card.Title>
-              <Card.Description className="text-muted leading-relaxed">
-                {clinicOverview.vision}
-              </Card.Description>
-            </Card.Header>
-          </Card>
+        <div className="grid gap-x-12 gap-y-8 lg:grid-cols-2">
+          <div>
+            <Eyebrow className="mb-3">Misión</Eyebrow>
+            <p className="max-w-[52ch] text-[1.125rem] text-foreground leading-[1.6]">
+              {clinicOverview.mission}
+            </p>
+          </div>
+          <div>
+            <Eyebrow className="mb-3">Visión</Eyebrow>
+            <p className="max-w-[52ch] text-[1.125rem] text-foreground leading-[1.6]">
+              {clinicOverview.vision}
+            </p>
+          </div>
         </div>
       </SectionBand>
 
-      <Container className="pb-16">
+      <SectionBand borderTop tone="surface2">
         <BookingCta
           title="Agenda con nuestro especialista"
           description="Reserva una evaluación y conversa tu caso con el Dr. Martínez. Definimos juntos el estudio y el tratamiento que mejor se adaptan a ti."
           location="equipo_page"
         />
-      </Container>
+      </SectionBand>
     </PageShell>
   );
 }

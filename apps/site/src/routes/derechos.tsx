@@ -232,24 +232,14 @@ function DerechosPage() {
         <h2 className="mb-9 max-w-2xl font-display text-[1.75rem] leading-[1.1] text-foreground sm:text-[2rem]">
           Qué derechos puede ejercer
         </h2>
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <dl className="grid gap-x-8 gap-y-6 md:grid-cols-2 lg:grid-cols-3">
           {RIGHTS.map((right) => (
-            <Card
-              className="h-full rounded-2xl border border-line bg-surface"
-              key={right.id}
-              variant="default"
-            >
-              <Card.Header className="gap-2">
-                <Card.Title className="font-display text-xl text-foreground">
-                  {right.label}
-                </Card.Title>
-                <Card.Description className="text-muted leading-relaxed">
-                  {right.detail}
-                </Card.Description>
-              </Card.Header>
-            </Card>
+            <div key={right.id}>
+              <dt className="font-display text-[1.2rem] text-foreground">{right.label}</dt>
+              <dd className="mt-1 text-muted leading-relaxed">{right.detail}</dd>
+            </div>
           ))}
-        </div>
+        </dl>
       </SectionBand>
 
       <SectionBand tone="bg">
