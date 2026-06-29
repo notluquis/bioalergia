@@ -649,6 +649,28 @@ export function useSendLocation() {
   });
 }
 
+export function useSendCtaUrl() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Parameters<typeof waCloudORPCClient.sendCtaUrl>[0]) =>
+      waCloudORPCClient.sendCtaUrl(input),
+    onSuccess: (_, vars) => {
+      void qc.invalidateQueries({ queryKey: [...KEY, "conversation", vars.conversationId] });
+    },
+  });
+}
+
+export function useSendLocationRequest() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Parameters<typeof waCloudORPCClient.sendLocationRequest>[0]) =>
+      waCloudORPCClient.sendLocationRequest(input),
+    onSuccess: (_, vars) => {
+      void qc.invalidateQueries({ queryKey: [...KEY, "conversation", vars.conversationId] });
+    },
+  });
+}
+
 export function useSendContacts() {
   const qc = useQueryClient();
   return useMutation({

@@ -419,6 +419,9 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
         conversationId,
         phoneNumberId: pn,
         body: text,
+        // Show a link preview card when the message contains a URL (WA default
+        // is off; auto-enabling matches what operators expect when sharing links).
+        ...(/https?:\/\//i.test(text) ? { previewUrl: true } : {}),
         ...(ctxId ? { contextMetaMessageId: ctxId } : {}),
       },
       {

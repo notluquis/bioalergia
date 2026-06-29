@@ -239,11 +239,12 @@ export function InteractiveBubble({ payload, body }: { payload: Payload; body: s
       </div>
     );
   }
-  // Outbound flow placeholder
+  // Outbound interactive placeholders (flow / cta_url / location_request)
   const flowMeta = payload as {
     interactive_type?: string;
     flow_cta?: string;
     flow_id?: string;
+    cta?: { display_text?: string; url?: string };
   } | null;
   if (flowMeta?.interactive_type === "flow") {
     return (
@@ -254,6 +255,35 @@ export function InteractiveBubble({ payload, body }: { payload: Payload; body: s
         </Chip>
         <p className="text-sm">{body}</p>
         <p className="text-default-500 text-xs">CTA: {flowMeta.flow_cta}</p>
+      </div>
+    );
+  }
+  if (flowMeta?.interactive_type === "cta_url") {
+    return (
+      <div className="space-y-1">
+        {body && <p className="whitespace-pre-wrap break-words text-sm leading-snug">{body}</p>}
+        {flowMeta.cta?.url ? (
+          <a
+            href={flowMeta.cta.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 rounded-lg bg-accent/10 px-2.5 py-1 font-medium text-accent text-xs"
+          >
+            <ExternalLink size={12} />
+            {flowMeta.cta.display_text ?? "Abrir enlace"}
+          </a>
+        ) : null}
+      </div>
+    );
+  }
+  if (flowMeta?.interactive_type === "location_request") {
+    return (
+      <div className="space-y-1">
+        {body && <p className="whitespace-pre-wrap break-words text-sm leading-snug">{body}</p>}
+        <span className="inline-flex items-center gap-1 rounded-lg bg-success/10 px-2.5 py-1 font-medium text-success text-xs">
+          <MapPin size={12} />
+          Solicitud de ubicación
+        </span>
       </div>
     );
   }

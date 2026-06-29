@@ -22345,6 +22345,7 @@ export class SchemaType implements SchemaDef {
                 SENT: "SENT",
                 DELIVERED: "DELIVERED",
                 READ: "READ",
+                PLAYED: "PLAYED",
                 FAILED: "FAILED",
                 DELETED: "DELETED"
             }

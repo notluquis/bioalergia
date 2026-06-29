@@ -5074,6 +5074,7 @@ enum WaMessageStatus {
   SENT
   DELIVERED
   READ
+  PLAYED
   FAILED
   DELETED
 }

@@ -4,6 +4,8 @@ export type SendTextInput = {
   phoneNumberId: number;
   toE164: string;
   body: string;
+  // Render a link preview card for the first URL in the body (Meta default off).
+  previewUrl?: boolean;
   contextMessageId?: string;
   bizOpaqueCallbackData?: string;
 };
@@ -17,7 +19,7 @@ export async function sendTextMessage(input: SendTextInput) {
     recipient_type: "individual",
     to: input.toE164.replace(/^\+/, ""),
     type: "text",
-    text: { body: input.body, preview_url: false },
+    text: { body: input.body, preview_url: input.previewUrl ?? false },
   };
   if (input.contextMessageId) {
     payload.context = { message_id: input.contextMessageId };
@@ -214,6 +216,88 @@ export async function sendFlowMessage(input: SendFlowInput) {
   );
 }
 
+// Interactive Call-to-Action URL button: a single button mapping to a URL, so
+// the operator doesn't paste a raw/obscure link in the body. Only ONE URL
+// button is supported by Meta.
+export type SendCtaUrlInput = {
+  phoneNumberId: number;
+  toE164: string;
+  bodyText: string;
+  buttonText: string;
+  url: string;
+  headerText?: string;
+  footerText?: string;
+  contextMessageId?: string;
+  bizOpaqueCallbackData?: string;
+};
+
+export async function sendCtaUrlMessage(input: SendCtaUrlInput) {
+  const phone = await getAccountForPhoneNumber(input.phoneNumberId);
+  const v = phone.account.graphApiVersion;
+  const token = requireSystemUserToken(phone);
+  const interactive: Record<string, unknown> = {
+    type: "cta_url",
+    body: { text: input.bodyText },
+    action: {
+      name: "cta_url",
+      parameters: { display_text: input.buttonText, url: input.url },
+    },
+  };
+  if (input.headerText) interactive.header = { type: "text", text: input.headerText };
+  if (input.footerText) interactive.footer = { text: input.footerText };
+  const payload: Record<string, unknown> = {
+    messaging_product: "whatsapp",
+    recipient_type: "individual",
+    to: input.toE164.replace(/^\+/, ""),
+    type: "interactive",
+    interactive,
+  };
+  if (input.contextMessageId) payload.context = { message_id: input.contextMessageId };
+  if (input.bizOpaqueCallbackData) payload.biz_opaque_callback_data = input.bizOpaqueCallbackData;
+  return graphPost<{ messages: Array<{ id: string }> }>(
+    `/${phone.phoneNumberId}/messages`,
+    payload,
+    token,
+    v
+  );
+}
+
+// Location request: text + a "Send location" button. The patient taps it to
+// share their location (delivered back as an inbound location message). Meta
+// does NOT allow a header or footer on this interactive type.
+export type SendLocationRequestInput = {
+  phoneNumberId: number;
+  toE164: string;
+  bodyText: string;
+  contextMessageId?: string;
+  bizOpaqueCallbackData?: string;
+};
+
+export async function sendLocationRequestMessage(input: SendLocationRequestInput) {
+  const phone = await getAccountForPhoneNumber(input.phoneNumberId);
+  const v = phone.account.graphApiVersion;
+  const token = requireSystemUserToken(phone);
+  const payload: Record<string, unknown> = {
+    messaging_product: "whatsapp",
+    recipient_type: "individual",
+    to: input.toE164.replace(/^\+/, ""),
+    type: "interactive",
+    interactive: {
+      type: "location_request_message",
+      body: { text: input.bodyText },
+      action: { name: "send_location" },
+    },
+  };
+  if (input.contextMessageId) payload.context = { message_id: input.contextMessageId };
+  if (input.bizOpaqueCallbackData) payload.biz_opaque_callback_data = input.bizOpaqueCallbackData;
+  return graphPost<{ messages: Array<{ id: string }> }>(
+    `/${phone.phoneNumberId}/messages`,
+    payload,
+    token,
+    v
+  );
+}
+
 export async function sendReaction(
   phoneNumberId: number,
   toE164: string,
@@ -367,7 +451,18 @@ export type ContactCardInput = {
   phones?: { phone: string; type?: string; wa_id?: string }[];
   emails?: { email: string; type?: string }[];
   org?: { company?: string; title?: string };
-  addresses?: { street?: string; city?: string; country?: string; type?: string }[];
+  addresses?: {
+    street?: string;
+    city?: string;
+    state?: string;
+    zip?: string;
+    country?: string;
+    country_code?: string;
+    type?: string;
+  }[];
+  urls?: { url: string; type?: string }[];
+  // ISO date YYYY-MM-DD.
+  birthday?: string;
 };
 
 export type SendContactsInput = {
