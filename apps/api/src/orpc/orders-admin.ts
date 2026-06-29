@@ -11,6 +11,7 @@ import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
 
+import { logAuditFromContext } from "../lib/audit-log.ts";
 import { getSessionUser, hasPermission } from "../lib/auth.ts";
 import { logError } from "../lib/logger.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
@@ -70,8 +71,17 @@ const markFulfilledRoute = requireWrite
   })
   .input(orderIdInputSchema)
   .output(orderDetailResponseSchema)
-  .handler(async ({ input }) => {
-    return { data: await markOrderFulfilled(input.id), status: "ok" as const };
+  .handler(async ({ input, context }) => {
+    const order = await markOrderFulfilled(input.id);
+    await logAuditFromContext(context.hono, {
+      kind: "DATA_UPDATE",
+      resource: "order",
+      resourceId: order.id,
+      outcome: "ok",
+      message: `Pedido ${order.number} marcado como despachado`,
+      metadata: { number: order.number, status: "FULFILLED" },
+    });
+    return { data: order, status: "ok" as const };
   });
 
 const ordersAdminORPCRouterBase = {

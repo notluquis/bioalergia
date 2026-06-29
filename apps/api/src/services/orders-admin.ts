@@ -8,6 +8,10 @@ import type { OrderDetail, OrderSummary } from "@finanzas/orpc-contracts/orders-
 
 import { DomainError } from "../lib/errors.ts";
 
+// Derive the where type from the configured client's method (not the standalone
+// alias, whose generic params don't match the options-parameterized client).
+type OrderWhereInput = NonNullable<NonNullable<Parameters<typeof db.order.findMany>[0]>["where"]>;
+
 type OrderStatus = OrderSummary["status"];
 type BillingType = OrderSummary["billing_type"];
 
@@ -63,7 +67,7 @@ export async function listOrders(params: {
   status?: OrderStatus;
   search?: string;
 }): Promise<{ orders: OrderSummary[]; nextCursor: number | null }> {
-  const and: Array<Record<string, unknown>> = [];
+  const and: OrderWhereInput[] = [];
   if (params.status) and.push({ status: params.status });
   if (params.cursor) and.push({ id: { lt: params.cursor } });
   const q = params.search?.trim();
@@ -77,8 +81,9 @@ export async function listOrders(params: {
     });
   }
 
+  const where: OrderWhereInput = and.length > 0 ? { AND: and } : {};
   const rows = await db.order.findMany({
-    where: and.length > 0 ? { AND: and } : {},
+    where,
     orderBy: { id: "desc" },
     take: params.limit + 1,
     include: { items: { select: { id: true } } },
