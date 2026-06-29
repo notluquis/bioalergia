@@ -23,6 +23,14 @@ export function registerMercadopagoCheckoutWebhook(app: Hono) {
     const topic = c.req.query("topic") ?? c.req.query("type") ?? "";
     const dataId = c.req.query("data.id") ?? c.req.query("id");
 
+    // Only `payment` drives abono/order state. Ack everything else
+    // (merchant_order + legacy IPN) before signature checks — we never act on
+    // them and the legacy merchant_order IPN carries no valid x-signature, so
+    // validating it just produces 401 + SignatureMismatch noise.
+    if (topic !== "payment") {
+      return c.json({ ok: true, ignored: true });
+    }
+
     const sigHeader = c.req.header("x-signature") ?? null;
     const reqId = c.req.header("x-request-id") ?? null;
 
@@ -90,7 +98,7 @@ export function registerMercadopagoCheckoutWebhook(app: Hono) {
     if (!valid) {
       return c.json({ error: "invalid_signature" }, 401);
     }
-    if (!dataId || topic !== "payment") {
+    if (!dataId) {
       return c.json({ ok: true, ignored: true });
     }
     // Test/simulator notifications carry a fake id that 404s on refetch → ack so
