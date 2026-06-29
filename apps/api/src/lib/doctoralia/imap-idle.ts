@@ -190,8 +190,10 @@ export async function sendAbonoRequestWhatsapp(
     return "missing_config";
   }
 
-  const firstName = token.patientName.split(" ")[0] ?? token.patientName;
-  const fechaHora = formatChile(token.appointmentDate, "dddd D [de] MMMM [a las] HH:mm [hrs]");
+  // Full patient name as Doctoralia sent it. Date like "Lunes 6 de marzo a las
+  // 16:00" — capitalize the weekday (dayjs es gives it lowercase).
+  const fechaRaw = formatChile(token.appointmentDate, "dddd D [de] MMMM [a las] HH:mm");
+  const fechaHora = fechaRaw.charAt(0).toUpperCase() + fechaRaw.slice(1);
   const clp = (n: number) =>
     new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP" }).format(n);
   // Fully personalized named body params + dynamic URL button. Prices from
@@ -211,7 +213,7 @@ export async function sendAbonoRequestWhatsapp(
       templateName: waConfig.templateName,
       language: waConfig.language,
       bodyNamedParams: [
-        { name: "nombre_paciente", text: firstName },
+        { name: "nombre_paciente", text: token.patientName },
         { name: "fecha_hora", text: fechaHora },
         { name: "fonasa_total", text: clp(paymentSettings.fonasaFullAmountClp) },
         { name: "particular_total", text: clp(paymentSettings.particularFullAmountClp) },
