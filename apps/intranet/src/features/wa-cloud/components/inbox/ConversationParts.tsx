@@ -959,9 +959,9 @@ async function toWaAudio(blob: Blob): Promise<{ blob: Blob; ext: string }> {
     // fall through to basic-audio fallback
   }
   if (base === "audio/mp4" || base === "audio/aac") return { blob, ext: "m4a" };
-  // Last resort (e.g. webm that couldn't be remuxed): send as-is; WA may reject,
-  // surfacing as a FAILED bubble the operator can retry.
-  return { blob, ext: "ogg" };
+  // webm that couldn't be remuxed has no WA-acceptable container — fail loudly
+  // (caught in send() → toast) instead of uploading bytes Meta will reject.
+  throw new Error("No se pudo convertir el audio a un formato compatible");
 }
 
 function VoiceRecorderButton({
