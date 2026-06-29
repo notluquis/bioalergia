@@ -26,7 +26,11 @@ export function registerMercadopagoCheckoutWebhook(app: Hono) {
     const sigHeader = c.req.header("x-signature") ?? null;
     const reqId = c.req.header("x-request-id") ?? null;
 
-    // SDK validator: constant-time HMAC + 5-min replay window. Throws on failure.
+    // SDK validator: constant-time HMAC. The timestamp replay window is
+    // effectively disabled (100y tolerance) — MP's own retries reuse the
+    // original ts and would trip a short window, and the simulator sends a
+    // 2021 ts. Replay is already neutralised by the webhookEvent unique
+    // (provider+topic+externalId) dedup below; the HMAC stays mandatory.
     let valid = false;
     try {
       WebhookSignatureValidator.validate({
@@ -34,7 +38,7 @@ export function registerMercadopagoCheckoutWebhook(app: Hono) {
         xRequestId: reqId,
         dataId: dataId ?? null,
         secret: process.env.MERCADOPAGO_WEBHOOK_SECRET ?? "",
-        toleranceSeconds: 300,
+        toleranceSeconds: 3_153_600_000,
       });
       valid = true;
     } catch (err) {
