@@ -13,7 +13,11 @@ import { InvalidWebhookSignatureError, WebhookSignatureValidator } from "mercado
 import { emitDte } from "../modules/haulmer/emit-dte.ts";
 import { refetchPayment } from "../modules/mercadopago-checkout/payment.ts";
 import { pushStockToMl } from "../modules/mercadolibre/sync.ts";
-import { consumeReservations, releaseReservations } from "../modules/reservations/index.ts";
+import {
+  consumeReservations,
+  releaseReservations,
+  reserveStockForOrder,
+} from "../modules/reservations/index.ts";
 import { sendAbonoConfirmation } from "../services/abono-confirmation.ts";
 import { appendAbonoFlowHistory } from "../lib/doctoralia/abono-flow-history.ts";
 import { logError } from "../lib/logger.ts";
@@ -201,8 +205,46 @@ export function registerMercadopagoCheckoutWebhook(app: Hono) {
       });
 
       if (status === "approved") {
+        // Checkout Pro is async — the buyer may approve after the 15-min
+        // reservation expired (or after a rejected attempt that freed stock). If
+        // the order has no ACTIVE reservation, re-acquire stock before marking
+        // paid; if it's truly gone, still mark paid (money is captured) but flag
+        // for manual fulfillment instead of silently overselling.
+        const activeReservations = await db.stockReservation.count({
+          where: { orderId, status: "ACTIVE" },
+        });
+        let stockSecured = activeReservations > 0;
+        if (!stockSecured) {
+          const reorder = await db.order.findUnique({
+            where: { id: orderId },
+            include: { items: true },
+          });
+          if (reorder) {
+            try {
+              await reserveStockForOrder({
+                orderId,
+                items: reorder.items.map((i: (typeof reorder.items)[number]) => ({
+                  productId: i.productId,
+                  qty: i.qty,
+                })),
+              });
+              stockSecured = true;
+            } catch {
+              stockSecured = false;
+            }
+          }
+        }
+
         await markOrderPaid(orderId);
         await consumeReservations(orderId);
+
+        if (!stockSecured) {
+          logError(
+            "mp-webhook.oversell",
+            new Error(`Order ${orderId} paid but stock unavailable — needs manual fulfillment`),
+            { orderId }
+          );
+        }
 
         // DTE emission — falla aquí NO debe perder la venta; log y sigue.
         try {
@@ -247,7 +289,11 @@ export function registerMercadopagoCheckoutWebhook(app: Hono) {
         } catch (e) {
           console.error("[mp-webhook] ML stock push failed", e);
         }
-      } else if (status === "rejected" || status === "cancelled") {
+      } else if (status === "cancelled") {
+        // Only a terminal cancel frees stock. A `rejected` attempt is retryable on
+        // the hosted checkout, so keep the reservation (the TTL sweep frees it if
+        // the buyer abandons) — releasing here would let an eventual retry-approval
+        // oversell.
         await releaseReservations(orderId);
       }
 
