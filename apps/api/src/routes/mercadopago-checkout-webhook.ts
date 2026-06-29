@@ -23,43 +23,36 @@ export function registerMercadopagoCheckoutWebhook(app: Hono) {
     const topic = c.req.query("topic") ?? c.req.query("type") ?? "";
     const dataId = c.req.query("data.id") ?? c.req.query("id");
 
-    // Only `payment` drives abono/order state. Ack everything else
-    // (merchant_order + legacy IPN) before signature checks — we never act on
-    // them and the legacy merchant_order IPN carries no valid x-signature, so
-    // validating it just produces 401 + SignatureMismatch noise.
-    if (topic !== "payment") {
-      return c.json({ ok: true, ignored: true });
-    }
-
     const sigHeader = c.req.header("x-signature") ?? null;
     const reqId = c.req.header("x-request-id") ?? null;
 
-    // SDK validator: constant-time HMAC. The timestamp replay window is
-    // effectively disabled (100y tolerance) — MP's own retries reuse the
-    // original ts and would trip a short window, and the simulator sends a
-    // 2021 ts. Replay is already neutralised by the webhookEvent unique
-    // (provider+topic+externalId) dedup below; the HMAC stays mandatory.
+    // Validate HMAC only for `payment` — the only topic we act on. Legacy
+    // merchant_order/IPN deliveries carry no valid x-signature, so validating
+    // them is pure log noise. Timestamp replay window disabled (100y): MP's own
+    // retries reuse the original ts; replay is neutralised by the dedup +
+    // terminal-status processedAt guard below. HMAC stays mandatory for payment.
     let valid = false;
-    try {
-      WebhookSignatureValidator.validate({
-        xSignature: sigHeader,
-        xRequestId: reqId,
-        dataId: dataId ?? null,
-        secret: process.env.MERCADOPAGO_WEBHOOK_SECRET ?? "",
-        toleranceSeconds: 3_153_600_000,
-      });
-      valid = true;
-    } catch (err) {
-      if (err instanceof InvalidWebhookSignatureError) {
-        console.warn(
-          `[mp-webhook] signature rejected: ${err.reason} (req ${err.requestId ?? "?"})`
-        );
-      } else {
-        throw err;
+    if (topic === "payment") {
+      try {
+        WebhookSignatureValidator.validate({
+          xSignature: sigHeader,
+          xRequestId: reqId,
+          dataId: dataId ?? null,
+          secret: process.env.MERCADOPAGO_WEBHOOK_SECRET ?? "",
+          toleranceSeconds: 3_153_600_000,
+        });
+        valid = true;
+      } catch (err) {
+        if (err instanceof InvalidWebhookSignatureError) {
+          console.warn(
+            `[mp-webhook] signature rejected: ${err.reason} (req ${err.requestId ?? "?"})`
+          );
+        } else {
+          throw err;
+        }
       }
     }
 
-    // Body para audit log.
     let payload: unknown;
     try {
       payload = await c.req.json();
@@ -67,7 +60,8 @@ export function registerMercadopagoCheckoutWebhook(app: Hono) {
       payload = null;
     }
 
-    // Dedup + audit. If a previous try failed before processedAt, let MP retry process it.
+    // Persist EVERY delivery (full audit log — all topics incl. merchant_order
+    // + test). Dedup on (provider, topic, externalId): retries refresh the row.
     try {
       await db.webhookEvent.create({
         data: {
@@ -95,14 +89,18 @@ export function registerMercadopagoCheckoutWebhook(app: Hono) {
       });
     }
 
+    // Stored. Now filter to the only topic we act on.
+    if (topic !== "payment") {
+      return c.json({ ok: true, ignored: true });
+    }
     if (!valid) {
       return c.json({ error: "invalid_signature" }, 401);
     }
     if (!dataId) {
       return c.json({ ok: true, ignored: true });
     }
-    // Test/simulator notifications carry a fake id that 404s on refetch → ack so
-    // MP's tester doesn't 500-retry-storm. Real payments are live_mode:true.
+    // Test/simulator (live_mode:false) carry a fake id that 404s on refetch.
+    // Already logged above; ack so MP's tester doesn't 500-retry-storm.
     if (
       payload &&
       typeof payload === "object" &&
