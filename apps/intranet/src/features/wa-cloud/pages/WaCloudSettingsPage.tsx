@@ -222,12 +222,12 @@ function AbonoAutomationCard({ accounts }: { accounts: AccountsData }) {
             ))}
           </select>
         </label>
-        <TextInput
-          label="Idioma solicitud"
-          value={data.requestTemplateLanguage}
-          onValueChange={(value) => set("requestTemplateLanguage", value)}
-          placeholder="es_CL"
-        />
+        <div className="space-y-1">
+          <span className="font-medium text-sm">Idioma solicitud</span>
+          <p className="flex h-10 items-center rounded-lg border border-default-200 bg-default-50 px-3 text-default-600 text-sm">
+            {data.requestTemplateLanguage || "— (se toma del template elegido)"}
+          </p>
+        </div>
         <label className="space-y-1">
           <span className="font-medium text-sm">Template confirmación</span>
           <select
@@ -255,12 +255,12 @@ function AbonoAutomationCard({ accounts }: { accounts: AccountsData }) {
             ))}
           </select>
         </label>
-        <TextInput
-          label="Idioma confirmación"
-          value={data.confirmationTemplateLanguage}
-          onValueChange={(value) => set("confirmationTemplateLanguage", value)}
-          placeholder="es_CL"
-        />
+        <div className="space-y-1">
+          <span className="font-medium text-sm">Idioma confirmación</span>
+          <p className="flex h-10 items-center rounded-lg border border-default-200 bg-default-50 px-3 text-default-600 text-sm">
+            {data.confirmationTemplateLanguage || "— (se toma del template elegido)"}
+          </p>
+        </div>
         <TextInput
           label="Monto FONASA"
           value={numberValue(data.fonasaFullAmountClp)}
