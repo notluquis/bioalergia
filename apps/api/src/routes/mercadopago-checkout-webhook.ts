@@ -153,12 +153,28 @@ export function registerMercadopagoCheckoutWebhook(app: Hono) {
           // ponytail: a decline is NOT terminal — keep token PENDING so the
           // patient can retry with another method. Only log the attempt.
           await appendAbonoFlowHistory(token.id, "mp_payment_rejected", { status });
+        } else if (token.status === "PENDING") {
+          // in_process / pending / authorized — MP is still settling. Log it
+          // (visible in flow_history) but do NOT mark the event processed below,
+          // so the later `approved` webhook (same payment id) isn't deduped
+          // before it lands. THIS is what lets deferred payments confirm.
+          await appendAbonoFlowHistory(token.id, "mp_payment_pending", { status });
         }
 
-        await db.webhookEvent.updateMany({
-          where: { provider: "mercadopago", topic, externalId: String(dataId) },
-          data: { processedAt: new Date() },
-        });
+        // Mark processed ONLY on a terminal status. An in_process→approved
+        // sequence shares one payment id; if in_process set processedAt, the
+        // approval would be deduped and never confirm.
+        if (
+          status === "approved" ||
+          status === "rejected" ||
+          status === "cancelled" ||
+          status === "refunded"
+        ) {
+          await db.webhookEvent.updateMany({
+            where: { provider: "mercadopago", topic, externalId: String(dataId) },
+            data: { processedAt: new Date() },
+          });
+        }
         return c.json({ ok: true });
       }
 

@@ -1,7 +1,7 @@
-import { Alert, Button, Card, Chip, ToggleButton, ToggleButtonGroup } from "@heroui/react";
+import { Alert, Button, Card, Chip, Separator, ToggleButton, ToggleButtonGroup } from "@heroui/react";
 import type { Key } from "@heroui/react";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { ShopShell } from "@/components/ShopShell";
 import { Eyebrow } from "@/components/ui/Eyebrow";
 
@@ -26,6 +26,7 @@ export const Route = createFileRoute("/abono/$token")({
       status: string;
       paidAmountClp: number | null;
       paidAt: string | null;
+      mpPaymentId: string | null;
       pricing: {
         fonasaFullAmountClp: number;
         particularFullAmountClp: number;
@@ -115,18 +116,60 @@ function AbonoPage() {
   };
 
   if (data.status === "APPROVED") {
+    const paid = data.paidAmountClp ?? 0;
+    const saldo = data.fullAmountClp - paid;
+    const row = (label: string, value: ReactNode) => (
+      <div className="flex justify-between gap-4">
+        <dt className="text-muted">{label}</dt>
+        <dd className="text-right font-medium">{value}</dd>
+      </div>
+    );
     return (
       <ShopShell>
         <main className="mx-auto max-w-xl space-y-6 px-4 py-12">
-          <header className="space-y-3">
+          <header className="space-y-2 text-center">
+            <div className="flex justify-center">
+              <Chip color="success" size="sm" variant="primary">
+                Pago confirmado
+              </Chip>
+            </div>
             <h1 className="font-display text-[2rem] text-brand-green sm:text-[2.5rem]">
-              ¡Abono Confirmado!
+              ¡Listo, {data.patientName.split(" ")[0]}!
             </h1>
-            <p className="text-muted text-lg">
-              Hemos registrado tu pago exitosamente. Te contactaremos pronto vía WhatsApp desde
-              nuestro número para confirmar los detalles.
-            </p>
+            <p className="text-muted">Recibimos tu pago. Este es tu comprobante.</p>
           </header>
+
+          <Card className="rounded-2xl border-line bg-surface p-6" variant="default">
+            <dl className="space-y-3 text-foreground text-sm">
+              <div className="flex justify-between gap-4">
+                <dt className="text-muted">Monto pagado</dt>
+                <dd className="font-bold text-brand-green text-lg">{formatClp(paid)}</dd>
+              </div>
+              {row("Valor total de la consulta", formatClp(data.fullAmountClp))}
+              {saldo > 0 &&
+                row(
+                  "Saldo a pagar en la clínica",
+                  <span className="font-semibold">{formatClp(saldo)}</span>
+                )}
+              <Separator />
+              {row("N° de operación", data.mpPaymentId ?? "—")}
+              {data.paidAt && row("Fecha de pago", formatDate(data.paidAt))}
+              {row("Previsión", data.isFonasa ? "FONASA" : "Isapre / Particular")}
+              <Separator />
+              {row("Servicio", data.serviceName)}
+              {row("Profesional", data.doctorName)}
+              {row("Fecha y hora de la cita", formatDate(data.appointmentDate))}
+            </dl>
+          </Card>
+
+          <p className="text-center text-muted text-sm">
+            Te enviamos este comprobante por WhatsApp. Tu hora queda confirmada 🎉
+          </p>
+          <div className="flex justify-center">
+            <Button variant="secondary" onPress={() => window.print()}>
+              Imprimir / Guardar PDF
+            </Button>
+          </div>
         </main>
       </ShopShell>
     );

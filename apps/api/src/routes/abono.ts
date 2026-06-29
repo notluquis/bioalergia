@@ -28,6 +28,11 @@ export function registerAbonoRoutes(app: Hono) {
     if (token.status === "EXPIRED" || (token.expiresAt < new Date() && token.status === "PENDING")) {
       return c.json({ error: "expired" }, 410);
     }
+    // Funnel: record the first link open once (poll re-GETs skip it).
+    const history = (token.flowHistory as { step?: string }[] | null) ?? [];
+    if (!history.some((h) => h.step === "link_opened")) {
+      await appendAbonoFlowHistory(token.id, "link_opened");
+    }
     const pricing = await loadAbonoPricingSettings();
     return c.json({
       id: token.id,
@@ -41,6 +46,7 @@ export function registerAbonoRoutes(app: Hono) {
       status: token.status,
       paidAmountClp: token.paidAmountClp,
       paidAt: token.paidAt,
+      mpPaymentId: token.mpPaymentId,
       pricing: {
         fonasaFullAmountClp: pricing.fonasaFullAmountClp,
         particularFullAmountClp: pricing.particularFullAmountClp,
