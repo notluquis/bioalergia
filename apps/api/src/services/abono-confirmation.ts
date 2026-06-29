@@ -16,7 +16,7 @@ import {
 } from "../lib/doctoralia/abono-whatsapp-settings.ts";
 import { appendAbonoFlowHistory } from "../lib/doctoralia/abono-flow-history.ts";
 import { logError, logEvent } from "../lib/logger.ts";
-import { sendTemplateMessage } from "../modules/wa-cloud/graph-client.ts";
+import { sendTemplate } from "./wa-messages.ts";
 import { ensureContactAndConversation } from "./wa-contacts.ts";
 
 export async function sendAbonoConfirmation(tokenId: string): Promise<void> {
@@ -65,63 +65,29 @@ export async function sendAbonoConfirmation(tokenId: string): Promise<void> {
 
   const clinicLocation = await loadClinicLocation();
 
-  const apiResp = await sendTemplateMessage({
-    phoneNumberId: Number(waPhone.id),
-    toE164: token.patientPhone,
-    templateName,
-    language: waConfig.language,
-    components: [
-      ...(clinicLocation
-        ? [
-            {
-              type: "header" as const,
-              parameters: [{ type: "location" as const, location: clinicLocation }],
-            },
-          ]
-        : []),
-      {
-        type: "body" as const,
-        parameters: [
-          { type: "text" as const, parameter_name: "nombre", text: firstName },
-          { type: "text" as const, parameter_name: "monto_pagado", text: paidText },
-          { type: "text" as const, parameter_name: "valor_consulta", text: consultaText },
-        ],
-      },
-    ],
-  });
-
-  // Persist to the WA inbox — Meta does NOT echo our own outbound messages via
-  // webhook, so an unrecorded template send never appears in a conversation.
-  // Best-effort: the WA already sent; a persist failure must not break the flow.
-  const metaId = apiResp.messages?.[0]?.id ?? null;
-  try {
-    const { contactId, conversationId } = await ensureContactAndConversation(
-      token.patientPhone,
-      token.patientName,
-      Number(waPhone.id)
-    );
-    const now = new Date();
-    await db.waMessage.create({
-      data: {
-        conversationId,
-        contactId,
-        phoneNumberId: Number(waPhone.id),
-        metaMessageId: metaId,
-        direction: "OUTBOUND",
-        type: "TEMPLATE",
-        status: "SENT",
-        body: `Confirmación de abono — ${paidText}`,
-        timestamp: now,
-        payload: { template: templateName, language: waConfig.language } as never,
-      },
-    });
-    await db.waConversation.update({
-      where: { id: conversationId },
-      data: { lastMessageAt: now, lastMessagePreview: `Pago confirmado — ${paidText}`.slice(0, 200) },
-    });
-  } catch (e) {
-    logError("mp-webhook.abono_wa_persist_failed", e, { tokenId });
-  }
+  // Send via the canonical inbox sender (services/wa-messages) — it persists the
+  // OUTBOUND WaMessage + bumps the conversation, so the confirmation shows in
+  // the inbox (Meta doesn't echo our own API sends). Needs a conversation.
+  const { conversationId } = await ensureContactAndConversation(
+    token.patientPhone,
+    token.patientName,
+    Number(waPhone.id)
+  );
+  await sendTemplate(
+    {
+      conversationId,
+      phoneNumberId: Number(waPhone.id),
+      templateName,
+      language: waConfig.language,
+      bodyNamedParams: [
+        { name: "nombre", text: firstName },
+        { name: "monto_pagado", text: paidText },
+        { name: "valor_consulta", text: consultaText },
+      ],
+      ...(clinicLocation ? { locationHeader: clinicLocation } : {}),
+    },
+    null
+  );
 
   await db.appointmentPaymentToken.update({
     where: { id: token.id },
