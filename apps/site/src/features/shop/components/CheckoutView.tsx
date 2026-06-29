@@ -11,7 +11,6 @@ import {
   ListBox,
   TextField,
 } from "@heroui/react";
-import { Payment } from "@mercadopago/sdk-react";
 import type { InferContractRouterOutputs } from "@orpc/contract";
 import { Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
@@ -31,18 +30,6 @@ type QuoteOption = InferContractRouterOutputs<CheckoutContract>["quote"]["data"]
 type Cart = InferContractRouterOutputs<CartContract>["get"]["data"];
 type CartItem = Cart["items"][number];
 
-/** The brick payload shape the route's `start` mutation accepts. */
-export type BrickSubmission = {
-  token: string;
-  payment_method_id: string;
-  issuer_id?: string;
-  installments: number;
-  payer: {
-    email: string;
-    identification?: { type: string; number: string };
-  };
-};
-
 export type CheckoutCustomer = { email: string; name: string; rut: string };
 export type CheckoutShipping = {
   method: "pickup" | "chilexpress";
@@ -53,24 +40,17 @@ export type CheckoutShipping = {
 };
 
 export type CheckoutViewProps = {
-  /** MercadoPago public key; null/undefined renders the "missing key" alert. */
-  publicKey: string | null | undefined;
   cart: Cart | undefined;
   isCartLoading: boolean;
   /** Chilexpress communes (name → coverage code + region) for the comuna picker. */
   communes: Array<{ code: string; name: string; region: string }>;
   /** Quote a county; resolves to the available shipping options. */
   onQuote: (county: string) => Promise<QuoteOption[]>;
-  /** Start the order with the collected customer/shipping + MP brick payload. */
-  onStart: (input: {
-    customer: CheckoutCustomer;
-    shipping: CheckoutShipping;
-    brick: BrickSubmission;
-  }) => Promise<void>;
+  /** Create the order + MP preference, then redirect to the hosted checkout. */
+  onStart: (input: { customer: CheckoutCustomer; shipping: CheckoutShipping }) => Promise<void>;
 };
 
 export function CheckoutView({
-  publicKey,
   cart,
   isCartLoading,
   communes,
@@ -91,25 +71,12 @@ export function CheckoutView({
   const [quoteError, setQuoteError] = useState<string | null>(null);
   const [isQuoting, setIsQuoting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const totalClp = useMemo(
     () => computeOrderTotal(cart?.total_clp ?? 0, shippingClp),
     [cart, shippingClp]
   );
-
-  if (!publicKey) {
-    return (
-      <main className="mx-auto max-w-3xl space-y-4 px-4 py-12 sm:px-6">
-        <Alert status="danger">
-          <Alert.Content>
-            <Alert.Description>
-              Falta `VITE_MERCADOPAGO_PUBLIC_KEY`. Contacta soporte.
-            </Alert.Description>
-          </Alert.Content>
-        </Alert>
-      </main>
-    );
-  }
 
   if (isCartLoading) return <p className="px-4 py-12 text-muted">Cargando…</p>;
   if (!cart || cart.items.length === 0) {
@@ -130,11 +97,15 @@ export function CheckoutView({
   }
 
   const customerReady = email.includes("@") && name.length >= 2;
-  // Chilexpress needs a real address (contract min(2)) + a chosen service before paying.
+  // Street must carry a number — Chilexpress can't deliver to a street with no
+  // house number (we can't verify it against their API yet; this is the cheap
+  // client check). The comuna itself is already validated (from the coverage list).
+  const streetHasNumber = /\d/.test(street);
   const shippingReady =
     shippingMethod === "pickup" ||
     (Boolean(serviceCode) &&
       street.trim().length >= 2 &&
+      streetHasNumber &&
       city.trim().length >= 2 &&
       region.trim().length >= 2);
 
@@ -154,6 +125,28 @@ export function CheckoutView({
         setQuoteError(e instanceof Error ? e.message : "Error cotizando");
       })
       .finally(() => setIsQuoting(false));
+  };
+
+  const handlePay = () => {
+    setIsSubmitting(true);
+    setSubmitError(null);
+    onStart({
+      customer: { email, name, rut },
+      shipping: {
+        method: shippingMethod,
+        serviceCode,
+        ...(shippingMethod === "chilexpress"
+          ? {
+              countyCode: comuna,
+              address: { street: street.trim(), city: city.trim(), region: region.trim() },
+            }
+          : {}),
+      },
+    }).catch((e: unknown) => {
+      // On success the page redirects to MercadoPago, so we only land here on error.
+      setSubmitError(e instanceof Error ? e.message : "No pudimos iniciar el pago");
+      setIsSubmitting(false);
+    });
   };
 
   return (
@@ -227,6 +220,9 @@ export function CheckoutView({
                   placeholder="Av. Siempre Viva 742"
                 />
               </TextField>
+              {street.trim().length >= 2 && !streetHasNumber ? (
+                <p className="text-danger text-sm">Incluye el número de la dirección.</p>
+              ) : null}
               <ComboBox
                 onSelectionChange={(key) => {
                   const c = communes.find((x) => x.code === key);
@@ -344,57 +340,14 @@ export function CheckoutView({
           )}
 
           {customerReady && shippingReady && (
-            <Payment
-              initialization={{
-                amount: totalClp,
-                payer: { email },
-              }}
-              customization={{
-                paymentMethods: {
-                  creditCard: "all",
-                  debitCard: "all",
-                  mercadoPago: "all",
-                },
-                visual: { hideFormTitle: true },
-              }}
-              onSubmit={async ({ formData }) => {
-                setSubmitError(null);
-                try {
-                  await onStart({
-                    customer: { email, name, rut },
-                    shipping: {
-                      method: shippingMethod,
-                      serviceCode,
-                      ...(shippingMethod === "chilexpress"
-                        ? {
-                            countyCode: comuna,
-                            address: {
-                              street: street.trim(),
-                              city: city.trim(),
-                              region: region.trim(),
-                            },
-                          }
-                        : {}),
-                    },
-                    brick: {
-                      token: formData.token,
-                      payment_method_id: formData.payment_method_id,
-                      ...(formData.issuer_id ? { issuer_id: formData.issuer_id } : {}),
-                      installments: formData.installments ?? 1,
-                      payer: {
-                        email: formData.payer.email,
-                        ...(formData.payer.identification
-                          ? { identification: formData.payer.identification }
-                          : {}),
-                      },
-                    },
-                  });
-                } catch (e) {
-                  setSubmitError(e instanceof Error ? e.message : "Error procesando pago");
-                }
-              }}
-              onError={(e) => setSubmitError(`MP: ${e?.message ?? "error"}`)}
-            />
+            <Button
+              className="w-full"
+              isDisabled={isSubmitting}
+              onPress={handlePay}
+              variant="primary"
+            >
+              {isSubmitting ? "Redirigiendo a Mercado Pago…" : "Pagar con Mercado Pago"}
+            </Button>
           )}
 
           {submitError && (
