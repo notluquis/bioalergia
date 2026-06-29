@@ -18,8 +18,15 @@ export async function reserveStockForOrder(opts: {
     const stale = await tx.stockReservation.findMany({
       where: { status: "ACTIVE", expiresAt: { lt: new Date() } },
     });
-    if (stale.length > 0) {
-      for (const r of stale) {
+    for (const r of stale) {
+      // Flip ACTIVE→EXPIRED guarded on status, and only restock the rows we
+      // actually flipped: a concurrent consume (approval webhook) may have
+      // already CONSUMED this row — restocking it would oversell a paid order.
+      const flipped = await tx.stockReservation.updateMany({
+        where: { id: r.id, status: "ACTIVE" },
+        data: { status: "EXPIRED" },
+      });
+      if (flipped.count === 1) {
         await tx.product.update({
           where: { id: r.productId },
           data: {
@@ -28,10 +35,6 @@ export async function reserveStockForOrder(opts: {
           },
         });
       }
-      await tx.stockReservation.updateMany({
-        where: { id: { in: stale.map((r) => r.id) } },
-        data: { status: "EXPIRED" },
-      });
     }
 
     // CAS por línea — si alguna falla, rollback de todas.
@@ -111,26 +114,31 @@ export async function releaseReservations(orderId: number): Promise<void> {
 }
 
 export async function sweepExpiredReservations(): Promise<number> {
-  const expired = await db.stockReservation.findMany({
-    where: { status: "ACTIVE", expiresAt: { lt: new Date() } },
-  });
-  if (expired.length === 0) return 0;
-
-  await db.$transaction(async (tx) => {
-    for (const r of expired) {
-      await tx.product.update({
-        where: { id: r.productId },
-        data: {
-          availableQty: { increment: r.qty },
-          version: { increment: 1 },
-        },
-      });
-    }
-    await tx.stockReservation.updateMany({
-      where: { id: { in: expired.map((r) => r.id) } },
-      data: { status: "EXPIRED" },
+  // All inside one txn + a per-row status guard: the approval webhook can consume
+  // a reservation concurrently, so only expire+restock rows still ACTIVE at the
+  // moment we flip them (count===1). Otherwise the sweep would return stock for
+  // an order that just became PAID.
+  return db.$transaction(async (tx) => {
+    const expired = await tx.stockReservation.findMany({
+      where: { status: "ACTIVE", expiresAt: { lt: new Date() } },
     });
+    let count = 0;
+    for (const r of expired) {
+      const flipped = await tx.stockReservation.updateMany({
+        where: { id: r.id, status: "ACTIVE" },
+        data: { status: "EXPIRED" },
+      });
+      if (flipped.count === 1) {
+        await tx.product.update({
+          where: { id: r.productId },
+          data: {
+            availableQty: { increment: r.qty },
+            version: { increment: 1 },
+          },
+        });
+        count++;
+      }
+    }
+    return count;
   });
-
-  return expired.length;
 }
