@@ -1,4 +1,5 @@
-import { Alert, Button, Card } from "@heroui/react";
+import { Alert, Button, Card, Chip, ToggleButton, ToggleButtonGroup } from "@heroui/react";
+import type { Key } from "@heroui/react";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ShopShell } from "@/components/ShopShell";
@@ -46,21 +47,23 @@ export const Route = createFileRoute("/abono/$token")({
 
 function AbonoPage() {
   const data = Route.useLoaderData();
-  const search = Route.useSearch() as { status?: string };
+  // Our own return flag (`abono`) — NOT `status`, which collides with the
+  // `status` param MercadoPago appends to the back_url.
+  const search = Route.useSearch() as { abono?: string };
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
   // Returning from MP checkout, payment not yet registered → re-run the loader
   // every 4s until the webhook flips the token to APPROVED. Stops after ~2 min.
   useEffect(() => {
-    if (search.status !== "approved" || data.status === "APPROVED") return;
+    if (search.abono !== "ok" || data.status === "APPROVED") return;
     let polls = 0;
     const id = setInterval(() => {
       if (++polls > 30) return clearInterval(id);
       void router.invalidate();
     }, 4000);
     return () => clearInterval(id);
-  }, [search.status, data.status, router]);
+  }, [search.abono, data.status, router]);
 
   // State for user selection
   const [insuranceType, setInsuranceType] = useState<"fonasa" | "particular">(
@@ -143,12 +146,21 @@ function AbonoPage() {
           </p>
         </header>
 
-        {search.status === "approved" && (
+        {search.abono === "ok" && (
           <Alert status="warning">
             <Alert.Content>
               <Alert.Description>
                 Estamos confirmando el pago con Mercado Pago. Si ya pagaste, esta página se
                 actualizará cuando el pago quede registrado.
+              </Alert.Description>
+            </Alert.Content>
+          </Alert>
+        )}
+        {search.abono === "failed" && (
+          <Alert status="danger">
+            <Alert.Content>
+              <Alert.Description>
+                El pago no se completó. Puedes intentarlo de nuevo abajo.
               </Alert.Description>
             </Alert.Content>
           </Alert>
@@ -173,34 +185,26 @@ function AbonoPage() {
 
         <section className="space-y-4">
           <h2 className="font-display text-xl">¿Cuál es tu previsión?</h2>
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              onClick={() => setInsuranceType("fonasa")}
-              className={`rounded-2xl border p-4 text-center transition-colors ${
-                insuranceType === "fonasa"
-                  ? "border-brand-green bg-brand-green/10 text-brand-green"
-                  : "border-line bg-surface text-muted hover:border-brand-green/50"
-              }`}
-            >
-              <span className="block font-medium">FONASA</span>
-              <span className="text-sm">
-                Valor total: {formatClp(data.pricing.fonasaFullAmountClp)}
-              </span>
-            </button>
-            <button
-              onClick={() => setInsuranceType("particular")}
-              className={`rounded-2xl border p-4 text-center transition-colors ${
-                insuranceType === "particular"
-                  ? "border-brand-green bg-brand-green/10 text-brand-green"
-                  : "border-line bg-surface text-muted hover:border-brand-green/50"
-              }`}
-            >
-              <span className="block font-medium">Isapre / Particular</span>
-              <span className="text-sm">
-                Valor total: {formatClp(data.pricing.particularFullAmountClp)}
-              </span>
-            </button>
-          </div>
+          <ToggleButtonGroup
+            fullWidth
+            selectionMode="single"
+            disallowEmptySelection
+            selectedKeys={new Set([insuranceType])}
+            onSelectionChange={(keys: Set<Key>) => {
+              const k = [...keys][0];
+              if (k === "fonasa" || k === "particular") setInsuranceType(k);
+            }}
+          >
+            <ToggleButton id="fonasa" className="h-auto flex-col py-3">
+              <span className="font-medium">FONASA</span>
+              <span className="text-sm">{formatClp(data.pricing.fonasaFullAmountClp)}</span>
+            </ToggleButton>
+            <ToggleButton id="particular" className="h-auto flex-col py-3">
+              <ToggleButtonGroup.Separator />
+              <span className="font-medium">Isapre / Particular</span>
+              <span className="text-sm">{formatClp(data.pricing.particularFullAmountClp)}</span>
+            </ToggleButton>
+          </ToggleButtonGroup>
           <Alert status="warning" className="text-sm">
             <Alert.Content>
               <Alert.Description>
@@ -214,12 +218,14 @@ function AbonoPage() {
         <div className="grid gap-4 sm:grid-cols-2">
           {/* Pago total — primero + destacado (recomendado) */}
           <Card
-            className="relative rounded-2xl border-2 border-brand-green bg-brand-green/5 p-6 text-center shadow-sm"
+            className="rounded-2xl border-2 border-brand-green bg-brand-green/5 p-6 text-center shadow-sm"
             variant="default"
           >
-            <span className="-top-3 -translate-x-1/2 absolute left-1/2 rounded-full bg-brand-green px-3 py-0.5 font-semibold text-white text-xs">
-              Recomendado
-            </span>
+            <div className="mb-3 flex justify-center">
+              <Chip color="success" size="sm" variant="primary">
+                Recomendado
+              </Chip>
+            </div>
             <h3 className="mb-2 font-display text-lg">Pagar 100%</h3>
             <p className="mb-4 font-bold text-3xl text-brand-green">{formatClp(currentFullAmount)}</p>
             <p className="mb-6 text-muted text-sm">

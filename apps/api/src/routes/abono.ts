@@ -94,8 +94,10 @@ export function registerAbonoRoutes(app: Hono) {
     });
 
     const amountClp = body.amount === "half" ? token.halfAmountClp : token.fullAmountClp;
-    const successUrl = `${paymentSettings.publicBaseUrl}/abono/${tokenId}?status=approved`;
-    const failureUrl = `${paymentSettings.publicBaseUrl}/abono/${tokenId}?status=rejected`;
+    // Our own return flag (`abono`) — NOT `status`, which MP overwrites with its
+    // own `status` param on the back redirect.
+    const successUrl = `${paymentSettings.publicBaseUrl}/abono/${tokenId}?abono=ok`;
+    const failureUrl = `${paymentSettings.publicBaseUrl}/abono/${tokenId}?abono=failed`;
 
     const pref = new Preference(mpClient());
     let created: Awaited<ReturnType<typeof pref.create>>;
