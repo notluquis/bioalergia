@@ -53,13 +53,6 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { AppModal } from "@/components/ui/AppModal";
 import { SelectInput, TextInput } from "@/features/outreach/components/FormField";
-// opus-media-recorder asset URLs (Vite emits + serves them). The encoder runs
-// in a worker; the WASM binaries are fetched lazily by the lib when recording
-// starts. These are just URL strings — the heavy lib code is dynamically
-// imported on first record so it never lands in the main bundle.
-import encoderWorkerUrl from "opus-media-recorder/encoderWorker.umd.js?url";
-import oggWasmUrl from "opus-media-recorder/OggOpusEncoder.wasm?url";
-import webmWasmUrl from "opus-media-recorder/WebMOpusEncoder.wasm?url";
 import { toast } from "@/lib/toast-interceptor";
 import { EmojiPickerButton } from "./EmojiPickerButton";
 import { StickerPickerButton } from "./StickerPickerButton";
@@ -940,6 +933,25 @@ export function ScheduleSendModal({
   );
 }
 
+// Normalize a recorded audio blob to a WhatsApp-accepted container. WA takes
+// ogg/opus, mp4/aac, mpeg, amr — but NOT webm (Chrome's MediaRecorder default).
+// When the blob is webm, remux it to ogg/opus with mediabunny (codec
+// passthrough — copies the Opus stream, no re-encode). ogg/mp4 pass through.
+async function toWaAudio(blob: Blob): Promise<{ blob: Blob; ext: string }> {
+  const base = (blob.type.split(";")[0] || "").trim();
+  if (base === "audio/ogg") return { blob, ext: "ogg" };
+  if (base === "audio/mp4" || base === "audio/aac") return { blob, ext: "m4a" };
+  const { Input, Output, Conversion, BlobSource, BufferTarget, OggOutputFormat, WEBM } =
+    await import("mediabunny");
+  const input = new Input({ source: new BlobSource(blob), formats: [WEBM] });
+  const output = new Output({ format: new OggOutputFormat(), target: new BufferTarget() });
+  const conversion = await Conversion.init({ input, output });
+  await conversion.execute();
+  const buffer = output.target.buffer;
+  if (!buffer) throw new Error("audio remux produced no output");
+  return { blob: new Blob([buffer], { type: "audio/ogg" }), ext: "ogg" };
+}
+
 function VoiceRecorderButton({
   onSend,
   isDisabled,
@@ -976,30 +988,24 @@ function VoiceRecorderButton({
   const start = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      // opus-media-recorder's module references a Node-style `global` at load
-      // (global.AudioContext, new global.Event(...)) and throws in the browser.
-      // Alias it to globalThis just before importing the encoder.
-      (globalThis as { global?: unknown }).global ??= globalThis;
-      // Record straight to Ogg/Opus via opus-media-recorder (WASM). Chrome's
-      // native MediaRecorder only makes audio/webm, which WhatsApp rejects
-      // (error 131053); ogg/opus is the cross-browser container Meta accepts.
-      const { default: OpusMediaRecorder } = await import("opus-media-recorder");
-      const rec = new OpusMediaRecorder(
-        stream,
-        { mimeType: "audio/ogg" },
-        {
-          encoderWorkerFactory: () => new Worker(encoderWorkerUrl),
-          OggOpusEncoderWasmPath: oggWasmUrl,
-          WebMOpusEncoderWasmPath: webmWasmUrl,
-        }
-      );
+      // Record with the native MediaRecorder in whatever Opus/AAC container the
+      // browser supports (Chrome: webm/opus, Firefox: ogg/opus, Safari: mp4/aac).
+      // The WA-incompatible webm case is remuxed to ogg at send time (see send()).
+      const mime = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+        ? "audio/webm;codecs=opus"
+        : MediaRecorder.isTypeSupported("audio/ogg;codecs=opus")
+          ? "audio/ogg;codecs=opus"
+          : MediaRecorder.isTypeSupported("audio/mp4")
+            ? "audio/mp4"
+            : "";
+      const rec = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
       chunksRef.current = [];
       rec.ondataavailable = (e) => {
         if (e.data.size > 0) chunksRef.current.push(e.data);
       };
       rec.onstop = () => {
         stream.getTracks().forEach((t) => t.stop());
-        const blob = new Blob(chunksRef.current, { type: "audio/ogg" });
+        const blob = new Blob(chunksRef.current, { type: rec.mimeType || "audio/webm" });
         const url = URL.createObjectURL(blob);
         setPreview({ blob, url });
         setRecording(false);
@@ -1008,7 +1014,6 @@ function VoiceRecorderButton({
           tickRef.current = null;
         }
       };
-      rec.onerror = () => toast.error("Error al grabar la nota de voz");
       recorderRef.current = rec;
       rec.start();
       startedAtRef.current = Date.now();
@@ -1041,10 +1046,16 @@ function VoiceRecorderButton({
     else a.pause();
   };
 
-  const send = () => {
+  const send = async () => {
     if (!preview) return;
-    const file = new File([preview.blob], `voice-${Date.now()}.ogg`, { type: "audio/ogg" });
-    onSend(file);
+    try {
+      const { blob, ext } = await toWaAudio(preview.blob);
+      const file = new File([blob], `voice-${Date.now()}.${ext}`, { type: blob.type });
+      onSend(file);
+    } catch {
+      toast.error("No se pudo procesar la nota de voz");
+      return;
+    }
     URL.revokeObjectURL(preview.url);
     setPreview(null);
     setPreviewPlaying(false);
@@ -1088,7 +1099,7 @@ function VoiceRecorderButton({
         >
           <Trash2 size={14} />
         </Button>
-        <Button size="sm" isIconOnly aria-label="Enviar nota de voz" onPress={send}>
+        <Button size="sm" isIconOnly aria-label="Enviar nota de voz" onPress={() => void send()}>
           <Send size={14} />
         </Button>
       </div>
