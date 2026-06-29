@@ -20,6 +20,7 @@ import { Route as VerificarCodeRouteImport } from "./routes/verificar.$code"
 import { Route as AuthedWaCloudRouteImport } from "./routes/_authed/wa-cloud"
 import { Route as AuthedSettingsRouteImport } from "./routes/_authed/settings"
 import { Route as AuthedServicesRouteImport } from "./routes/_authed/services"
+import { Route as AuthedPedidosRouteImport } from "./routes/_authed/pedidos"
 import { Route as AuthedOutreachRouteImport } from "./routes/_authed/outreach"
 import { Route as AuthedOperationsRouteImport } from "./routes/_authed/operations"
 import { Route as AuthedMarcarRouteImport } from "./routes/_authed/marcar"
@@ -161,6 +162,11 @@ const AuthedSettingsRoute = AuthedSettingsRouteImport.update({
 const AuthedServicesRoute = AuthedServicesRouteImport.update({
   id: "/services",
   path: "/services",
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedPedidosRoute = AuthedPedidosRouteImport.update({
+  id: "/pedidos",
+  path: "/pedidos",
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedOutreachRoute = AuthedOutreachRouteImport.update({
@@ -650,6 +656,7 @@ export interface FileRoutesByFullPath {
   "/marcar": typeof AuthedMarcarRoute
   "/operations": typeof AuthedOperationsRouteWithChildren
   "/outreach": typeof AuthedOutreachRouteWithChildren
+  "/pedidos": typeof AuthedPedidosRoute
   "/services": typeof AuthedServicesRouteWithChildren
   "/settings": typeof AuthedSettingsRouteWithChildren
   "/wa-cloud": typeof AuthedWaCloudRouteWithChildren
@@ -745,6 +752,7 @@ export interface FileRoutesByTo {
   "/finanzas": typeof AuthedFinanzasRouteWithChildren
   "/marcar": typeof AuthedMarcarRoute
   "/operations": typeof AuthedOperationsRouteWithChildren
+  "/pedidos": typeof AuthedPedidosRoute
   "/verificar/$code": typeof VerificarCodeRoute
   "/verify/$id": typeof VerifyIdRoute
   "/": typeof AuthedIndexRoute
@@ -844,6 +852,7 @@ export interface FileRoutesById {
   "/_authed/marcar": typeof AuthedMarcarRoute
   "/_authed/operations": typeof AuthedOperationsRouteWithChildren
   "/_authed/outreach": typeof AuthedOutreachRouteWithChildren
+  "/_authed/pedidos": typeof AuthedPedidosRoute
   "/_authed/services": typeof AuthedServicesRouteWithChildren
   "/_authed/settings": typeof AuthedSettingsRouteWithChildren
   "/_authed/wa-cloud": typeof AuthedWaCloudRouteWithChildren
@@ -947,6 +956,7 @@ export interface FileRouteTypes {
     | "/marcar"
     | "/operations"
     | "/outreach"
+    | "/pedidos"
     | "/services"
     | "/settings"
     | "/wa-cloud"
@@ -1042,6 +1052,7 @@ export interface FileRouteTypes {
     | "/finanzas"
     | "/marcar"
     | "/operations"
+    | "/pedidos"
     | "/verificar/$code"
     | "/verify/$id"
     | "/"
@@ -1140,6 +1151,7 @@ export interface FileRouteTypes {
     | "/_authed/marcar"
     | "/_authed/operations"
     | "/_authed/outreach"
+    | "/_authed/pedidos"
     | "/_authed/services"
     | "/_authed/settings"
     | "/_authed/wa-cloud"
@@ -1314,6 +1326,13 @@ declare module "@tanstack/react-router" {
       path: "/services"
       fullPath: "/services"
       preLoaderRoute: typeof AuthedServicesRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    "/_authed/pedidos": {
+      id: "/_authed/pedidos"
+      path: "/pedidos"
+      fullPath: "/pedidos"
+      preLoaderRoute: typeof AuthedPedidosRouteImport
       parentRoute: typeof AuthedRoute
     }
     "/_authed/outreach": {
@@ -2188,6 +2207,7 @@ interface AuthedRouteChildren {
   AuthedMarcarRoute: typeof AuthedMarcarRoute
   AuthedOperationsRoute: typeof AuthedOperationsRouteWithChildren
   AuthedOutreachRoute: typeof AuthedOutreachRouteWithChildren
+  AuthedPedidosRoute: typeof AuthedPedidosRoute
   AuthedServicesRoute: typeof AuthedServicesRouteWithChildren
   AuthedSettingsRoute: typeof AuthedSettingsRouteWithChildren
   AuthedWaCloudRoute: typeof AuthedWaCloudRouteWithChildren
@@ -2224,6 +2244,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedMarcarRoute: AuthedMarcarRoute,
   AuthedOperationsRoute: AuthedOperationsRouteWithChildren,
   AuthedOutreachRoute: AuthedOutreachRouteWithChildren,
+  AuthedPedidosRoute: AuthedPedidosRoute,
   AuthedServicesRoute: AuthedServicesRouteWithChildren,
   AuthedSettingsRoute: AuthedSettingsRouteWithChildren,
   AuthedWaCloudRoute: AuthedWaCloudRouteWithChildren,

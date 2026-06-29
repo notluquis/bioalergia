@@ -1,0 +1,103 @@
+import { OpenAPIHandler } from "@orpc/openapi/fetch";
+import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
+import {
+  orderDetailResponseSchema,
+  orderIdInputSchema,
+  ordersListInputSchema,
+  ordersListResponseSchema,
+} from "@finanzas/orpc-contracts/orders-admin";
+import type { OrdersAdminContract } from "@finanzas/orpc-contracts/orders-admin";
+import { ORPCError, onError, os } from "@orpc/server";
+import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
+import type { Context as HonoContext } from "hono";
+
+import { getSessionUser, hasPermission } from "../lib/auth.ts";
+import { logError } from "../lib/logger.ts";
+import { configureSuperjson } from "../lib/superjson-config.ts";
+import { getOrderById, listOrders, markOrderFulfilled } from "../services/orders-admin.ts";
+import { SuperJSONRPCHandler } from "./superjson.ts";
+
+configureSuperjson();
+
+type OrdersAdminORPCContext = { hono: HonoContext };
+const base = os.$context<OrdersAdminORPCContext>();
+
+const authed = base.use(async ({ context, next }) => {
+  const user = await getSessionUser(context.hono);
+  if (!user) {
+    throw new ORPCError("UNAUTHORIZED", { message: "No autorizado" });
+  }
+  return next({ context: { ...context, user } });
+});
+
+const requireRead = authed.use(async ({ context, next }) => {
+  if (!(await hasPermission(context.user, "read", "ShopOrder"))) {
+    throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
+  }
+  return next();
+});
+
+const requireWrite = authed.use(async ({ context, next }) => {
+  if (!(await hasPermission(context.user, "update", "ShopOrder"))) {
+    throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
+  }
+  return next();
+});
+
+const listRoute = requireRead
+  .route({ method: "GET", path: "/orders", summary: "List shop orders", tags: ["Orders"] })
+  .input(ordersListInputSchema)
+  .output(ordersListResponseSchema)
+  .handler(async ({ input }) => {
+    const { orders, nextCursor } = await listOrders(input);
+    return { data: { orders, next_cursor: nextCursor }, status: "ok" as const };
+  });
+
+const detailRoute = requireRead
+  .route({ method: "GET", path: "/orders/detail", summary: "Order detail", tags: ["Orders"] })
+  .input(orderIdInputSchema)
+  .output(orderDetailResponseSchema)
+  .handler(async ({ input }) => {
+    return { data: await getOrderById(input.id), status: "ok" as const };
+  });
+
+const markFulfilledRoute = requireWrite
+  .route({
+    method: "POST",
+    path: "/orders/fulfill",
+    summary: "Mark order dispatched",
+    tags: ["Orders"],
+  })
+  .input(orderIdInputSchema)
+  .output(orderDetailResponseSchema)
+  .handler(async ({ input }) => {
+    return { data: await markOrderFulfilled(input.id), status: "ok" as const };
+  });
+
+const ordersAdminORPCRouterBase = {
+  list: listRoute,
+  detail: detailRoute,
+  markFulfilled: markFulfilledRoute,
+} satisfies Record<keyof OrdersAdminContract, unknown>;
+
+export const ordersAdminORPCRouter = base
+  .prefix("/api/orpc/orders-admin")
+  .tag("Orders")
+  .router(ordersAdminORPCRouterBase);
+
+export const ordersAdminORPCHandler = new SuperJSONRPCHandler(ordersAdminORPCRouter, {
+  interceptors: [onError((error) => logError("orders-admin.orpc.rpc", error, {}))],
+});
+
+export const ordersAdminOpenAPIHandler = new OpenAPIHandler(ordersAdminORPCRouter, {
+  plugins: [
+    new OpenAPIReferencePlugin({
+      docsTitle: "Bioalergia Orders API Reference",
+      schemaConverters: [new ZodToJsonSchemaConverter()],
+      specGenerateOptions: { info: { title: "Bioalergia Orders API", version: "1.0.0" } },
+    }),
+  ],
+  interceptors: [onError((error) => logError("orders-admin.orpc.openapi", error, {}))],
+});
+
+export type OrdersAdminORPCRouter = typeof ordersAdminORPCRouter;
