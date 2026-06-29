@@ -50,6 +50,8 @@ export async function generateMedicalCertificate(
     update: {},
     create: { id: 1 },
   });
+  // Single source of truth: clinic address from DB unless the doctor overrode it.
+  parsed.doctorAddress = parsed.doctorAddress || clinic.address;
   const pdfBytes = await generateMedicalCertificatePdf(parsed, qrCode, {
     primary: clinic.logoUrl,
     secondary: clinic.secondaryLogoUrl,

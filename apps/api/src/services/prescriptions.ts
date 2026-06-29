@@ -234,7 +234,8 @@ export async function createMedicalPrescription(
       doctorLicense,
       diagnosis: diagnosisText,
       diagnoses: storedDiagnoses,
-      doctorAddress: parsed.doctorAddress,
+      // Single source: clinic address from DB unless the doctor overrode it.
+      doctorAddress: parsed.doctorAddress || clinic.address,
       doctorEmail: parsed.doctorEmail,
       doctorName: parsed.doctorName,
       doctorRut: parsed.doctorRut,
