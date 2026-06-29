@@ -64,6 +64,7 @@ export async function getWaMessageForMedia(messageId: number) {
       id: true,
       type: true,
       mediaMimeType: true,
+      mediaR2Key: true,
       payload: true,
       phoneNumber: { select: { accountId: true } },
     },

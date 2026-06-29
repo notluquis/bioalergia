@@ -386,10 +386,12 @@ function previewFromMessage(m: MetaMessage): string {
   return `[${m.type}]`;
 }
 
-export type ProcessResult = { events: number; errors: string[] };
+// mediaMessageIds: inbound messages with media to persist to R2. The route
+// enqueues them (modules can't import the queue tier — DAG).
+export type ProcessResult = { events: number; errors: string[]; mediaMessageIds: number[] };
 
 export async function processWebhookPayload(payload: MetaWebhookPayload): Promise<ProcessResult> {
-  const out: ProcessResult = { events: 0, errors: [] };
+  const out: ProcessResult = { events: 0, errors: [], mediaMessageIds: [] };
   for (const entry of payload.entry ?? []) {
     // Meta dashboard "Send test event" / Subscribe button: entry.id === "0" with
     // sample payload (fake phone_number_id, fake message ids). Skip silently so
@@ -830,6 +832,9 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
                 referralMediaUrl: r?.image_url ?? r?.video_url ?? r?.thumbnail_url ?? null,
               },
             });
+
+            // Has media → persist a durable R2 copy (route enqueues the job).
+            if (mediaMime) out.mediaMessageIds.push(insertedInbound.id);
 
             // Referral → tag conversation with utm-style label so staff filter
             if (r?.source_id) {

@@ -290,6 +290,42 @@ waCloudMediaRoutes.get("/:messageId", async (c) => {
   const message = await getWaMessageForMedia(messageId);
   if (!message) return c.text("Not found", 404);
 
+  // R2-first: serve the durable copy if the persist job already stored it. Meta
+  // media expires, so this is the only path that works for old messages. Falls
+  // through to live-proxy on R2 miss (not yet persisted / runner disabled).
+  if (message.mediaR2Key) {
+    try {
+      const obj = await getR2Object(message.mediaR2Key);
+      const ct = (message.mediaMimeType ?? obj.contentType ?? "application/octet-stream").toLowerCase();
+      const inlineSafe =
+        ct === "application/pdf" ||
+        (ct.startsWith("image/") && ct !== "image/svg+xml") ||
+        ct.startsWith("video/") ||
+        ct.startsWith("audio/");
+      const wantsDownload = c.req.query("download") === "1";
+      const fname = `wa-${messageId}`;
+      return new Response(obj.body, {
+        status: 200,
+        headers: {
+          "Content-Type": message.mediaMimeType ?? obj.contentType,
+          "Content-Disposition":
+            wantsDownload || !inlineSafe
+              ? `attachment; filename="${fname}"`
+              : `inline; filename="${fname}"`,
+          "X-Content-Type-Options": "nosniff",
+          "X-Frame-Options": "SAMEORIGIN",
+          "Cache-Control": "private, max-age=300",
+        },
+      });
+    } catch (err) {
+      logWarn("[wa-cloud.media] r2 miss, falling back to live-proxy", {
+        messageId,
+        r2Key: message.mediaR2Key,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+
   // Pull the Meta media id from the stored webhook payload. Each message type
   // nests the id at a different key (image.id, sticker.id, etc).
   const payload = (message.payload ?? {}) as Record<string, unknown>;

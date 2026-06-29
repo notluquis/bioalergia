@@ -5271,6 +5271,9 @@ model WaMessage {
   status              WaMessageStatus      @default(PENDING)
   body                String?
   mediaUrl            String?              @map("media_url")
+  // Durable copy in R2 of inbound media (Meta media ids expire ~30 days). Set
+  // by the wa_persist_media queue task; the media route serves R2-first.
+  mediaR2Key          String?              @map("media_r2_key")
   mediaMimeType       String?              @map("media_mime_type")
   mediaCaption        String?              @map("media_caption")
   templateName        String?              @map("template_name")

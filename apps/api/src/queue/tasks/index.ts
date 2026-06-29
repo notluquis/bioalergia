@@ -22,6 +22,7 @@ import { retention_sweep } from "./retention-sweep.ts";
 import { send_outreach_tick } from "./outreach-send.ts";
 import { send_wa_broadcast_tick } from "./wa-broadcast-tick.ts";
 import { send_wa_scheduled } from "./wa-scheduled-send.ts";
+import { wa_persist_media } from "./wa-persist-media.ts";
 import { skin_test_sync } from "./skin-test-sync.ts";
 import { social_publish } from "./social-publish.ts";
 import { social_publish_tick } from "./social-publish-tick.ts";
@@ -44,4 +45,5 @@ export const taskList: TaskList = {
   social_publish_tick,
   adherence_reminder_send,
   abono_wa_retry,
+  wa_persist_media,
 };

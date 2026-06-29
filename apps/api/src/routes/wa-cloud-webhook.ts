@@ -4,6 +4,8 @@ import { timingSafeEqual } from "node:crypto";
 import { logWarn } from "../lib/logger.ts";
 import { decryptSecret } from "../lib/secret-cipher.ts";
 import { processWebhookPayload, verifyMetaSignature } from "../modules/wa-cloud/webhook-handler.ts";
+import { enqueueJob } from "../queue/runner.ts";
+import { waPersistMediaJobKey } from "../queue/tasks/wa-persist-media.ts";
 
 function timingSafeStringEq(a: string, b: string): boolean {
   const ab = Buffer.from(a);
@@ -82,6 +84,11 @@ waCloudWebhookRoutes.post("/whatsapp", async (c) => {
 
   try {
     const result = await processWebhookPayload(parsed as never);
+    // Persist inbound media to R2 (durable; Meta media expires). Async via queue
+    // → webhook stays fast; no-op fallback to live-proxy if the runner is off.
+    for (const messageId of result.mediaMessageIds) {
+      await enqueueJob("wa_persist_media", { messageId }, { jobKey: waPersistMediaJobKey(messageId) });
+    }
     await db.waWebhookLog.update({
       where: { id: log.id },
       data: {

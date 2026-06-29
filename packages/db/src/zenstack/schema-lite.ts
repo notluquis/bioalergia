@@ -13643,6 +13643,11 @@ export class SchemaType implements SchemaDef {
                     type: "String",
                     optional: true
                 },
+                mediaR2Key: {
+                    name: "mediaR2Key",
+                    type: "String",
+                    optional: true
+                },
                 mediaMimeType: {
                     name: "mediaMimeType",
                     type: "String",

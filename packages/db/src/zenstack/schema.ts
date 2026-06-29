@@ -16617,6 +16617,12 @@ export class SchemaType implements SchemaDef {
                     optional: true,
                     attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("media_url") }] }] as readonly AttributeApplication[]
                 },
+                mediaR2Key: {
+                    name: "mediaR2Key",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("media_r2_key") }] }] as readonly AttributeApplication[]
+                },
                 mediaMimeType: {
                     name: "mediaMimeType",
                     type: "String",
