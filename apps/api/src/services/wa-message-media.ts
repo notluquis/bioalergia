@@ -10,14 +10,8 @@
 
 import { db } from "@finanzas/db";
 import { logEvent } from "../lib/logger.ts";
-import { downloadMediaBytes, downloadMediaUrl } from "../modules/wa-cloud/graph-client.ts";
-import { putR2Object } from "../modules/cloudflare/r2.ts";
-
-// ponytail: 25MB cap — downloadMediaBytes buffers the whole file in memory and
-// the api heap is 1GB; Meta inbound docs go up to 100MB, which × concurrent
-// jobs would OOM. Over-cap media stays on live-proxy (works while fresh).
-// Raise this only if persist switches to streaming R2 upload.
-const MAX_PERSIST_BYTES = 25 * 1024 * 1024;
+import { downloadMediaStream } from "../modules/wa-cloud/graph-client.ts";
+import { putR2ObjectStream } from "../modules/cloudflare/r2.ts";
 
 const MEDIA_KEYS = ["image", "sticker", "video", "audio", "document"] as const;
 
@@ -45,20 +39,20 @@ export async function persistInboundMedia(
   if (!mediaId) return "no_media";
 
   const accountId = message.phoneNumber.accountId;
-  // Cheap metadata GET first → skip oversized media before buffering it.
-  const info = await downloadMediaUrl(mediaId, accountId);
-  if (info.file_size > MAX_PERSIST_BYTES) {
-    logEvent("wa.media.skip_too_large", { messageId, fileSize: info.file_size });
-    return "skipped";
-  }
-  const { bytes, mimeType } = await downloadMediaBytes(mediaId, accountId);
+  // Stream Meta → R2 (bounded memory): persists any size, never OOMs the heap.
+  const { stream, mimeType, fileSize } = await downloadMediaStream(mediaId, accountId);
   const r2Key = `wa-media/${accountId}/${messageId}`;
-  await putR2Object(r2Key, bytes, mimeType || message.mediaMimeType || "application/octet-stream");
+  await putR2ObjectStream(
+    r2Key,
+    stream,
+    mimeType || message.mediaMimeType || "application/octet-stream",
+    fileSize
+  );
 
   await db.waMessage.update({
     where: { id: messageId },
     data: { mediaR2Key: r2Key, mediaMimeType: message.mediaMimeType ?? mimeType },
   });
-  logEvent("wa.media.persisted", { messageId, accountId, r2Key, bytes: bytes.length });
+  logEvent("wa.media.persisted", { messageId, accountId, r2Key, fileSize });
   return "persisted";
 }

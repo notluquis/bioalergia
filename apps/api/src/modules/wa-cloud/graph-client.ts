@@ -32,6 +32,7 @@ export {
 export {
   type WaMediaUploadResult,
   downloadMediaBytes,
+  downloadMediaStream,
   downloadMediaUrl,
   markMessageDelivered,
   markMessageRead,

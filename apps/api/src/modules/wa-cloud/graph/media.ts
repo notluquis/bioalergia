@@ -1,3 +1,4 @@
+import { Readable } from "node:stream";
 import { DomainError } from "../../../lib/errors.ts";
 import { logWarn } from "../../../lib/logger.ts";
 import {
@@ -127,6 +128,42 @@ export async function downloadMediaBytes(
   }
   const buf = new Uint8Array(await res.arrayBuffer());
   return { bytes: buf, mimeType: meta.mime_type, sha256: meta.sha256 };
+}
+
+/**
+ * Stream media bytes from Meta WITHOUT buffering the whole file in memory.
+ * Returns a Node Readable + the known content length, for a streaming R2 PUT.
+ * Preferred over downloadMediaBytes for arbitrary-size inbound media (docs up
+ * to 100MB) so persisting never OOMs the api heap.
+ */
+export async function downloadMediaStream(
+  mediaId: string,
+  accountId: number
+): Promise<{ stream: Readable; mimeType: string; fileSize: number }> {
+  const account = await loadAccount(accountId);
+  if (!account?.systemUserToken) throw new Error("Account sin token");
+  const meta = await graphGet<{
+    url: string;
+    mime_type: string;
+    sha256: string;
+    file_size: number;
+  }>(`/${mediaId}`, account.systemUserToken, account.graphApiVersion);
+  const res = await fetch(meta.url, {
+    headers: { Authorization: `Bearer ${account.systemUserToken}` },
+  });
+  if (!res.ok || !res.body) {
+    const body = await res.text().catch(() => "");
+    logWarn("[wa-cloud.graph] media stream download failed", {
+      status: res.status,
+      body: body.slice(0, 300),
+    });
+    throw new Error(`Graph media download ${res.status}`);
+  }
+  return {
+    stream: Readable.fromWeb(res.body as Parameters<typeof Readable.fromWeb>[0]),
+    mimeType: meta.mime_type,
+    fileSize: meta.file_size,
+  };
 }
 
 export async function uploadProfilePictureHandle(

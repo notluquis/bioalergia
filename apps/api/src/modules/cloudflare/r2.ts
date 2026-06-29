@@ -13,6 +13,7 @@ import {
   S3Client,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import type { Readable } from "node:stream";
 
 function getEnv(name: string): string {
   const v = process.env[name];
@@ -219,6 +220,28 @@ export async function putR2Object(
       Key: key,
       Body: body,
       ContentType: contentType,
+    })
+  );
+  const cdnBase = getEnv("CF_R2_PUBLIC_BASE_URL").replace(/\/+$/, "");
+  return `${cdnBase}/${key}`;
+}
+
+// Streaming upload (bounded memory) for arbitrary-size blobs. ContentLength is
+// required so a single PUT streams the body without buffering it — used to
+// persist WhatsApp inbound media (docs up to 100MB) without OOMing the heap.
+export async function putR2ObjectStream(
+  key: string,
+  body: Readable,
+  contentType: string,
+  contentLength: number
+): Promise<string> {
+  await getClient().send(
+    new PutObjectCommand({
+      Bucket: getEnv("CF_R2_BUCKET"),
+      Key: key,
+      Body: body,
+      ContentType: contentType,
+      ContentLength: contentLength,
     })
   );
   const cdnBase = getEnv("CF_R2_PUBLIC_BASE_URL").replace(/\/+$/, "");
