@@ -15,6 +15,12 @@ export type CarouselCardState = {
 
 export type CopyCodeState = { index: number; value: string } | null;
 
+// Pretty label from a template var name: "monto_pagado" → "Monto pagado".
+function humanizeVar(name: string): string {
+  const s = name.replace(/[_-]+/g, " ").trim();
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
 export function TemplateComposer({
   tplKey,
   setTplKey,
@@ -142,24 +148,28 @@ export function TemplateComposer({
       {tplVars.length > 0 && (
         <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
           {tplVars.map((v, i) => {
-            const name = tplVarNames?.[i];
-            const label = name ? `${name}` : `Variable {{${i + 1}}}`;
+            const rawName = tplVarNames?.[i] ?? null;
+            const label = rawName ? humanizeVar(rawName) : `Variable {{${i + 1}}}`;
             return (
-              <TextInput
-                key={i}
-                label={label}
-                value={v}
-                isRequired
-                isInvalid={attempted && !v.trim()}
-                errorMessage={`${label} es obligatorio.`}
-                onValueChange={(val) =>
-                  setTplVars((arr) => {
-                    const n = [...arr];
-                    n[i] = val;
-                    return n;
-                  })
-                }
-              />
+              <div key={i} className="space-y-0.5">
+                <TextInput
+                  label={label}
+                  value={v}
+                  isRequired
+                  isInvalid={attempted && !v.trim()}
+                  errorMessage={`${label} es obligatorio.`}
+                  onValueChange={(val) =>
+                    setTplVars((arr) => {
+                      const n = [...arr];
+                      n[i] = val;
+                      return n;
+                    })
+                  }
+                />
+                {rawName && (
+                  <p className="pl-0.5 font-mono text-[11px] text-default-400">{`{{${rawName}}}`}</p>
+                )}
+              </div>
             );
           })}
         </div>
