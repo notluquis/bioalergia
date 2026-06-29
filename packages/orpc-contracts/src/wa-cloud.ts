@@ -9,6 +9,7 @@ export const waMessageStatusSchema = z.enum([
   "SENT",
   "DELIVERED",
   "READ",
+  "PLAYED",
   "FAILED",
   "DELETED",
 ]);
