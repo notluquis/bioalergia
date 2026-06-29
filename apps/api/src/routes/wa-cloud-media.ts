@@ -295,7 +295,11 @@ waCloudMediaRoutes.get("/:messageId", async (c) => {
   // through to live-proxy on R2 miss (not yet persisted / runner disabled).
   if (message.mediaR2Key) {
     try {
-      const obj = await getR2Object(message.mediaR2Key);
+      // Forward the browser's Range header so audio/video can seek and the
+      // opus voice-note duration probe resolves (without this the player
+      // hangs on a spinner: no Content-Length, no ranges → duration unknown).
+      const rangeHeader = c.req.header("range");
+      const obj = await getR2Object(message.mediaR2Key, rangeHeader);
       const ct = (message.mediaMimeType ?? obj.contentType ?? "application/octet-stream").toLowerCase();
       const inlineSafe =
         ct === "application/pdf" ||
@@ -304,19 +308,21 @@ waCloudMediaRoutes.get("/:messageId", async (c) => {
         ct.startsWith("audio/");
       const wantsDownload = c.req.query("download") === "1";
       const fname = `wa-${messageId}`;
-      return new Response(obj.body, {
-        status: 200,
-        headers: {
-          "Content-Type": message.mediaMimeType ?? obj.contentType,
-          "Content-Disposition":
-            wantsDownload || !inlineSafe
-              ? `attachment; filename="${fname}"`
-              : `inline; filename="${fname}"`,
-          "X-Content-Type-Options": "nosniff",
-          "X-Frame-Options": "SAMEORIGIN",
-          "Cache-Control": "private, max-age=300",
-        },
-      });
+      const isPartial = Boolean(rangeHeader && obj.contentRange);
+      const headers: Record<string, string> = {
+        "Content-Type": message.mediaMimeType ?? obj.contentType,
+        "Content-Disposition":
+          wantsDownload || !inlineSafe
+            ? `attachment; filename="${fname}"`
+            : `inline; filename="${fname}"`,
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "SAMEORIGIN",
+        "Cache-Control": "private, max-age=300",
+        "Accept-Ranges": "bytes",
+      };
+      if (obj.contentLength != null) headers["Content-Length"] = String(obj.contentLength);
+      if (isPartial && obj.contentRange) headers["Content-Range"] = obj.contentRange;
+      return new Response(obj.body, { status: isPartial ? 206 : 200, headers });
     } catch (err) {
       logWarn("[wa-cloud.media] r2 miss, falling back to live-proxy", {
         messageId,

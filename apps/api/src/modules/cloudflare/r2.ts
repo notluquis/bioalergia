@@ -255,16 +255,26 @@ export async function putR2ObjectStream(
  * (p.ej. stickers guardados) sin exponer la R2 pública.
  */
 export async function getR2Object(
-  key: string
-): Promise<{ body: ReadableStream<Uint8Array>; contentType: string; contentLength?: number }> {
+  key: string,
+  // HTTP Range header value (e.g. "bytes=0-1023"). When set, R2 returns a
+  // partial object; the response carries Content-Range. Needed for audio/video
+  // seeking + opus voice-note duration probing in the browser.
+  range?: string
+): Promise<{
+  body: ReadableStream<Uint8Array>;
+  contentType: string;
+  contentLength?: number;
+  contentRange?: string;
+}> {
   const res = await getClient().send(
-    new GetObjectCommand({ Bucket: getEnv("CF_R2_BUCKET"), Key: key })
+    new GetObjectCommand({ Bucket: getEnv("CF_R2_BUCKET"), Key: key, Range: range })
   );
   if (!res.Body) throw new Error(`[r2] objeto vacío: ${key}`);
   return {
     body: res.Body.transformToWebStream() as ReadableStream<Uint8Array>,
     contentType: res.ContentType ?? "application/octet-stream",
     contentLength: res.ContentLength,
+    contentRange: res.ContentRange,
   };
 }
 
