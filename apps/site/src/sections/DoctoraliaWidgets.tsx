@@ -101,10 +101,11 @@ export function DoctoraliaBookingWidget() {
         <div className="mx-auto w-full max-w-full rounded-2xl border border-border bg-white p-1.5 shadow-[0_18px_45px_rgba(0,0,0,0.12)] sm:p-2">
           {/* `min-h` reserva espacio durante la carga. SIN cap de altura: el
               widget se muestra completo (la gente no descubre el scroll
-              interno). La columna de copy izquierda fluye natural y queda más
-              corta — sin hueco/void, sólo asimetría content-driven. Skeleton
-              mientras `!loaded`. */}
-          <div className="relative min-h-[25rem]" aria-busy={!loaded}>
+              interno). En desktop reservamos casi la altura del calendario
+              completo (`lg:min-h-[42rem]`) para que el resize post-carga casi no
+              empuje el contenido de abajo (evita CLS). La columna de copy
+              izquierda fluye natural. Skeleton mientras `!loaded`. */}
+          <div className="relative min-h-[25rem] lg:min-h-[42rem]" aria-busy={!loaded}>
             {!loaded ? (
               <div
                 aria-hidden="true"

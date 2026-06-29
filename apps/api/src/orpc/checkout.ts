@@ -1,6 +1,7 @@
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import {
+  checkoutCommunesResponseSchema,
   checkoutQuoteInputSchema,
   checkoutQuoteResponseSchema,
   checkoutStartInputSchema,
@@ -17,7 +18,7 @@ import { getCookie } from "hono/cookie";
 import { chilexpressConfig } from "../lib/config.ts";
 import { logError } from "../lib/logger.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
-import { quoteCourier } from "../modules/chilexpress/client.ts";
+import { getCommunes, getRegions, quoteCourier } from "../modules/chilexpress/client.ts";
 import { createCheckoutOrder } from "../modules/mercadopago-checkout/payment.ts";
 import { reserveStockForOrder } from "../modules/reservations/index.ts";
 import { createOrderFromCart, getOrderByNumber } from "../services/orders.ts";
@@ -31,6 +32,77 @@ configureSuperjson();
 type CheckoutORPCContext = { hono: HonoContext };
 const base = os.$context<CheckoutORPCContext>();
 
+// Chilexpress comuna list (name → coverage code + region), so the checkout shows
+// a real "pick your comuna" selector instead of asking for the coverage code.
+// Communes change ~never; cache the flattened list for the process lifetime.
+// ponytail: in-memory cache, lost on deploy and rebuilt on first hit. A shared
+// cache (Redis) is the upgrade only if cold-start latency on one request matters.
+let communesCache: Array<{ code: string; name: string; region: string }> | null = null;
+async function loadCommunes() {
+  if (communesCache) return communesCache;
+  const cfg = chilexpressConfig;
+  if (!cfg) return [];
+  const regions = await getRegions(cfg);
+  const nameByRegion = new Map(regions.map((r) => [r.regionId, r.regionName]));
+  const perRegion = await Promise.all(
+    regions.map((r) => getCommunes(cfg, r.regionId).catch(() => []))
+  );
+  const all = perRegion.flat().map((c) => ({
+    code: c.countyCode,
+    name: c.countyName,
+    region: nameByRegion.get(c.regionCode) ?? "",
+  }));
+  all.sort((a, b) => a.name.localeCompare(b.name, "es"));
+  communesCache = all;
+  return all;
+}
+
+const communesRoute = base
+  .route({ method: "GET", path: "/communes", summary: "Chilexpress communes", tags: ["Checkout"] })
+  .output(checkoutCommunesResponseSchema)
+  .handler(async () => {
+    return { data: { communes: await loadCommunes() }, status: "ok" as const };
+  });
+
+type CheckoutCart = NonNullable<Awaited<ReturnType<typeof findCartByToken>>>;
+
+// Shared by /quote and /start: the server is the single source of the shipping
+// fee, so /start re-quotes (never trusts a client amount) before charging.
+async function quoteShippingOptions(cart: CheckoutCart, destinationCountyCode: string) {
+  if (!chilexpressConfig) {
+    throw new ORPCError("INTERNAL_SERVER_ERROR", { message: "Chilexpress no configurado" });
+  }
+  type CartLine = CheckoutCart["items"][number];
+  const totalGrams = cart.items.reduce(
+    (acc: number, i: CartLine) => acc + (i.product.weightGrams ?? 250) * i.qty,
+    0
+  );
+  const totalKg = Math.max(0.1, totalGrams / 1000);
+  const declaredWorth = cart.items.reduce(
+    (acc: number, i: CartLine) => acc + i.unitPriceClp * i.qty,
+    0
+  );
+
+  const res = await quoteCourier(chilexpressConfig, {
+    originCountyCode: chilexpressConfig.originCoverageCode,
+    destinationCountyCode,
+    package: { weight: totalKg, height: 10, width: 20, length: 30 },
+    productType: 3,
+    contentType: 1,
+    declaredWorth: String(declaredWorth),
+    deliveryTime: 2,
+  });
+
+  return (
+    res.data?.courierServiceOptions?.map((o) => ({
+      service_code: String(o.serviceTypeCode),
+      service_description: o.serviceDescription,
+      shipping_clp: Math.round(Number(o.serviceValue)),
+      delivery_time_days: o.deliveryTime ?? null,
+    })) ?? []
+  );
+}
+
 const quoteRoute = base
   .route({
     method: "POST",
@@ -41,45 +113,13 @@ const quoteRoute = base
   .input(checkoutQuoteInputSchema)
   .output(checkoutQuoteResponseSchema)
   .handler(async ({ input, context }) => {
-    if (!chilexpressConfig) {
-      throw new ORPCError("INTERNAL_SERVER_ERROR", { message: "Chilexpress no configurado" });
-    }
     const token = getCookie(context.hono, CART_COOKIE_NAME);
     if (!token) throw new ORPCError("BAD_REQUEST", { message: "Sin carrito" });
     const cart = await findCartByToken(token);
     if (!cart || cart.items.length === 0) {
       throw new ORPCError("BAD_REQUEST", { message: "Carrito vacío" });
     }
-
-    type CartLine = (typeof cart.items)[number];
-    const totalGrams = cart.items.reduce(
-      (acc: number, i: CartLine) => acc + (i.product.weightGrams ?? 250) * i.qty,
-      0
-    );
-    const totalKg = Math.max(0.1, totalGrams / 1000);
-    const declaredWorth = cart.items.reduce(
-      (acc: number, i: CartLine) => acc + i.unitPriceClp * i.qty,
-      0
-    );
-
-    const res = await quoteCourier(chilexpressConfig, {
-      originCountyCode: chilexpressConfig.originCoverageCode,
-      destinationCountyCode: input.destination_county_code,
-      package: { weight: totalKg, height: 10, width: 20, length: 30 },
-      productType: 3,
-      contentType: 1,
-      declaredWorth: String(declaredWorth),
-      deliveryTime: 2,
-    });
-
-    const options =
-      res.data?.courierServiceOptions?.map((o) => ({
-        service_code: String(o.serviceTypeCode),
-        service_description: o.serviceDescription,
-        shipping_clp: Math.round(Number(o.serviceValue)),
-        delivery_time_days: o.deliveryTime ?? null,
-      })) ?? [];
-
+    const options = await quoteShippingOptions(cart, input.destination_county_code);
     return { data: { options }, status: "ok" as const };
   });
 
@@ -95,8 +135,20 @@ const startRoute = base
       throw new ORPCError("BAD_REQUEST", { message: "Carrito vacío" });
     }
 
-    // Shipping: pickup = 0; Chilexpress = TODO (cotizar)
-    const shippingClp = input.shipping.method === "pickup" ? 0 : 0;
+    // Shipping fee is computed server-side: re-quote Chilexpress and charge the
+    // chosen service (fall back to the cheapest), so the amount can't be forged.
+    let shippingClp = 0;
+    if (input.shipping.method === "chilexpress") {
+      const options = await quoteShippingOptions(cart, input.shipping.county_code);
+      const chosen =
+        options.find((o) => o.service_code === input.shipping.service_code) ?? options[0];
+      if (!chosen) {
+        throw new ORPCError("BAD_REQUEST", {
+          message: "No hay servicio de envío disponible para la comuna seleccionada",
+        });
+      }
+      shippingClp = chosen.shipping_clp;
+    }
 
     const order = await createOrderFromCart({
       cartId: cart.id,
@@ -189,6 +241,7 @@ const statusRoute = base
   });
 
 const checkoutORPCRouterBase = {
+  communes: communesRoute,
   quote: quoteRoute,
   start: startRoute,
   status: statusRoute,

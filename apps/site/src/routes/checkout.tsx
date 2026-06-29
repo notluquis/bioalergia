@@ -14,6 +14,12 @@ function CheckoutPage() {
   const navigate = useNavigate();
   const cartQ = useQuery(shopKeys.cart());
   const cart = cartQ.data?.data;
+  // Static list (communes change ~never) → cache hard so the picker is instant.
+  const communesQ = useQuery({
+    queryKey: ["shop", "communes"],
+    queryFn: async () => (await checkoutClient.communes()).data.communes,
+    staleTime: Infinity,
+  });
 
   useEffect(() => {
     if (PUBLIC_KEY) {
@@ -25,6 +31,7 @@ function CheckoutPage() {
     <ShopShell>
       <CheckoutView
         cart={cart}
+        communes={communesQ.data ?? []}
         isCartLoading={cartQ.isLoading}
         onQuote={async (county) => {
           const res = await checkoutClient.quote({ destination_county_code: county });
@@ -43,7 +50,8 @@ function CheckoutPage() {
                 ? { method: "pickup" }
                 : {
                     method: "chilexpress",
-                    address: { street: "—", city: "—", region: "—" },
+                    county_code: shipping.countyCode ?? "",
+                    address: shipping.address ?? { street: "", city: "", region: "" },
                     ...(shipping.serviceCode ? { service_code: shipping.serviceCode } : {}),
                   },
             brick,
