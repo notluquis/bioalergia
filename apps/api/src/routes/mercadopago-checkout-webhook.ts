@@ -93,6 +93,15 @@ export function registerMercadopagoCheckoutWebhook(app: Hono) {
     if (!dataId || topic !== "payment") {
       return c.json({ ok: true, ignored: true });
     }
+    // Test/simulator notifications carry a fake id that 404s on refetch → ack so
+    // MP's tester doesn't 500-retry-storm. Real payments are live_mode:true.
+    if (
+      payload &&
+      typeof payload === "object" &&
+      (payload as { live_mode?: boolean }).live_mode === false
+    ) {
+      return c.json({ ok: true, test: true });
+    }
 
     try {
       const mpPayment = await refetchPayment(dataId);
