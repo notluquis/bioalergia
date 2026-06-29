@@ -9,6 +9,7 @@ export const waMessageStatusSchema = z.enum([
   "SENT",
   "DELIVERED",
   "READ",
+  "PLAYED",
   "FAILED",
   "DELETED",
 ]);
@@ -175,6 +176,28 @@ export const sendTextInputSchema = z.object({
   conversationId: z.number().int().positive(),
   phoneNumberId: z.number().int().positive(),
   body: z.string().min(1).max(4096),
+  // Render a link preview card for the first URL in the body (default off).
+  previewUrl: z.boolean().optional(),
+  contextMetaMessageId: z.string().optional(),
+});
+
+// Interactive CTA-URL button: text + a single labelled button that opens a URL.
+export const sendCtaUrlInputSchema = z.object({
+  conversationId: z.number().int().positive(),
+  phoneNumberId: z.number().int().positive(),
+  bodyText: z.string().min(1).max(1024),
+  buttonText: z.string().min(1).max(20),
+  url: z.string().url().max(2000),
+  headerText: z.string().max(60).optional(),
+  footerText: z.string().max(60).optional(),
+  contextMetaMessageId: z.string().optional(),
+});
+
+// Interactive location-request: text + a "Send location" button (no header/footer).
+export const sendLocationRequestInputSchema = z.object({
+  conversationId: z.number().int().positive(),
+  phoneNumberId: z.number().int().positive(),
+  bodyText: z.string().min(1).max(1024),
   contextMetaMessageId: z.string().optional(),
 });
 
@@ -1015,6 +1038,29 @@ export const contactCardSchema = z.object({
       title: z.string().max(128).optional(),
     })
     .optional(),
+  addresses: z
+    .array(
+      z.object({
+        street: z.string().max(256).optional(),
+        city: z.string().max(128).optional(),
+        state: z.string().max(128).optional(),
+        zip: z.string().max(40).optional(),
+        country: z.string().max(128).optional(),
+        country_code: z.string().max(8).optional(),
+        type: z.string().max(40).optional(),
+      })
+    )
+    .max(10)
+    .optional(),
+  urls: z
+    .array(z.object({ url: z.string().url().max(2000), type: z.string().max(40).optional() }))
+    .max(10)
+    .optional(),
+  // ISO date YYYY-MM-DD.
+  birthday: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
 });
 
 export const sendContactsInputSchema = z.object({
@@ -1383,6 +1429,14 @@ export const waCloudContract = {
   sendLocation: oc
     .route({ method: "POST", path: "/messages/send-location", tags: ["WA Cloud"] })
     .input(sendLocationInputSchema)
+    .output(sendMessageResponseSchema),
+  sendCtaUrl: oc
+    .route({ method: "POST", path: "/messages/send-cta-url", tags: ["WA Cloud"] })
+    .input(sendCtaUrlInputSchema)
+    .output(sendMessageResponseSchema),
+  sendLocationRequest: oc
+    .route({ method: "POST", path: "/messages/send-location-request", tags: ["WA Cloud"] })
+    .input(sendLocationRequestInputSchema)
     .output(sendMessageResponseSchema),
   sendContacts: oc
     .route({ method: "POST", path: "/messages/send-contacts", tags: ["WA Cloud"] })

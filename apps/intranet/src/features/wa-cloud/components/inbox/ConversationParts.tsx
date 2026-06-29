@@ -32,6 +32,7 @@ import {
   FileText,
   Images,
   Layers,
+  Link,
   List,
   MapPin,
   Mic,
@@ -62,6 +63,8 @@ import {
   useSavedFlows,
   useSavedInteractiveLists,
   useSavedLocations,
+  useSendCtaUrl,
+  useSendLocationRequest,
   useSendSavedFlow,
   useSendSavedList,
   useSendSavedLocation,
@@ -181,6 +184,8 @@ export function TextComposer({
   onOpenSchedule,
   onOpenList,
   onOpenCommerce,
+  onOpenCtaUrl,
+  onOpenLocationRequest,
   onSendSnippet,
   inputRef,
   onFocusComposer,
@@ -203,6 +208,8 @@ export function TextComposer({
   onOpenSchedule: () => void;
   onOpenList: () => void;
   onOpenCommerce: () => void;
+  onOpenCtaUrl: () => void;
+  onOpenLocationRequest: () => void;
   onSendSnippet: (snippetId: number) => void;
   inputRef?: React.RefObject<HTMLTextAreaElement | null>;
   onFocusComposer?: () => void;
@@ -258,6 +265,18 @@ export function TextComposer({
       icon: <ShoppingBag size={16} className="text-success" />,
       label: "Producto del catálogo",
       run: onOpenCommerce,
+    },
+    {
+      id: "cta-url",
+      icon: <Link size={16} className="text-accent" />,
+      label: "Botón con enlace",
+      run: onOpenCtaUrl,
+    },
+    {
+      id: "location-request",
+      icon: <MapPin size={16} className="text-success" />,
+      label: "Solicitar ubicación",
+      run: onOpenLocationRequest,
     },
   ];
   useEffect(() => {
@@ -1296,6 +1315,174 @@ export function MediaGalleryModal({
                 </div>
               )}
             </Modal.Body>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
+    </Modal>
+  );
+}
+
+// CTA-URL button: body text + one labelled button that opens a URL.
+export function CtaUrlModal({
+  isOpen,
+  onClose,
+  conversationId,
+  phoneNumberId,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  conversationId: number;
+  phoneNumberId: number | null;
+}) {
+  const send = useSendCtaUrl();
+  const [bodyText, setBodyText] = useState("");
+  const [buttonText, setButtonText] = useState("");
+  const [url, setUrl] = useState("");
+  useEffect(() => {
+    if (!isOpen) {
+      setBodyText("");
+      setButtonText("");
+      setUrl("");
+    }
+  }, [isOpen]);
+  const submit = () => {
+    if (!phoneNumberId) {
+      toast.error("Selecciona un número primero");
+      return;
+    }
+    if (!bodyText.trim() || !buttonText.trim() || !url.trim()) {
+      toast.error("Completa texto, botón y URL");
+      return;
+    }
+    send.mutate(
+      {
+        conversationId,
+        phoneNumberId,
+        bodyText: bodyText.trim(),
+        buttonText: buttonText.trim().slice(0, 20),
+        url: url.trim(),
+      },
+      {
+        onSuccess: () => {
+          toast.success("Botón enviado");
+          onClose();
+        },
+        onError: (e) => toast.error(`Error: ${String(e)}`),
+      }
+    );
+  };
+  return (
+    <Modal>
+      <Modal.Backdrop
+        isOpen={isOpen}
+        onOpenChange={(o) => !o && onClose()}
+        isDismissable
+        className="bg-black/40 backdrop-blur-[2px]"
+      >
+        <Modal.Container placement="center">
+          <Modal.Dialog className="relative w-full max-w-md rounded-[28px] bg-background p-6 shadow-2xl">
+            <Modal.Header className="mb-4">
+              <Modal.Heading className="font-bold text-primary text-xl">
+                Botón con enlace
+              </Modal.Heading>
+              <p className="text-default-500 text-xs">
+                Texto + un botón que abre una URL (sin pegar el link crudo en el mensaje).
+              </p>
+            </Modal.Header>
+            <Modal.Body className="space-y-3">
+              <TextInput label="Mensaje" value={bodyText} onValueChange={setBodyText} isRequired />
+              <TextInput
+                label="Texto del botón (máx 20)"
+                value={buttonText}
+                onValueChange={(v) => setButtonText(v.slice(0, 20))}
+                isRequired
+              />
+              <TextInput label="URL" type="url" value={url} onValueChange={setUrl} isRequired />
+            </Modal.Body>
+            <div className="mt-5 flex justify-end gap-2">
+              <Button variant="outline" onPress={onClose}>
+                Cancelar
+              </Button>
+              <Button onPress={submit} isPending={send.isPending}>
+                <Send size={14} />
+                Enviar
+              </Button>
+            </div>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
+    </Modal>
+  );
+}
+
+// Location request: text + a "Send location" button the patient taps to share.
+export function LocationRequestModal({
+  isOpen,
+  onClose,
+  conversationId,
+  phoneNumberId,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  conversationId: number;
+  phoneNumberId: number | null;
+}) {
+  const send = useSendLocationRequest();
+  const [bodyText, setBodyText] = useState("¿Nos compartes tu ubicación?");
+  useEffect(() => {
+    if (!isOpen) setBodyText("¿Nos compartes tu ubicación?");
+  }, [isOpen]);
+  const submit = () => {
+    if (!phoneNumberId) {
+      toast.error("Selecciona un número primero");
+      return;
+    }
+    if (!bodyText.trim()) {
+      toast.error("Escribe un mensaje");
+      return;
+    }
+    send.mutate(
+      { conversationId, phoneNumberId, bodyText: bodyText.trim() },
+      {
+        onSuccess: () => {
+          toast.success("Solicitud enviada");
+          onClose();
+        },
+        onError: (e) => toast.error(`Error: ${String(e)}`),
+      }
+    );
+  };
+  return (
+    <Modal>
+      <Modal.Backdrop
+        isOpen={isOpen}
+        onOpenChange={(o) => !o && onClose()}
+        isDismissable
+        className="bg-black/40 backdrop-blur-[2px]"
+      >
+        <Modal.Container placement="center">
+          <Modal.Dialog className="relative w-full max-w-md rounded-[28px] bg-background p-6 shadow-2xl">
+            <Modal.Header className="mb-4">
+              <Modal.Heading className="font-bold text-primary text-xl">
+                <MapPin className="mr-2 inline" size={20} />
+                Solicitar ubicación
+              </Modal.Heading>
+              <p className="text-default-500 text-xs">
+                El paciente verá un botón "Enviar ubicación" para compartir su posición.
+              </p>
+            </Modal.Header>
+            <Modal.Body>
+              <TextInput label="Mensaje" value={bodyText} onValueChange={setBodyText} isRequired />
+            </Modal.Body>
+            <div className="mt-5 flex justify-end gap-2">
+              <Button variant="outline" onPress={onClose}>
+                Cancelar
+              </Button>
+              <Button onPress={submit} isPending={send.isPending}>
+                <Send size={14} />
+                Enviar
+              </Button>
+            </div>
           </Modal.Dialog>
         </Modal.Container>
       </Modal.Backdrop>

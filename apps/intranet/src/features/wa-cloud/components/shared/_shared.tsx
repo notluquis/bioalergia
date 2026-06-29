@@ -1,16 +1,19 @@
 // oxlint-disable typescript/no-non-null-assertion -- TODO(strict-null): refactor each `!` to invariant() or explicit guard. Tracked in repo-wide non-null cleanup.
-import { AlertCircle, Check, CheckCheck, Clock } from "lucide-react";
+import { AlertCircle, Check, CheckCheck, Clock, Mic } from "lucide-react";
 import { addDays, chileDay, type DateInput, diffDays, formatChile, today } from "@/lib/dates";
 
 export const QUICK_REACTIONS = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
 
-export type MessageStatus = "SENT" | "DELIVERED" | "READ" | "FAILED" | "PENDING";
+export type MessageStatus = "SENT" | "DELIVERED" | "READ" | "PLAYED" | "FAILED" | "PENDING";
 
 export function StatusTicks({ status }: { status: MessageStatus }) {
   const cls = "inline-block";
   if (status === "PENDING") return <Clock className={cls} size={14} aria-label="enviando" />;
   if (status === "FAILED")
     return <AlertCircle className={`${cls} text-danger`} size={14} aria-label="falló" />;
+  // Voice note played: WhatsApp shows a blue mic (distinct from blue read ticks).
+  if (status === "PLAYED")
+    return <Mic className={`${cls} text-accent`} size={14} aria-label="reproducido" />;
   if (status === "READ")
     return <CheckCheck className={`${cls} text-accent`} size={14} aria-label="leído" />;
   if (status === "DELIVERED")

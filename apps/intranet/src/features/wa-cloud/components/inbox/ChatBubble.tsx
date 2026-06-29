@@ -59,6 +59,7 @@ const STATUS_LABEL: Record<MessageStatus, string> = {
   SENT: "enviado",
   DELIVERED: "entregado",
   READ: "leído",
+  PLAYED: "reproducido",
   FAILED: "falló",
 };
 

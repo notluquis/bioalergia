@@ -65,7 +65,9 @@ type MetaMessage = {
 
 type MetaStatus = {
   id: string;
-  status: "sent" | "delivered" | "read" | "failed";
+  // "played" is sent for voice notes the first time the recipient plays them
+  // (Meta, since 2026) — mapped to the PLAYED enum below.
+  status: "sent" | "delivered" | "read" | "failed" | "played";
   timestamp: string;
   recipient_id: string;
   conversation?: { id: string; origin?: { type?: string } };
@@ -1017,12 +1019,18 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
         for (const s of v.statuses) {
           out.events += 1;
           try {
-            const status = s.status.toUpperCase() as "SENT" | "DELIVERED" | "READ" | "FAILED";
+            const status = s.status.toUpperCase() as
+              | "SENT"
+              | "DELIVERED"
+              | "READ"
+              | "PLAYED"
+              | "FAILED";
             const tsMs = Number.parseInt(s.timestamp, 10) * 1000;
             const ts = Number.isFinite(tsMs) ? new Date(tsMs) : new Date();
             const data: Record<string, unknown> = { status };
             if (status === "DELIVERED") data.deliveredAt = ts;
-            if (status === "READ") data.readAt = ts;
+            // PLAYED implies the message was also read — stamp readAt too.
+            if (status === "READ" || status === "PLAYED") data.readAt = ts;
             if (status === "FAILED" && s.errors?.length) {
               const firstErr = s.errors[0];
               data.errorCode = String(firstErr.code);

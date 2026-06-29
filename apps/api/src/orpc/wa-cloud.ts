@@ -85,8 +85,10 @@ import {
   updateConversationalAutomationInputSchema,
   waPhoneIdInput,
   sendContactsInputSchema,
+  sendCtaUrlInputSchema,
   sendFlowInputSchema,
   sendLocationInputSchema,
+  sendLocationRequestInputSchema,
   sendMediaInputSchema,
   sendMessageResponseSchema,
   sendReactionInputSchema,
@@ -167,7 +169,9 @@ import {
   searchMessages as searchMessagesService,
   sendAddress as sendAddressService,
   sendContacts as sendContactsService,
+  sendCtaUrl as sendCtaUrlService,
   sendFlow as sendFlowService,
+  sendLocationRequest as sendLocationRequestService,
   sendInteractiveList as sendInteractiveListService,
   sendLocation as sendLocationService,
   sendMedia as sendMediaService,
@@ -548,6 +552,20 @@ const waRouterBase = {
     .output(sendMessageResponseSchema)
     .handler(async ({ context, input }) => {
       return sendLocationService(input, context.user.id);
+    }),
+  sendCtaUrl: writeWa
+    .route({ method: "POST", path: "/messages/send-cta-url", tags: ["WA Cloud"] })
+    .input(sendCtaUrlInputSchema)
+    .output(sendMessageResponseSchema)
+    .handler(async ({ context, input }) => {
+      return sendCtaUrlService(input, context.user.id);
+    }),
+  sendLocationRequest: writeWa
+    .route({ method: "POST", path: "/messages/send-location-request", tags: ["WA Cloud"] })
+    .input(sendLocationRequestInputSchema)
+    .output(sendMessageResponseSchema)
+    .handler(async ({ context, input }) => {
+      return sendLocationRequestService(input, context.user.id);
     }),
 
   sendContacts: writeWa

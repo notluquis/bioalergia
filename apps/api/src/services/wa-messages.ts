@@ -15,9 +15,11 @@ import type {
   searchMessagesResponseSchema,
   sendAddressInputSchema,
   sendContactsInputSchema,
+  sendCtaUrlInputSchema,
   sendFlowInputSchema,
   sendInteractiveListInputSchema,
   sendLocationInputSchema,
+  sendLocationRequestInputSchema,
   sendMediaInputSchema,
   sendMessageResponseSchema,
   sendReactionInputSchema,
@@ -31,7 +33,9 @@ import {
   editTextMessage,
   sendAddressMessage,
   sendContactsMessage,
+  sendCtaUrlMessage,
   sendFlowMessage,
+  sendLocationRequestMessage,
   sendInteractiveListMessage,
   sendLocationMessage,
   sendMediaMessage,
@@ -95,6 +99,8 @@ type SendInteractiveListPayload = z.infer<typeof sendInteractiveListInputSchema>
 type SendAddressPayload = z.infer<typeof sendAddressInputSchema>;
 type SendLocationPayload = z.infer<typeof sendLocationInputSchema>;
 type SendContactsPayload = z.infer<typeof sendContactsInputSchema>;
+type SendCtaUrlPayload = z.infer<typeof sendCtaUrlInputSchema>;
+type SendLocationRequestPayload = z.infer<typeof sendLocationRequestInputSchema>;
 type EditTextPayload = z.infer<typeof editTextInputSchema>;
 type ForwardMessagePayload = z.infer<typeof forwardMessageInputSchema>;
 type SearchMessagesPayload = z.infer<typeof searchMessagesInputSchema>;
@@ -146,6 +152,7 @@ export async function sendText(
     phoneNumberId: payload.phoneNumberId,
     toE164: conv.contact.phoneE164,
     body: payload.body,
+    previewUrl: payload.previewUrl,
     contextMessageId: payload.contextMetaMessageId,
   });
   const metaId = apiResp.messages?.[0]?.id ?? null;
@@ -648,6 +655,97 @@ export async function sendLocation(
   await db.waConversation.update({
     where: { id: conv.id },
     data: { lastMessageAt: now, lastMessagePreview: preview },
+  });
+  return { message } as unknown as SendMessageResponse;
+}
+
+export async function sendCtaUrl(
+  payload: SendCtaUrlPayload,
+  sentByUserId: number
+): Promise<SendMessageResponse> {
+  const conv = await loadConversation(payload.conversationId);
+  if (!windowOpen(conv.lastInboundAt)) {
+    throw new DomainError(
+      "BAD_REQUEST",
+      "Ventana 24h cerrada. Usa una plantilla aprobada para reactivar la conversación."
+    );
+  }
+  const apiResp = await sendCtaUrlMessage({
+    phoneNumberId: payload.phoneNumberId,
+    toE164: conv.contact.phoneE164,
+    bodyText: payload.bodyText,
+    buttonText: payload.buttonText,
+    url: payload.url,
+    headerText: payload.headerText,
+    footerText: payload.footerText,
+    contextMessageId: payload.contextMetaMessageId,
+  });
+  const metaId = apiResp.messages?.[0]?.id ?? null;
+  const now = new Date();
+  const message = await db.waMessage.create({
+    data: {
+      conversationId: conv.id,
+      contactId: conv.contactId,
+      phoneNumberId: payload.phoneNumberId,
+      metaMessageId: metaId,
+      direction: "OUTBOUND",
+      type: "INTERACTIVE",
+      status: "SENT",
+      body: payload.bodyText,
+      sentByUserId,
+      contextMetaMessageId: payload.contextMetaMessageId ?? null,
+      payload: {
+        interactive_type: "cta_url",
+        cta: { display_text: payload.buttonText, url: payload.url },
+      } as never,
+      timestamp: now,
+    },
+  });
+  await db.waConversation.update({
+    where: { id: conv.id },
+    data: { lastMessageAt: now, lastMessagePreview: payload.bodyText.slice(0, 200) },
+  });
+  return { message } as unknown as SendMessageResponse;
+}
+
+export async function sendLocationRequest(
+  payload: SendLocationRequestPayload,
+  sentByUserId: number
+): Promise<SendMessageResponse> {
+  const conv = await loadConversation(payload.conversationId);
+  if (!windowOpen(conv.lastInboundAt)) {
+    throw new DomainError(
+      "BAD_REQUEST",
+      "Ventana 24h cerrada. Usa una plantilla aprobada para reactivar la conversación."
+    );
+  }
+  const apiResp = await sendLocationRequestMessage({
+    phoneNumberId: payload.phoneNumberId,
+    toE164: conv.contact.phoneE164,
+    bodyText: payload.bodyText,
+    contextMessageId: payload.contextMetaMessageId,
+  });
+  const metaId = apiResp.messages?.[0]?.id ?? null;
+  const now = new Date();
+  const message = await db.waMessage.create({
+    data: {
+      conversationId: conv.id,
+      contactId: conv.contactId,
+      phoneNumberId: payload.phoneNumberId,
+      metaMessageId: metaId,
+      direction: "OUTBOUND",
+      type: "INTERACTIVE",
+      status: "SENT",
+      body: payload.bodyText,
+      sentByUserId,
+      contextMetaMessageId: payload.contextMetaMessageId ?? null,
+      payload: { interactive_type: "location_request" } as never,
+      timestamp: now,
+    },
+  });
+  await db.waConversation.update({
+    where: { id: conv.id },
+    data: { lastMessageAt: now, lastMessagePreview: payload.bodyText.slice(0, 200) },
   });
   return { message } as unknown as SendMessageResponse;
 }
