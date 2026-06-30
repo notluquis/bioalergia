@@ -1,4 +1,5 @@
 import { formatChile } from "@/lib/dates";
+import { formatWhatsAppText } from "../../lib/whatsappFormat";
 import { Button } from "@heroui/react";
 import { MessageSquareText, MoreVertical, RotateCw } from "lucide-react";
 import { useState } from "react";
@@ -255,7 +256,9 @@ export function ChatBubble({
                   <MessageSquareText size={12} className="shrink-0" />
                   {row.templateName ?? "Plantilla"}
                 </span>
-                <p className="whitespace-pre-wrap break-words text-sm leading-snug">{row.body}</p>
+                <p className="whitespace-pre-wrap break-words text-sm leading-snug">
+                  {formatWhatsAppText(row.body)}
+                </p>
               </div>
             ) : (
               // Fallback: template not yet rendered (old message / media-only).
@@ -279,7 +282,7 @@ export function ChatBubble({
             />
           ) : (
             <p className="whitespace-pre-wrap break-words text-sm leading-snug">
-              {row.body ?? fallbackLabel}
+              {row.body ? formatWhatsAppText(row.body) : fallbackLabel}
             </p>
           )}
           {(groupEnd || failed) && (
