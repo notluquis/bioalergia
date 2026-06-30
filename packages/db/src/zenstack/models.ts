@@ -96,6 +96,7 @@ export type DoctoraliaWorkPeriod = $ModelResult<$Schema, "DoctoraliaWorkPeriod">
 export type HaulmerSyncLog = $ModelResult<$Schema, "HaulmerSyncLog">;
 export type DoctoraliaEmailNotification = $ModelResult<$Schema, "DoctoraliaEmailNotification">;
 export type AppointmentPaymentToken = $ModelResult<$Schema, "AppointmentPaymentToken">;
+export type IntakeSubmission = $ModelResult<$Schema, "IntakeSubmission">;
 export type DoctoraliaCookieStore = $ModelResult<$Schema, "DoctoraliaCookieStore">;
 export type PersonalCredit = $ModelResult<$Schema, "PersonalCredit">;
 export type PersonalCreditInstallment = $ModelResult<$Schema, "PersonalCreditInstallment">;

@@ -7779,6 +7779,12 @@ export class SchemaType implements SchemaDef {
                     type: "DoctoraliaCalendarAppointment",
                     optional: true,
                     relation: { opposite: "paymentToken", fields: ["calendarAppointmentId"], references: ["id"], onDelete: "SetNull" }
+                },
+                intakeSubmissions: {
+                    name: "intakeSubmissions",
+                    type: "IntakeSubmission",
+                    array: true,
+                    relation: { opposite: "appointmentPaymentToken" }
                 }
             },
             idFields: ["id"],
@@ -7786,6 +7792,164 @@ export class SchemaType implements SchemaDef {
                 id: { type: "String" },
                 emailNotificationId: { type: "String" },
                 calendarAppointmentId: { type: "Int" }
+            }
+        },
+        IntakeSubmission: {
+            name: "IntakeSubmission",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true,
+                    default: ExpressionUtils.call("cuid") as FieldDefault
+                },
+                appointmentPaymentTokenId: {
+                    name: "appointmentPaymentTokenId",
+                    type: "String",
+                    optional: true,
+                    foreignKeyFor: [
+                        "appointmentPaymentToken"
+                    ] as readonly string[]
+                },
+                patientName: {
+                    name: "patientName",
+                    type: "String"
+                },
+                patientPhone: {
+                    name: "patientPhone",
+                    type: "String"
+                },
+                patientEmail: {
+                    name: "patientEmail",
+                    type: "String",
+                    optional: true
+                },
+                patientRut: {
+                    name: "patientRut",
+                    type: "String",
+                    optional: true
+                },
+                patientBirthDate: {
+                    name: "patientBirthDate",
+                    type: "DateTime",
+                    optional: true
+                },
+                healthInsurance: {
+                    name: "healthInsurance",
+                    type: "HealthInsuranceType",
+                    optional: true
+                },
+                isapreName: {
+                    name: "isapreName",
+                    type: "String",
+                    optional: true
+                },
+                address: {
+                    name: "address",
+                    type: "String",
+                    optional: true
+                },
+                reason: {
+                    name: "reason",
+                    type: "String",
+                    optional: true
+                },
+                knownAllergies: {
+                    name: "knownAllergies",
+                    type: "String",
+                    optional: true
+                },
+                conditions: {
+                    name: "conditions",
+                    type: "String",
+                    optional: true
+                },
+                medications: {
+                    name: "medications",
+                    type: "String",
+                    optional: true
+                },
+                isMinor: {
+                    name: "isMinor",
+                    type: "Boolean",
+                    optional: true
+                },
+                guardianName: {
+                    name: "guardianName",
+                    type: "String",
+                    optional: true
+                },
+                guardianRut: {
+                    name: "guardianRut",
+                    type: "String",
+                    optional: true
+                },
+                guardianPhone: {
+                    name: "guardianPhone",
+                    type: "String",
+                    optional: true
+                },
+                guardianRelationship: {
+                    name: "guardianRelationship",
+                    type: "String",
+                    optional: true
+                },
+                comprobanteR2Key: {
+                    name: "comprobanteR2Key",
+                    type: "String",
+                    optional: true
+                },
+                comprobanteMime: {
+                    name: "comprobanteMime",
+                    type: "String",
+                    optional: true
+                },
+                staffNotifiedAt: {
+                    name: "staffNotifiedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                sourceChannel: {
+                    name: "sourceChannel",
+                    type: "String",
+                    default: "whatsapp_flow" as FieldDefault
+                },
+                flowToken: {
+                    name: "flowToken",
+                    type: "String",
+                    optional: true
+                },
+                raw: {
+                    name: "raw",
+                    type: "Json",
+                    optional: true
+                },
+                submittedAt: {
+                    name: "submittedAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                appointmentPaymentToken: {
+                    name: "appointmentPaymentToken",
+                    type: "AppointmentPaymentToken",
+                    optional: true,
+                    relation: { opposite: "intakeSubmissions", fields: ["appointmentPaymentTokenId"], references: ["id"], onDelete: "SetNull" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" }
             }
         },
         DoctoraliaCookieStore: {
