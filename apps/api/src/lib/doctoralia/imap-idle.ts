@@ -103,6 +103,9 @@ const MAX_RECONNECT_DELAY_MS = 5 * 60_000;
 
 let reconnectDelay = RECONNECT_DELAY_MS;
 let stopped = false;
+// Resolvers for the per-connection keep-alive promises, so stopDoctoraliaImap-
+// Listener() can release a connection that's parked waiting on 'close'.
+const stopResolvers = new Set<() => void>();
 const listenerStatus: DoctoraliaImapListenerStatus = {
   enabled: process.env.ENABLE_DOCTORALIA_IMAP === "true",
   host: null,
@@ -491,12 +494,70 @@ async function connect(config: ImapConfig, deps: ImapListenerDependencies): Prom
     auth: { pass: config.pass, user: config.user },
     host: config.host,
     logger: false,
-    // Heartbeat: break+restart IDLE every 5 min so a half-open socket is
-    // detected (next command throws → reconnect) instead of hanging silently,
-    // and processUnseen runs at least every 5 min as a backstop.
+    // Break+restart IDLE every 5 min so a half-open socket surfaces (next
+    // command throws → 'error'/'close' → reconnect) instead of hanging silent.
     maxIdleTime: 5 * 60_000,
     port: config.port,
     secure: config.secure,
+  });
+
+  // Serialize processUnseen so overlapping triggers (the initial drain + rapid
+  // 'exists' events) never run concurrently. If a trigger lands mid-scan, queue
+  // a single re-run so a late email isn't missed. State is scoped to THIS
+  // connection (closure, not module-global) so a slow scan on a dead connection
+  // can't swallow a fresh connection's drain after reconnect, nor run a queued
+  // rerun against the wrong client. Returns false if a scan threw, so the caller
+  // (initial drain) can force a reconnect instead of proceeding to IDLE.
+  let scanRunning = false;
+  let scanQueued = false;
+  const runScan = async (): Promise<boolean> => {
+    if (scanRunning) {
+      scanQueued = true;
+      return true;
+    }
+    scanRunning = true;
+    let ok = true;
+    try {
+      do {
+        scanQueued = false;
+        await processUnseen(client, config, deps);
+      } while (scanQueued && !stopped);
+    } catch (err) {
+      ok = false;
+      logError("doctoralia.imap.process_error", err, { host: config.host });
+    } finally {
+      scanRunning = false;
+    }
+    return ok;
+  };
+
+  let reconnectScheduled = false;
+  const scheduleReconnect = (): void => {
+    if (reconnectScheduled || stopped) return;
+    reconnectScheduled = true;
+    const delay = reconnectDelay;
+    listenerStatus.reconnectDelayMs = delay;
+    logEvent("doctoralia.imap.reconnect", { delayMs: delay });
+    reconnectDelay = Math.min(reconnectDelay * 2, MAX_RECONNECT_DELAY_MS);
+    setTimeout(() => connect(config, deps), delay);
+  };
+
+  // Real-time: imapflow auto-IDLEs and emits 'exists' the instant the server
+  // pushes new mail. This is the golden pattern (imapflow docs) — react to the
+  // EVENT, not to idle() resolving. The old `while { idle(); scan() }` loop only
+  // processed when idle() returned, so a server push (which fires 'exists' but
+  // does NOT resolve idle()) left fresh bookings unprocessed until reconnect.
+  client.on("exists", () => {
+    void runScan();
+  });
+  client.on("error", (err: unknown) => {
+    listenerStatus.state = "error";
+    listenerStatus.lastErrorAt = new Date().toISOString();
+    listenerStatus.lastErrorMessage = err instanceof Error ? err.message : String(err);
+    logError("doctoralia.imap.error", err, { host: config.host });
+  });
+  client.on("close", () => {
+    scheduleReconnect();
   });
 
   try {
@@ -509,32 +570,42 @@ async function connect(config: ImapConfig, deps: ImapListenerDependencies): Prom
     logEvent("doctoralia.imap.connected", { host: config.host, user: config.user });
     reconnectDelay = RECONNECT_DELAY_MS;
 
-    const lock = await client.getMailboxLock(config.mailbox);
-    try {
-      // Drain mail that arrived while the listener was down — IDLE only fires
-      // on NEW changes, so backlog would otherwise wait for an unrelated event.
-      await processUnseen(client, config, deps);
-      while (!stopped) {
-        await client.idle();
-        await processUnseen(client, config, deps);
+    // Keep the mailbox open for the life of the connection (NOT getMailboxLock,
+    // which is for short ops) so imapflow auto-IDLEs and surfaces 'exists'.
+    await client.mailboxOpen(config.mailbox);
+    // Drain mail that arrived while the listener was down (IDLE only fires on
+    // NEW changes; backlog would otherwise wait for an unrelated event). If the
+    // drain throws (transient DB/IMAP error), reconnect to retry — proceeding to
+    // IDLE would leave that backlog stuck until the next unrelated reconnect.
+    const drained = await runScan();
+    if (!drained) throw new Error("initial inbox drain failed");
+    // Kick IDLE now (imapflow also auto-IDLEs after a short delay); it
+    // auto-restarts. Then hold this function open until the socket closes or the
+    // listener is stopped — processing is driven entirely by the 'exists'
+    // handler, never by idle() resolving.
+    void client.idle().catch((idleErr: unknown) => {
+      logError("doctoralia.imap.idle_error", idleErr, { host: config.host });
+    });
+    await new Promise<void>((resolve) => {
+      if (stopped) {
+        resolve();
+        return;
       }
-    } finally {
-      lock.release();
-    }
+      const done = (): void => {
+        stopResolvers.delete(done);
+        resolve();
+      };
+      stopResolvers.add(done);
+      client.once("close", done);
+    });
   } catch (err) {
     listenerStatus.state = "error";
     listenerStatus.lastErrorAt = new Date().toISOString();
     listenerStatus.lastErrorMessage = err instanceof Error ? err.message : String(err);
     logError("doctoralia.imap.error", err, { host: config.host });
+    scheduleReconnect();
   } finally {
     await client.logout().catch(() => undefined);
-  }
-
-  if (!stopped) {
-    listenerStatus.reconnectDelayMs = reconnectDelay;
-    logEvent("doctoralia.imap.reconnect", { delayMs: reconnectDelay });
-    setTimeout(() => connect(config, deps), reconnectDelay);
-    reconnectDelay = Math.min(reconnectDelay * 2, MAX_RECONNECT_DELAY_MS);
   }
 }
 
@@ -562,4 +633,6 @@ export function startDoctoraliaImapListener(deps: ImapListenerDependencies): voi
 export function stopDoctoraliaImapListener(): void {
   stopped = true;
   listenerStatus.state = "stopped";
+  for (const resolve of stopResolvers) resolve();
+  stopResolvers.clear();
 }
