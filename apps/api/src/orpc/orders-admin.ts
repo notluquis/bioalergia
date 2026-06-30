@@ -75,6 +75,8 @@ const markFulfilledRoute = requireWrite
     const order = await markOrderFulfilled(input.id);
     await logAuditFromContext(context.hono, {
       kind: "DATA_UPDATE",
+      userId: context.user.id,
+      actorLabel: context.user.email,
       resource: "order",
       resourceId: order.id,
       outcome: "ok",
