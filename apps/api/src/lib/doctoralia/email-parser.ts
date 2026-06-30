@@ -236,14 +236,17 @@ export function parseDoctoraliaEmail(text: string): DoctoraliaBookingInfo | null
       ? "CANCELLATION"
       : "BOOKING";
 
-  // Self-scheduled by the patient. Doctoralia's current body wording is
-  // "tiene una nueva reserva de cita desde Doctoralia"; older emails said
-  // "ha reservado desde Doctoralia". Match both so a template change doesn't
-  // silently disable the abono request again.
+  // Self-scheduled by the patient. Doctoralia uses several body wordings for
+  // the same online booking, depending on patient type:
+  //   - returning:    "tiene una nueva reserva de cita desde Doctoralia"
+  //   - new patient:  "tiene un nuevo paciente que ha reservado una cita desde Doctoralia"
+  //   - older/subject:"… ha reservado desde Doctoralia"
+  // Match any line that pairs "desde Doctoralia" with a reservation word, so a
+  // new template variant can't silently disable the abono request again. The
+  // footer ("…con la aplicación de Doctoralia") lacks the reservation word, so
+  // it doesn't false-positive.
   const isAutoAppointment = lines.some(
-    (l) =>
-      /ha reservado desde doctoralia/i.test(l) ||
-      /nueva reserva de cita desde doctoralia/i.test(l)
+    (l) => /desde\s+doctoralia/i.test(l) && /reserv(a|ó|o|ado|ada)/i.test(l)
   );
   // First-visit services: "Primera visita Pediatría" OR "Primera Consulta
   // Alergólogo". Some emails also carry the explicit "primera cita de este
