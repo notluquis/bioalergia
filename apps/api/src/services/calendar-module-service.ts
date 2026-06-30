@@ -3,6 +3,7 @@ import { calendar, type calendar_v3 } from "@googleapis/calendar";
 import { GoogleAuth } from "google-auth-library";
 import { compileExcludePatterns, googleCalendarConfig } from "../lib/config.ts";
 import { joinClinicalText } from "../lib/clinical-text.ts";
+import { DomainError } from "../lib/errors.ts";
 import type { CalendarEventRecord } from "./google-calendar.ts";
 import { removeGoogleCalendarEvents, upsertGoogleCalendarEvents } from "./google-calendar-store.ts";
 import { parseCalendarMetadata } from "../lib/parsers.ts";
@@ -263,6 +264,9 @@ export class CalendarSyncService {
       deleted: string[];
     };
   }> {
+    if (!calendarId) {
+      throw new DomainError("BAD_REQUEST", `syncCalendar called without a calendarId (got: ${calendarId})`);
+    }
     // 1. Get stored syncToken
     const storedCalendar = await db.calendar.findUnique({
       where: { googleId: calendarId },
