@@ -21,6 +21,10 @@ const { mockDb, graphMock } = vi.hoisted(() => {
       update: vi.fn(),
     },
     waContact: { update: vi.fn() },
+    // sendTemplate renders the real message text from the template definition;
+    // default-undefined returns make it fall back to "[plantilla] <name>".
+    waPhoneNumber: { findUnique: vi.fn() },
+    waTemplate: { findFirst: vi.fn() },
   };
   const graphMock = {
     sendTextMessage: vi.fn(),
