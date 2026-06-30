@@ -2926,7 +2926,10 @@ app.route("/api/webhooks/onedrive", onedriveWebhookRoutes);
 app.route("/api/webhooks/meta", waCloudWebhookRoutes);
 app.route("/api/wa-cloud/media", waCloudMediaRoutes);
 app.route("/api/wa-cloud/sse", waCloudSseRoutes);
-app.route("/api/wa-cloud/flow", waCloudFlowRoutes);
+// Meta Flows data-exchange endpoint — mounted under /api/webhooks/* (NOT
+// /api/wa-cloud/*) so it's exempt from the SPA CSRF middleware; Meta's
+// server-to-server POST carries no CSRF token. Trust is the RSA/AES crypto.
+app.route("/api/webhooks/wa-flow", waCloudFlowRoutes);
 app.route("/api/icd11", icd11TokenRoutes);
 app.route("/api/certificates/medical", medicalCertificatePdfRoutes);
 app.route("/api/certificates/prescription", prescriptionPdfRoutes);
