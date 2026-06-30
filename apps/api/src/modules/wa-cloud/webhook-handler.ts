@@ -424,6 +424,9 @@ export type ProcessResult = {
   // GREEN/YELLOW/RED rating from Graph (the quality_update webhook only carries
   // tier/event, not the color), same modules→route signalling pattern.
   phoneHealthRefreshIds: number[];
+  // Inbound IMAGE WaMessage ids from a patient with a pending abono token — the
+  // route forwards them to staff as a payment receipt (services tier).
+  staffComprobanteMessageIds: number[];
 };
 
 export async function processWebhookPayload(payload: MetaWebhookPayload): Promise<ProcessResult> {
@@ -433,6 +436,7 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
     mediaMessageIds: [],
     templateSyncAccountIds: [],
     phoneHealthRefreshIds: [],
+    staffComprobanteMessageIds: [],
   };
   for (const entry of payload.entry ?? []) {
     // Meta dashboard "Send test event" / Subscribe button: entry.id === "0" with
@@ -941,6 +945,18 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
 
             // Has media → persist a durable R2 copy (route enqueues the job).
             if (mediaMime) out.mediaMessageIds.push(insertedInbound.id);
+
+            // Payment receipt: an inbound IMAGE from a patient who has a PENDING
+            // abono → forward it to the clinic staff's WhatsApp (the route uploads
+            // the media + sends the template — services tier, DAG). The staff work
+            // from WhatsApp, not the intranet, so this is how they see the proof.
+            if (msgType === "IMAGE") {
+              const pendingAbono = await db.appointmentPaymentToken.findFirst({
+                where: { patientPhone: normalizeToE164(m.from), status: "PENDING" },
+                select: { id: true },
+              });
+              if (pendingAbono) out.staffComprobanteMessageIds.push(insertedInbound.id);
+            }
 
             // Referral → tag conversation with utm-style label so staff filter
             if (r?.source_id) {

@@ -8,6 +8,7 @@ import { enqueueJob } from "../queue/runner.ts";
 import { waPersistMediaJobKey } from "../queue/tasks/wa-persist-media.ts";
 import { syncTemplates } from "../services/wa-templates.ts";
 import { getPhoneHealth } from "../services/wa-analytics.ts";
+import { notifyStaffComprobante } from "../services/abono-staff-notify.ts";
 
 function timingSafeStringEq(a: string, b: string): boolean {
   const ab = Buffer.from(a);
@@ -115,6 +116,16 @@ waCloudWebhookRoutes.post("/whatsapp", async (c) => {
       void getPhoneHealth({ phoneNumberId }).catch((err) =>
         logWarn("[wa-cloud.webhook] phone health refresh failed", {
           phoneNumberId,
+          error: err instanceof Error ? err.message : String(err),
+        })
+      );
+    }
+    // Payment receipt from a patient → forward to the clinic staff's WhatsApp
+    // (uploads media to Meta + sends the comprobante template). Fire-and-forget.
+    for (const messageId of new Set(result.staffComprobanteMessageIds)) {
+      void notifyStaffComprobante(messageId).catch((err) =>
+        logWarn("[wa-cloud.webhook] staff comprobante notify failed", {
+          messageId,
           error: err instanceof Error ? err.message : String(err),
         })
       );
