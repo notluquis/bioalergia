@@ -11,6 +11,14 @@ import { db } from "@finanzas/db";
 import { renderTemplateBody, renderTemplatePreview } from "../modules/wa-cloud/render-template.ts";
 
 async function main(): Promise<void> {
+  // Only render rows that were never rendered ("[plantilla] <name>"). Re-running
+  // is non-destructive: we intentionally do NOT re-render already-rendered rows,
+  // because the stored WaTemplate.components reflect the CURRENT template — if a
+  // template's text/buttons changed, re-rendering would rewrite historical
+  // messages to a body that was never actually sent. Going forward sendTemplate
+  // freezes the rendered body (incl. buttons) at send time. (The one-time
+  // backfill that added buttons to pre-existing rendered rows was run separately,
+  // accepting that best-effort caveat.)
   const messages = await db.waMessage.findMany({
     where: { type: "TEMPLATE", body: { startsWith: "[plantilla]" } },
     select: {
