@@ -19,6 +19,7 @@ import {
   reserveStockForOrder,
 } from "../modules/reservations/index.ts";
 import { sendAbonoConfirmation } from "../services/abono-confirmation.ts";
+import { notifyStaffCardPayment } from "../services/abono-staff-notify.ts";
 import { sendOrderConfirmationEmail } from "../services/email/transactional.ts";
 import { appendAbonoFlowHistory } from "../lib/doctoralia/abono-flow-history.ts";
 import { logError } from "../lib/logger.ts";
@@ -148,6 +149,13 @@ export function registerMercadopagoCheckoutWebhook(app: Hono) {
           } catch (e) {
             await appendAbonoFlowHistory(token.id, "wa_confirmation_failed", {}, e);
             logError("mp-webhook.abono_wa_confirm_failed", e, { tokenId: token.id });
+          }
+          // Avisar al staff por WhatsApp que entró el pago con tarjeta
+          // (best-effort, no rompe el webhook).
+          try {
+            await notifyStaffCardPayment(token.id);
+          } catch (e) {
+            logError("mp-webhook.abono_staff_notify_failed", e, { tokenId: token.id });
           }
         } else if (
           (status === "rejected" || status === "cancelled") &&

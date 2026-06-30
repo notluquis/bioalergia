@@ -90,6 +90,9 @@ type SendTemplatePayload = z.infer<typeof sendTemplateInputSchema> & {
   urlButtonSuffix?: string;
   // Location header (template with a LOCATION header component).
   locationHeader?: { latitude: string; longitude: string; name: string; address: string };
+  // Dynamic IMAGE header (template with an IMAGE header component) — pass an
+  // already-uploaded Meta media id. Used to forward a payment receipt to staff.
+  imageHeaderMediaId?: string;
 };
 type SendReactionPayload = z.infer<typeof sendReactionInputSchema>;
 type SendMediaPayload = z.infer<typeof sendMediaInputSchema> & {
@@ -211,6 +214,12 @@ export async function sendTemplate(
     components.push({
       type: "header",
       parameters: [{ type: "location", location: locationHeader }],
+    });
+  }
+  if (payload.imageHeaderMediaId) {
+    components.push({
+      type: "header",
+      parameters: [{ type: "image", image: { id: payload.imageHeaderMediaId } }],
     });
   }
   if (payload.headerParams?.length) {

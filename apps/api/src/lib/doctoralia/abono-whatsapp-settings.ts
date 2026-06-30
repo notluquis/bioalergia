@@ -183,3 +183,49 @@ export async function loadAbonoPricingSettings(): Promise<AbonoPricingSettings> 
     ),
   };
 }
+
+// Staff WhatsApp notification: the receptionists ("las chiquillas") work from
+// the clinic's WhatsApp phones (NOT the intranet), so we ping each of their
+// numbers from the Cloud number when a payment lands. Reuses the same sender
+// phoneNumberId as the abono request. Templates are UTILITY (sent any time).
+export const ABONO_STAFF_NOTIFY_SETTINGS = {
+  enabled: "doctoralia.abono.staffNotify.enabled",
+  phones: "doctoralia.abono.staffNotify.phones",
+  cardTemplateName: "doctoralia.abono.staffNotify.cardTemplateName",
+  comprobanteTemplateName: "doctoralia.abono.staffNotify.comprobanteTemplateName",
+  templateLanguage: "doctoralia.abono.staffNotify.templateLanguage",
+} as const;
+
+export type AbonoStaffNotifyConfig = {
+  enabled: boolean;
+  phones: string[];
+  cardTemplateName: string | null;
+  comprobanteTemplateName: string | null;
+  language: string | null;
+  phoneNumberId: number | null;
+};
+
+export async function loadAbonoStaffNotifyConfig(): Promise<AbonoStaffNotifyConfig> {
+  const [enabledRaw, phonesRaw, cardRaw, compRaw, langRaw, phoneIdRaw] = await Promise.all([
+    getSetting(ABONO_STAFF_NOTIFY_SETTINGS.enabled),
+    getSetting(ABONO_STAFF_NOTIFY_SETTINGS.phones),
+    getSetting(ABONO_STAFF_NOTIFY_SETTINGS.cardTemplateName),
+    getSetting(ABONO_STAFF_NOTIFY_SETTINGS.comprobanteTemplateName),
+    getSetting(ABONO_STAFF_NOTIFY_SETTINGS.templateLanguage),
+    getSetting(ABONO_WHATSAPP_SETTINGS.phoneNumberId),
+  ]);
+  // Accept comma/space/semicolon separated E.164; normalize a leading +.
+  const phones = (phonesRaw ?? "")
+    .split(/[\s,;]+/)
+    .map((p) => p.trim())
+    .filter((p) => /^\+?\d{8,15}$/.test(p))
+    .map((p) => (p.startsWith("+") ? p : `+${p}`));
+  return {
+    enabled: parseEnabled(enabledRaw),
+    phones,
+    cardTemplateName: cardRaw?.trim() || null,
+    comprobanteTemplateName: compRaw?.trim() || null,
+    language: langRaw?.trim() || null,
+    phoneNumberId: parsePhoneNumberId(phoneIdRaw),
+  };
+}
