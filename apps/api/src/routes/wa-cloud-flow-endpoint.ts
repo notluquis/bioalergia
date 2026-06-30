@@ -27,6 +27,7 @@ async function loadPrivateKey(): Promise<string | null> {
 
 // Decide the next screen + data for a non-ping action. Phase 1 returns a
 // terminal acknowledgement; later phases route the intake screens + persist.
+// Every response MUST echo the request `version` (Meta requirement).
 function handleAction(request: FlowRequest): Record<string, unknown> {
   if (request.action === "INIT") {
     // First screen of the flow. Real screens are added with the Flow JSON.
@@ -34,6 +35,17 @@ function handleAction(request: FlowRequest): Record<string, unknown> {
   }
   // data_exchange / BACK — acknowledge for now.
   return { screen: "SUCCESS", data: { extension_message_response: { params: {} } } };
+}
+
+function buildResponse(request: FlowRequest): Record<string, unknown> {
+  const version = request.version ?? "3.0";
+  // Health check.
+  if (request.action === "ping") return { version, data: { status: "active" } };
+  // Client-side error notification — just acknowledge.
+  if ((request.data as { error?: unknown } | undefined)?.error) {
+    return { version, data: { acknowledged: true } };
+  }
+  return { version, ...handleAction(request) };
 }
 
 export const waCloudFlowRoutes = new Hono();
@@ -67,10 +79,7 @@ waCloudFlowRoutes.post("/", async (c) => {
   }
 
   try {
-    const response =
-      request.action === "ping"
-        ? { data: { status: "active" } }
-        : handleAction(request);
+    const response = buildResponse(request);
     logEvent("wa-flow.endpoint.handled", { action: request.action, screen: request.screen });
     c.header("Content-Type", "text/plain");
     return c.text(encryptFlowResponse(response, aesKey, iv));
