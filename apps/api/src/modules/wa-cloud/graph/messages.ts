@@ -1,8 +1,26 @@
 import { getAccountForPhoneNumber, graphPost, requireSystemUserToken } from "./_http.ts";
 
+// Build the Meta recipient field. Normally we address a contact by phone (`to`).
+// For username-only WhatsApp users (phone hidden behind a username, Meta 2026)
+// we have no phone — address them by their business-scoped user ID via
+// `recipient` instead. Meta: if both `to` and `recipient` are present, `to`
+// wins; we send whichever identifier we actually have, phone first.
+// Docs: https://developers.facebook.com/docs/whatsapp/cloud-api/guides/send-messages/
+export function buildRecipient(
+  toE164: string | null | undefined,
+  recipientBsuid?: string | null
+): { to: string } | { recipient: string } {
+  const phone = toE164?.trim();
+  if (phone) return { to: phone.replace(/^\+/, "") };
+  if (recipientBsuid?.trim()) return { recipient: recipientBsuid.trim() };
+  throw new Error("Destinatario sin teléfono ni BSUID");
+}
+
 export type SendTextInput = {
   phoneNumberId: number;
   toE164: string;
+  // BSUID fallback for username-only contacts (no phone). See buildRecipient.
+  recipientBsuid?: string | null;
   body: string;
   // Render a link preview card for the first URL in the body (Meta default off).
   previewUrl?: boolean;
@@ -17,7 +35,7 @@ export async function sendTextMessage(input: SendTextInput) {
   const payload: Record<string, unknown> = {
     messaging_product: "whatsapp",
     recipient_type: "individual",
-    to: input.toE164.replace(/^\+/, ""),
+    ...buildRecipient(input.toE164, input.recipientBsuid),
     type: "text",
     text: { body: input.body, preview_url: input.previewUrl ?? false },
   };
@@ -92,6 +110,8 @@ export type TemplateComponentInput = TemplateComponentBase | TemplateCarouselCom
 export type SendTemplateInput = {
   phoneNumberId: number;
   toE164: string;
+  // BSUID fallback for username-only contacts (no phone). See buildRecipient.
+  recipientBsuid?: string | null;
   templateName: string;
   language: string;
   components?: TemplateComponentInput[];
@@ -105,7 +125,7 @@ export async function sendTemplateMessage(input: SendTemplateInput) {
   const payload: Record<string, unknown> = {
     messaging_product: "whatsapp",
     recipient_type: "individual",
-    to: input.toE164.replace(/^\+/, ""),
+    ...buildRecipient(input.toE164, input.recipientBsuid),
     type: "template",
     template: {
       name: input.templateName,

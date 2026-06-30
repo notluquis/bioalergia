@@ -152,6 +152,7 @@ export async function sendText(
   const apiResp = await sendTextMessage({
     phoneNumberId: payload.phoneNumberId,
     toE164: conv.contact.phoneE164,
+    recipientBsuid: conv.contact.bsuid,
     body: payload.body,
     previewUrl: payload.previewUrl,
     contextMessageId: payload.contextMetaMessageId,
@@ -303,6 +304,7 @@ export async function sendTemplate(
   const apiResp = await sendTemplateMessage({
     phoneNumberId: payload.phoneNumberId,
     toE164: conv.contact.phoneE164,
+    recipientBsuid: conv.contact.bsuid,
     templateName: payload.templateName,
     language: payload.language,
     components: components as never,
