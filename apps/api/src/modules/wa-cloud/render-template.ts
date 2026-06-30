@@ -67,31 +67,97 @@ function substitute(text: string, params: MetaParam[]): string {
  * template has no text body to render (e.g. media-only templates) so the caller
  * can fall back to the template name.
  */
+type TemplateButton = {
+  type?: string;
+  text?: string;
+  url?: string;
+  phone_number?: string;
+};
+
+function findButtons(templateComponents: unknown): TemplateButton[] {
+  if (!Array.isArray(templateComponents)) return [];
+  for (const c of templateComponents) {
+    if (isObject(c) && typeof c.type === "string" && c.type.toUpperCase() === "BUTTONS") {
+      const btns = (c as { buttons?: unknown }).buttons;
+      return Array.isArray(btns) ? (btns as TemplateButton[]) : [];
+    }
+  }
+  return [];
+}
+
+// The sent `button` components carry per-button dynamic values (e.g. a URL
+// button's {{1}} suffix), keyed by their `index`. Returns the first text param.
+function sentButtonParam(sentComponents: unknown, index: number): string | null {
+  if (!Array.isArray(sentComponents)) return null;
+  for (const c of sentComponents) {
+    if (!isObject(c) || typeof c.type !== "string" || c.type.toLowerCase() !== "button") continue;
+    if (Number((c as { index?: unknown }).index ?? 0) !== index) continue;
+    const params = (c as { parameters?: MetaParam[] }).parameters;
+    const text = Array.isArray(params) ? params[0]?.text : undefined;
+    return typeof text === "string" ? text : null;
+  }
+  return null;
+}
+
+// Render the template's action buttons as readable lines so the inbox shows them
+// (WhatsApp displays them as tappable; our internal inbox lists them). Resolves a
+// URL button's {{1}} from the sent param so the operator sees the real link.
+function renderButtons(templateComponents: unknown, sentComponents: unknown): string | null {
+  const buttons = findButtons(templateComponents);
+  if (buttons.length === 0) return null;
+  const lines = buttons
+    .map((b, i) => {
+      const label = (b.text ?? "").trim();
+      switch ((b.type ?? "").toUpperCase()) {
+        case "URL": {
+          const url = (b.url ?? "").replace("{{1}}", sentButtonParam(sentComponents, i) ?? "");
+          return `🔗 ${label || "Enlace"}: ${url}`.trim();
+        }
+        case "PHONE_NUMBER":
+          return `📞 ${label || "Llamar"}: ${b.phone_number ?? ""}`.trim();
+        case "COPY_CODE":
+          return `📋 ${label || "Copiar código"}`;
+        case "QUICK_REPLY":
+          return label ? `↩️ ${label}` : "";
+        case "FLOW":
+          return `📝 ${label || "Abrir formulario"}`;
+        default:
+          return label ? `• ${label}` : "";
+      }
+    })
+    .filter((l) => l.trim());
+  return lines.length > 0 ? lines.join("\n") : null;
+}
+
+// Header + body only (params substituted) — shared by the full render and the
+// one-line preview.
+function renderHeaderBody(templateComponents: unknown, sentComponents: unknown): string | null {
+  const bodyText = findBodyText(templateComponents);
+  if (bodyText === null) return null;
+  const rendered = substitute(bodyText, componentParams(sentComponents, "body"));
+  // The text header (e.g. "Bioalergia · Dr. …") can itself be dynamic ({{1}}) —
+  // substitute its params too, else it would persist as "Hola {{1}}".
+  const headerText = findHeaderText(templateComponents);
+  if (!headerText) return rendered;
+  return `${substitute(headerText, componentParams(sentComponents, "header"))}\n\n${rendered}`;
+}
+
 export function renderTemplateBody(
   templateComponents: unknown,
   sentComponents: unknown
 ): string | null {
-  const bodyText = findBodyText(templateComponents);
-  if (bodyText === null) return null;
-
-  const rendered = substitute(bodyText, componentParams(sentComponents, "body"));
-
-  // Prefix the text header (e.g. "Bioalergia · Dr. …") when present, so the
-  // bubble reads like the real WhatsApp message. The header can itself be a
-  // dynamic text header ({{1}}) — substitute its params too, else it would
-  // persist as "Hola {{1}}".
-  const headerText = findHeaderText(templateComponents);
-  if (!headerText) return rendered;
-  const renderedHeader = substitute(headerText, componentParams(sentComponents, "header"));
-  return `${renderedHeader}\n\n${rendered}`;
+  const text = renderHeaderBody(templateComponents, sentComponents);
+  if (text === null) return null;
+  const buttons = renderButtons(templateComponents, sentComponents);
+  return buttons ? `${text}\n\n${buttons}` : text;
 }
 
-/** One-line preview for the conversation list (newlines collapsed, trimmed). */
+/** One-line preview for the conversation list (body only, no buttons). */
 export function renderTemplatePreview(
   templateComponents: unknown,
   sentComponents: unknown
 ): string | null {
-  const full = renderTemplateBody(templateComponents, sentComponents);
-  if (full === null) return null;
-  return full.replace(/\s*\n\s*/g, " ").trim().slice(0, 200);
+  const text = renderHeaderBody(templateComponents, sentComponents);
+  if (text === null) return null;
+  return text.replace(/\s*\n\s*/g, " ").trim().slice(0, 200);
 }

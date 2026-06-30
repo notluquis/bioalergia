@@ -21,6 +21,7 @@ const SENT_NAMED = [
       { type: "text", parameter_name: "particular_total", text: "$60.000" },
     ],
   },
+  { type: "button", sub_type: "url", index: 0, parameters: [{ type: "text", text: "tok123" }] },
 ];
 
 describe("renderTemplateBody", () => {
@@ -28,7 +29,8 @@ describe("renderTemplateBody", () => {
     const out = renderTemplateBody(ABONO_TEMPLATE, SENT_NAMED);
     expect(out).toBe(
       "Bioalergia · Dr. José Manuel Martínez\n\n" +
-        "Hola EMILIANO PALMA 👋 tu cita es el Miércoles 1 de julio a las 11:45 en Av. Prat 199. FONASA $50.000 / Particular $60.000."
+        "Hola EMILIANO PALMA 👋 tu cita es el Miércoles 1 de julio a las 11:45 en Av. Prat 199. FONASA $50.000 / Particular $60.000." +
+        "\n\n🔗 Pagar: https://x/abono/tok123"
     );
     expect(out).not.toContain("{{");
   });
@@ -60,6 +62,34 @@ describe("renderTemplateBody", () => {
       { type: "body", parameters: [{ text: "Ana" }] },
     ];
     expect(renderTemplateBody(tpl, sent)).toBe("Pedido #A-42\n\nHola Ana");
+  });
+
+  it("renders URL/phone/quick-reply buttons (URL {{1}} resolved from sent param)", () => {
+    const tpl = [
+      { type: "BODY", text: "Hola" },
+      {
+        type: "BUTTONS",
+        buttons: [
+          { type: "URL", text: "Pagar", url: "https://x/{{1}}" },
+          { type: "PHONE_NUMBER", text: "Llamar", phone_number: "+5699" },
+          { type: "QUICK_REPLY", text: "Cancelar" },
+        ],
+      },
+    ];
+    const sent = [
+      { type: "button", sub_type: "url", index: 0, parameters: [{ type: "text", text: "abc" }] },
+    ];
+    expect(renderTemplateBody(tpl, sent)).toBe(
+      "Hola\n\n🔗 Pagar: https://x/abc\n📞 Llamar: +5699\n↩️ Cancelar"
+    );
+  });
+
+  it("preview excludes buttons", () => {
+    const tpl = [
+      { type: "BODY", text: "Cuerpo" },
+      { type: "BUTTONS", buttons: [{ type: "URL", text: "Ir", url: "https://x" }] },
+    ];
+    expect(renderTemplatePreview(tpl, [])).toBe("Cuerpo");
   });
 
   it("tolerates missing params (leaves nothing rendered, no crash)", () => {

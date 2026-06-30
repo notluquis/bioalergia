@@ -11,8 +11,11 @@ import { db } from "@finanzas/db";
 import { renderTemplateBody, renderTemplatePreview } from "../modules/wa-cloud/render-template.ts";
 
 async function main(): Promise<void> {
+  // Re-render ALL template messages (idempotent): catches the original
+  // "[plantilla] <name>" rows AND already-rendered rows that predate later
+  // render improvements (e.g. now including the action buttons).
   const messages = await db.waMessage.findMany({
-    where: { type: "TEMPLATE", body: { startsWith: "[plantilla]" } },
+    where: { type: "TEMPLATE" },
     select: {
       id: true,
       conversationId: true,
