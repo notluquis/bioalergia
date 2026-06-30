@@ -38,3 +38,21 @@ export async function markOrderFulfilled(id: number): Promise<OrderDetail> {
     throw toOrdersAdminApiError(error);
   }
 }
+
+export async function cancelOrder(id: number): Promise<OrderDetail> {
+  try {
+    const res = orderDetailResponseSchema.parse(await ordersAdminORPCClient.cancel({ id }));
+    return res.data;
+  } catch (error) {
+    throw toOrdersAdminApiError(error);
+  }
+}
+
+export async function refundOrder(id: number): Promise<OrderDetail> {
+  try {
+    const res = orderDetailResponseSchema.parse(await ordersAdminORPCClient.refund({ id }));
+    return res.data;
+  } catch (error) {
+    throw toOrdersAdminApiError(error);
+  }
+}

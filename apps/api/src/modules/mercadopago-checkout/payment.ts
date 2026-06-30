@@ -8,7 +8,7 @@
 //   3. The webhook (payment notification, `refetchPayment`) lands later with the
 //      authoritative status and maps back via `external_reference = orderId`.
 
-import { MercadoPagoConfig, Payment, Preference } from "mercadopago";
+import { MercadoPagoConfig, Payment, PaymentRefund, Preference } from "mercadopago";
 
 function getAccessToken(): string {
   const token = process.env.MP_ACCESS_TOKEN ?? process.env.MERCADOPAGO_ACCESS_TOKEN;
@@ -85,6 +85,13 @@ export async function createCheckoutPreference(
 export async function refetchPayment(paymentId: string | number) {
   const payment = new Payment(client());
   return await payment.get({ id: String(paymentId) });
+}
+
+/** Full refund of an approved payment. `paymentId` is the MP payment id stored
+ *  as `providerPaymentId` after approval. */
+export async function refundPayment(paymentId: string): Promise<void> {
+  const refund = new PaymentRefund(client());
+  await refund.create({ payment_id: Number(paymentId) });
 }
 
 // Webhook signature verification moved to MercadoPago SDK's

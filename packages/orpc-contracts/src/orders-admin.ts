@@ -76,6 +76,14 @@ export const ordersAdminContract = {
     .route({ method: "POST", path: "/orders/fulfill" })
     .input(orderIdInputSchema)
     .output(orderDetailResponseSchema),
+  cancel: oc
+    .route({ method: "POST", path: "/orders/cancel" })
+    .input(orderIdInputSchema)
+    .output(orderDetailResponseSchema),
+  refund: oc
+    .route({ method: "POST", path: "/orders/refund" })
+    .input(orderIdInputSchema)
+    .output(orderDetailResponseSchema),
 };
 
 export type OrdersAdminContract = typeof ordersAdminContract;

@@ -91,6 +91,24 @@ export async function consumeReservations(orderId: number): Promise<void> {
   });
 }
 
+/** Return a paid order's items to stock on refund (reservations are already
+ *  CONSUMED). Caller must guard against double-calling via the order status
+ *  (REFUNDED is terminal), since this unconditionally increments availableQty. */
+export async function restockOrderItems(orderId: number): Promise<void> {
+  await db.$transaction(async (tx) => {
+    const items = await tx.orderItem.findMany({
+      where: { orderId },
+      select: { productId: true, qty: true },
+    });
+    for (const it of items) {
+      await tx.product.update({
+        where: { id: it.productId },
+        data: { availableQty: { increment: it.qty }, version: { increment: 1 } },
+      });
+    }
+  });
+}
+
 export async function releaseReservations(orderId: number): Promise<void> {
   // Re-incrementa stock y marca como RELEASED. Flip-first per row (lock the
   // reservation row before the product) to match the sweep/lazy-cleanup lock
