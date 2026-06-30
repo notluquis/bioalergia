@@ -87,7 +87,14 @@ export async function notifyStaffCardPayment(tokenId: string): Promise<void> {
  */
 export async function notifyStaffComprobante(waMessageId: number): Promise<void> {
   const cfg = await loadAbonoStaffNotifyConfig();
-  if (!cfg.enabled || cfg.phones.length === 0 || !cfg.comprobanteTemplateName) return;
+  if (
+    !cfg.enabled ||
+    cfg.phones.length === 0 ||
+    !cfg.comprobanteTemplateName ||
+    cfg.phoneNumberId == null
+  ) {
+    return;
+  }
 
   const msg = await db.waMessage.findUnique({
     where: { id: waMessageId },
@@ -100,12 +107,16 @@ export async function notifyStaffComprobante(waMessageId: number): Promise<void>
   });
   if (!msg?.contact?.phoneE164) return;
 
-  // Most recent pending abono for this patient (matched by phone).
-  const token = await db.appointmentPaymentToken.findFirst({
+  // Pending abonos for this patient (matched by phone). If more than one, we
+  // can't tell which appointment the receipt is for — forward the image with an
+  // explicit "verify which" note instead of guessing a wrong patient/date.
+  const pending = await db.appointmentPaymentToken.findMany({
     where: { patientPhone: msg.contact.phoneE164, status: "PENDING" },
     orderBy: { createdAt: "desc" },
   });
+  const token = pending[0];
   if (!token) return;
+  const ambiguous = pending.length > 1;
 
   const metaMediaId = (msg.payload as { image?: { id?: string } } | null)?.image?.id;
   const account = await db.waPhoneNumber.findUnique({
@@ -118,8 +129,10 @@ export async function notifyStaffComprobante(waMessageId: number): Promise<void>
   try {
     const { bytes, mimeType } = await downloadMediaBytes(metaMediaId, account.accountId);
     const mime = msg.mediaMimeType ?? mimeType;
+    // Upload under the SENDING phone (cfg.phoneNumberId) — a Meta media id is
+    // scoped to the phone it's uploaded to, and fanout sends from cfg.phoneNumberId.
     const uploaded = await uploadMedia(
-      msg.phoneNumberId,
+      cfg.phoneNumberId,
       new Blob([bytes] as BlobPart[], { type: mime }),
       mime,
       "comprobante"
@@ -134,11 +147,16 @@ export async function notifyStaffComprobante(waMessageId: number): Promise<void>
     cfg,
     cfg.comprobanteTemplateName,
     [
-      { name: "paciente", text: token.patientName },
-      { name: "fecha", text: fechaCita(token.appointmentDate) },
+      {
+        name: "paciente",
+        text: ambiguous
+          ? "⚠️ Varios abonos pendientes de este número — verifica cuál"
+          : token.patientName,
+      },
+      { name: "fecha", text: ambiguous ? "—" : fechaCita(token.appointmentDate) },
     ],
     imageHeaderMediaId
   );
-  await appendAbonoFlowHistory(token.id, "staff_notified_comprobante", { sent });
+  await appendAbonoFlowHistory(token.id, "staff_notified_comprobante", { sent, ambiguous });
   logEvent("abono.staff_notify.comprobante", { tokenId: token.id, waMessageId, sent });
 }
