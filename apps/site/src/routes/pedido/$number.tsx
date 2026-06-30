@@ -8,15 +8,24 @@ import { Eyebrow } from "@/components/ui/Eyebrow";
 import { CLP_FORMATTER } from "@/features/shop/lib/shop-config";
 import { checkoutClient } from "@/lib/orpc-client";
 
-const searchSchema = z.object({ email: z.string().email() });
+// Prefer the opaque `token` (no email/PII in the URL); accept `email` for links
+// issued before the token existed.
+const searchSchema = z
+  .object({ token: z.string().optional(), email: z.string().email().optional() })
+  .refine((s) => Boolean(s.token) || Boolean(s.email));
 
 function PedidoPage() {
   const { number } = Route.useParams();
-  const { email } = Route.useSearch();
+  const { token, email } = Route.useSearch();
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ["order-status", number, email],
-    queryFn: () => checkoutClient.status({ order_number: number, email }),
+    queryKey: ["order-status", number, token ?? email],
+    queryFn: () =>
+      checkoutClient.status({
+        order_number: number,
+        ...(token ? { token } : {}),
+        ...(email ? { email } : {}),
+      }),
     refetchInterval: (q) =>
       q.state.data?.data.status === "PAID" || q.state.data?.data.status === "CANCELLED"
         ? false

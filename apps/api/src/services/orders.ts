@@ -1,4 +1,5 @@
 import { db } from "@finanzas/db";
+import { randomUUID } from "node:crypto";
 import { DomainError } from "../lib/errors.ts";
 
 function generateOrderNumber(): string {
@@ -41,6 +42,7 @@ export async function createOrderFromCart(input: CreateOrderInput) {
   return await db.order.create({
     data: {
       number: generateOrderNumber(),
+      accessToken: randomUUID(),
       cartId: cart.id,
       customerEmail: input.customerEmail,
       customerName: input.customerName,
@@ -87,13 +89,22 @@ export async function attachDteToOrder(orderId: number, dte: { folio: string; ty
   });
 }
 
-export async function getOrderByNumber(number: string, email: string) {
+export async function getOrderByNumber(
+  number: string,
+  lookup: { token?: string; email?: string }
+) {
   const order = await db.order.findUnique({
     where: { number },
     include: { items: true, payments: true },
   });
-  if (!order || order.customerEmail.toLowerCase() !== email.toLowerCase()) {
-    return null;
+  if (!order) return null;
+  // Prefer the opaque token (no PII in the URL); fall back to the email match
+  // for links issued before the token existed.
+  if (lookup.token) {
+    return order.accessToken && order.accessToken === lookup.token ? order : null;
   }
-  return order;
+  if (lookup.email && order.customerEmail.toLowerCase() === lookup.email.toLowerCase()) {
+    return order;
+  }
+  return null;
 }

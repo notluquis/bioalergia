@@ -16941,6 +16941,12 @@ export class SchemaType implements SchemaDef {
                     unique: true,
                     optional: true
                 },
+                accessToken: {
+                    name: "accessToken",
+                    type: "String",
+                    unique: true,
+                    optional: true
+                },
                 dteFolio: {
                     name: "dteFolio",
                     type: "String",
@@ -16996,7 +17002,8 @@ export class SchemaType implements SchemaDef {
             uniqueFields: {
                 id: { type: "Int" },
                 number: { type: "String" },
-                mlOrderId: { type: "String" }
+                mlOrderId: { type: "String" },
+                accessToken: { type: "String" }
             }
         },
         OrderItem: {

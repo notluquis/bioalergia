@@ -75,10 +75,17 @@ export const checkoutStartResponseSchema = z.object({
   status: z.literal("ok"),
 });
 
-export const checkoutStatusInputSchema = z.object({
-  order_number: z.string(),
-  email: z.string().email(),
-});
+export const checkoutStatusInputSchema = z
+  .object({
+    order_number: z.string(),
+    // Opaque token (preferred, no PII in URL) or the customer email (legacy
+    // links). One is required.
+    token: z.string().optional(),
+    email: z.string().email().optional(),
+  })
+  .refine((d) => Boolean(d.token) || Boolean(d.email), {
+    message: "Se requiere token o email",
+  });
 
 export const checkoutStatusResponseSchema = z.object({
   data: z.object({

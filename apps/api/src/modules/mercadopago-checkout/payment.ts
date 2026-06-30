@@ -31,6 +31,7 @@ export type CheckoutPreferenceInput = {
   orderId: number;
   orderNumber: string;
   customerEmail: string;
+  accessToken?: string | null;
   shippingClp: number;
   items: Array<{ sku: string; title: string; qty: number; unitPriceClp: number }>;
 };
@@ -44,9 +45,10 @@ export type CheckoutPreferenceInput = {
 export async function createCheckoutPreference(
   input: CheckoutPreferenceInput
 ): Promise<{ preferenceId: string; initPoint: string }> {
-  const backUrl = `${getStoreUrl()}/pedido/${input.orderNumber}?email=${encodeURIComponent(
-    input.customerEmail
-  )}`;
+  // Token-based status link (no email/PII in the URL); fall back to email.
+  const backUrl = input.accessToken
+    ? `${getStoreUrl()}/pedido/${input.orderNumber}?token=${encodeURIComponent(input.accessToken)}`
+    : `${getStoreUrl()}/pedido/${input.orderNumber}?email=${encodeURIComponent(input.customerEmail)}`;
   const items = input.items.map((it) => ({
     id: it.sku,
     title: it.title,
