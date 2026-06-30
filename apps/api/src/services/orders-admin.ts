@@ -45,6 +45,7 @@ function mapDetail(o: OrderWithItems): OrderDetail {
     subtotal_clp: o.subtotalClp,
     shipping_clp: o.shippingClp,
     shipping_address: o.shippingAddress ?? null,
+    cx_ot_number: o.cxOtNumber,
     dte_folio: o.dteFolio,
     dte_type: o.dteType,
     notes: o.notes,

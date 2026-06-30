@@ -6569,6 +6569,11 @@ model Order {
   // Opaque per-order token for the public status page, so the link carries no
   // email (PII) in the URL. Nullable for orders created before this column.
   accessToken       String?             @unique @map("access_token")
+  // Chilexpress transport order (OT) auto-created when a chilexpress order is paid.
+  cxOtNumber        String?             @unique @map("cx_ot_number")
+  cxBarcode         String?             @map("cx_barcode")
+  cxLabelBase64     String?             @map("cx_label_base64") @db.Text
+  cxLabelType       Int?                @map("cx_label_type")
   dteFolio          String?             @map("dte_folio")
   dteType           String?             @map("dte_type")
   notes             String?

@@ -37,6 +37,8 @@ export const orderDetailSchema = orderSummarySchema.extend({
   shipping_clp: z.number().int(),
   // Chilexpress address JSON ({ street, city, region }) or null for pickup.
   shipping_address: z.unknown().nullable(),
+  // Chilexpress transport-order number, set once the OT is auto-created on payment.
+  cx_ot_number: z.string().nullable(),
   notes: z.string().nullable(),
   items: z.array(orderItemSchema),
 });

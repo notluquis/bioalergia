@@ -178,6 +178,7 @@ const startRoute = base
     // Shipping fee is computed server-side: re-quote Chilexpress and charge the
     // chosen service (fall back to the cheapest), so the amount can't be forged.
     let shippingClp = 0;
+    let chosenServiceCode: string | undefined;
     if (input.shipping.method === "chilexpress") {
       // Capture the narrowed variant in a const: TS resets property-access
       // narrowing across the `await` below, widening `input.shipping` back.
@@ -190,6 +191,7 @@ const startRoute = base
         });
       }
       shippingClp = chosen.shipping_clp;
+      chosenServiceCode = chosen.service_code;
     }
 
     const order = await createOrderFromCart({
@@ -200,7 +202,12 @@ const startRoute = base
       customerPhone: input.customer.phone ?? null,
       billingType: input.billing_type,
       shippingClp,
-      shippingAddress: input.shipping.method === "chilexpress" ? input.shipping.address : null,
+      // Persist the chosen Chilexpress service code alongside the structured
+      // address so the OT can be auto-created on payment without re-quoting.
+      shippingAddress:
+        input.shipping.method === "chilexpress"
+          ? { ...input.shipping.address, service_code: chosenServiceCode }
+          : null,
       notes: input.notes ?? null,
     });
 

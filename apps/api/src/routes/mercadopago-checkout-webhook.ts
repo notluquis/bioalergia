@@ -21,6 +21,7 @@ import {
 import { sendAbonoConfirmation } from "../services/abono-confirmation.ts";
 import { notifyStaffCardPayment } from "../services/abono-staff-notify.ts";
 import { sendOrderConfirmationEmail } from "../services/email/transactional.ts";
+import { createOrderShipment } from "../services/shipments.ts";
 import { appendAbonoFlowHistory } from "../lib/doctoralia/abono-flow-history.ts";
 import { logError } from "../lib/logger.ts";
 import { attachDteToOrder, markOrderPaid } from "../services/orders.ts";
@@ -340,6 +341,58 @@ export function registerMercadopagoCheckoutWebhook(app: Hono) {
           }
         } catch (e) {
           console.error("[mp-webhook] ML stock push failed", e);
+        }
+
+        // Auto-create the Chilexpress OT for home-delivery orders (best-effort,
+        // idempotent: skip if one already exists). The structured address +
+        // service code were captured + persisted at checkout.
+        try {
+          const order = await db.order.findUnique({
+            where: { id: orderId },
+            include: { items: true },
+          });
+          const addr = order?.shippingAddress as {
+            street?: string;
+            street_number?: string;
+            county_code?: string;
+            service_code?: string;
+          } | null;
+          if (
+            order &&
+            !order.cxOtNumber &&
+            addr?.county_code &&
+            addr.service_code &&
+            addr.street &&
+            addr.street_number
+          ) {
+            const totalGrams = order.items.reduce(
+              (acc: number, i: (typeof order.items)[number]) => acc + 250 * i.qty,
+              0
+            );
+            const ot = await createOrderShipment({
+              orderNumber: order.number,
+              streetName: addr.street,
+              streetNumber: addr.street_number,
+              countyCoverageCode: addr.county_code,
+              serviceTypeCode: addr.service_code,
+              recipientName: order.customerName,
+              recipientPhone: (order.customerPhone ?? "").replace(/\D/g, "") || "000000000",
+              recipientEmail: order.customerEmail,
+              declaredValueClp: order.totalClp,
+              weightKg: Math.max(0.3, totalGrams / 1000),
+            });
+            await db.order.update({
+              where: { id: orderId },
+              data: {
+                cxOtNumber: ot.otNumber,
+                cxBarcode: ot.barcode,
+                cxLabelBase64: ot.labelBase64,
+                cxLabelType: ot.labelType,
+              },
+            });
+          }
+        } catch (e) {
+          logError("mp-webhook.auto_ot_failed", e, { orderId });
         }
       } else if (status === "cancelled") {
         // Only a terminal cancel frees stock. A `rejected` attempt is retryable on
