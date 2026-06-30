@@ -45,6 +45,7 @@ import {
   uploadMedia,
 } from "../modules/wa-cloud/graph-client.ts";
 import { loadClinicLocation } from "../lib/doctoralia/abono-whatsapp-settings.ts";
+import { renderTemplateBody, renderTemplatePreview } from "../modules/wa-cloud/render-template.ts";
 
 export async function getWaMessagesForExport(conversationId: number) {
   return db.waMessage.findMany({
@@ -308,7 +309,27 @@ export async function sendTemplate(
   });
   const metaId = apiResp.messages?.[0]?.id ?? null;
   const now = new Date();
-  const preview = `[plantilla] ${payload.templateName}`;
+  // Render the real message text (params substituted) so the inbox shows the
+  // ACTUAL message, not "[plantilla] <name>". Meta never echoes our own sends,
+  // so we reconstruct it from the template definition + the params we just sent.
+  // Falls back to the template name for media-only or unsynced templates.
+  const tplPhone = await db.waPhoneNumber.findUnique({
+    where: { id: payload.phoneNumberId },
+    select: { accountId: true },
+  });
+  const tpl = tplPhone
+    ? await db.waTemplate.findFirst({
+        where: {
+          accountId: tplPhone.accountId,
+          name: payload.templateName,
+          language: payload.language,
+        },
+        select: { components: true },
+      })
+    : null;
+  const fallback = `[plantilla] ${payload.templateName}`;
+  const body = (tpl && renderTemplateBody(tpl.components, components)) || fallback;
+  const preview = (tpl && renderTemplatePreview(tpl.components, components)) || fallback;
   const message = await db.waMessage.create({
     data: {
       conversationId: conv.id,
@@ -318,7 +339,7 @@ export async function sendTemplate(
       direction: "OUTBOUND",
       type: "TEMPLATE",
       status: "SENT",
-      body: preview,
+      body,
       templateName: payload.templateName,
       templateLanguage: payload.language,
       sentByUserId,

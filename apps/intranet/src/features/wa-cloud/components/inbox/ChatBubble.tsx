@@ -243,15 +243,32 @@ export function ChatBubble({
           ) : row.type === "UNSUPPORTED" ? (
             <UnsupportedBubble payload={row.payload as Record<string, unknown> | null} />
           ) : row.type === "TEMPLATE" ? (
-            <div className="flex items-center gap-1.5">
-              <MessageSquareText
-                size={14}
-                className={`shrink-0 ${out ? "text-success-foreground/70" : "text-default-400"}`}
-              />
-              <span className="break-words text-sm leading-snug">
-                {row.templateName ?? "Plantilla"}
-              </span>
-            </div>
+            row.body && !row.body.startsWith("[plantilla]") ? (
+              // Rendered template text (params substituted) — show the actual
+              // message, with the template name as a small caption for context.
+              <div className="flex flex-col gap-1">
+                <span
+                  className={`inline-flex items-center gap-1 text-[11px] ${
+                    out ? "text-success-foreground/70" : "text-default-400"
+                  }`}
+                >
+                  <MessageSquareText size={12} className="shrink-0" />
+                  {row.templateName ?? "Plantilla"}
+                </span>
+                <p className="whitespace-pre-wrap break-words text-sm leading-snug">{row.body}</p>
+              </div>
+            ) : (
+              // Fallback: template not yet rendered (old message / media-only).
+              <div className="flex items-center gap-1.5">
+                <MessageSquareText
+                  size={14}
+                  className={`shrink-0 ${out ? "text-success-foreground/70" : "text-default-400"}`}
+                />
+                <span className="break-words text-sm leading-snug">
+                  {row.templateName ?? "Plantilla"}
+                </span>
+              </div>
+            )
           ) : isMedia && (row.messageId || row.localPreviewUrl) ? (
             <MediaAttachment
               messageId={row.messageId}
