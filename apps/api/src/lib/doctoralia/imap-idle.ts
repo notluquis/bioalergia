@@ -487,34 +487,6 @@ async function processUnseen(
   }
 }
 
-// Serialize processUnseen so overlapping triggers (the initial drain + rapid
-// 'exists' events) never run concurrently. If a trigger lands mid-scan, queue a
-// single re-run so a late email isn't missed. DB @unique constraints already
-// make double-processing safe; this just avoids the wasted work + error noise.
-let scanRunning = false;
-let scanQueued = false;
-async function runScan(
-  client: ImapFlow,
-  config: ImapConfig,
-  deps: ImapListenerDependencies
-): Promise<void> {
-  if (scanRunning) {
-    scanQueued = true;
-    return;
-  }
-  scanRunning = true;
-  try {
-    do {
-      scanQueued = false;
-      await processUnseen(client, config, deps);
-    } while (scanQueued && !stopped);
-  } catch (err) {
-    logError("doctoralia.imap.process_error", err, { host: config.host });
-  } finally {
-    scanRunning = false;
-  }
-}
-
 async function connect(config: ImapConfig, deps: ImapListenerDependencies): Promise<void> {
   if (stopped) return;
 
@@ -528,6 +500,36 @@ async function connect(config: ImapConfig, deps: ImapListenerDependencies): Prom
     port: config.port,
     secure: config.secure,
   });
+
+  // Serialize processUnseen so overlapping triggers (the initial drain + rapid
+  // 'exists' events) never run concurrently. If a trigger lands mid-scan, queue
+  // a single re-run so a late email isn't missed. State is scoped to THIS
+  // connection (closure, not module-global) so a slow scan on a dead connection
+  // can't swallow a fresh connection's drain after reconnect, nor run a queued
+  // rerun against the wrong client. Returns false if a scan threw, so the caller
+  // (initial drain) can force a reconnect instead of proceeding to IDLE.
+  let scanRunning = false;
+  let scanQueued = false;
+  const runScan = async (): Promise<boolean> => {
+    if (scanRunning) {
+      scanQueued = true;
+      return true;
+    }
+    scanRunning = true;
+    let ok = true;
+    try {
+      do {
+        scanQueued = false;
+        await processUnseen(client, config, deps);
+      } while (scanQueued && !stopped);
+    } catch (err) {
+      ok = false;
+      logError("doctoralia.imap.process_error", err, { host: config.host });
+    } finally {
+      scanRunning = false;
+    }
+    return ok;
+  };
 
   let reconnectScheduled = false;
   const scheduleReconnect = (): void => {
@@ -546,7 +548,7 @@ async function connect(config: ImapConfig, deps: ImapListenerDependencies): Prom
   // processed when idle() returned, so a server push (which fires 'exists' but
   // does NOT resolve idle()) left fresh bookings unprocessed until reconnect.
   client.on("exists", () => {
-    void runScan(client, config, deps);
+    void runScan();
   });
   client.on("error", (err: unknown) => {
     listenerStatus.state = "error";
@@ -572,8 +574,11 @@ async function connect(config: ImapConfig, deps: ImapListenerDependencies): Prom
     // which is for short ops) so imapflow auto-IDLEs and surfaces 'exists'.
     await client.mailboxOpen(config.mailbox);
     // Drain mail that arrived while the listener was down (IDLE only fires on
-    // NEW changes; backlog would otherwise wait for an unrelated event).
-    await runScan(client, config, deps);
+    // NEW changes; backlog would otherwise wait for an unrelated event). If the
+    // drain throws (transient DB/IMAP error), reconnect to retry — proceeding to
+    // IDLE would leave that backlog stuck until the next unrelated reconnect.
+    const drained = await runScan();
+    if (!drained) throw new Error("initial inbox drain failed");
     // Kick IDLE now (imapflow also auto-IDLEs after a short delay); it
     // auto-restarts. Then hold this function open until the socket closes or the
     // listener is stopped — processing is driven entirely by the 'exists'
