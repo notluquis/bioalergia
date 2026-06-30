@@ -368,6 +368,27 @@ async function ensureConversation(contactId: number, phoneNumberRowId: number) {
   return conv.id;
 }
 
+// Inbound interactive reply (patient tapped a reply button or picked a list
+// row). Returns the option id (for tagging/automation) + title (for body/preview).
+type InteractiveReply = { kind: "button" | "list"; id: string; title: string };
+function extractInteractiveReply(interactive: unknown): InteractiveReply | null {
+  const it = interactive as
+    | {
+        type?: string;
+        button_reply?: { id?: string; title?: string };
+        list_reply?: { id?: string; title?: string };
+      }
+    | null
+    | undefined;
+  if (it?.type === "button_reply" && it.button_reply) {
+    return { kind: "button", id: it.button_reply.id ?? "", title: it.button_reply.title ?? "" };
+  }
+  if (it?.type === "list_reply" && it.list_reply) {
+    return { kind: "list", id: it.list_reply.id ?? "", title: it.list_reply.title ?? "" };
+  }
+  return null;
+}
+
 function previewFromMessage(m: MetaMessage): string {
   if (m.text?.body) return m.text.body.slice(0, 200);
   if (m.image) return m.image.caption ?? "[imagen]";
@@ -380,6 +401,8 @@ function previewFromMessage(m: MetaMessage): string {
   if (m.interactive) {
     const it = m.interactive as { type?: string; nfm_reply?: { name?: string } };
     if (it.type === "nfm_reply") return `[respuesta flow ${it.nfm_reply?.name ?? ""}]`.trim();
+    const reply = extractInteractiveReply(m.interactive);
+    if (reply?.title) return reply.title.slice(0, 200);
     return "[interactivo]";
   }
   if (m.button) return m.button.text;
@@ -389,10 +412,28 @@ function previewFromMessage(m: MetaMessage): string {
 
 // mediaMessageIds: inbound messages with media to persist to R2. The route
 // enqueues them (modules can't import the queue tier — DAG).
-export type ProcessResult = { events: number; errors: string[]; mediaMessageIds: number[] };
+export type ProcessResult = {
+  events: number;
+  errors: string[];
+  mediaMessageIds: number[];
+  // Accounts whose templates changed in Meta (components edited) — the route
+  // re-syncs them from Meta so WaTemplate.components doesn't drift (modules
+  // can't import the services tier; signal via the return like mediaMessageIds).
+  templateSyncAccountIds: number[];
+  // Phone (DB) ids whose quality changed — the route re-fetches the REAL
+  // GREEN/YELLOW/RED rating from Graph (the quality_update webhook only carries
+  // tier/event, not the color), same modules→route signalling pattern.
+  phoneHealthRefreshIds: number[];
+};
 
 export async function processWebhookPayload(payload: MetaWebhookPayload): Promise<ProcessResult> {
-  const out: ProcessResult = { events: 0, errors: [], mediaMessageIds: [] };
+  const out: ProcessResult = {
+    events: 0,
+    errors: [],
+    mediaMessageIds: [],
+    templateSyncAccountIds: [],
+    phoneHealthRefreshIds: [],
+  };
   for (const entry of payload.entry ?? []) {
     // Meta dashboard "Send test event" / Subscribe button: entry.id === "0" with
     // sample payload (fake phone_number_id, fake message ids). Skip silently so
@@ -480,6 +521,14 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
                 ...data,
               } as never,
             });
+            // Components edited in Meta → re-pull from Meta so the stored
+            // `components` (used to render the REAL message text in the inbox,
+            // and to send) don't drift. The webhook carries the new body in a
+            // FLAT shape (message_template_element/title/footer/buttons), not our
+            // `components[]` array — a re-sync keeps the canonical GET shape.
+            if (FIELD === "message_template_components_update") {
+              out.templateSyncAccountIds.push(account.id);
+            }
           }
           logEvent("[wa-cloud.webhook] template event", { field: FIELD, ...tplPayload });
         } catch (err) {
@@ -518,6 +567,31 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
           if (FIELD === "user_preferences") {
             await applyUserPreferences(v as unknown as Record<string, unknown>);
           }
+          // account_update: reflect Meta ban / offboard / reconnect on the
+          // account so we STOP (and later resume) attempting sends instead of
+          // blindly enqueuing broadcasts that all fail. Conservative — only the
+          // unambiguous transitions. ACCOUNT_RESTRICTION is left log-only (it
+          // ranges from a full messaging block to a hidden call button).
+          if (FIELD === "account_update" && account) {
+            const ev = v as unknown as {
+              event?: string;
+              ban_info?: { waba_ban_state?: string };
+            };
+            let active: boolean | null = null;
+            if (ev.event === "ACCOUNT_DELETED" || ev.event === "ACCOUNT_OFFBOARDED") active = false;
+            else if (ev.event === "ACCOUNT_RECONNECTED") active = true;
+            // DISABLED_UPDATE: ban_info.waba_ban_state REINSTATE = restored, else disabled.
+            else if (ev.event === "DISABLED_UPDATE")
+              active = ev.ban_info?.waba_ban_state === "REINSTATE";
+            if (active !== null) {
+              await db.waBusinessAccount.update({ where: { id: account.id }, data: { active } });
+              logEvent("[wa-cloud.webhook] account active toggled", {
+                accountId: account.id,
+                event: ev.event,
+                active,
+              });
+            }
+          }
         } catch (err) {
           out.errors.push(`${FIELD}: ${err instanceof Error ? err.message : String(err)}`);
         }
@@ -543,11 +617,12 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
       if (FIELD === "phone_number_quality_update") {
         out.events += 1;
         try {
-          const p = v as unknown as { current_limit?: string; event?: string };
-          await db.waPhoneNumber.update({
-            where: { id: phoneRow.id },
-            data: { qualityRating: p.current_limit ?? p.event ?? null },
-          });
+          // This webhook carries `event` (ONBOARDING/UPGRADE/DOWNGRADE/FLAGGED/…)
+          // and `current_limit` (the messaging TIER) — NOT the GREEN/YELLOW/RED
+          // quality color. Writing those into `qualityRating` corrupted the
+          // badge. The tier/event are preserved in the WaAccountEvent below; the
+          // REAL color is re-fetched from Graph by the route (getPhoneHealth).
+          out.phoneHealthRefreshIds.push(phoneRow.id);
           await persistAccountEvent({
             accountId: phoneRow.accountId,
             phoneNumberId: phoneRow.id,
@@ -810,7 +885,11 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
             if (exists) continue;
 
             const msgType = (TYPE_MAP[m.type] ?? "UNSUPPORTED") as keyof typeof TYPE_MAP;
-            const body = m.text?.body ?? m.button?.text ?? m.reaction?.emoji ?? null;
+            // Inbound reply-button / list pick: store the chosen title as body so
+            // it's searchable + visible, not just a null "[interactivo]" row.
+            const interactiveReply = extractInteractiveReply(m.interactive);
+            const body =
+              m.text?.body ?? m.button?.text ?? m.reaction?.emoji ?? interactiveReply?.title ?? null;
             const mediaCaption =
               m.image?.caption ?? m.video?.caption ?? m.document?.caption ?? null;
             const mediaMime =
@@ -901,6 +980,23 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
               });
               const newTag = `btn:${m.button.payload.slice(0, 64)}`;
               const next = Array.from(new Set([...(conv?.etiquetas ?? []), newTag]));
+              await db.waConversation.update({
+                where: { id: convId },
+                data: { etiquetas: next },
+              });
+            }
+
+            // Same for the NEWER interactive reply buttons / list picks
+            // (interactive.button_reply / list_reply) — tag with the option id so
+            // staff can filter by the patient's choice.
+            if (interactiveReply?.id) {
+              const conv = await db.waConversation.findUnique({
+                where: { id: convId },
+                select: { etiquetas: true },
+              });
+              const prefix = interactiveReply.kind === "button" ? "btn" : "list";
+              const tag = `${prefix}:${interactiveReply.id.slice(0, 64)}`;
+              const next = Array.from(new Set([...(conv?.etiquetas ?? []), tag]));
               await db.waConversation.update({
                 where: { id: convId },
                 data: { etiquetas: next },
@@ -1027,7 +1123,26 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
               | "FAILED";
             const tsMs = Number.parseInt(s.timestamp, 10) * 1000;
             const ts = Number.isFinite(tsMs) ? new Date(tsMs) : new Date();
-            const data: Record<string, unknown> = { status };
+            // Webhooks are NOT delivered in order — a late SENT/DELIVERED can
+            // arrive after READ. Look up the current status and only ADVANCE it
+            // (never downgrade the read-receipt tick). Timestamps + pricing
+            // enrichment still apply (they're additive). FAILED is terminal.
+            const owner = await db.waMessage.findUnique({
+              where: { metaMessageId: s.id },
+              select: { conversationId: true, status: true },
+            });
+            const STATUS_RANK: Record<string, number> = {
+              PENDING: 0,
+              SENT: 1,
+              DELIVERED: 2,
+              READ: 3,
+              PLAYED: 3,
+              FAILED: 4,
+            };
+            const curRank = STATUS_RANK[owner?.status ?? "PENDING"] ?? 0;
+            const advances = (STATUS_RANK[status] ?? 0) > curRank;
+            const data: Record<string, unknown> = {};
+            if (advances) data.status = status;
             if (status === "DELIVERED") data.deliveredAt = ts;
             // PLAYED implies the message was also read — stamp readAt too.
             if (status === "READ" || status === "PLAYED") data.readAt = ts;
@@ -1035,7 +1150,12 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
               const firstErr = s.errors[0];
               data.errorCode = String(firstErr.code);
               data.errorTitle = firstErr.title;
-              data.errorDetails = firstErr.error_data?.details ?? firstErr.message ?? null;
+              // Store ALL error entries (Meta can send several), not just the first.
+              data.errorDetails =
+                s.errors
+                  .map((e) => e.error_data?.details ?? e.message ?? e.title)
+                  .filter(Boolean)
+                  .join(" | ") || null;
             }
             // Status enrichment fields (Meta sends these on each status event)
             if (s.conversation?.id) data.conversationWindowId = s.conversation.id;
@@ -1047,21 +1167,16 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
               if (s.pricing.category) data.pricingCategory = s.pricing.category;
             }
             if (s.biz_opaque_callback_data) data.bizCallbackData = s.biz_opaque_callback_data;
-            await db.waMessage.updateMany({
-              where: { metaMessageId: s.id },
-              data,
-            });
-            // Find the conversation id for this message so SSE listeners
-            // can refresh just that conversation. One extra cheap lookup.
-            const owner = await db.waMessage.findUnique({
-              where: { metaMessageId: s.id },
-              select: { conversationId: true },
-            });
+            if (Object.keys(data).length > 0) {
+              await db.waMessage.updateMany({ where: { metaMessageId: s.id }, data });
+            }
             if (owner) {
+              // Emit the EFFECTIVE status (never a downgrade) so the inbox tick
+              // doesn't flicker backwards on an out-of-order webhook.
               emitWaEvent(owner.conversationId, {
                 kind: "status",
                 metaMessageId: s.id,
-                status,
+                status: advances ? status : (owner.status as typeof status),
                 ts: ts.getTime(),
               });
             }

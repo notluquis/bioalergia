@@ -6,6 +6,8 @@ import { decryptSecret } from "../lib/secret-cipher.ts";
 import { processWebhookPayload, verifyMetaSignature } from "../modules/wa-cloud/webhook-handler.ts";
 import { enqueueJob } from "../queue/runner.ts";
 import { waPersistMediaJobKey } from "../queue/tasks/wa-persist-media.ts";
+import { syncTemplates } from "../services/wa-templates.ts";
+import { getPhoneHealth } from "../services/wa-analytics.ts";
 
 function timingSafeStringEq(a: string, b: string): boolean {
   const ab = Buffer.from(a);
@@ -88,6 +90,30 @@ waCloudWebhookRoutes.post("/whatsapp", async (c) => {
     // → webhook stays fast; no-op fallback to live-proxy if the runner is off.
     for (const messageId of result.mediaMessageIds) {
       await enqueueJob("wa_persist_media", { messageId }, { jobKey: waPersistMediaJobKey(messageId) });
+    }
+    // Re-pull templates whose components were edited in Meta so the stored body
+    // (used to render the real inbox text + to send) doesn't drift. Dedup +
+    // fire-and-forget so the webhook still returns 200 fast.
+    // ponytail: inline re-sync is fine — the edit event is rare; if a run is
+    // missed it self-heals on the next edit or a manual "Sincronizar".
+    for (const accountId of new Set(result.templateSyncAccountIds)) {
+      void syncTemplates(accountId).catch((err) =>
+        logWarn("[wa-cloud.webhook] template resync failed", {
+          accountId,
+          error: err instanceof Error ? err.message : String(err),
+        })
+      );
+    }
+    // Quality changed → re-fetch the real GREEN/YELLOW/RED rating from Graph
+    // (the quality_update webhook only carries tier/event). getPhoneHealth
+    // persists qualityRating. Dedup + fire-and-forget so the webhook stays fast.
+    for (const phoneNumberId of new Set(result.phoneHealthRefreshIds)) {
+      void getPhoneHealth({ phoneNumberId }).catch((err) =>
+        logWarn("[wa-cloud.webhook] phone health refresh failed", {
+          phoneNumberId,
+          error: err instanceof Error ? err.message : String(err),
+        })
+      );
     }
     await db.waWebhookLog.update({
       where: { id: log.id },
