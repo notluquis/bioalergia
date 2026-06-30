@@ -1,0 +1,255 @@
+{
+  "version": "7.3",
+  "data_api_version": "3.0",
+  "routing_model": {
+    "FICHA": ["COMPROBANTE"],
+    "COMPROBANTE": []
+  },
+  "screens": [
+    {
+      "id": "FICHA",
+      "title": "Ficha del paciente",
+      "data": {
+        "nombre": { "type": "string", "__example__": "" },
+        "telefono": { "type": "string", "__example__": "" }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "Form",
+            "name": "ficha",
+            "children": [
+              {
+                "type": "TextInput",
+                "name": "nombre",
+                "label": "Nombre completo",
+                "input-type": "text",
+                "required": true,
+                "init-value": "${data.nombre}"
+              },
+              {
+                "type": "TextInput",
+                "name": "rut",
+                "label": "RUT",
+                "input-type": "text",
+                "required": true
+              },
+              {
+                "type": "TextInput",
+                "name": "correo",
+                "label": "Correo",
+                "input-type": "email",
+                "required": false
+              },
+              {
+                "type": "TextInput",
+                "name": "telefono",
+                "label": "Teléfono",
+                "input-type": "phone",
+                "required": true,
+                "init-value": "${data.telefono}"
+              },
+              {
+                "type": "DatePicker",
+                "name": "fecha_nacimiento",
+                "label": "Fecha de nacimiento",
+                "required": true
+              },
+              {
+                "type": "Dropdown",
+                "name": "prevision",
+                "label": "Previsión",
+                "required": true,
+                "data-source": [
+                  { "id": "FONASA", "title": "Fonasa" },
+                  { "id": "ISAPRE", "title": "Isapre" },
+                  { "id": "PARTICULAR", "title": "Particular" }
+                ]
+              },
+              {
+                "type": "TextInput",
+                "name": "isapre",
+                "label": "Nombre de la Isapre (si aplica)",
+                "input-type": "text",
+                "required": false
+              },
+              {
+                "type": "TextInput",
+                "name": "direccion",
+                "label": "Dirección",
+                "input-type": "text",
+                "required": false
+              },
+              {
+                "type": "TextArea",
+                "name": "motivo",
+                "label": "Motivo de consulta",
+                "required": false
+              },
+              {
+                "type": "TextArea",
+                "name": "alergias",
+                "label": "Alergias conocidas",
+                "required": false
+              },
+              {
+                "type": "TextArea",
+                "name": "condiciones",
+                "label": "Condiciones y/o enfermedades",
+                "required": false
+              },
+              {
+                "type": "TextArea",
+                "name": "medicamentos",
+                "label": "Medicamentos que toma",
+                "required": false
+              },
+              {
+                "type": "Dropdown",
+                "name": "es_menor",
+                "label": "¿El paciente es menor de edad?",
+                "required": true,
+                "data-source": [
+                  { "id": "no", "title": "No" },
+                  { "id": "si", "title": "Sí" }
+                ]
+              },
+              {
+                "type": "TextInput",
+                "name": "tutor_nombre",
+                "label": "Nombre del tutor (solo si es menor)",
+                "input-type": "text",
+                "required": false
+              },
+              {
+                "type": "TextInput",
+                "name": "tutor_rut",
+                "label": "RUT del tutor (solo si es menor)",
+                "input-type": "text",
+                "required": false
+              },
+              {
+                "type": "TextInput",
+                "name": "tutor_telefono",
+                "label": "Teléfono del tutor (solo si es menor)",
+                "input-type": "phone",
+                "required": false
+              },
+              {
+                "type": "TextInput",
+                "name": "tutor_relacion",
+                "label": "Relación con el paciente (solo si es menor)",
+                "input-type": "text",
+                "required": false
+              },
+              {
+                "type": "Footer",
+                "label": "Continuar",
+                "on-click-action": {
+                  "name": "navigate",
+                  "next": { "type": "screen", "name": "COMPROBANTE" },
+                  "payload": {
+                    "nombre": "${form.nombre}",
+                    "rut": "${form.rut}",
+                    "correo": "${form.correo}",
+                    "telefono": "${form.telefono}",
+                    "fecha_nacimiento": "${form.fecha_nacimiento}",
+                    "prevision": "${form.prevision}",
+                    "isapre": "${form.isapre}",
+                    "direccion": "${form.direccion}",
+                    "motivo": "${form.motivo}",
+                    "alergias": "${form.alergias}",
+                    "condiciones": "${form.condiciones}",
+                    "medicamentos": "${form.medicamentos}",
+                    "es_menor": "${form.es_menor}",
+                    "tutor_nombre": "${form.tutor_nombre}",
+                    "tutor_rut": "${form.tutor_rut}",
+                    "tutor_telefono": "${form.tutor_telefono}",
+                    "tutor_relacion": "${form.tutor_relacion}"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "COMPROBANTE",
+      "title": "Comprobante de transferencia",
+      "terminal": true,
+      "data": {
+        "nombre": { "type": "string", "__example__": "" },
+        "rut": { "type": "string", "__example__": "" },
+        "correo": { "type": "string", "__example__": "" },
+        "telefono": { "type": "string", "__example__": "" },
+        "fecha_nacimiento": { "type": "string", "__example__": "" },
+        "prevision": { "type": "string", "__example__": "" },
+        "isapre": { "type": "string", "__example__": "" },
+        "direccion": { "type": "string", "__example__": "" },
+        "motivo": { "type": "string", "__example__": "" },
+        "alergias": { "type": "string", "__example__": "" },
+        "condiciones": { "type": "string", "__example__": "" },
+        "medicamentos": { "type": "string", "__example__": "" },
+        "es_menor": { "type": "string", "__example__": "" },
+        "tutor_nombre": { "type": "string", "__example__": "" },
+        "tutor_rut": { "type": "string", "__example__": "" },
+        "tutor_telefono": { "type": "string", "__example__": "" },
+        "tutor_relacion": { "type": "string", "__example__": "" }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "Form",
+            "name": "comprobante_form",
+            "children": [
+              {
+                "type": "TextBody",
+                "text": "Suba la foto o captura del comprobante de la transferencia del abono."
+              },
+              {
+                "type": "PhotoPicker",
+                "name": "comprobante",
+                "label": "Comprobante de transferencia",
+                "description": "Foto o captura de la transferencia",
+                "photo-source": "camera_gallery",
+                "min-uploaded-photos": 1,
+                "max-uploaded-photos": 1,
+                "max-file-size-kb": 10240
+              },
+              {
+                "type": "Footer",
+                "label": "Enviar",
+                "on-click-action": {
+                  "name": "data_exchange",
+                  "payload": {
+                    "nombre": "${data.nombre}",
+                    "rut": "${data.rut}",
+                    "correo": "${data.correo}",
+                    "telefono": "${data.telefono}",
+                    "fecha_nacimiento": "${data.fecha_nacimiento}",
+                    "prevision": "${data.prevision}",
+                    "isapre": "${data.isapre}",
+                    "direccion": "${data.direccion}",
+                    "motivo": "${data.motivo}",
+                    "alergias": "${data.alergias}",
+                    "condiciones": "${data.condiciones}",
+                    "medicamentos": "${data.medicamentos}",
+                    "es_menor": "${data.es_menor}",
+                    "tutor_nombre": "${data.tutor_nombre}",
+                    "tutor_rut": "${data.tutor_rut}",
+                    "tutor_telefono": "${data.tutor_telefono}",
+                    "tutor_relacion": "${data.tutor_relacion}",
+                    "comprobante": "${form.comprobante}"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
