@@ -37,6 +37,7 @@ import { getSessionUser, hasPermission } from "../lib/auth.ts";
 import { hashPassword } from "../lib/crypto.ts";
 import { logError } from "../lib/logger.ts";
 import { sendPasswordResetEmail } from "../services/email/transactional.ts";
+import { sendAccountInvite } from "../services/password-reset.ts";
 import { normalizeRut, requireCanonicalRut } from "../lib/rut.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
 import { SuperJSONRPCHandler } from "./superjson.ts";
@@ -279,7 +280,21 @@ const usersORPCRouterBase = {
         update: { position: input.position },
       });
 
-      return { status: "ok" as const, userId: user.id, tempPassword };
+      // Email the user a set-password link (7-day token). The random temp
+      // password above just keeps passwordHash non-null/unguessable until they
+      // set their own — it is never surfaced. If the email fails the user still
+      // exists; the admin reuses "Restablecer contraseña" to resend.
+      const invitee = await db.person.findUnique({
+        where: { id: targetPersonId },
+        select: { names: true },
+      });
+      const emailed = await sendAccountInvite({
+        userId: user.id,
+        to: normalizedEmail,
+        name: invitee?.names ?? "",
+      });
+
+      return { status: "ok" as const, userId: user.id, emailed };
     }),
 
   list: readUsers

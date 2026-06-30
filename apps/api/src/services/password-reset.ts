@@ -3,9 +3,40 @@ import { db } from "@finanzas/db";
 import { hashPassword } from "../lib/crypto.ts";
 import { DomainError } from "../lib/errors.ts";
 import { logEvent } from "../lib/logger.ts";
-import { sendPasswordResetLinkEmail } from "./email/transactional.ts";
+import { sendAccountInviteEmail, sendPasswordResetLinkEmail } from "./email/transactional.ts";
 
 const TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
+const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+/**
+ * Admin invite: mint a long-lived (7-day) set-password token for a freshly
+ * created PENDING_SETUP user and email a "define tu contraseña" link. Reuses
+ * the same token columns + /reset-password page as forgot-password. Returns
+ * whether the email actually went out (admin falls back to a manual reset if
+ * not). Never throws — invite creation must not roll back on a mail outage.
+ */
+export async function sendAccountInvite(args: {
+  userId: number;
+  to: string;
+  name: string;
+}): Promise<boolean> {
+  const token = randomBytes(32).toString("hex");
+  await db.user.update({
+    where: { id: args.userId },
+    data: {
+      passwordResetTokenHash: sha256(token),
+      passwordResetExpiresAt: new Date(Date.now() + INVITE_TTL_MS),
+    },
+  });
+  try {
+    await sendAccountInviteEmail({ to: args.to, name: args.name, token });
+    logEvent("[invite] set-password link sent", { userId: args.userId });
+    return true;
+  } catch {
+    logEvent("[invite] set-password email failed", { userId: args.userId });
+    return false;
+  }
+}
 
 function sha256(value: string): string {
   return createHash("sha256").update(value).digest("hex");
@@ -65,7 +96,7 @@ export async function resetPasswordWithToken(token: string, newPassword: string)
   const tokenHash = sha256(token.trim());
   const user = await db.user.findFirst({
     where: { passwordResetTokenHash: tokenHash },
-    select: { id: true, passwordResetExpiresAt: true },
+    select: { id: true, status: true, passwordResetExpiresAt: true },
   });
 
   if (!user || !user.passwordResetExpiresAt || user.passwordResetExpiresAt < new Date()) {
@@ -77,8 +108,10 @@ export async function resetPasswordWithToken(token: string, newPassword: string)
     where: { id: user.id },
     data: {
       passwordHash,
-      // NOTE: do NOT touch `status` here — a self-service reset must not
-      // unsuspend a SUSPENDED account. Only credentials + lockout are reset.
+      // An invited user completing setup via the emailed link activates here
+      // (skips the onboarding wizard). Only PENDING_SETUP flips — a self-service
+      // reset must NOT unsuspend a SUSPENDED account nor re-touch an ACTIVE one.
+      ...(user.status === "PENDING_SETUP" ? { status: "ACTIVE" as const } : {}),
       passwordResetTokenHash: null,
       passwordResetExpiresAt: null,
       sessionVersion: { increment: 1 },

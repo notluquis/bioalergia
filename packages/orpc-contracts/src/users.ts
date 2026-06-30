@@ -156,8 +156,9 @@ export const userProfileResponseSchema = z.object({
 
 export const inviteResponseSchema = z.object({
   status: z.literal("ok"),
-  tempPassword: z.string().optional(),
   userId: z.number().int(),
+  /** Whether the set-password invite email was sent (false → admin resends). */
+  emailed: z.boolean(),
 });
 
 export const resetPasswordResponseSchema = z.object({

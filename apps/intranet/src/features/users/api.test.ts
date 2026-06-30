@@ -95,8 +95,8 @@ describe("users/api", () => {
   });
 
   describe("inviteUser", () => {
-    it("forwards payload and parses { tempPassword, userId }", async () => {
-      orpcMocks.invite.mockResolvedValue({ tempPassword: "Temp1234!", userId: 99 });
+    it("forwards payload and parses { userId, emailed }", async () => {
+      orpcMocks.invite.mockResolvedValue({ userId: 99, emailed: true });
       const payload = {
         email: "nuevo@bioalergia.cl",
         position: "Enfermera",
@@ -107,18 +107,18 @@ describe("users/api", () => {
       };
       const res = await inviteUser(payload);
       expect(orpcMocks.invite).toHaveBeenCalledWith(payload);
-      expect(res).toEqual({ tempPassword: "Temp1234!", userId: 99 });
+      expect(res).toEqual({ userId: 99, emailed: true });
     });
 
-    it("accepts response without tempPassword (sent via email)", async () => {
-      orpcMocks.invite.mockResolvedValue({ userId: 100 });
+    it("surfaces emailed=false when the invite email failed", async () => {
+      orpcMocks.invite.mockResolvedValue({ userId: 100, emailed: false });
       const res = await inviteUser({
         email: "a@b.cl",
         position: "x",
         role: "y",
       });
       expect(res.userId).toBe(100);
-      expect(res.tempPassword).toBeUndefined();
+      expect(res.emailed).toBe(false);
     });
 
     it("wraps invite errors", async () => {
