@@ -16,6 +16,7 @@ import { doctoralia_calendar_sync } from "./doctoralia-calendar-sync.ts";
 import { dte_sync } from "./dte-sync.ts";
 import { job_radar_sync } from "./job-radar-sync.ts";
 import { onedrive_renew } from "./onedrive-renew.ts";
+import { order_post_payment } from "./order-post-payment.ts";
 import { orphan_cleanup } from "./orphan-cleanup.ts";
 import { pollen_sync } from "./pollen-sync.ts";
 import { reservation_sweep } from "./reservation-sweep.ts";
@@ -30,6 +31,7 @@ import { social_publish_tick } from "./social-publish-tick.ts";
 
 export const taskList: TaskList = {
   dte_sync,
+  order_post_payment,
   orphan_cleanup,
   pollen_sync,
   reservation_sweep,

@@ -10,21 +10,19 @@ import { db } from "@finanzas/db";
 import type { Hono } from "hono";
 import { InvalidWebhookSignatureError, WebhookSignatureValidator } from "mercadopago";
 
-import { emitDte } from "../modules/haulmer/emit-dte.ts";
 import { refetchPayment } from "../modules/mercadopago-checkout/payment.ts";
-import { pushStockToMl } from "../modules/mercadolibre/sync.ts";
 import {
   consumeReservations,
   releaseReservations,
   reserveStockForOrder,
 } from "../modules/reservations/index.ts";
+import { enqueueJob } from "../queue/runner.ts";
+import { orderPostPaymentJobKey } from "../queue/tasks/order-post-payment.ts";
 import { sendAbonoConfirmation } from "../services/abono-confirmation.ts";
 import { notifyStaffCardPayment } from "../services/abono-staff-notify.ts";
-import { sendOrderConfirmationEmail } from "../services/email/transactional.ts";
-import { createOrderShipment } from "../services/shipments.ts";
 import { appendAbonoFlowHistory } from "../lib/doctoralia/abono-flow-history.ts";
 import { logError } from "../lib/logger.ts";
-import { attachDteToOrder, markOrderPaid } from "../services/orders.ts";
+import { markOrderPaid } from "../services/orders.ts";
 export function registerMercadopagoCheckoutWebhook(app: Hono) {
   app.post("/api/mercadopago/webhook", async (c) => {
     const topic = c.req.query("topic") ?? c.req.query("type") ?? "";
@@ -270,130 +268,17 @@ export function registerMercadopagoCheckoutWebhook(app: Hono) {
           );
         }
 
-        // DTE emission — falla aquí NO debe perder la venta; log y sigue.
-        let dtePdfUrl: string | undefined;
-        try {
-          const order = await db.order.findUnique({
-            where: { id: orderId },
-            include: { items: true },
-          });
-          if (order) {
-            const dte = await emitDte({
-              documentType: order.billingType,
-              customerEmail: order.customerEmail,
-              customerRut: order.customerRut,
-              customerName: order.customerName,
-              totalClp: order.totalClp,
-              lines: order.items.map((i: (typeof order.items)[number]) => {
-                const snap = i.productSnapshot as { sku: string; name: string };
-                return {
-                  sku: snap.sku,
-                  name: snap.name,
-                  qty: i.qty,
-                  unitPriceClp: i.unitPriceClp,
-                };
-              }),
-            });
-            dtePdfUrl = dte.pdfUrl;
-            await attachDteToOrder(orderId, dte);
-          }
-        } catch (e) {
-          console.error("[mp-webhook] DTE emit failed", e);
-        }
-
-        // Order confirmation email to the buyer (best-effort — never break the
-        // webhook). Sent after DTE so the boleta/factura folio + PDF can ride
-        // along; sends regardless of whether DTE succeeded.
-        try {
-          const order = await db.order.findUnique({
-            where: { id: orderId },
-            include: { items: true },
-          });
-          if (order) {
-            await sendOrderConfirmationEmail({
-              to: order.customerEmail,
-              orderNumber: order.number,
-              totalClp: order.totalClp,
-              items: order.items.map((i: (typeof order.items)[number]) => {
-                const snap = i.productSnapshot as { name: string };
-                return { name: snap.name, qty: i.qty, unitPriceClp: i.unitPriceClp };
-              }),
-              billingType: order.billingType,
-              accessToken: order.accessToken,
-              ...(order.dteFolio ? { dteFolio: order.dteFolio } : {}),
-              ...(dtePdfUrl ? { dtePdfUrl } : {}),
-            });
-          }
-        } catch (e) {
-          logError("mp-webhook.order_confirmation_email_failed", e, { orderId });
-        }
-
-        // Push stock a ML (best-effort).
-        try {
-          const order = await db.order.findUnique({
-            where: { id: orderId },
-            include: { items: true },
-          });
-          if (order) {
-            for (const it of order.items) {
-              await pushStockToMl(it.productId).catch(() => undefined);
-            }
-          }
-        } catch (e) {
-          console.error("[mp-webhook] ML stock push failed", e);
-        }
-
-        // Auto-create the Chilexpress OT for home-delivery orders (best-effort,
-        // idempotent: skip if one already exists). The structured address +
-        // service code were captured + persisted at checkout.
-        try {
-          const order = await db.order.findUnique({
-            where: { id: orderId },
-            include: { items: true },
-          });
-          const addr = order?.shippingAddress as {
-            street?: string;
-            street_number?: string;
-            county_code?: string;
-            service_code?: string;
-          } | null;
-          if (
-            order &&
-            !order.cxOtNumber &&
-            addr?.county_code &&
-            addr.service_code &&
-            addr.street &&
-            addr.street_number
-          ) {
-            const totalGrams = order.items.reduce(
-              (acc: number, i: (typeof order.items)[number]) => acc + 250 * i.qty,
-              0
-            );
-            const ot = await createOrderShipment({
-              orderNumber: order.number,
-              streetName: addr.street,
-              streetNumber: addr.street_number,
-              countyCoverageCode: addr.county_code,
-              serviceTypeCode: addr.service_code,
-              recipientName: order.customerName,
-              recipientPhone: (order.customerPhone ?? "").replace(/\D/g, "") || "000000000",
-              recipientEmail: order.customerEmail,
-              declaredValueClp: order.totalClp,
-              weightKg: Math.max(0.3, totalGrams / 1000),
-            });
-            await db.order.update({
-              where: { id: orderId },
-              data: {
-                cxOtNumber: ot.otNumber,
-                cxBarcode: ot.barcode,
-                cxLabelBase64: ot.labelBase64,
-                cxLabelType: ot.labelType,
-              },
-            });
-          }
-        } catch (e) {
-          logError("mp-webhook.auto_ot_failed", e, { orderId });
-        }
+        // Durable post-payment side-effects (DTE, Chilexpress OT, confirmation
+        // email, ML stock) run in the graphile-worker queue so a transient
+        // failure retries with backoff instead of being silently lost in an
+        // inline best-effort try/catch. Idempotent + jobKey-deduped, so a
+        // duplicate `approved` webhook re-enqueue is a no-op. preserve_run_at:
+        // don't reset the run time if a job is already queued for this order.
+        await enqueueJob(
+          "order_post_payment",
+          { orderId },
+          { jobKey: orderPostPaymentJobKey(orderId), jobKeyMode: "preserve_run_at" }
+        );
       } else if (status === "cancelled") {
         // Only a terminal cancel frees stock. A `rejected` attempt is retryable on
         // the hosted checkout, so keep the reservation (the TTL sweep frees it if
@@ -422,8 +307,11 @@ export function registerMercadopagoCheckoutWebhook(app: Hono) {
         },
         data: { error: msg },
       });
-      console.error("[mp-webhook] error", e);
-      return c.json({ error: msg }, 500);
+      // ALWAYS ack a handled delivery with 200. The stored WebhookEvent (with the
+      // captured `error`) is the durable record; a 5xx makes MP retry-storm
+      // forever and leaks internal error text. logError surfaces it to Sentry.
+      logError("mp-webhook.handler_error", e, { topic, dataId: String(dataId) });
+      return c.json({ ok: true }, 200);
     }
   });
 }
