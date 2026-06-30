@@ -8,7 +8,12 @@
 // The same function backfills historical TEMPLATE messages from their stored
 // payload.components.
 
-type MetaParam = { type?: string; text?: string; parameter_name?: string };
+type MetaParam = {
+  type?: string;
+  text?: string;
+  parameter_name?: string;
+  coupon_code?: string;
+};
 type SentComponent = { type?: string; parameters?: MetaParam[] };
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -93,8 +98,10 @@ function sentButtonParam(sentComponents: unknown, index: number): string | null 
     if (!isObject(c) || typeof c.type !== "string" || c.type.toLowerCase() !== "button") continue;
     if (Number((c as { index?: unknown }).index ?? 0) !== index) continue;
     const params = (c as { parameters?: MetaParam[] }).parameters;
-    const text = Array.isArray(params) ? params[0]?.text : undefined;
-    return typeof text === "string" ? text : null;
+    const p = Array.isArray(params) ? params[0] : undefined;
+    // URL buttons send the value as `text`; COPY_CODE buttons as `coupon_code`.
+    const value = p?.text ?? p?.coupon_code;
+    return typeof value === "string" ? value : null;
   }
   return null;
 }
@@ -115,8 +122,10 @@ function renderButtons(templateComponents: unknown, sentComponents: unknown): st
         }
         case "PHONE_NUMBER":
           return `📞 ${label || "Llamar"}: ${b.phone_number ?? ""}`.trim();
-        case "COPY_CODE":
-          return `📋 ${label || "Copiar código"}`;
+        case "COPY_CODE": {
+          const code = sentButtonParam(sentComponents, i);
+          return `📋 ${label || "Copiar código"}${code ? `: ${code}` : ""}`;
+        }
         case "QUICK_REPLY":
           return label ? `↩️ ${label}` : "";
         case "FLOW":
