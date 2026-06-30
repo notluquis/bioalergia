@@ -26,6 +26,12 @@ function CheckoutPage() {
           const res = await checkoutClient.quote({ destination_county_code: county });
           return res.data.options;
         }}
+        onSearchStreets={async (county, query) =>
+          (await checkoutClient.streets({ county_name: county, query })).data.streets
+        }
+        onFetchStreetNumbers={async (id) =>
+          (await checkoutClient.streetNumbers({ street_name_id: id })).data.numbers
+        }
         onStart={async ({ customer, shipping }) => {
           const res = await checkoutClient.start({
             customer: {
@@ -40,7 +46,13 @@ function CheckoutPage() {
                 : {
                     method: "chilexpress",
                     county_code: shipping.countyCode ?? "",
-                    address: shipping.address ?? { street: "", city: "", region: "" },
+                    address: {
+                      street: shipping.streetName ?? "",
+                      ...(shipping.streetNumber ? { street_number: shipping.streetNumber } : {}),
+                      city: shipping.city ?? "",
+                      region: shipping.region ?? "",
+                      ...(shipping.countyCode ? { county_code: shipping.countyCode } : {}),
+                    },
                     ...(shipping.serviceCode ? { service_code: shipping.serviceCode } : {}),
                   },
           });

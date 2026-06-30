@@ -15,9 +15,36 @@ export const customerInfoSchema = z.object({
 
 export const shippingAddressSchema = z.object({
   street: z.string().min(2),
+  // Chilexpress-validated street number (structured) + the comuna coverage code,
+  // persisted so the shipment OT can be created without re-asking the buyer.
+  street_number: z.string().optional(),
   city: z.string().min(2),
   region: z.string().min(2),
+  county_code: z.string().optional(),
   postal_code: z.string().optional(),
+});
+
+export const checkoutStreetsInputSchema = z.object({
+  county_name: z.string().min(2),
+  query: z.string().min(2),
+});
+
+export const checkoutStreetsResponseSchema = z.object({
+  data: z.object({
+    streets: z.array(z.object({ street_id: z.number().int(), street_name: z.string() })),
+  }),
+  status: z.literal("ok"),
+});
+
+export const checkoutStreetNumbersInputSchema = z.object({
+  street_name_id: z.number().int(),
+});
+
+export const checkoutStreetNumbersResponseSchema = z.object({
+  data: z.object({
+    numbers: z.array(z.object({ number: z.number().int(), address_id: z.number().int() })),
+  }),
+  status: z.literal("ok"),
 });
 
 export const checkoutStartInputSchema = z.object({
@@ -99,6 +126,14 @@ export const checkoutContract = {
   communes: oc
     .route({ method: "GET", path: "/communes" })
     .output(checkoutCommunesResponseSchema),
+  streets: oc
+    .route({ method: "GET", path: "/streets" })
+    .input(checkoutStreetsInputSchema)
+    .output(checkoutStreetsResponseSchema),
+  streetNumbers: oc
+    .route({ method: "GET", path: "/street-numbers" })
+    .input(checkoutStreetNumbersInputSchema)
+    .output(checkoutStreetNumbersResponseSchema),
   quote: oc
     .route({ method: "POST", path: "/quote" })
     .input(checkoutQuoteInputSchema)
