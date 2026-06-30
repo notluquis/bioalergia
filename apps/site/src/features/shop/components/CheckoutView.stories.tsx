@@ -30,6 +30,16 @@ const meta: Meta<typeof CheckoutView> = {
           delivery_time_days: String(o.eta_days),
         }))
       ),
+    onSearchStreets: () =>
+      Promise.resolve([
+        { street_id: 1, street_name: "Av. Apoquindo" },
+        { street_id: 2, street_name: "Av. Providencia" },
+      ]),
+    onFetchStreetNumbers: () =>
+      Promise.resolve([
+        { number: 1234, address_id: 10 },
+        { number: 5678, address_id: 11 },
+      ]),
     onStart: () => Promise.resolve(),
   },
 };

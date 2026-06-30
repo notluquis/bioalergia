@@ -8,6 +8,10 @@ import {
   checkoutStartResponseSchema,
   checkoutStatusInputSchema,
   checkoutStatusResponseSchema,
+  checkoutStreetNumbersInputSchema,
+  checkoutStreetNumbersResponseSchema,
+  checkoutStreetsInputSchema,
+  checkoutStreetsResponseSchema,
 } from "@finanzas/orpc-contracts/checkout";
 import { db } from "@finanzas/db";
 import { ORPCError, onError, os } from "@orpc/server";
@@ -23,6 +27,7 @@ import { getCommunes, getRegions, quoteCourier } from "../modules/chilexpress/cl
 import { createCheckoutPreference } from "../modules/mercadopago-checkout/payment.ts";
 import { reserveStockForOrder } from "../modules/reservations/index.ts";
 import { createOrderFromCart, getOrderByNumber } from "../services/orders.ts";
+import { fetchStreetNumbers, fetchStreets } from "../services/shipments.ts";
 
 type OrderWithItems = Awaited<ReturnType<typeof createOrderFromCart>>;
 import { CART_COOKIE_NAME, findCartByToken } from "../services/cart.ts";
@@ -63,6 +68,40 @@ const communesRoute = base
   .output(checkoutCommunesResponseSchema)
   .handler(async () => {
     return { data: { communes: await loadCommunes() }, status: "ok" as const };
+  });
+
+// Public Chilexpress street lookup (reuses the shipments service — the same
+// validated cascade the intranet wizard uses) so the storefront can capture a
+// real street + number, not free text.
+const streetsRoute = base
+  .route({ method: "GET", path: "/streets", summary: "Chilexpress streets", tags: ["Checkout"] })
+  .input(checkoutStreetsInputSchema)
+  .output(checkoutStreetsResponseSchema)
+  .handler(async ({ input }) => {
+    const streets = await fetchStreets({ countyName: input.county_name, query: input.query });
+    return {
+      data: {
+        streets: streets.map((s) => ({ street_id: s.streetId, street_name: s.streetName })),
+      },
+      status: "ok" as const,
+    };
+  });
+
+const streetNumbersRoute = base
+  .route({
+    method: "GET",
+    path: "/street-numbers",
+    summary: "Chilexpress street numbers",
+    tags: ["Checkout"],
+  })
+  .input(checkoutStreetNumbersInputSchema)
+  .output(checkoutStreetNumbersResponseSchema)
+  .handler(async ({ input }) => {
+    const numbers = await fetchStreetNumbers(input.street_name_id);
+    return {
+      data: { numbers: numbers.map((n) => ({ number: n.number, address_id: n.addressId })) },
+      status: "ok" as const,
+    };
   });
 
 type CheckoutCart = NonNullable<Awaited<ReturnType<typeof findCartByToken>>>;
@@ -235,6 +274,8 @@ const statusRoute = base
 
 const checkoutORPCRouterBase = {
   communes: communesRoute,
+  streets: streetsRoute,
+  streetNumbers: streetNumbersRoute,
   quote: quoteRoute,
   start: startRoute,
   status: statusRoute,
