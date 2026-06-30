@@ -193,6 +193,7 @@ export const ABONO_STAFF_NOTIFY_SETTINGS = {
   phones: "doctoralia.abono.staffNotify.phones",
   cardTemplateName: "doctoralia.abono.staffNotify.cardTemplateName",
   comprobanteTemplateName: "doctoralia.abono.staffNotify.comprobanteTemplateName",
+  fichaTemplateName: "doctoralia.abono.staffNotify.fichaTemplateName",
   templateLanguage: "doctoralia.abono.staffNotify.templateLanguage",
 } as const;
 
@@ -201,19 +202,22 @@ export type AbonoStaffNotifyConfig = {
   phones: string[];
   cardTemplateName: string | null;
   comprobanteTemplateName: string | null;
+  fichaTemplateName: string | null;
   language: string | null;
   phoneNumberId: number | null;
 };
 
 export async function loadAbonoStaffNotifyConfig(): Promise<AbonoStaffNotifyConfig> {
-  const [enabledRaw, phonesRaw, cardRaw, compRaw, langRaw, phoneIdRaw] = await Promise.all([
-    getSetting(ABONO_STAFF_NOTIFY_SETTINGS.enabled),
-    getSetting(ABONO_STAFF_NOTIFY_SETTINGS.phones),
-    getSetting(ABONO_STAFF_NOTIFY_SETTINGS.cardTemplateName),
-    getSetting(ABONO_STAFF_NOTIFY_SETTINGS.comprobanteTemplateName),
-    getSetting(ABONO_STAFF_NOTIFY_SETTINGS.templateLanguage),
-    getSetting(ABONO_WHATSAPP_SETTINGS.phoneNumberId),
-  ]);
+  const [enabledRaw, phonesRaw, cardRaw, compRaw, fichaRaw, langRaw, phoneIdRaw] =
+    await Promise.all([
+      getSetting(ABONO_STAFF_NOTIFY_SETTINGS.enabled),
+      getSetting(ABONO_STAFF_NOTIFY_SETTINGS.phones),
+      getSetting(ABONO_STAFF_NOTIFY_SETTINGS.cardTemplateName),
+      getSetting(ABONO_STAFF_NOTIFY_SETTINGS.comprobanteTemplateName),
+      getSetting(ABONO_STAFF_NOTIFY_SETTINGS.fichaTemplateName),
+      getSetting(ABONO_STAFF_NOTIFY_SETTINGS.templateLanguage),
+      getSetting(ABONO_WHATSAPP_SETTINGS.phoneNumberId),
+    ]);
   // Accept comma/space/semicolon separated E.164; normalize a leading +.
   const phones = (phonesRaw ?? "")
     .split(/[\s,;]+/)
@@ -225,6 +229,7 @@ export async function loadAbonoStaffNotifyConfig(): Promise<AbonoStaffNotifyConf
     phones,
     cardTemplateName: cardRaw?.trim() || null,
     comprobanteTemplateName: compRaw?.trim() || null,
+    fichaTemplateName: fichaRaw?.trim() || null,
     language: langRaw?.trim() || null,
     phoneNumberId: parsePhoneNumberId(phoneIdRaw),
   };

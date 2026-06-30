@@ -8,6 +8,7 @@
 // Phase 1: ping + INIT/data_exchange skeleton. The intake screens + receipt
 // handling land in later phases.
 
+import { db } from "@finanzas/db";
 import { Hono } from "hono";
 import { getSetting } from "../lib/settings.ts";
 import { decryptSecret } from "../lib/secret-cipher.ts";
@@ -17,6 +18,7 @@ import {
   decryptFlowRequest,
   encryptFlowResponse,
 } from "../lib/flow-crypto.ts";
+import { createIntakeFromFlow, notifyStaffFicha } from "../services/intake.ts";
 
 const PRIVATE_KEY_SETTING = "wa.flow.privateKeyEnc";
 
@@ -25,19 +27,8 @@ async function loadPrivateKey(): Promise<string | null> {
   return decryptSecret(stored);
 }
 
-// Decide the next screen + data for a non-ping action. Phase 1 returns a
-// terminal acknowledgement; later phases route the intake screens + persist.
 // Every response MUST echo the request `version` (Meta requirement).
-function handleAction(request: FlowRequest): Record<string, unknown> {
-  if (request.action === "INIT") {
-    // First screen of the flow. Real screens are added with the Flow JSON.
-    return { screen: "FICHA", data: {} };
-  }
-  // data_exchange / BACK — acknowledge for now.
-  return { screen: "SUCCESS", data: { extension_message_response: { params: {} } } };
-}
-
-function buildResponse(request: FlowRequest): Record<string, unknown> {
+async function buildResponse(request: FlowRequest): Promise<Record<string, unknown>> {
   const version = request.version ?? "3.0";
   // Health check.
   if (request.action === "ping") return { version, data: { status: "active" } };
@@ -45,7 +36,38 @@ function buildResponse(request: FlowRequest): Record<string, unknown> {
   if ((request.data as { error?: unknown } | undefined)?.error) {
     return { version, data: { acknowledged: true } };
   }
-  return { version, ...handleAction(request) };
+
+  if (request.action === "INIT") {
+    // First screen — prefill name/phone from the linked payment token (the flow
+    // is sent with flow_token = AppointmentPaymentToken.id).
+    const token = request.flow_token
+      ? await db.appointmentPaymentToken.findUnique({
+          where: { id: request.flow_token },
+          select: { patientName: true, patientPhone: true },
+        })
+      : null;
+    return {
+      version,
+      screen: "FICHA",
+      data: { nombre: token?.patientName ?? "", telefono: token?.patientPhone ?? "" },
+    };
+  }
+
+  if (request.action === "data_exchange") {
+    // Final submit: persist the intake + forward the summary to staff. The full
+    // form data (+ PhotoPicker media, later) arrives here, not in nfm_reply.
+    const { id } = await createIntakeFromFlow(request.flow_token ?? null, request.data ?? {});
+    void notifyStaffFicha(id).catch((err) =>
+      logError("wa-flow.endpoint.staff_notify_failed", err, { intakeId: id })
+    );
+    return {
+      version,
+      screen: "SUCCESS",
+      data: { extension_message_response: { params: { flow_token: request.flow_token ?? "" } } },
+    };
+  }
+
+  return { version, data: { acknowledged: true } };
 }
 
 export const waCloudFlowRoutes = new Hono();
@@ -79,7 +101,7 @@ waCloudFlowRoutes.post("/", async (c) => {
   }
 
   try {
-    const response = buildResponse(request);
+    const response = await buildResponse(request);
     logEvent("wa-flow.endpoint.handled", { action: request.action, screen: request.screen });
     c.header("Content-Type", "text/plain");
     return c.text(encryptFlowResponse(response, aesKey, iv));

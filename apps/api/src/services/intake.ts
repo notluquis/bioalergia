@@ -7,7 +7,10 @@
 
 import { db } from "@finanzas/db";
 import { normalizeRut, validateRut } from "../lib/rut.ts";
+import { formatChile } from "../lib/time.ts";
 import { logEvent } from "../lib/logger.ts";
+import { loadAbonoStaffNotifyConfig } from "../lib/doctoralia/abono-whatsapp-settings.ts";
+import { fanout } from "./abono-staff-notify.ts";
 
 type FlowData = Record<string, unknown>;
 
@@ -116,4 +119,51 @@ export async function createIntakeFromFlow(
   });
   logEvent("wa-flow.intake.created", { intakeId: created.id, tokenId: token?.id ?? null });
   return { id: created.id };
+}
+
+/** Forward the intake summary to the clinic staff's WhatsApp so they create the
+ * patient record + annotate Doctoralia by hand. Best-effort. */
+export async function notifyStaffFicha(intakeId: string): Promise<void> {
+  const cfg = await loadAbonoStaffNotifyConfig();
+  if (!cfg.enabled || cfg.phones.length === 0 || !cfg.fichaTemplateName) return;
+  const intake = await db.intakeSubmission.findUnique({
+    where: { id: intakeId },
+    include: { appointmentPaymentToken: true },
+  });
+  if (!intake) return;
+
+  // Template params can't contain newlines (Meta rejects them) → " · " separator.
+  const bits: string[] = [];
+  if (intake.patientEmail) bits.push(`Correo: ${intake.patientEmail}`);
+  if (intake.patientBirthDate) bits.push(`Nac: ${formatChile(intake.patientBirthDate, "D/M/YYYY")}`);
+  if (intake.address) bits.push(`Dir: ${intake.address}`);
+  if (intake.reason) bits.push(`Motivo: ${intake.reason}`);
+  if (intake.knownAllergies) bits.push(`Alergias: ${intake.knownAllergies}`);
+  if (intake.conditions) bits.push(`Condiciones: ${intake.conditions}`);
+  if (intake.medications) bits.push(`Medicamentos: ${intake.medications}`);
+  if (intake.isMinor) {
+    bits.push(
+      `Tutor: ${[intake.guardianName, intake.guardianRut, intake.guardianPhone].filter(Boolean).join(" ")}`
+    );
+  }
+  const detalle = bits.join(" · ") || "—";
+  const fecha = intake.appointmentPaymentToken
+    ? formatChile(intake.appointmentPaymentToken.appointmentDate, "dddd D [de] MMMM HH:mm")
+    : "—";
+  const prevision = intake.healthInsurance
+    ? `${intake.healthInsurance}${intake.isapreName ? ` · ${intake.isapreName}` : ""}`
+    : "—";
+
+  const sent = await fanout(cfg, cfg.fichaTemplateName, [
+    { name: "paciente", text: intake.patientName },
+    { name: "rut", text: intake.patientRut ?? "—" },
+    { name: "prevision", text: prevision },
+    { name: "fecha", text: fecha },
+    { name: "detalle", text: detalle.slice(0, 1000) },
+  ]);
+  await db.intakeSubmission.update({
+    where: { id: intakeId },
+    data: { staffNotifiedAt: new Date() },
+  });
+  logEvent("wa-flow.intake.staff_notified", { intakeId, sent });
 }
