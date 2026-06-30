@@ -26,6 +26,7 @@ export async function sendAccountInvite(args: {
     data: {
       passwordResetTokenHash: sha256(token),
       passwordResetExpiresAt: new Date(Date.now() + INVITE_TTL_MS),
+      passwordResetPurpose: "invite",
     },
   });
   try {
@@ -75,6 +76,9 @@ export async function requestPasswordReset(rawEmail: string): Promise<void> {
     data: {
       passwordResetTokenHash: sha256(token),
       passwordResetExpiresAt: new Date(Date.now() + TOKEN_TTL_MS),
+      // A forgot-password token must never activate an account. Clear any stale
+      // "invite" purpose so completion can't flip status (see resetPasswordWithToken).
+      passwordResetPurpose: null,
     },
   });
 
@@ -96,24 +100,27 @@ export async function resetPasswordWithToken(token: string, newPassword: string)
   const tokenHash = sha256(token.trim());
   const user = await db.user.findFirst({
     where: { passwordResetTokenHash: tokenHash },
-    select: { id: true, status: true, passwordResetExpiresAt: true },
+    select: { id: true, status: true, passwordResetExpiresAt: true, passwordResetPurpose: true },
   });
 
   if (!user || !user.passwordResetExpiresAt || user.passwordResetExpiresAt < new Date()) {
     throw new DomainError("BAD_REQUEST", "El enlace es inválido o expiró. Solicita uno nuevo.", {});
   }
 
+  // Activate ONLY when this token was minted by an admin invite AND the account
+  // is still PENDING_SETUP. A forgot-password token (purpose null/"reset") never
+  // changes status, so an account put back into onboarding can't bypass the
+  // wizard via self-service reset; SUSPENDED/ACTIVE are likewise untouched.
+  const activate = user.passwordResetPurpose === "invite" && user.status === "PENDING_SETUP";
   const passwordHash = await hashPassword(newPassword);
   await db.user.update({
     where: { id: user.id },
     data: {
       passwordHash,
-      // An invited user completing setup via the emailed link activates here
-      // (skips the onboarding wizard). Only PENDING_SETUP flips — a self-service
-      // reset must NOT unsuspend a SUSPENDED account nor re-touch an ACTIVE one.
-      ...(user.status === "PENDING_SETUP" ? { status: "ACTIVE" as const } : {}),
+      ...(activate ? { status: "ACTIVE" as const } : {}),
       passwordResetTokenHash: null,
       passwordResetExpiresAt: null,
+      passwordResetPurpose: null,
       sessionVersion: { increment: 1 },
       failedLoginAttempts: 0,
       lockedUntil: null,

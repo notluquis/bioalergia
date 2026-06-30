@@ -506,6 +506,12 @@ export class SchemaType implements SchemaDef {
                     optional: true,
                     attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("password_reset_expires_at") }] }] as readonly AttributeApplication[]
                 },
+                passwordResetPurpose: {
+                    name: "passwordResetPurpose",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("password_reset_purpose") }] }] as readonly AttributeApplication[]
+                },
                 passkeys: {
                     name: "passkeys",
                     type: "Passkey",
