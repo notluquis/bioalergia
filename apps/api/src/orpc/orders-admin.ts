@@ -15,7 +15,13 @@ import { logAuditFromContext } from "../lib/audit-log.ts";
 import { getSessionUser, hasPermission } from "../lib/auth.ts";
 import { logError } from "../lib/logger.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
-import { getOrderById, listOrders, markOrderFulfilled } from "../services/orders-admin.ts";
+import {
+  cancelOrder,
+  getOrderById,
+  listOrders,
+  markOrderFulfilled,
+  refundOrder,
+} from "../services/orders-admin.ts";
 import { SuperJSONRPCHandler } from "./superjson.ts";
 
 configureSuperjson();
@@ -86,10 +92,50 @@ const markFulfilledRoute = requireWrite
     return { data: order, status: "ok" as const };
   });
 
+const cancelRoute = requireWrite
+  .route({ method: "POST", path: "/orders/cancel", summary: "Cancel an unpaid order", tags: ["Orders"] })
+  .input(orderIdInputSchema)
+  .output(orderDetailResponseSchema)
+  .handler(async ({ input, context }) => {
+    const order = await cancelOrder(input.id);
+    await logAuditFromContext(context.hono, {
+      kind: "DATA_UPDATE",
+      userId: context.user.id,
+      actorLabel: context.user.email,
+      resource: "order",
+      resourceId: order.id,
+      outcome: "ok",
+      message: `Pedido ${order.number} cancelado`,
+      metadata: { number: order.number, status: "CANCELLED" },
+    });
+    return { data: order, status: "ok" as const };
+  });
+
+const refundRoute = requireWrite
+  .route({ method: "POST", path: "/orders/refund", summary: "Refund a paid order", tags: ["Orders"] })
+  .input(orderIdInputSchema)
+  .output(orderDetailResponseSchema)
+  .handler(async ({ input, context }) => {
+    const order = await refundOrder(input.id);
+    await logAuditFromContext(context.hono, {
+      kind: "FINANCIAL_CHANGE",
+      userId: context.user.id,
+      actorLabel: context.user.email,
+      resource: "order",
+      resourceId: order.id,
+      outcome: "ok",
+      message: `Pedido ${order.number} reembolsado (${order.total_clp} CLP)`,
+      metadata: { number: order.number, status: "REFUNDED", totalClp: order.total_clp },
+    });
+    return { data: order, status: "ok" as const };
+  });
+
 const ordersAdminORPCRouterBase = {
   list: listRoute,
   detail: detailRoute,
   markFulfilled: markFulfilledRoute,
+  cancel: cancelRoute,
+  refund: refundRoute,
 } satisfies Record<keyof OrdersAdminContract, unknown>;
 
 export const ordersAdminORPCRouter = base

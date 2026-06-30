@@ -1,6 +1,6 @@
 import { Button, Chip } from "@heroui/react";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Eye, PackageCheck } from "lucide-react";
+import { Eye, PackageCheck, RotateCcw, XCircle } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import type { OrderStatus, OrderSummary } from "../types";
 
@@ -13,6 +13,14 @@ export interface OrdersTableMeta {
   onFulfill: (id: number) => void;
   /** Id currently being fulfilled (drives the per-row pending state). */
   fulfillingId: number | null;
+  /** Cancel a PENDING order (releases stock, sets CANCELLED). */
+  onCancel: (id: number) => void;
+  /** Id currently being cancelled (drives the per-row pending state). */
+  cancellingId: number | null;
+  /** Refund a PAID order (MercadoPago refund + restock + REFUNDED). */
+  onRefund: (id: number) => void;
+  /** Id currently being refunded (drives the per-row pending state). */
+  refundingId: number | null;
 }
 
 const STATUS_LABEL: Record<OrderStatus, string> = {
@@ -111,6 +119,8 @@ export const columns: ColumnDef<OrderSummary>[] = [
       const meta = table.options.meta as OrdersTableMeta;
       const order = row.original;
       const showFulfill = meta.canUpdate && order.status === "PAID";
+      const showCancel = meta.canUpdate && order.status === "PENDING";
+      const showRefund = meta.canUpdate && order.status === "PAID";
 
       return (
         <div className="flex justify-end gap-2 whitespace-nowrap">
@@ -124,6 +134,19 @@ export const columns: ColumnDef<OrderSummary>[] = [
             <Eye className="size-4" />
             Ver
           </Button>
+          {showCancel ? (
+            <Button
+              isPending={meta.cancellingId === order.id}
+              onPress={() => {
+                meta.onCancel(order.id);
+              }}
+              size="sm"
+              variant="secondary"
+            >
+              <XCircle className="size-4" />
+              Cancelar
+            </Button>
+          ) : null}
           {showFulfill ? (
             <Button
               isPending={meta.fulfillingId === order.id}
@@ -135,6 +158,19 @@ export const columns: ColumnDef<OrderSummary>[] = [
             >
               <PackageCheck className="size-4" />
               Marcar despachado
+            </Button>
+          ) : null}
+          {showRefund ? (
+            <Button
+              isPending={meta.refundingId === order.id}
+              onPress={() => {
+                meta.onRefund(order.id);
+              }}
+              size="sm"
+              variant="danger"
+            >
+              <RotateCcw className="size-4" />
+              Reembolsar
             </Button>
           ) : null}
         </div>

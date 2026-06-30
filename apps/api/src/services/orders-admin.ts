@@ -7,6 +7,10 @@ import { db } from "@finanzas/db";
 import type { OrderDetail, OrderSummary } from "@finanzas/orpc-contracts/orders-admin";
 
 import { DomainError } from "../lib/errors.ts";
+import { logError } from "../lib/logger.ts";
+import { refundPayment } from "../modules/mercadopago-checkout/payment.ts";
+import { releaseReservations, restockOrderItems } from "../modules/reservations/index.ts";
+import { sendOrderDispatchedEmail } from "./email/transactional.ts";
 
 // Derive the where type from the configured client's method (not the standalone
 // alias, whose generic params don't match the options-parameterized client).
@@ -121,5 +125,60 @@ export async function markOrderFulfilled(id: number): Promise<OrderDetail> {
     throw new DomainError("BAD_REQUEST", "Solo un pedido pagado puede marcarse despachado");
   }
   await db.order.update({ where: { id }, data: { status: "FULFILLED" } });
+  const detail = await getOrderById(id);
+
+  // Notify the buyer their order shipped (best-effort — never fail the action).
+  try {
+    const comuna = (detail.shipping_address as { city?: string } | null)?.city ?? null;
+    await sendOrderDispatchedEmail({
+      to: detail.customer_email,
+      orderNumber: detail.number,
+      shippedToComuna: comuna,
+    });
+  } catch (e) {
+    logError("orders-admin.dispatch_email_failed", e, { orderId: id });
+  }
+  return detail;
+}
+
+export async function cancelOrder(id: number): Promise<OrderDetail> {
+  const existing = await db.order.findUnique({ where: { id }, select: { status: true } });
+  if (!existing) throw new DomainError("NOT_FOUND", "Pedido no encontrado");
+  // Cancel is only for unpaid orders. A paid order must be refunded (money back).
+  if (existing.status !== "PENDING") {
+    throw new DomainError(
+      "BAD_REQUEST",
+      "Solo un pedido pendiente (sin pago) puede cancelarse. Usa reembolso para uno pagado."
+    );
+  }
+  await releaseReservations(id);
+  await db.order.update({ where: { id }, data: { status: "CANCELLED" } });
+  return getOrderById(id);
+}
+
+export async function refundOrder(id: number): Promise<OrderDetail> {
+  const existing = await db.order.findUnique({ where: { id }, include: { payments: true } });
+  if (!existing) throw new DomainError("NOT_FOUND", "Pedido no encontrado");
+  // Refund only a paid, not-yet-dispatched order (a shipped order's stock is gone
+  // and needs a manual return flow). DTE credit note (nota de crédito, type 61)
+  // is NOT auto-emitted — issue it manually in Haulmer.
+  if (existing.status !== "PAID") {
+    throw new DomainError(
+      "BAD_REQUEST",
+      "Solo un pedido pagado y no despachado puede reembolsarse"
+    );
+  }
+  type PaymentRow = (typeof existing.payments)[number];
+  const payment = existing.payments.find(
+    (p: PaymentRow) => p.provider === "MERCADO_PAGO" && p.providerPaymentId
+  );
+  if (!payment?.providerPaymentId) {
+    throw new DomainError("BAD_REQUEST", "No hay un pago de MercadoPago para reembolsar");
+  }
+
+  await refundPayment(payment.providerPaymentId);
+  await restockOrderItems(id);
+  await db.order.update({ where: { id }, data: { status: "REFUNDED" } });
+  await db.payment.updateMany({ where: { orderId: id }, data: { status: "REFUNDED" } });
   return getOrderById(id);
 }

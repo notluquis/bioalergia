@@ -9,7 +9,7 @@ import { PageState } from "@/components/ui/PageState";
 import { confirmAction } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/context/ToastContext";
 import { useAuth } from "@/features/auth/hooks/use-auth";
-import { markOrderFulfilled } from "../api";
+import { cancelOrder, markOrderFulfilled, refundOrder } from "../api";
 import { columns } from "../components/columns";
 import type { OrdersTableMeta } from "../components/columns";
 import { OrderDetailModal } from "../components/OrderDetailModal";
@@ -64,6 +64,28 @@ export function OrdersPage() {
     },
   });
 
+  const cancelMutation = useMutation({
+    mutationFn: (id: number) => cancelOrder(id),
+    onError: (e) => {
+      toastError(e instanceof Error ? e.message : "No se pudo cancelar el pedido");
+    },
+    onSuccess: (order) => {
+      success(`Pedido ${order.number} cancelado`);
+      void queryClient.invalidateQueries({ queryKey: orderKeys.all });
+    },
+  });
+
+  const refundMutation = useMutation({
+    mutationFn: (id: number) => refundOrder(id),
+    onError: (e) => {
+      toastError(e instanceof Error ? e.message : "No se pudo reembolsar el pedido");
+    },
+    onSuccess: (order) => {
+      success(`Pedido ${order.number} reembolsado`);
+      void queryClient.invalidateQueries({ queryKey: orderKeys.all });
+    },
+  });
+
   function handleFulfill(id: number) {
     if (!canUpdate) {
       return;
@@ -81,10 +103,51 @@ export function OrdersPage() {
     })();
   }
 
+  function handleCancel(id: number) {
+    if (!canUpdate) {
+      return;
+    }
+    void (async () => {
+      const ok = await confirmAction({
+        title: "Cancelar pedido",
+        description: "El pedido se cancelará y el stock se liberará.",
+        confirmLabel: "Cancelar pedido",
+        cancelLabel: "Volver",
+      });
+      if (ok) {
+        cancelMutation.mutate(id);
+      }
+    })();
+  }
+
+  function handleRefund(id: number) {
+    if (!canUpdate) {
+      return;
+    }
+    void (async () => {
+      const ok = await confirmAction({
+        title: "Reembolsar pedido",
+        description:
+          "Se reembolsará el pago al cliente vía MercadoPago y el stock volverá. Esta acción no se puede deshacer. La nota de crédito (DTE) debe emitirse manualmente.",
+        confirmLabel: "Reembolsar",
+        cancelLabel: "Volver",
+        variant: "danger",
+        requireText: "REEMBOLSAR",
+      });
+      if (ok) {
+        refundMutation.mutate(id);
+      }
+    })();
+  }
+
   const meta: OrdersTableMeta = {
     canUpdate,
     fulfillingId: fulfillMutation.isPending ? (fulfillMutation.variables ?? null) : null,
+    cancellingId: cancelMutation.isPending ? (cancelMutation.variables ?? null) : null,
+    refundingId: refundMutation.isPending ? (refundMutation.variables ?? null) : null,
+    onCancel: handleCancel,
     onFulfill: handleFulfill,
+    onRefund: handleRefund,
     onView: setDetailId,
   };
 

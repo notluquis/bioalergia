@@ -229,6 +229,35 @@ export async function sendOrderConfirmationEmail(args: {
   });
 }
 
+/**
+ * Shop order dispatched — sent when an admin marks the order FULFILLED. Lets the
+ * buyer know it's on the way + a link to track. Best-effort at the call site.
+ */
+export async function sendOrderDispatchedEmail(args: {
+  to: string;
+  orderNumber: string;
+  shippedToComuna?: string | null;
+}): Promise<EmailSendResult> {
+  const statusUrl = `${storeUrl()}/pedido/${encodeURIComponent(args.orderNumber)}?email=${encodeURIComponent(args.to)}`;
+  const dest = args.shippedToComuna ? ` a ${esc(args.shippedToComuna)}` : "";
+  const html = shell(
+    "Tu pedido va en camino",
+    `<p>Despachamos tu pedido <strong>${esc(args.orderNumber)}</strong>${dest}.</p>
+     <p>Te llegará por Chilexpress en los próximos días hábiles según la cobertura de tu comuna.</p>
+     <p style="margin-top:16px"><a href="${statusUrl}" style="color:#0e64b7">Ver el estado de tu pedido</a></p>`
+  );
+  const text =
+    `Despachamos tu pedido ${args.orderNumber}${args.shippedToComuna ? ` a ${args.shippedToComuna}` : ""}.\n` +
+    `Te llegará por Chilexpress en los próximos días hábiles.\nEstado: ${statusUrl}`;
+  return sendEmail({
+    to: args.to,
+    subject: `Tu pedido ${args.orderNumber} fue despachado — Bioalergia`,
+    html,
+    text,
+    idempotencyKey: `order-dispatched/${args.orderNumber}`,
+  });
+}
+
 // Fecha legible es-CL para los avisos internos (plazos legales).
 function fmtDate(d: Date): string {
   return new Intl.DateTimeFormat("es-CL", { dateStyle: "long" }).format(d);
