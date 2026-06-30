@@ -6566,6 +6566,9 @@ model Order {
   status            OrderStatus         @default(PENDING)
   channel           OrderChannel        @default(WEB)
   mlOrderId         String?             @unique @map("ml_order_id")
+  // Opaque per-order token for the public status page, so the link carries no
+  // email (PII) in the URL. Nullable for orders created before this column.
+  accessToken       String?             @unique @map("access_token")
   dteFolio          String?             @map("dte_folio")
   dteType           String?             @map("dte_type")
   notes             String?

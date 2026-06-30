@@ -130,10 +130,12 @@ export async function markOrderFulfilled(id: number): Promise<OrderDetail> {
   // Notify the buyer their order shipped (best-effort — never fail the action).
   try {
     const comuna = (detail.shipping_address as { city?: string } | null)?.city ?? null;
+    const tokenRow = await db.order.findUnique({ where: { id }, select: { accessToken: true } });
     await sendOrderDispatchedEmail({
       to: detail.customer_email,
       orderNumber: detail.number,
       shippedToComuna: comuna,
+      accessToken: tokenRow?.accessToken,
     });
   } catch (e) {
     logError("orders-admin.dispatch_email_failed", e, { orderId: id });

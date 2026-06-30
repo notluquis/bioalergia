@@ -171,6 +171,15 @@ function clp(n: number): string {
   }).format(n);
 }
 
+// Prefer the opaque token (no email/PII in the URL); fall back to email for the
+// rare case an order predates the token column.
+function orderStatusLink(orderNumber: string, to: string, accessToken?: string | null): string {
+  const base = `${storeUrl()}/pedido/${encodeURIComponent(orderNumber)}`;
+  return accessToken
+    ? `${base}?token=${encodeURIComponent(accessToken)}`
+    : `${base}?email=${encodeURIComponent(to)}`;
+}
+
 /**
  * Shop order confirmation — sent to the buyer once MercadoPago approves the
  * payment (webhook). Order summary + DTE (boleta/factura) + a link to track the
@@ -186,9 +195,10 @@ export async function sendOrderConfirmationEmail(args: {
   billingType?: "BOLETA" | "FACTURA";
   dteFolio?: string;
   dtePdfUrl?: string;
+  accessToken?: string | null;
 }): Promise<EmailSendResult> {
   const docLabel = args.billingType === "FACTURA" ? "Factura" : "Boleta";
-  const statusUrl = `${storeUrl()}/pedido/${encodeURIComponent(args.orderNumber)}?email=${encodeURIComponent(args.to)}`;
+  const statusUrl = orderStatusLink(args.orderNumber, args.to, args.accessToken);
   const itemRows = args.items
     .map(
       (it) =>
@@ -237,8 +247,9 @@ export async function sendOrderDispatchedEmail(args: {
   to: string;
   orderNumber: string;
   shippedToComuna?: string | null;
+  accessToken?: string | null;
 }): Promise<EmailSendResult> {
-  const statusUrl = `${storeUrl()}/pedido/${encodeURIComponent(args.orderNumber)}?email=${encodeURIComponent(args.to)}`;
+  const statusUrl = orderStatusLink(args.orderNumber, args.to, args.accessToken);
   const dest = args.shippedToComuna ? ` a ${esc(args.shippedToComuna)}` : "";
   const html = shell(
     "Tu pedido va en camino",

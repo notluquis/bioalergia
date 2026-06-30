@@ -20649,6 +20649,13 @@ export class SchemaType implements SchemaDef {
                     optional: true,
                     attributes: [{ name: "@unique" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("ml_order_id") }] }] as readonly AttributeApplication[]
                 },
+                accessToken: {
+                    name: "accessToken",
+                    type: "String",
+                    unique: true,
+                    optional: true,
+                    attributes: [{ name: "@unique" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("access_token") }] }] as readonly AttributeApplication[]
+                },
                 dteFolio: {
                     name: "dteFolio",
                     type: "String",
@@ -20719,7 +20726,8 @@ export class SchemaType implements SchemaDef {
             uniqueFields: {
                 id: { type: "Int" },
                 number: { type: "String" },
-                mlOrderId: { type: "String" }
+                mlOrderId: { type: "String" },
+                accessToken: { type: "String" }
             }
         },
         OrderItem: {

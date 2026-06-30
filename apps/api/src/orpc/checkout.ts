@@ -220,6 +220,7 @@ const startRoute = base
       orderId: order.id,
       orderNumber: order.number,
       customerEmail: input.customer.email,
+      accessToken: order.accessToken,
       shippingClp,
       items: order.items.map((i: OrderItem) => ({
         sku: i.product.sku,
@@ -256,7 +257,10 @@ const statusRoute = base
   .input(checkoutStatusInputSchema)
   .output(checkoutStatusResponseSchema)
   .handler(async ({ input }) => {
-    const order = await getOrderByNumber(input.order_number, input.email);
+    const order = await getOrderByNumber(input.order_number, {
+      token: input.token,
+      email: input.email,
+    });
     if (!order) {
       throw new ORPCError("NOT_FOUND", { message: "Pedido no encontrado" });
     }

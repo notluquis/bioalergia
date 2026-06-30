@@ -310,6 +310,7 @@ export function registerMercadopagoCheckoutWebhook(app: Hono) {
                 return { name: snap.name, qty: i.qty, unitPriceClp: i.unitPriceClp };
               }),
               billingType: order.billingType,
+              accessToken: order.accessToken,
               ...(order.dteFolio ? { dteFolio: order.dteFolio } : {}),
               ...(dtePdfUrl ? { dtePdfUrl } : {}),
             });
