@@ -10,10 +10,14 @@ export function buildRecipient(
   toE164: string | null | undefined,
   recipientBsuid?: string | null
 ): { to: string } | { recipient: string } {
+  // A username-only contact's wa_id IS its BSUID (e.g. "BR.1A2…"), which gets
+  // stored in the required phoneE164 column as a non-empty MALFORMED value. Only
+  // treat phoneE164 as `to` when it's an actual E.164 phone (7–15 digits); else
+  // address by BSUID via `recipient`.
   const phone = toE164?.trim();
-  if (phone) return { to: phone.replace(/^\+/, "") };
+  if (phone && /^\+?\d{7,15}$/.test(phone)) return { to: phone.replace(/^\+/, "") };
   if (recipientBsuid?.trim()) return { recipient: recipientBsuid.trim() };
-  throw new Error("Destinatario sin teléfono ni BSUID");
+  throw new Error("Destinatario sin teléfono válido ni BSUID");
 }
 
 export type SendTextInput = {
