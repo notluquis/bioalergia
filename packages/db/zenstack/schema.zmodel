@@ -2651,6 +2651,7 @@ model AppointmentPaymentToken {
 
   emailNotification     DoctoraliaEmailNotification?   @relation(fields: [emailNotificationId], references: [id], onDelete: SetNull)
   calendarAppointment   DoctoraliaCalendarAppointment? @relation(fields: [calendarAppointmentId], references: [id], onDelete: SetNull)
+  intakeSubmissions     IntakeSubmission[]
 
   // Acceso público sin auth — el CUID en la URL es el secreto
   @@allow('read', true)
@@ -2659,6 +2660,60 @@ model AppointmentPaymentToken {
   @@index([status])
   @@index([patientPhone])
   @@map("appointment_payment_tokens")
+}
+
+// Ficha del paciente recolectada vía WhatsApp Flow (auto-agendados por
+// Doctoralia). Desacoplado de Person/Patient: las recepcionistas usan el
+// resumen para crear la ficha + anotar en Doctoralia a mano. Auditable.
+model IntakeSubmission {
+  id                       String   @id @default(cuid())
+  appointmentPaymentTokenId String? @map("appointment_payment_token_id")
+
+  // Datos del paciente
+  patientName              String   @map("patient_name")
+  patientPhone             String   @map("patient_phone")  // E.164
+  patientEmail             String?  @map("patient_email")
+  patientRut               String?  @map("patient_rut")
+  patientBirthDate         DateTime? @map("patient_birth_date") @db.Date
+
+  // Previsión + clínico
+  healthInsurance          HealthInsuranceType? @map("health_insurance")
+  isapreName               String?  @map("isapre_name")
+  address                  String?
+  reason                   String?  // motivo de consulta
+  knownAllergies           String?  @map("known_allergies")
+  conditions               String?
+  medications              String?
+
+  // Tutor (si menor)
+  isMinor                  Boolean? @map("is_minor")
+  guardianName             String?  @map("guardian_name")
+  guardianRut              String?  @map("guardian_rut")
+  guardianPhone            String?  @map("guardian_phone")
+  guardianRelationship     String?  @map("guardian_relationship")
+
+  // Comprobante (PhotoPicker → R2)
+  comprobanteR2Key         String?  @map("comprobante_r2_key")
+  comprobanteMime          String?  @map("comprobante_mime")
+
+  // Aviso al staff
+  staffNotifiedAt          DateTime? @map("staff_notified_at")
+
+  sourceChannel            String   @default("whatsapp_flow") @map("source_channel")
+  flowToken                String?  @map("flow_token")
+  raw                      Json?    // payload crudo del flow (auditoría)
+  submittedAt              DateTime @default(now()) @map("submitted_at") @db.Timestamptz(3)
+  createdAt                DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt                DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  appointmentPaymentToken  AppointmentPaymentToken? @relation(fields: [appointmentPaymentTokenId], references: [id], onDelete: SetNull)
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@index([patientPhone])
+  @@index([patientRut])
+  @@index([appointmentPaymentTokenId])
+  @@map("intake_submissions")
 }
 
 // Singleton (one row, label="default") storing the raw Doctoralia panel session

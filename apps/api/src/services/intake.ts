@@ -1,0 +1,119 @@
+// Patient intake collected via the WhatsApp Flow → IntakeSubmission. Pure mapping
+// (mapFlowDataToIntake) + persistence (createIntakeFromFlow). The Flow's data
+// keys are the contract with the Flow JSON (Phase 4): nombre/rut/correo/
+// fecha_nacimiento/prevision/isapre/direccion/telefono/motivo/alergias/
+// condiciones/es_menor/tutor_*. RUT is normalized if valid, else kept raw (staff
+// verify). Decoupled from Person/Patient — staff create the record by hand.
+
+import { db } from "@finanzas/db";
+import { normalizeRut, validateRut } from "../lib/rut.ts";
+import { logEvent } from "../lib/logger.ts";
+
+type FlowData = Record<string, unknown>;
+
+function str(v: unknown): string | null {
+  return typeof v === "string" && v.trim() ? v.trim() : null;
+}
+
+function bool(v: unknown): boolean | null {
+  if (typeof v === "boolean") return v;
+  const s = str(v)?.toLowerCase();
+  if (s == null) return null;
+  if (["1", "true", "yes", "si", "sí", "on"].includes(s)) return true;
+  if (["0", "false", "no", "off"].includes(s)) return false;
+  return null;
+}
+
+function insurance(v: unknown): "FONASA" | "ISAPRE" | "PARTICULAR" | null {
+  const s = str(v)?.toUpperCase();
+  if (s === "FONASA" || s === "ISAPRE" || s === "PARTICULAR") return s;
+  return null;
+}
+
+function rut(v: unknown): string | null {
+  const s = str(v);
+  if (!s) return null;
+  return validateRut(s) ? normalizeRut(s) : s; // keep raw if invalid, staff verify
+}
+
+function birthDate(v: unknown): Date | null {
+  const s = str(v);
+  if (!s) return null;
+  // Flow DatePicker sends epoch-ms string or ISO; tolerate both.
+  const asNum = Number(s);
+  const d = Number.isFinite(asNum) && s.length >= 10 ? new Date(asNum) : new Date(s);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+export type MappedIntake = {
+  patientName: string;
+  patientPhone: string;
+  patientEmail: string | null;
+  patientRut: string | null;
+  patientBirthDate: Date | null;
+  healthInsurance: "FONASA" | "ISAPRE" | "PARTICULAR" | null;
+  isapreName: string | null;
+  address: string | null;
+  reason: string | null;
+  knownAllergies: string | null;
+  conditions: string | null;
+  medications: string | null;
+  isMinor: boolean | null;
+  guardianName: string | null;
+  guardianRut: string | null;
+  guardianPhone: string | null;
+  guardianRelationship: string | null;
+};
+
+/** Map the Flow's decrypted `data` to intake fields. `fallback` fills name/phone
+ * from the linked payment token when the form omits them. */
+export function mapFlowDataToIntake(
+  data: FlowData,
+  fallback: { patientName?: string; patientPhone?: string }
+): MappedIntake {
+  return {
+    patientName: str(data.nombre) ?? fallback.patientName ?? "",
+    patientPhone: str(data.telefono) ?? fallback.patientPhone ?? "",
+    patientEmail: str(data.correo),
+    patientRut: rut(data.rut),
+    patientBirthDate: birthDate(data.fecha_nacimiento),
+    healthInsurance: insurance(data.prevision),
+    isapreName: str(data.isapre),
+    address: str(data.direccion),
+    reason: str(data.motivo),
+    knownAllergies: str(data.alergias),
+    conditions: str(data.condiciones),
+    medications: str(data.medicamentos),
+    isMinor: bool(data.es_menor),
+    guardianName: str(data.tutor_nombre),
+    guardianRut: rut(data.tutor_rut),
+    guardianPhone: str(data.tutor_telefono),
+    guardianRelationship: str(data.tutor_relacion),
+  };
+}
+
+/** Persist an IntakeSubmission from a flow completion, linked to the payment
+ * token via flow_token (= AppointmentPaymentToken.id). */
+export async function createIntakeFromFlow(
+  flowToken: string | null,
+  data: FlowData
+): Promise<{ id: string }> {
+  const token = flowToken
+    ? await db.appointmentPaymentToken.findUnique({ where: { id: flowToken } })
+    : null;
+  const mapped = mapFlowDataToIntake(data, {
+    patientName: token?.patientName,
+    patientPhone: token?.patientPhone,
+  });
+  const created = await db.intakeSubmission.create({
+    data: {
+      appointmentPaymentTokenId: token?.id ?? null,
+      flowToken,
+      sourceChannel: "whatsapp_flow",
+      raw: data as never,
+      ...mapped,
+    },
+  });
+  logEvent("wa-flow.intake.created", { intakeId: created.id, tokenId: token?.id ?? null });
+  return { id: created.id };
+}
