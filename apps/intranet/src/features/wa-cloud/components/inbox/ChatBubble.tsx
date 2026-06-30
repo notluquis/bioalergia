@@ -248,7 +248,7 @@ export function ChatBubble({
               // message, with the template name as a small caption for context.
               <div className="flex flex-col gap-1">
                 <span
-                  className={`inline-flex items-center gap-1 text-[11px] ${
+                  className={`inline-flex items-center gap-1 text-xs ${
                     out ? "text-success-foreground/70" : "text-default-400"
                   }`}
                 >

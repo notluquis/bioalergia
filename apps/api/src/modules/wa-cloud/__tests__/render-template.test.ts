@@ -50,6 +50,18 @@ describe("renderTemplateBody", () => {
     expect(renderTemplatePreview(tpl, sent)).toBe("linea1 linea2 x");
   });
 
+  it("substitutes dynamic text header params ({{1}}) before prefixing", () => {
+    const tpl = [
+      { type: "HEADER", format: "TEXT", text: "Pedido {{1}}" },
+      { type: "BODY", text: "Hola {{1}}" },
+    ];
+    const sent = [
+      { type: "header", parameters: [{ text: "#A-42" }] },
+      { type: "body", parameters: [{ text: "Ana" }] },
+    ];
+    expect(renderTemplateBody(tpl, sent)).toBe("Pedido #A-42\n\nHola Ana");
+  });
+
   it("tolerates missing params (leaves nothing rendered, no crash)", () => {
     const tpl = [{ type: "BODY", text: "Hola {{nombre}}" }];
     expect(renderTemplateBody(tpl, [])).toBe("Hola {{nombre}}");

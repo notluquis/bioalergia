@@ -38,15 +38,27 @@ function findHeaderText(templateComponents: unknown): string | null {
   return null;
 }
 
-function bodyParams(sentComponents: unknown): MetaParam[] {
+function componentParams(sentComponents: unknown, kind: "body" | "header"): MetaParam[] {
   if (!Array.isArray(sentComponents)) return [];
   for (const c of sentComponents) {
-    if (isObject(c) && typeof c.type === "string" && c.type.toLowerCase() === "body") {
+    if (isObject(c) && typeof c.type === "string" && c.type.toLowerCase() === kind) {
       const params = (c as SentComponent).parameters;
       return Array.isArray(params) ? params : [];
     }
   }
   return [];
+}
+
+function substitute(text: string, params: MetaParam[]): string {
+  let out = text;
+  params.forEach((p, i) => {
+    const value = typeof p.text === "string" ? p.text : "";
+    // Named templates carry parameter_name ({{nombre_paciente}}); positional
+    // ones don't ({{1}}, {{2}}…). Replace whichever this param targets.
+    const placeholder = p.parameter_name ? `{{${p.parameter_name}}}` : `{{${i + 1}}}`;
+    out = out.split(placeholder).join(value);
+  });
+  return out;
 }
 
 /**
@@ -62,19 +74,16 @@ export function renderTemplateBody(
   const bodyText = findBodyText(templateComponents);
   if (bodyText === null) return null;
 
-  let rendered = bodyText;
-  bodyParams(sentComponents).forEach((p, i) => {
-    const value = typeof p.text === "string" ? p.text : "";
-    // Named templates carry parameter_name ({{nombre_paciente}}); positional
-    // ones don't ({{1}}, {{2}}…). Replace whichever this param targets.
-    const placeholder = p.parameter_name ? `{{${p.parameter_name}}}` : `{{${i + 1}}}`;
-    rendered = rendered.split(placeholder).join(value);
-  });
+  const rendered = substitute(bodyText, componentParams(sentComponents, "body"));
 
-  // Prefix the static text header (e.g. "Bioalergia · Dr. …") when present, so
-  // the bubble reads like the real WhatsApp message.
-  const header = findHeaderText(templateComponents);
-  return header ? `${header}\n\n${rendered}` : rendered;
+  // Prefix the text header (e.g. "Bioalergia · Dr. …") when present, so the
+  // bubble reads like the real WhatsApp message. The header can itself be a
+  // dynamic text header ({{1}}) — substitute its params too, else it would
+  // persist as "Hola {{1}}".
+  const headerText = findHeaderText(templateComponents);
+  if (!headerText) return rendered;
+  const renderedHeader = substitute(headerText, componentParams(sentComponents, "header"));
+  return `${renderedHeader}\n\n${rendered}`;
 }
 
 /** One-line preview for the conversation list (newlines collapsed, trimmed). */
