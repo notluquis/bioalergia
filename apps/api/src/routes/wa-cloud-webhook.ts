@@ -48,10 +48,14 @@ waCloudWebhookRoutes.post("/whatsapp", async (c) => {
   const rawBody = await c.req.text();
   const sig = c.req.header("X-Hub-Signature-256");
 
-  // Try verify against any account's appSecret
+  // Try verify against any account's appSecret. NOT filtered by `active` — the
+  // signature is cryptographic and independent of whether we're allowed to send;
+  // an inactive (banned) account still receives webhooks, including the
+  // ACCOUNT_RECONNECTED / DISABLED_UPDATE=REINSTATE event that re-enables it.
+  // Filtering by active here would deadlock re-enabling.
   let signatureValid = false;
   const accounts = await db.waBusinessAccount.findMany({
-    where: { active: true, appSecret: { not: null } },
+    where: { appSecret: { not: null } },
     select: { appSecret: true },
   });
   for (const a of accounts) {

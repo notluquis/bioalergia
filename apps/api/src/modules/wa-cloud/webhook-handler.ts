@@ -1131,13 +1131,15 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
               where: { metaMessageId: s.id },
               select: { conversationId: true, status: true },
             });
+            // PLAYED (voice note played) is a strict advance over READ — the
+            // frontend renders it as its own state, so it must be able to win.
             const STATUS_RANK: Record<string, number> = {
               PENDING: 0,
               SENT: 1,
               DELIVERED: 2,
               READ: 3,
-              PLAYED: 3,
-              FAILED: 4,
+              PLAYED: 4,
+              FAILED: 5,
             };
             const curRank = STATUS_RANK[owner?.status ?? "PENDING"] ?? 0;
             const advances = (STATUS_RANK[status] ?? 0) > curRank;
