@@ -8,7 +8,10 @@
 import { db } from "@finanzas/db";
 import { normalizeRut, validateRut } from "../lib/rut.ts";
 import { formatChile } from "../lib/time.ts";
-import { logEvent } from "../lib/logger.ts";
+import { logError, logEvent } from "../lib/logger.ts";
+import { type FlowPhoto, downloadAndDecryptFlowMedia } from "../lib/flow-media.ts";
+import { getR2Object, putR2Object } from "../modules/cloudflare/r2.ts";
+import { uploadMedia } from "../modules/wa-cloud/graph-client.ts";
 import { loadAbonoStaffNotifyConfig } from "../lib/doctoralia/abono-whatsapp-settings.ts";
 import { fanout } from "./abono-staff-notify.ts";
 
@@ -118,7 +121,37 @@ export async function createIntakeFromFlow(
     },
   });
   logEvent("wa-flow.intake.created", { intakeId: created.id, tokenId: token?.id ?? null });
+
+  // PhotoPicker receipt → download+decrypt+verify → R2. Best-effort: a bad/absent
+  // receipt must not lose the intake (staff can still follow up).
+  const photo = extractFlowPhoto(data);
+  if (photo) {
+    try {
+      const { bytes, mimeType } = await downloadAndDecryptFlowMedia(photo);
+      const r2Key = `intake-comprobante/${created.id}`;
+      await putR2Object(r2Key, bytes, mimeType);
+      await db.intakeSubmission.update({
+        where: { id: created.id },
+        data: { comprobanteR2Key: r2Key, comprobanteMime: mimeType },
+      });
+      logEvent("wa-flow.intake.comprobante_saved", { intakeId: created.id, r2Key });
+    } catch (err) {
+      logError("wa-flow.intake.comprobante_failed", err, { intakeId: created.id });
+    }
+  }
   return { id: created.id };
+}
+
+/** Find the PhotoPicker value in a flow payload regardless of the field key —
+ * any array whose first element carries encryption_metadata. */
+function extractFlowPhoto(data: FlowData): FlowPhoto | null {
+  for (const v of Object.values(data)) {
+    if (Array.isArray(v)) {
+      const first = v[0] as FlowPhoto | undefined;
+      if (first?.encryption_metadata && first.cdn_url) return first;
+    }
+  }
+  return null;
 }
 
 /** Forward the intake summary to the clinic staff's WhatsApp so they create the
@@ -154,13 +187,38 @@ export async function notifyStaffFicha(intakeId: string): Promise<void> {
     ? `${intake.healthInsurance}${intake.isapreName ? ` · ${intake.isapreName}` : ""}`
     : "—";
 
-  const sent = await fanout(cfg, cfg.fichaTemplateName, [
-    { name: "paciente", text: intake.patientName },
-    { name: "rut", text: intake.patientRut ?? "—" },
-    { name: "prevision", text: prevision },
-    { name: "fecha", text: fecha },
-    { name: "detalle", text: detalle.slice(0, 1000) },
-  ]);
+  // Forward the receipt as the template's IMAGE header. Re-upload to Meta under
+  // the sending phone (a media id is scoped to its phone). Best-effort.
+  let imageHeaderMediaId: string | undefined;
+  if (intake.comprobanteR2Key && cfg.phoneNumberId != null) {
+    try {
+      const obj = await getR2Object(intake.comprobanteR2Key);
+      const bytes = Buffer.from(await new Response(obj.body).arrayBuffer());
+      const mime = intake.comprobanteMime ?? obj.contentType;
+      const uploaded = await uploadMedia(
+        cfg.phoneNumberId,
+        new Blob([bytes] as BlobPart[], { type: mime }),
+        mime,
+        "comprobante"
+      );
+      imageHeaderMediaId = uploaded.id;
+    } catch (err) {
+      logError("wa-flow.intake.staff_header_failed", err, { intakeId });
+    }
+  }
+
+  const sent = await fanout(
+    cfg,
+    cfg.fichaTemplateName,
+    [
+      { name: "paciente", text: intake.patientName },
+      { name: "rut", text: intake.patientRut ?? "—" },
+      { name: "prevision", text: prevision },
+      { name: "fecha", text: fecha },
+      { name: "detalle", text: detalle.slice(0, 1000) },
+    ],
+    imageHeaderMediaId
+  );
   await db.intakeSubmission.update({
     where: { id: intakeId },
     data: { staffNotifiedAt: new Date() },
