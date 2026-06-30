@@ -163,7 +163,7 @@ async function executeWebhookSync(
       return;
     }
 
-    const result = await calendarSyncService.syncCalendar(channel.calendar.calendarId);
+    const result = await calendarSyncService.syncCalendar(channel.calendar.googleId);
     await finalizeSyncLog(initialLogId, result);
   } catch (err) {
     if (err instanceof Error && err.message === "Sincronización ya en curso") {
