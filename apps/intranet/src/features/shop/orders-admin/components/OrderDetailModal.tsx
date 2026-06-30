@@ -58,6 +58,11 @@ function DetailBody({ order }: { order: OrderDetail }) {
             {(order.dte_type ?? "DTE") + " · " + order.dte_folio}
           </Chip>
         ) : null}
+        {order.cx_ot_number ? (
+          <Chip color="accent" size="sm" variant="soft">
+            {"OT Chilexpress · " + order.cx_ot_number}
+          </Chip>
+        ) : null}
       </div>
 
       <section className="grid grid-cols-1 gap-1 sm:grid-cols-2">

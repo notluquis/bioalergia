@@ -40,6 +40,7 @@ export const orderDetailSchema = orderSummarySchema.extend({
   subtotal_clp: z.number().int(),
   shipping_clp: z.number().int(),
   shipping_address: z.unknown().nullable(),
+  cx_ot_number: z.string().nullable(),
   notes: z.string().nullable(),
   items: z.array(orderItemSchema),
 });

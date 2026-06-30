@@ -16947,6 +16947,27 @@ export class SchemaType implements SchemaDef {
                     unique: true,
                     optional: true
                 },
+                cxOtNumber: {
+                    name: "cxOtNumber",
+                    type: "String",
+                    unique: true,
+                    optional: true
+                },
+                cxBarcode: {
+                    name: "cxBarcode",
+                    type: "String",
+                    optional: true
+                },
+                cxLabelBase64: {
+                    name: "cxLabelBase64",
+                    type: "String",
+                    optional: true
+                },
+                cxLabelType: {
+                    name: "cxLabelType",
+                    type: "Int",
+                    optional: true
+                },
                 dteFolio: {
                     name: "dteFolio",
                     type: "String",
@@ -17003,7 +17024,8 @@ export class SchemaType implements SchemaDef {
                 id: { type: "Int" },
                 number: { type: "String" },
                 mlOrderId: { type: "String" },
-                accessToken: { type: "String" }
+                accessToken: { type: "String" },
+                cxOtNumber: { type: "String" }
             }
         },
         OrderItem: {
