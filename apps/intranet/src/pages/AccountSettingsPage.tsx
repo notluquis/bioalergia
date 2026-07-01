@@ -176,6 +176,8 @@ export function AccountSettingsPage() {
     deletePasskeyMutation.mutate();
   };
 
+  const mfaRequired = Boolean(user?.mfaEnforced) && !user?.mfaEnabled && !user?.hasPasskey;
+
   return (
     <div className="space-y-6">
       <div className="space-y-1 px-6 pt-6">
@@ -186,6 +188,19 @@ export function AccountSettingsPage() {
           Gestiona tus métodos de autenticación para proteger tu cuenta.
         </p>
       </div>
+
+      {mfaRequired && (
+        <div
+          className="mx-6 rounded-xl border border-warning-soft-hover bg-warning/5 p-4 text-sm text-warning-700"
+          role="alert"
+        >
+          <p className="font-semibold">Configuración de seguridad requerida</p>
+          <p className="mt-1">
+            Tu cuenta exige un segundo factor. Configura MFA (Google Authenticator) o registra un
+            passkey para poder usar el resto del sistema.
+          </p>
+        </div>
+      )}
 
       {/* MFA Section */}
       <section className="bg-background p-6">
