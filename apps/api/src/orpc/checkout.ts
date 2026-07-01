@@ -112,7 +112,8 @@ const DEFAULT_PACKAGE_DIMS = { height: 10, width: 20, length: 30 } as const;
 
 // Single-package heuristic: the box we quote/ship is the largest single product
 // by volume (falling back to the 10×20×30 default for products with no dims).
-function largestPackageDims(
+// Exported for unit testing (pure fn, no side effects).
+export function largestPackageDims(
   products: Array<{ heightCm: number | null; widthCm: number | null; lengthCm: number | null }>
 ): { height: number; width: number; length: number } {
   let best: { height: number; width: number; length: number } | null = null;
