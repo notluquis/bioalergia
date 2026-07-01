@@ -17,6 +17,7 @@ const { mockDb, m } = vi.hoisted(() => {
     employeeUpsert: vi.fn().mockResolvedValue({}),
     personFindUnique: vi.fn(),
     personUpdate: vi.fn().mockResolvedValue({}),
+    passkeyCount: vi.fn().mockResolvedValue(0),
   };
   const mockDb = {
     user: {
@@ -32,6 +33,7 @@ const { mockDb, m } = vi.hoisted(() => {
       findUnique: (...a: unknown[]) => m.personFindUnique(...a),
       update: (...a: unknown[]) => m.personUpdate(...a),
     },
+    passkey: { count: (...a: unknown[]) => m.passkeyCount(...a) },
   };
   return { mockDb, m };
 });
@@ -78,6 +80,7 @@ beforeEach(() => {
   mockHasPermission.mockResolvedValue(true);
   mockSendAccountInvite.mockResolvedValue(true);
   mockFindUserByEffectiveLoginEmail.mockResolvedValue(null);
+  m.passkeyCount.mockResolvedValue(0);
 });
 
 describe("users.invite", () => {
@@ -176,5 +179,95 @@ describe("users.setup", () => {
     const res = (await call(usersORPCRouter.setup, input, ctx())) as { message?: string };
     expect(res.message).toMatch(/ya configurada/i);
     expect(m.userUpdate).not.toHaveBeenCalled();
+  });
+
+  // Server-side MFA enforcement: an mfaEnforced account cannot activate without a
+  // second factor (TOTP enabled OR a registered passkey). Closes the direct-POST
+  // bypass of the client-side "skip" hiding.
+  function primePendingSetup(overrides: Record<string, unknown>) {
+    mockGetSessionUser.mockResolvedValue({ id: 7, status: "PENDING_SETUP" });
+    m.userFindUnique.mockResolvedValueOnce({
+      id: 7,
+      status: "PENDING_SETUP",
+      personId: 50,
+      person: { email: "diego@bioalergia.cl" },
+      ...overrides,
+    });
+  }
+
+  it("rejects activation when mfaEnforced and there is no factor (no TOTP, no passkey)", async () => {
+    primePendingSetup({ mfaEnforced: true, mfaEnabled: false });
+    m.passkeyCount.mockResolvedValueOnce(0);
+    await expect(call(usersORPCRouter.setup, input, ctx())).rejects.toThrow(/MFA|passkey/i);
+    const setActive = m.userUpdate.mock.calls.some((c) => c[0]?.data?.status === "ACTIVE");
+    expect(setActive).toBe(false);
+  });
+
+  it("activates when mfaEnforced and the user has a registered passkey", async () => {
+    primePendingSetup({ mfaEnforced: true, mfaEnabled: false });
+    m.passkeyCount.mockResolvedValueOnce(1);
+    const res = (await call(usersORPCRouter.setup, input, ctx())) as { status: string };
+    expect(res.status).toBe("ok");
+    expect(m.userUpdate.mock.calls.some((c) => c[0]?.data?.status === "ACTIVE")).toBe(true);
+  });
+
+  it("activates when mfaEnforced and TOTP is already enabled", async () => {
+    primePendingSetup({ mfaEnforced: true, mfaEnabled: true });
+    const res = (await call(usersORPCRouter.setup, input, ctx())) as { status: string };
+    expect(res.status).toBe("ok");
+    expect(m.userUpdate.mock.calls.some((c) => c[0]?.data?.status === "ACTIVE")).toBe(true);
+  });
+});
+
+describe("users.resendInvite", () => {
+  it("re-emails the invite link for a PENDING_SETUP user", async () => {
+    m.userFindUnique.mockResolvedValueOnce({
+      id: 8,
+      status: "PENDING_SETUP",
+      person: { email: "nuevo@bioalergia.cl", names: "Carla" },
+    });
+    const res = (await call(usersORPCRouter.resendInvite, { id: 8 }, ctx())) as {
+      status: string;
+      emailed: boolean;
+    };
+    expect(res).toEqual({ status: "ok", emailed: true });
+    expect(mockSendAccountInvite).toHaveBeenCalledWith({
+      userId: 8,
+      to: "nuevo@bioalergia.cl",
+      name: "Carla",
+    });
+  });
+
+  it("surfaces emailed=false when the resend email fails", async () => {
+    m.userFindUnique.mockResolvedValueOnce({
+      id: 8,
+      status: "PENDING_SETUP",
+      person: { email: "nuevo@bioalergia.cl", names: "Carla" },
+    });
+    mockSendAccountInvite.mockResolvedValueOnce(false);
+    const res = (await call(usersORPCRouter.resendInvite, { id: 8 }, ctx())) as { emailed: boolean };
+    expect(res.emailed).toBe(false);
+  });
+
+  it("rejects a non-PENDING_SETUP (already ACTIVE) user", async () => {
+    m.userFindUnique.mockResolvedValueOnce({
+      id: 8,
+      status: "ACTIVE",
+      person: { email: "nuevo@bioalergia.cl", names: "Carla" },
+    });
+    await expect(call(usersORPCRouter.resendInvite, { id: 8 }, ctx())).rejects.toThrow(
+      /pendientes de configuración/i
+    );
+    expect(mockSendAccountInvite).not.toHaveBeenCalled();
+  });
+
+  it("rejects a user without an email", async () => {
+    m.userFindUnique.mockResolvedValueOnce({
+      id: 8,
+      status: "PENDING_SETUP",
+      person: { email: null, names: "Carla" },
+    });
+    await expect(call(usersORPCRouter.resendInvite, { id: 8 }, ctx())).rejects.toThrow(/correo/i);
+    expect(mockSendAccountInvite).not.toHaveBeenCalled();
   });
 });

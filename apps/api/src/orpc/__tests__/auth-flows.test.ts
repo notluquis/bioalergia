@@ -153,6 +153,13 @@ vi.mock("../../lib/auth.ts", async (importOriginal) => {
   };
 });
 
+const { mockConsumeInviteToken } = vi.hoisted(() => ({ mockConsumeInviteToken: vi.fn() }));
+vi.mock("../../services/password-reset.ts", () => ({
+  consumeInviteToken: mockConsumeInviteToken,
+  requestPasswordReset: vi.fn(),
+  resetPasswordWithToken: vi.fn(),
+}));
+
 import { authORPCRouter } from "../auth.ts";
 
 // --- fake Hono context ----------------------------------------------------
@@ -291,6 +298,69 @@ describe("auth MFA enrollment — setup-token guards", () => {
     await expect(
       call(authORPCRouter.mfaEnablePending, { setupToken: "x", token: "123456" }, { context })
     ).rejects.toMatchObject({ status: 401 });
+  });
+
+  // Happy path: a valid setup token + valid TOTP enrolls MFA and mints the real
+  // session (exercises mintSessionResponse, shared with passkeyRegisterVerifyPending).
+  it("enrolls TOTP and mints a session (Set-Cookie) with mfaEnabled=true", async () => {
+    mockVerifyToken.mockResolvedValueOnce({ typ: "mfa-setup", sub: 7, sv: 1 });
+    // resolveMfaSetupToken → the ACTIVE, still-MFA-less user
+    mockUserFindUnique.mockResolvedValueOnce({
+      id: 7,
+      status: "ACTIVE",
+      mfaEnabled: false,
+      mfaSecret: "enc",
+      sessionVersion: 1,
+      person: { email: "user@bioalergia.cl", names: "Ada" },
+      roles: [{ role: { name: "Admin" } }],
+    });
+    mockPasskeyCount.mockResolvedValueOnce(0);
+    mockVerifyMfaToken.mockResolvedValueOnce(true);
+    // mintSessionResponse → getEffectiveLoginEmailByUserId's findUnique
+    mockUserFindUnique.mockResolvedValueOnce({
+      loginEmail: "user@bioalergia.cl",
+      person: { email: "user@bioalergia.cl" },
+    });
+
+    const { context, setCookies } = makeCtx();
+    const res = (await call(
+      authORPCRouter.mfaEnablePending,
+      { setupToken: "x", token: "123456" },
+      { context }
+    )) as { status: string; user: { mfaEnabled: boolean } };
+
+    expect(res.status).toBe("ok");
+    expect(res.user.mfaEnabled).toBe(true);
+    expect(setCookies.some((c) => c.startsWith("finanzas_session="))).toBe(true);
+    // mfaEnabled persisted BEFORE the session was minted.
+    expect(mockUserUpdate.mock.calls.some((c) => c[0]?.data?.mfaEnabled === true)).toBe(true);
+  });
+});
+
+describe("auth.acceptInvite", () => {
+  it("consumes the single-use invite token and mints a PENDING_SETUP session", async () => {
+    mockConsumeInviteToken.mockResolvedValueOnce({
+      userId: 7,
+      loginEmail: "user@bioalergia.cl",
+      roles: ["Admin"],
+      sessionVersion: 1,
+    });
+    const { context, setCookies } = makeCtx();
+    const res = (await call(authORPCRouter.acceptInvite, { token: "tok" }, { context })) as {
+      status: string;
+    };
+    expect(res.status).toBe("ok");
+    expect(setCookies.some((c) => c.startsWith("finanzas_session="))).toBe(true);
+    expect(mockConsumeInviteToken).toHaveBeenCalledWith("tok");
+  });
+
+  it("rejects (no session) when the token is invalid/expired/already-used", async () => {
+    mockConsumeInviteToken.mockRejectedValueOnce(new Error("La invitación es inválida o expiró."));
+    const { context, setCookies } = makeCtx();
+    await expect(
+      call(authORPCRouter.acceptInvite, { token: "tok" }, { context })
+    ).rejects.toThrow();
+    expect(setCookies.some((c) => c.startsWith("finanzas_session="))).toBe(false);
   });
 });
 
