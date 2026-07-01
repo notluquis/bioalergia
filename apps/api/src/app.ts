@@ -521,20 +521,28 @@ app.use(
 //   - patients    → uploadPatientAttachment (z.file())
 //   - timesheets  → prepare / send-email carry a base64 monthly PDF
 //   - outreach    → importMineduc carries a base64 CSV
-const ORPC_BODY_LIMIT_EXEMPT_PREFIXES = [
+//   - wa-cloud    → createBroadcast up to 5000 recipients w/ per-row vars (~hundreds of KB)
+// These get a larger — but still FINITE (20 MB) — cap rather than being skipped
+// entirely, so an authenticated client can't stream an unbounded body either.
+const ORPC_LARGE_BODY_PREFIXES = [
   "/api/orpc/csv-upload/",
   "/api/orpc/patients/",
   "/api/orpc/timesheets/",
   "/api/orpc/outreach/",
+  "/api/orpc/wa-cloud/",
 ];
 const orpcBodyLimit = bodyLimit({
   maxSize: 256 * 1024,
   onError: (c) => c.text("Payload too large", 413),
 });
+const orpcLargeBodyLimit = bodyLimit({
+  maxSize: 20 * 1024 * 1024,
+  onError: (c) => c.text("Payload too large", 413),
+});
 app.use("/api/orpc/*", (c, next) => {
   const { pathname } = new URL(c.req.url);
-  if (ORPC_BODY_LIMIT_EXEMPT_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
-    return next();
+  if (ORPC_LARGE_BODY_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
+    return orpcLargeBodyLimit(c, next);
   }
   return orpcBodyLimit(c, next);
 });

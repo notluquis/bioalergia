@@ -44,14 +44,7 @@ function isPermanentChilexpressError(message: string): boolean {
   return /no gener[oó] la OT/i.test(message) || /^chilexpress:/i.test(message.trim());
 }
 
-export const order_post_payment: Task = async (payload) => {
-  const parsed = orderPostPaymentPayload.safeParse(payload);
-  if (!parsed.success) {
-    logError("queue.order_post_payment.invalid_payload", new Error(parsed.error.message));
-    return;
-  }
-  const { orderId } = parsed.data;
-
+export async function runOrderPostPayment(orderId: number): Promise<void> {
   const order = await db.order.findUnique({
     where: { id: orderId },
     include: { items: true },
@@ -170,4 +163,13 @@ export const order_post_payment: Task = async (payload) => {
   }
 
   logEvent("queue.order_post_payment.done", { orderId });
+}
+
+export const order_post_payment: Task = async (payload) => {
+  const parsed = orderPostPaymentPayload.safeParse(payload);
+  if (!parsed.success) {
+    logError("queue.order_post_payment.invalid_payload", new Error(parsed.error.message));
+    return;
+  }
+  await runOrderPostPayment(parsed.data.orderId);
 };

@@ -17,7 +17,7 @@ import {
   reserveStockForOrder,
 } from "../modules/reservations/index.ts";
 import { enqueueJob } from "../queue/runner.ts";
-import { orderPostPaymentJobKey } from "../queue/tasks/order-post-payment.ts";
+import { orderPostPaymentJobKey, runOrderPostPayment } from "../queue/tasks/order-post-payment.ts";
 import { sendAbonoConfirmation } from "../services/abono-confirmation.ts";
 import { sendPaymentFailedEmail } from "../services/email/transactional.ts";
 import { notifyStaffCardPayment } from "../services/abono-staff-notify.ts";
@@ -275,11 +275,21 @@ export function registerMercadopagoCheckoutWebhook(app: Hono) {
         // inline best-effort try/catch. Idempotent + jobKey-deduped, so a
         // duplicate `approved` webhook re-enqueue is a no-op. preserve_run_at:
         // don't reset the run time if a job is already queued for this order.
-        await enqueueJob(
+        const queued = await enqueueJob(
           "order_post_payment",
           { orderId },
           { jobKey: orderPostPaymentJobKey(orderId), jobKeyMode: "preserve_run_at" }
         );
+        if (!queued) {
+          // Queue disabled (DISABLE_QUEUE_RUNNER) or not yet booted → enqueueJob
+          // is a no-op. Run the side-effects inline so a paid order still gets its
+          // DTE/OT/email instead of being lost (MP won't retry an acked webhook).
+          try {
+            await runOrderPostPayment(orderId);
+          } catch (e) {
+            logError("mp-webhook.inline_post_payment_failed", e, { orderId });
+          }
+        }
       } else if (status === "rejected") {
         // A decline is NOT terminal — the order stays PENDING and retryable.
         // Nudge the buyer with a link back to the status page so they can retry.
@@ -330,11 +340,13 @@ export function registerMercadopagoCheckoutWebhook(app: Hono) {
         },
         data: { error: msg },
       });
-      // ALWAYS ack a handled delivery with 200. The stored WebhookEvent (with the
-      // captured `error`) is the durable record; a 5xx makes MP retry-storm
-      // forever and leaks internal error text. logError surfaces it to Sentry.
+      // Return 5xx so MercadoPago retries a TRANSIENT failure (refetchPayment 5xx,
+      // DB blip) — acking 200 here would drop the delivery and leave an approved
+      // payment unprocessed. The stored WebhookEvent captures the error for
+      // diagnosis; the response body is GENERIC so we never leak internals.
+      // MP's retry schedule is finite, so a truly permanent error won't storm.
       logError("mp-webhook.handler_error", e, { topic, dataId: String(dataId) });
-      return c.json({ ok: true }, 200);
+      return c.json({ error: "internal_error" }, 500);
     }
   });
 }
