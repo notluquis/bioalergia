@@ -34,7 +34,7 @@ export function MfaStep({
   if (isLoading && !mfaSecret) {
     return (
       <div className="flex justify-center py-8">
-        <Loader2 className=" text-primary" size={40} />
+        <Loader2 aria-hidden className=" text-primary" size={40} />
       </div>
     );
   }
@@ -44,7 +44,7 @@ export function MfaStep({
       <div className="space-y-6">
         <div className="mb-6 text-center">
           <div className="mx-auto mb-3 flex items-center justify-center rounded-full bg-warning/10 text-warning size-12">
-            <Smartphone size={24} />
+            <Smartphone aria-hidden size={24} />
           </div>
           <h2 className="font-bold text-2xl">Configurar MFA</h2>
           <p className="text-default-500 text-sm">
@@ -75,7 +75,7 @@ export function MfaStep({
       <div className="flex flex-col items-center gap-6">
         <div className="rounded-xl bg-white p-4">
           <img
-            alt="QR Code"
+            alt="Código QR para configurar la autenticación de dos factores"
             className="size-48"
             decoding="async"
             loading="lazy"
@@ -107,7 +107,7 @@ export function MfaStep({
             onPress={onVerifyMfa}
             variant="primary"
           >
-            {isLoading ? <Loader2 className="" /> : "Verificar y activar"}
+            {isLoading ? <Loader2 aria-hidden className="" /> : "Verificar y activar"}
           </Button>
         </div>
 
@@ -124,7 +124,7 @@ export function MfaStep({
             onPress={onPasskeyRegister}
             variant="outline"
           >
-            <Fingerprint size={20} />
+            <Fingerprint aria-hidden size={20} />
             Registrar passkey (huella/FaceID)
           </Button>
         </div>
