@@ -958,12 +958,17 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
             //   1. Auto-send the intake Flow (once; guarded in the service).
             //   2. If this inbound is an IMAGE, forward it to staff as a payment
             //      receipt (they work from WhatsApp, not the intranet).
-            const pendingAbono = await db.appointmentPaymentToken.findFirst({
+            const pendingAbonos = await db.appointmentPaymentToken.findMany({
               where: { patientPhone: normalizeToE164(m.from), status: "PENDING" },
               select: { id: true },
+              take: 2,
             });
-            if (pendingAbono) {
-              out.intakeFlowTokenIds.push(pendingAbono.id);
+            if (pendingAbonos.length > 0) {
+              // Only auto-send the intake Flow when the pending abono is
+              // unambiguous — with several pending tokens we can't tell which
+              // appointment the flow is for. (The comprobante forward handles its
+              // own ambiguity downstream, so it still fires.)
+              if (pendingAbonos.length === 1) out.intakeFlowTokenIds.push(pendingAbonos[0].id);
               if (msgType === "IMAGE") out.staffComprobanteMessageIds.push(insertedInbound.id);
             }
 

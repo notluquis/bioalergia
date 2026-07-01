@@ -54,10 +54,17 @@ async function buildResponse(request: FlowRequest): Promise<Record<string, unkno
     if (flowToken) {
       const token = await db.appointmentPaymentToken.findUnique({
         where: { id: flowToken },
-        select: { status: true },
+        select: { status: true, expiresAt: true },
       });
-      if (token && token.status !== "PENDING") {
-        logEvent("wa-flow.endpoint.token_not_pending", { flowToken, status: token.status });
+      // Reject a token that's no longer usable: wrong status OR past its expiry
+      // (the sweep may not have flipped it to EXPIRED yet).
+      const unusable = token != null && (token.status !== "PENDING" || token.expiresAt < new Date());
+      if (unusable) {
+        logEvent("wa-flow.endpoint.token_not_pending", {
+          flowToken,
+          status: token.status,
+          expiresAt: token.expiresAt.toISOString(),
+        });
         return {
           version,
           screen: "COMPROBANTE",

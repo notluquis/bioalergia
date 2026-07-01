@@ -157,6 +157,7 @@ import { waCloudMediaRoutes } from "./routes/wa-cloud-media.ts";
 import { waCloudSseRoutes } from "./routes/wa-cloud-sse.ts";
 import { waCloudWebhookRoutes } from "./routes/wa-cloud-webhook.ts";
 import { waCloudFlowRoutes } from "./routes/wa-cloud-flow-endpoint.ts";
+import { intakeMediaRoutes } from "./routes/intake-media.ts";
 import { errorReply } from "./utils/error-reply.ts";
 import { normalizeErrorResponse } from "./utils/normalize-error-response.ts";
 import { reply, replyRaw } from "./utils/reply.ts";
@@ -3016,6 +3017,7 @@ app.route("/api/wa-cloud/sse", waCloudSseRoutes);
 // /api/wa-cloud/*) so it's exempt from the SPA CSRF middleware; Meta's
 // server-to-server POST carries no CSRF token. Trust is the RSA/AES crypto.
 app.route("/api/webhooks/wa-flow", waCloudFlowRoutes);
+app.route("/api/intake-media", intakeMediaRoutes);
 app.route("/api/icd11", icd11TokenRoutes);
 app.route("/api/certificates/medical", medicalCertificatePdfRoutes);
 app.route("/api/certificates/prescription", prescriptionPdfRoutes);

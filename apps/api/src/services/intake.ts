@@ -7,10 +7,10 @@
 
 import { db } from "@finanzas/db";
 import { normalizeRut, validateRut } from "../lib/rut.ts";
-import { formatChile } from "../lib/time.ts";
+import { dbDateToISO, formatChile } from "../lib/time.ts";
 import { logError, logEvent } from "../lib/logger.ts";
 import { type FlowPhoto, downloadAndDecryptFlowMedia } from "../lib/flow-media.ts";
-import { cdnUrlForKey, getR2Object, putR2Object } from "../modules/cloudflare/r2.ts";
+import { getR2Object, putR2Object } from "../modules/cloudflare/r2.ts";
 import { uploadMedia } from "../modules/wa-cloud/graph-client.ts";
 import {
   ABONO_WHATSAPP_SETTINGS,
@@ -288,7 +288,8 @@ function extractFlowPhoto(data: FlowData): FlowPhoto | null {
 }
 
 /** Paginated, newest-first list of intake submissions for the read-only viewer.
- * comprobanteUrl is a CDN url derived from the stored R2 key (null when none). */
+ * comprobanteUrl points at the AUTHENTICATED /api/intake-media stream (NOT a
+ * public CDN — the receipt is PHI); null when there's no receipt yet. */
 export async function listIntakeSubmissions(
   input: z.infer<typeof listIntakeSubmissionsInputSchema>
 ): Promise<{ items: IntakeSubmissionListItemDto[]; total: number }> {
@@ -313,7 +314,7 @@ export async function listIntakeSubmissions(
     reason: r.reason,
     isMinor: r.isMinor,
     appointmentDate: r.appointmentPaymentToken?.appointmentDate ?? null,
-    comprobanteUrl: r.comprobanteR2Key ? cdnUrlForKey(r.comprobanteR2Key) : null,
+    comprobanteUrl: r.comprobanteR2Key ? `/api/intake-media/comprobante/${r.id}` : null,
     staffNotifiedAt: r.staffNotifiedAt,
     submittedAt: r.submittedAt,
   }));
@@ -334,7 +335,13 @@ export async function notifyStaffFicha(intakeId: string): Promise<void> {
   // Template params can't contain newlines (Meta rejects them) → " · " separator.
   const bits: string[] = [];
   if (intake.patientEmail) bits.push(`Correo: ${intake.patientEmail}`);
-  if (intake.patientBirthDate) bits.push(`Nac: ${formatChile(intake.patientBirthDate, "D/M/YYYY")}`);
+  // birthDate is a @db.Date (UTC-anchored midnight) — format from its UTC
+  // calendar day, NOT Chile-local (formatChile would roll it back a day).
+  const birthIso = dbDateToISO(intake.patientBirthDate);
+  if (birthIso) {
+    const [by, bm, bd] = birthIso.split("-");
+    bits.push(`Nac: ${Number(bd)}/${Number(bm)}/${by}`);
+  }
   if (intake.address) bits.push(`Dir: ${intake.address}`);
   if (intake.reason) bits.push(`Motivo: ${intake.reason}`);
   if (intake.knownAllergies) bits.push(`Alergias: ${intake.knownAllergies}`);
@@ -387,9 +394,13 @@ export async function notifyStaffFicha(intakeId: string): Promise<void> {
     ],
     imageHeaderMediaId
   );
-  await db.intakeSubmission.update({
-    where: { id: intakeId },
-    data: { staffNotifiedAt: new Date() },
-  });
+  // Only mark notified when a send actually landed — otherwise leave it null so
+  // the viewer shows "pendiente" and the ficha can be retried.
+  if (sent > 0) {
+    await db.intakeSubmission.update({
+      where: { id: intakeId },
+      data: { staffNotifiedAt: new Date() },
+    });
+  }
   logEvent("wa-flow.intake.staff_notified", { intakeId, sent });
 }
