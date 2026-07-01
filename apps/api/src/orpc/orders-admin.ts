@@ -5,6 +5,7 @@ import {
   orderIdInputSchema,
   ordersListInputSchema,
   ordersListResponseSchema,
+  updateShippingAddressInputSchema,
 } from "@finanzas/orpc-contracts/orders-admin";
 import type { OrdersAdminContract } from "@finanzas/orpc-contracts/orders-admin";
 import { ORPCError, onError, os } from "@orpc/server";
@@ -21,6 +22,7 @@ import {
   listOrders,
   markOrderFulfilled,
   refundOrder,
+  updateOrderShippingAddress,
 } from "../services/orders-admin.ts";
 import { SuperJSONRPCHandler } from "./superjson.ts";
 
@@ -130,12 +132,37 @@ const refundRoute = requireWrite
     return { data: order, status: "ok" as const };
   });
 
+const updateShippingAddressRoute = requireWrite
+  .route({
+    method: "POST",
+    path: "/orders/shipping-address",
+    summary: "Edit shipping address (PENDING/PAID)",
+    tags: ["Orders"],
+  })
+  .input(updateShippingAddressInputSchema)
+  .output(orderDetailResponseSchema)
+  .handler(async ({ input, context }) => {
+    const order = await updateOrderShippingAddress(input.id, input.address);
+    await logAuditFromContext(context.hono, {
+      kind: "DATA_UPDATE",
+      userId: context.user.id,
+      actorLabel: context.user.email,
+      resource: "order",
+      resourceId: order.id,
+      outcome: "ok",
+      message: `Pedido ${order.number}: dirección de despacho editada`,
+      metadata: { number: order.number, cxOtNumber: order.cx_ot_number },
+    });
+    return { data: order, status: "ok" as const };
+  });
+
 const ordersAdminORPCRouterBase = {
   list: listRoute,
   detail: detailRoute,
   markFulfilled: markFulfilledRoute,
   cancel: cancelRoute,
   refund: refundRoute,
+  updateShippingAddress: updateShippingAddressRoute,
 } satisfies Record<keyof OrdersAdminContract, unknown>;
 
 export const ordersAdminORPCRouter = base

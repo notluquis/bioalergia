@@ -1,9 +1,18 @@
-import { Chip, Modal, Spinner } from "@heroui/react";
-import { useQuery } from "@tanstack/react-query";
+import { Button, Chip, Form, Input, Label, Modal, Spinner, TextField } from "@heroui/react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { AlertTriangle } from "lucide-react";
+import { useState } from "react";
+import { confirmAction } from "@/components/ui/ConfirmDialog";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
+import { useToast } from "@/context/ToastContext";
+import { useAuth } from "@/features/auth/hooks/use-auth";
 import { formatCurrency } from "@/lib/utils";
+import { updateOrderShippingAddress } from "../api";
 import { orderKeys } from "../queries";
 import type { OrderDetail, OrderStatus } from "../types";
+
+/** Address is only editable before the order leaves for the courier. */
+const EDITABLE_ADDRESS_STATUSES: ReadonlySet<OrderStatus> = new Set(["PENDING", "PAID"]);
 
 const STATUS_LABEL: Record<OrderStatus, string> = {
   PENDING: "Pendiente",
@@ -151,10 +160,7 @@ function DetailBody({ order }: { order: OrderDetail }) {
         </div>
       </section>
 
-      <section className="flex flex-col gap-1">
-        <span className="font-semibold text-default-600 text-sm">Dirección de despacho</span>
-        <ShippingAddress value={order.shipping_address} />
-      </section>
+      <ShippingSection order={order} />
 
       <OrderDownloads order={order} />
 
@@ -185,6 +191,152 @@ function Totals({ label, value }: { label: string; value: number }) {
       <span>{label}</span>
       <span className="tabular-nums">{formatCurrency(value)}</span>
     </div>
+  );
+}
+
+/** Read a string field off the stored shipping-address JSON (or ""). */
+function readAddrField(value: unknown, key: string): string {
+  if (value != null && typeof value === "object") {
+    const v = (value as Record<string, unknown>)[key];
+    if (typeof v === "string") return v;
+  }
+  return "";
+}
+
+/**
+ * Shipping address block. For PENDING/PAID orders an operator with update rights
+ * can correct typos inline. If the Chilexpress OT already exists (`cx_ot_number`)
+ * we surface a warning: editing the stored address here does NOT recreate the OT.
+ */
+function ShippingSection({ order }: { order: OrderDetail }) {
+  const { can } = useAuth();
+  const queryClient = useQueryClient();
+  const { error: toastError, success } = useToast();
+  const canEdit = can("update", "ShopOrder") && EDITABLE_ADDRESS_STATUSES.has(order.status);
+
+  const [isEditing, setEditing] = useState(false);
+  const [street, setStreet] = useState(() => readAddrField(order.shipping_address, "street"));
+  const [streetNumber, setStreetNumber] = useState(() =>
+    readAddrField(order.shipping_address, "street_number")
+  );
+  const [city, setCity] = useState(() => readAddrField(order.shipping_address, "city"));
+  const [region, setRegion] = useState(() => readAddrField(order.shipping_address, "region"));
+  const [countyCode, setCountyCode] = useState(() =>
+    readAddrField(order.shipping_address, "county_code")
+  );
+
+  const mutation = useMutation({
+    mutationFn: () =>
+      updateOrderShippingAddress(order.id, {
+        street: street.trim(),
+        street_number: streetNumber.trim() || undefined,
+        city: city.trim(),
+        region: region.trim(),
+        county_code: countyCode.trim() || undefined,
+      }),
+    onError: (e) => {
+      toastError(e instanceof Error ? e.message : "No se pudo actualizar la dirección");
+    },
+    onSuccess: (updated) => {
+      success(`Pedido ${updated.number}: dirección actualizada`);
+      void queryClient.invalidateQueries({ queryKey: orderKeys.all });
+      setEditing(false);
+    },
+  });
+
+  function startEdit() {
+    setStreet(readAddrField(order.shipping_address, "street"));
+    setStreetNumber(readAddrField(order.shipping_address, "street_number"));
+    setCity(readAddrField(order.shipping_address, "city"));
+    setRegion(readAddrField(order.shipping_address, "region"));
+    setCountyCode(readAddrField(order.shipping_address, "county_code"));
+    setEditing(true);
+  }
+
+  function handleSubmit() {
+    void (async () => {
+      const ok = await confirmAction({
+        title: "Editar dirección de despacho",
+        description: order.cx_ot_number
+          ? "El envío ya tiene OT creada; corregir la dirección aquí no la recrea — coordina con Chilexpress."
+          : "Se corregirá la dirección guardada del pedido. Úsalo solo para corregir errores antes del despacho.",
+        confirmLabel: "Guardar dirección",
+        cancelLabel: "Volver",
+      });
+      if (ok) mutation.mutate();
+    })();
+  }
+
+  return (
+    <section className="flex flex-col gap-2">
+      <div className="flex items-center justify-between gap-2">
+        <span className="font-semibold text-default-600 text-sm">Dirección de despacho</span>
+        {canEdit && !isEditing ? (
+          <Button onPress={startEdit} size="sm" variant="secondary">
+            Editar dirección
+          </Button>
+        ) : null}
+      </div>
+
+      {order.cx_ot_number ? (
+        <div className="flex items-start gap-2 rounded-lg border border-warning-200 bg-warning-50 px-3 py-2 text-sm text-warning-700">
+          <AlertTriangle aria-hidden="true" className="mt-0.5 shrink-0" size={16} />
+          <span>
+            El envío ya tiene OT creada ({order.cx_ot_number}); corregir la dirección aquí no la
+            recrea — coordina con Chilexpress.
+          </span>
+        </div>
+      ) : null}
+
+      {isEditing ? (
+        <Form
+          className="flex flex-col gap-3"
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSubmit();
+          }}
+          validationBehavior="aria"
+        >
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <TextField isRequired onChange={setStreet} value={street}>
+              <Label>Calle</Label>
+              <Input placeholder="Calle" />
+            </TextField>
+            <TextField onChange={setStreetNumber} value={streetNumber}>
+              <Label>Número</Label>
+              <Input placeholder="Número" />
+            </TextField>
+            <TextField isRequired onChange={setCity} value={city}>
+              <Label>Comuna</Label>
+              <Input placeholder="Comuna" />
+            </TextField>
+            <TextField isRequired onChange={setRegion} value={region}>
+              <Label>Región</Label>
+              <Input placeholder="Región" />
+            </TextField>
+            <TextField className="sm:col-span-2" onChange={setCountyCode} value={countyCode}>
+              <Label>Código de comuna (Chilexpress)</Label>
+              <Input placeholder="Opcional — requerido para la OT" />
+            </TextField>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button
+              isDisabled={mutation.isPending}
+              onPress={() => setEditing(false)}
+              size="sm"
+              variant="tertiary"
+            >
+              Cancelar
+            </Button>
+            <Button isPending={mutation.isPending} size="sm" type="submit" variant="primary">
+              Guardar dirección
+            </Button>
+          </div>
+        </Form>
+      ) : (
+        <ShippingAddress value={order.shipping_address} />
+      )}
+    </section>
   );
 }
 

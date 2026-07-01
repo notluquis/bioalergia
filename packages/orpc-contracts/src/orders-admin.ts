@@ -71,6 +71,22 @@ export const ordersListResponseSchema = z.object({
 
 export const orderIdInputSchema = z.object({ id: z.number().int() });
 
+// Admin correction of a shop order's shipping address (typos, before it ships).
+// Mirrors the checkout `shippingAddress` fields: street/city/region required,
+// the Chilexpress structured bits (number, county coverage + service code)
+// optional so the OT can still be created with the right data.
+export const updateShippingAddressInputSchema = z.object({
+  id: z.number().int(),
+  address: z.object({
+    street: z.string().min(2),
+    street_number: z.string().optional(),
+    city: z.string().min(2),
+    region: z.string().min(2),
+    county_code: z.string().optional(),
+    service_code: z.string().optional(),
+  }),
+});
+
 export const orderDetailResponseSchema = z.object({
   data: orderDetailSchema,
   status: z.literal("ok"),
@@ -97,8 +113,14 @@ export const ordersAdminContract = {
     .route({ method: "POST", path: "/orders/refund" })
     .input(orderIdInputSchema)
     .output(orderDetailResponseSchema),
+  updateShippingAddress: oc
+    .route({ method: "POST", path: "/orders/shipping-address" })
+    .input(updateShippingAddressInputSchema)
+    .output(orderDetailResponseSchema),
 };
 
 export type OrdersAdminContract = typeof ordersAdminContract;
 export type OrderSummary = z.infer<typeof orderSummarySchema>;
 export type OrderDetail = z.infer<typeof orderDetailSchema>;
+export type UpdateShippingAddressInput = z.infer<typeof updateShippingAddressInputSchema>;
+export type ShippingAddressPayload = UpdateShippingAddressInput["address"];
