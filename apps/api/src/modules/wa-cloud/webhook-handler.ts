@@ -958,19 +958,23 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
             //   1. Auto-send the intake Flow (once; guarded in the service).
             //   2. If this inbound is an IMAGE, forward it to staff as a payment
             //      receipt (they work from WhatsApp, not the intranet).
-            const pendingAbonos = await db.appointmentPaymentToken.findMany({
-              where: { patientPhone: normalizeToE164(m.from), status: "PENDING" },
-              select: { id: true, expiresAt: true },
-              take: 3,
+            // Filter to USABLE abonos in the DB (PENDING + not past expiry — the
+            // sweep may not have flipped stale ones yet). take:2 is enough to tell
+            // "exactly one" from "ambiguous"; doing the expiry filter in-query means
+            // stale rows can never crowd out the current token or fake ambiguity.
+            const activeAbonos = await db.appointmentPaymentToken.findMany({
+              where: {
+                patientPhone: normalizeToE164(m.from),
+                status: "PENDING",
+                expiresAt: { gt: new Date() },
+              },
+              select: { id: true },
+              take: 2,
             });
-            if (pendingAbonos.length > 0) {
-              // Auto-send the intake Flow only when exactly one NON-expired pending
-              // abono matches — with several we can't tell which appointment it's
-              // for, and an expired token the sweep hasn't flipped yet must not
-              // count (it would both fake ambiguity and get rejected on submit).
-              const now = new Date();
-              const active = pendingAbonos.filter((t) => t.expiresAt > now);
-              if (active.length === 1) out.intakeFlowTokenIds.push(active[0].id);
+            if (activeAbonos.length > 0) {
+              // Auto-send the intake Flow only when exactly one abono matches — with
+              // several we can't tell which appointment the flow is for.
+              if (activeAbonos.length === 1) out.intakeFlowTokenIds.push(activeAbonos[0].id);
               // The comprobante forward handles its own token/ambiguity downstream.
               if (msgType === "IMAGE") out.staffComprobanteMessageIds.push(insertedInbound.id);
             }
