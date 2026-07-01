@@ -361,21 +361,6 @@ const authORPCRouterBase = {
         return { status: "mfa_required" as const, userId: user.id, mfaToken };
       }
 
-      // mfaEnforced accounts without TOTP must use their passkey — a password
-      // alone is not a second factor. If they own a passkey, refuse the
-      // password session and force passkey login (owning ≠ using). Accounts with
-      // neither factor fall through and are routed to /account by the _authed
-      // guard to set one up.
-      if (!user.mfaEnabled && user.mfaEnforced && user.status === "ACTIVE") {
-        const passkeyCount = await db.passkey.count({ where: { userId: user.id } });
-        if (passkeyCount > 0) {
-          authError(
-            "UNAUTHORIZED",
-            "Tu cuenta requiere un segundo factor. Ingresa con tu passkey."
-          );
-        }
-      }
-
       await recordLoginSuccess(user.id, ipFromContext(context.hono));
       clearEmailLoginFailure(normalizedEmail);
       await logAuditFromContext(context.hono, {

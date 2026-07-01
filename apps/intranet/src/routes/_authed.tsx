@@ -44,21 +44,6 @@ export const Route = createFileRoute("/_authed")({
       });
     }
 
-    // Enforce MFA/passkey for accounts flagged mfaEnforced. Blocking: any
-    // navigation bounces back to /account?tab=seguridad until the user sets up
-    // a second factor (mfaEnabled) OR registers a passkey. Enabling either
-    // refetches the session (AccountSettingsPage), which releases the gate.
-    if (
-      user.status === "ACTIVE" &&
-      user.mfaEnforced &&
-      !user.mfaEnabled &&
-      !user.hasPasskey &&
-      !location.pathname.startsWith("/account")
-    ) {
-      // eslint-disable-next-line @typescript-eslint/only-throw-error
-      throw routeApi.redirect({ to: "/account", search: { tab: "seguridad" } });
-    }
-
     const session = context.queryClient.getQueryData<AuthSessionData | null>(["auth", "session"]);
     const abilityRules = session?.abilityRules ?? [];
     updateAbility(abilityRules);
