@@ -37,6 +37,10 @@ export type AppSettings = {
   reactivoLeadsEmail: string;
   // Buzón restringido del canal de denuncias Ley Karin (Ley 21.643).
   karinReportsEmail: string;
+  // Auth policy (editable, no redeploy): validez del enlace de invitación
+  // (días) y del enlace de recuperación de contraseña (minutos).
+  authInviteTtlDays: string;
+  authPasswordResetTtlMinutes: string;
 };
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -71,6 +75,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   emailReplyTo: "contacto@bioalergia.cl",
   reactivoLeadsEmail: "contacto@bioalergia.cl",
   karinReportsEmail: "denuncias@bioalergia.cl",
+  authInviteTtlDays: "7",
+  authPasswordResetTtlMinutes: "60",
 };
 
 const SETTINGS_KEY_MAP: Record<keyof AppSettings, string> = {
@@ -105,6 +111,8 @@ const SETTINGS_KEY_MAP: Record<keyof AppSettings, string> = {
   emailReplyTo: "email.replyTo",
   reactivoLeadsEmail: "reactivos.leadsEmail",
   karinReportsEmail: "karin.reportsEmail",
+  authInviteTtlDays: "auth.inviteTtlDays",
+  authPasswordResetTtlMinutes: "auth.passwordResetTtlMinutes",
 };
 
 export function settingsKeyToDbKey(key: keyof AppSettings): string {

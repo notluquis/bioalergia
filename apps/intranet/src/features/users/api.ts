@@ -84,6 +84,19 @@ export async function inviteUser(
   }
 }
 
+const ResendInviteResponseSchema = z.object({ emailed: z.boolean() });
+
+export async function resendUserInvite(userId: number): Promise<boolean> {
+  try {
+    const res = ResendInviteResponseSchema.parse(
+      await usersORPCClient.resendInvite({ id: userId })
+    );
+    return res.emailed;
+  } catch (error) {
+    throw toUsersApiError(error);
+  }
+}
+
 export async function resetUserPassword(userId: number): Promise<string> {
   try {
     const res = ResetPasswordResponseSchema.parse(

@@ -77,7 +77,13 @@ export function ContentCalendar({ posts }: Readonly<{ posts: SocialPost[] }>) {
   return (
     <div className="social-content-calendar">
       <Suspense
-        fallback={<Skeleton aria-label="Cargando calendario" className="h-96 w-full rounded-xl" />}
+        fallback={
+          <Skeleton
+            aria-label="Cargando calendario"
+            className="h-96 w-full rounded-xl"
+            role="img"
+          />
+        }
       >
         <CalendarGrid events={events} />
       </Suspense>

@@ -161,6 +161,12 @@ export const inviteResponseSchema = z.object({
   emailed: z.boolean(),
 });
 
+export const resendInviteResponseSchema = z.object({
+  status: z.literal("ok"),
+  /** Whether the set-password invite email was re-sent. */
+  emailed: z.boolean(),
+});
+
 export const resetPasswordResponseSchema = z.object({
   status: z.literal("ok"),
   tempPassword: z.string(),
@@ -199,6 +205,10 @@ export const usersContract = {
     .route({ method: "GET", path: "/profile" })
     .input(z.object({}))
     .output(userProfileResponseSchema),
+  resendInvite: oc
+    .route({ method: "POST", path: "/{id}/resend-invite" })
+    .input(userIdSchema)
+    .output(resendInviteResponseSchema),
   resetPassword: oc
     .route({ method: "POST", path: "/{id}/reset-password" })
     .input(userIdSchema)
