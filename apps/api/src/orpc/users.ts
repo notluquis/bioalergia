@@ -13,6 +13,7 @@ import type { userStatusSchema } from "@finanzas/orpc-contracts/users";
 import {
   inviteResponseSchema,
   inviteUserSchema,
+  resendInviteResponseSchema,
   resetPasswordResponseSchema,
   setupUserSchema,
   toggleMfaResponseSchema,
@@ -458,6 +459,40 @@ const usersORPCRouterBase = {
       }
 
       return { status: "ok" as const, tempPassword, emailed };
+    }),
+
+  resendInvite: updateUsers
+    .route({ method: "POST", path: "/{id}/resend-invite" })
+    .input(userIdSchema)
+    .output(resendInviteResponseSchema)
+    .handler(async ({ input }: { input: z.input<typeof userIdSchema> }) => {
+      const targetUser = await db.user.findUnique({
+        where: { id: input.id },
+        select: { id: true, status: true, person: { select: { email: true, names: true } } },
+      });
+
+      if (!targetUser) {
+        throw new ORPCError("NOT_FOUND", { message: "Usuario no encontrado" });
+      }
+      // Only accounts still awaiting setup get a fresh set-password link. An
+      // ACTIVE user isn't pending onboarding; use "Restablecer contraseña" instead.
+      if (targetUser.status !== "PENDING_SETUP") {
+        throw new ORPCError("BAD_REQUEST", {
+          message: "Solo se puede reenviar la invitación a usuarios pendientes de configuración",
+        });
+      }
+      const email = targetUser.person?.email;
+      if (!email) {
+        throw new ORPCError("BAD_REQUEST", { message: "El usuario no tiene correo para invitar" });
+      }
+
+      const emailed = await sendAccountInvite({
+        userId: targetUser.id,
+        to: email,
+        name: targetUser.person?.names ?? "",
+      });
+
+      return { status: "ok" as const, emailed };
     }),
 
   setup: authed

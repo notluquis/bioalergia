@@ -5,6 +5,7 @@ import {
   Fingerprint,
   Key,
   Lock,
+  Mail,
   MoreVertical,
   Pencil,
   Shield,
@@ -38,6 +39,7 @@ export const getColumns = (actions: {
   onDeleteUser: (id: number) => void;
   onEditDetails: (user: User) => void;
   onEditRole: (user: User) => void;
+  onResendInvite: (id: number) => void;
   onResetPassword: (id: number) => void;
   onSetStatus: (id: number, status: "ACTIVE" | "PENDING_SETUP" | "SUSPENDED") => void;
   onToggleMfa: (id: number, current: boolean) => void;
@@ -237,6 +239,17 @@ export const getColumns = (actions: {
                 >
                   <Lock className="mr-2 size-4" />
                   Enviar a onboarding
+                </Dropdown.Item>
+              )}
+              {user.status === "PENDING_SETUP" && (
+                <Dropdown.Item
+                  textValue="Reenviar invitación"
+                  onPress={() => {
+                    actions.onResendInvite(user.id);
+                  }}
+                >
+                  <Mail className="mr-2 size-4" />
+                  Reenviar invitación
                 </Dropdown.Item>
               )}
               {user.status === "PENDING_SETUP" && (
