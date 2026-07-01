@@ -37,7 +37,7 @@ export async function sendPasswordResetEmail(args: {
 }): Promise<EmailSendResult> {
   const html = shell(
     "Tu acceso fue restablecido",
-    `<p>Hola ${args.name},</p>
+    `<p>Hola ${esc(args.name)},</p>
      <p>Un administrador restableció tu contraseña. Ingresa con esta contraseña temporal y completa la configuración de tu cuenta:</p>
      <p style="font-size:18px;font-weight:bold;background:#f3f4f6;padding:12px 16px;border-radius:8px;letter-spacing:1px">${args.tempPassword}</p>
      <p><a href="${appUrl()}/login" style="color:#0e64b7">Ir al inicio de sesión</a></p>
@@ -63,7 +63,7 @@ export async function sendPasswordResetLinkEmail(args: {
   const url = `${appUrl()}/reset-password?token=${encodeURIComponent(args.token)}`;
   const html = shell(
     "Restablece tu contraseña",
-    `<p>Hola ${args.name},</p>
+    `<p>Hola ${esc(args.name)},</p>
      <p>Recibimos una solicitud para restablecer tu contraseña. Haz clic en el botón (válido por 1 hora):</p>
      <p><a href="${url}" style="display:inline-block;background:#0e64b7;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px">Restablecer contraseña</a></p>
      <p style="font-size:13px;color:#6b7280">Si no fuiste tú, ignora este correo. Tu contraseña no cambiará.</p>`
@@ -78,6 +78,32 @@ export async function sendPasswordResetLinkEmail(args: {
 }
 
 /**
+ * #5 — Admin invite: welcome a freshly created account and link to set the
+ * first password. Long-lived (7-day) token, reuses the /reset-password page.
+ */
+export async function sendAccountInviteEmail(args: {
+  to: string;
+  name: string;
+  token: string;
+}): Promise<EmailSendResult> {
+  const url = `${appUrl()}/reset-password?token=${encodeURIComponent(args.token)}`;
+  const html = shell(
+    "Tu cuenta de Bioalergia está lista",
+    `<p>Hola ${esc(args.name)},</p>
+     <p>Se creó tu cuenta en la intranet de Bioalergia. Define tu contraseña para ingresar (enlace válido por 7 días):</p>
+     <p><a href="${url}" style="display:inline-block;background:#0e64b7;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px">Definir mi contraseña</a></p>
+     <p style="font-size:13px;color:#6b7280">Si no esperabas este correo, ignóralo.</p>`
+  );
+  return sendEmail({
+    to: args.to,
+    subject: "Tu cuenta de Bioalergia está lista",
+    html,
+    text: `Hola ${args.name}, define tu contraseña para ingresar a Bioalergia (válido 7 días): ${url}`,
+    idempotencyKey: `invite/${idemDigest(args.token)}`,
+  });
+}
+
+/**
  * #4 — Shop magic-link sign-in: one-time login link for bioalergia.cl.
  * The full URL is built by the caller (shop origin, not appUrl()).
  */
@@ -88,7 +114,7 @@ export async function sendMagicLinkEmail(args: {
 }): Promise<EmailSendResult> {
   const html = shell(
     "Tu enlace de acceso",
-    `<p>Hola ${args.name},</p>
+    `<p>Hola ${esc(args.name)},</p>
      <p>Usa este botón para ingresar a tu cuenta de Bioalergia (válido por 15 minutos):</p>
      <p><a href="${args.url}" style="display:inline-block;background:#0e64b7;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px">Ingresar a mi cuenta</a></p>
      <p style="font-size:13px;color:#6b7280">Si no solicitaste este acceso, ignora este correo.</p>`

@@ -3,9 +3,42 @@ import { db } from "@finanzas/db";
 import { hashPassword } from "../lib/crypto.ts";
 import { DomainError } from "../lib/errors.ts";
 import { logEvent } from "../lib/logger.ts";
-import { sendPasswordResetLinkEmail } from "./email/transactional.ts";
+import { sendAccountInviteEmail, sendPasswordResetLinkEmail } from "./email/transactional.ts";
 
 const TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
+const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+/**
+ * Admin invite: mint a long-lived (7-day) set-password token for a freshly
+ * created PENDING_SETUP user and email a "define tu contraseña" link. Reuses
+ * the same token columns + /reset-password page as forgot-password. Returns
+ * whether provisioning succeeded (admin falls back to a manual reset if not).
+ * Never throws — the user is already created, so a DB/mail hiccup here must not
+ * fail the invite; it just returns false so the admin resends.
+ */
+export async function sendAccountInvite(args: {
+  userId: number;
+  to: string;
+  name: string;
+}): Promise<boolean> {
+  try {
+    const token = randomBytes(32).toString("hex");
+    await db.user.update({
+      where: { id: args.userId },
+      data: {
+        passwordResetTokenHash: sha256(token),
+        passwordResetExpiresAt: new Date(Date.now() + INVITE_TTL_MS),
+        passwordResetPurpose: "invite",
+      },
+    });
+    await sendAccountInviteEmail({ to: args.to, name: args.name, token });
+    logEvent("[invite] set-password link sent", { userId: args.userId });
+    return true;
+  } catch {
+    logEvent("[invite] set-password provisioning failed", { userId: args.userId });
+    return false;
+  }
+}
 
 function sha256(value: string): string {
   return createHash("sha256").update(value).digest("hex");
@@ -44,6 +77,9 @@ export async function requestPasswordReset(rawEmail: string): Promise<void> {
     data: {
       passwordResetTokenHash: sha256(token),
       passwordResetExpiresAt: new Date(Date.now() + TOKEN_TTL_MS),
+      // A forgot-password token must never activate an account. Clear any stale
+      // "invite" purpose so completion can't flip status (see resetPasswordWithToken).
+      passwordResetPurpose: null,
     },
   });
 
@@ -65,22 +101,27 @@ export async function resetPasswordWithToken(token: string, newPassword: string)
   const tokenHash = sha256(token.trim());
   const user = await db.user.findFirst({
     where: { passwordResetTokenHash: tokenHash },
-    select: { id: true, passwordResetExpiresAt: true },
+    select: { id: true, status: true, passwordResetExpiresAt: true, passwordResetPurpose: true },
   });
 
   if (!user || !user.passwordResetExpiresAt || user.passwordResetExpiresAt < new Date()) {
     throw new DomainError("BAD_REQUEST", "El enlace es inválido o expiró. Solicita uno nuevo.", {});
   }
 
+  // Activate ONLY when this token was minted by an admin invite AND the account
+  // is still PENDING_SETUP. A forgot-password token (purpose null/"reset") never
+  // changes status, so an account put back into onboarding can't bypass the
+  // wizard via self-service reset; SUSPENDED/ACTIVE are likewise untouched.
+  const activate = user.passwordResetPurpose === "invite" && user.status === "PENDING_SETUP";
   const passwordHash = await hashPassword(newPassword);
   await db.user.update({
     where: { id: user.id },
     data: {
       passwordHash,
-      // NOTE: do NOT touch `status` here — a self-service reset must not
-      // unsuspend a SUSPENDED account. Only credentials + lockout are reset.
+      ...(activate ? { status: "ACTIVE" as const } : {}),
       passwordResetTokenHash: null,
       passwordResetExpiresAt: null,
+      passwordResetPurpose: null,
       sessionVersion: { increment: 1 },
       failedLoginAttempts: 0,
       lockedUntil: null,

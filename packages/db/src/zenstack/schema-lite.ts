@@ -427,6 +427,11 @@ export class SchemaType implements SchemaDef {
                     type: "DateTime",
                     optional: true
                 },
+                passwordResetPurpose: {
+                    name: "passwordResetPurpose",
+                    type: "String",
+                    optional: true
+                },
                 passkeys: {
                     name: "passkeys",
                     type: "Passkey",

@@ -181,6 +181,11 @@ model User {
   // email + its expiry (1h). Never store the plaintext token. Cleared on use.
   passwordResetTokenHash  String?                  @map("password_reset_token_hash")
   passwordResetExpiresAt  DateTime?                @map("password_reset_expires_at")
+  // What the live token was minted for. "invite" → completing it activates a
+  // PENDING_SETUP account (skips onboarding). null/"reset" → forgot-password,
+  // which must NEVER change status. Distinguishes the two flows that share the
+  // hash columns above. Cleared on use.
+  passwordResetPurpose    String?                  @map("password_reset_purpose")
 
 
   // Relationships

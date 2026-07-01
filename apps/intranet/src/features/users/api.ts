@@ -10,7 +10,7 @@ const StatusResponseSchema = z.looseObject({ message: z.string().optional(), sta
 const UsersResponseSchema = z.object({ users: z.array(z.unknown()) });
 const UserProfileResponseSchema = z.object({ data: z.unknown() });
 const InviteUserResponseSchema = z.object({
-  tempPassword: z.string().optional(),
+  emailed: z.boolean(),
   userId: z.number(),
 });
 const ResetPasswordResponseSchema = z.object({ tempPassword: z.string() });
@@ -76,7 +76,7 @@ export async function fetchUsers(): Promise<User[]> {
 
 export async function inviteUser(
   payload: InviteUserPayload
-): Promise<{ tempPassword?: string; userId: number }> {
+): Promise<{ emailed: boolean; userId: number }> {
   try {
     return InviteUserResponseSchema.parse(await usersORPCClient.invite(payload));
   } catch (error) {
