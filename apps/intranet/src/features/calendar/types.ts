@@ -555,6 +555,56 @@ export interface TreatmentAnalytics {
 }
 
 // Classification UI types
+export const MISSING_FILTER_KEYS = [
+  "missingCategory",
+  "missingAmountExpected",
+  "missingAmountPaid",
+  "missingAttended",
+  "missingDosage",
+  "missingTreatmentStage",
+] as const;
+
+const isMissingFilterKey = (value: string): boolean =>
+  (MISSING_FILTER_KEYS as readonly string[]).includes(value);
+
+const arrayPreprocess = (val: unknown) => {
+  if (!val) {
+    return undefined;
+  }
+  return Array.isArray(val) ? val : [val];
+};
+
+/**
+ * Search params for the classification surface. Shared so the `/calendar` host
+ * (where classification is a tab) can round-trip `missing`/`filterMode` on the
+ * URL and the page can parse them off the loose host search.
+ */
+export const classifySearchSchema = z
+  .object({
+    page: z.coerce.number().optional().catch(0),
+    missing: z
+      .preprocess(arrayPreprocess, z.array(z.string()).optional())
+      .refine((values) => !values || values.every(isMissingFilterKey), {
+        message: "Invalid missing filter key",
+      }),
+    filterMode: z.enum(["AND", "OR"]).optional(),
+    calendarId: z
+      .union([z.string(), z.array(z.string())])
+      .optional()
+      .transform((val) => {
+        if (!val) {
+          return undefined;
+        }
+        return Array.isArray(val) ? val : [val];
+      }),
+  })
+  .transform((search) => ({
+    page: search.page ?? 0,
+    missing: search.missing?.length ? [...new Set(search.missing)] : undefined,
+    filterMode: search.filterMode,
+    calendarId: search.calendarId,
+  }));
+
 export type ClassifySearchParams = {
   calendarId?: string[];
   filterMode?: "AND" | "OR";

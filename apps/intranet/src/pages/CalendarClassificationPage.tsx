@@ -21,7 +21,7 @@ import { ClassificationToolbar } from "@/features/calendar/components/Classifica
 import type { FormApiFor } from "@/features/calendar/form-types";
 import { calendarQueries, calendarSyncKeys } from "@/features/calendar/queries";
 import type { ClassificationEntry, FormValues } from "@/features/calendar/schemas";
-import type { CalendarUnclassifiedEvent } from "@/features/calendar/types";
+import { type CalendarUnclassifiedEvent, classifySearchSchema } from "@/features/calendar/types";
 import {
   buildDefaultEntry,
   buildPayload,
@@ -31,7 +31,7 @@ import {
 import { useJobProgress } from "@/hooks/use-job-progress";
 import { toast } from "@/lib/toast-interceptor";
 
-const routeApi = getRouteApi("/_authed/clinical/classify");
+const routeApi = getRouteApi("/_authed/calendar/");
 
 const EMPTY_EVENTS: CalendarUnclassifiedEvent[] = [];
 const PAGE_SIZE = 50;
@@ -41,7 +41,7 @@ type MissingFilterKey = NonNullable<MissingFieldFilters["missing"]>[number];
 function CalendarClassificationPage() {
   const queryClient = useQueryClient();
   const navigate = routeApi.useNavigate();
-  const search = routeApi.useSearch();
+  const search = classifySearchSchema.parse(routeApi.useSearch());
 
   const page = search.page ?? 0;
   const filters: MissingFieldFilters = {

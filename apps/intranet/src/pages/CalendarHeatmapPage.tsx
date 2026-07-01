@@ -11,7 +11,8 @@ import type { CalendarSummary } from "@/features/calendar/types";
 import { useDisclosure } from "@/hooks/use-disclosure";
 import { addMonths, chileDay, formatChile, iterateMonths, today } from "@/lib/dates";
 import { currencyFormatter, numberFormatter } from "@/lib/format";
-const routeApi = getRouteApi("/_authed/clinical/heatmap");
+
+const routeApi = getRouteApi("/_authed/calendar/");
 
 interface HeatmapDayData {
   amountExpected: number;

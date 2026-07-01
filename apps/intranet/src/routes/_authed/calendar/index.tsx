@@ -1,36 +1,49 @@
-import { Tabs } from "@heroui/react";
+import { Skeleton, Tabs } from "@heroui/react";
 import { PAGE_CONTAINER } from "@/lib/styles";
 import { createFileRoute } from "@tanstack/react-router";
-import { Clock, LayoutGrid } from "lucide-react";
-import { useCallback } from "react";
+import { CalendarDays, Clock, Flame, LayoutGrid, Tags } from "lucide-react";
+import { Suspense, useCallback } from "react";
 import { z } from "zod";
 
 import { ProtectedTab } from "@/components/auth/ProtectedTab";
 import { CalendarSyncHistoryPanel } from "@/features/calendar/pages/CalendarSyncHistoryPanel";
 import { CalendarVistaPanel } from "@/features/calendar/pages/CalendarVistaPanel";
-import { calendarSyncQueries } from "@/features/calendar/queries";
+import { calendarQueries, calendarSyncQueries } from "@/features/calendar/queries";
+import { calendarSearchSchema } from "@/features/calendar/types";
+import { buildCalendarFilters } from "@/features/calendar/utils/filters";
+import { CalendarClassificationPage } from "@/pages/CalendarClassificationPage";
+import { CalendarDailyPage } from "@/pages/CalendarDailyPage";
+import { CalendarHeatmapPage } from "@/pages/CalendarHeatmapPage";
 import { useLazyTabs } from "@/hooks/use-lazy-tabs";
 import { requirePermission } from "@/lib/authz/route-guards";
 
 /**
- * Unified `/calendar` host (Phase 5 IA consolidation). Two tabs:
+ * Unified `/calendar` home. One host for every calendar surface (was split
+ * across `/calendar` + four `/clinical/*` pages, all reading the same data hook):
  *
- *   - vista       — landing surface linking to /clinical agenda/day/heatmap
- *                   (default)
- *   - historial   — sync history + manual sync (was /calendar/sync-history)
+ *   - vista         — unified FullCalendar agenda (default)
+ *   - dia           — hour-by-hour daily detail + DTE linking
+ *   - heatmap       — appointment density heatmap
+ *   - clasificacion — manual event classification / series rebuild
+ *   - historial     — sync history + manual sync
  *
- * URL state contract:
- *   ?tab=<key>    — active tab (default "vista"); `replace: true` on change
- *
- * Tab-specific RBAC enforced per-panel via `<ProtectedTab>`. The outer
- * `beforeLoad` only enforces the LOOSEST permission (`read Calendar`)
- * so deep-links stay valid for read-only operators.
+ * URL state: `?tab=<key>` (default "vista"); the calendar filter params
+ * (from/to/date/source/calendarId/category/search) live on the same URL and
+ * feed the panels. Tab-specific RBAC is enforced per-panel via `<ProtectedTab>`;
+ * the outer `beforeLoad` enforces only the loosest permission (`read Calendar`)
+ * so read-only deep-links stay valid.
  */
-const tabKey = z.enum(["vista", "historial"]);
+const tabKey = z.enum(["vista", "dia", "heatmap", "clasificacion", "historial"]);
 type CalendarTab = z.infer<typeof tabKey>;
 
-const searchSchema = z.object({
+const searchSchema = calendarSearchSchema.extend({
   tab: tabKey.optional().default("vista"),
+  // Carried for the classification tab (parsed there via classifySearchSchema).
+  filterMode: z.enum(["AND", "OR"]).optional().catch(undefined),
+  missing: z
+    .union([z.string(), z.array(z.string())])
+    .optional()
+    .catch(undefined),
 });
 
 export const Route = createFileRoute("/_authed/calendar/")({
@@ -38,6 +51,10 @@ export const Route = createFileRoute("/_authed/calendar/")({
     nav: { iconKey: "Calendar", label: "Calendario", order: 15, section: "Clínica" },
     permission: { action: "read", subject: "Calendar" },
     relatedSubjects: [
+      "CalendarSchedule",
+      "CalendarDaily",
+      "CalendarHeatmap",
+      "CalendarEvent",
       "CalendarSyncLog",
       "CalendarSetting",
       "CalendarWatchChannel",
@@ -51,7 +68,20 @@ export const Route = createFileRoute("/_authed/calendar/")({
   },
   validateSearch: searchSchema,
   beforeLoad: requirePermission("read", "Calendar"),
-  loader: ({ context }) => context.queryClient.ensureQueryData(calendarSyncQueries.logs(50)),
+  loaderDeps: ({ search }) => search,
+  loader: async ({ context, deps: search }) => {
+    await context.queryClient.ensureQueryData(calendarSyncQueries.logs(50));
+    // Vista/día/heatmap all read the shared summary+daily payload. Skip for the
+    // Doctoralia source (it fetches its own merged view).
+    if (search.source === "doctoralia") {
+      return;
+    }
+    const filters = buildCalendarFilters(search, {});
+    await Promise.all([
+      context.queryClient.ensureQueryData(calendarQueries.summary(filters)),
+      context.queryClient.ensureQueryData(calendarQueries.daily(filters)),
+    ]);
+  },
   component: CalendarHostPage,
 });
 
@@ -66,10 +96,7 @@ function CalendarHostPage() {
       if (!parsed.success) return;
       const next = parsed.data;
       markTabAsMounted(next);
-      void navigate({
-        search: (prev) => ({ ...prev, tab: next }),
-        replace: true,
-      });
+      void navigate({ search: (prev) => ({ ...prev, tab: next }), replace: true });
     },
     [navigate, markTabAsMounted]
   );
@@ -86,6 +113,18 @@ function CalendarHostPage() {
               <LayoutGrid size={14} /> Vista
               <Tabs.Indicator />
             </Tabs.Tab>
+            <Tabs.Tab id="dia">
+              <CalendarDays size={14} /> Día
+              <Tabs.Indicator />
+            </Tabs.Tab>
+            <Tabs.Tab id="heatmap">
+              <Flame size={14} /> Mapa de calor
+              <Tabs.Indicator />
+            </Tabs.Tab>
+            <Tabs.Tab id="clasificacion">
+              <Tags size={14} /> Clasificación
+              <Tabs.Indicator />
+            </Tabs.Tab>
             <Tabs.Tab id="historial">
               <Clock size={14} /> Historial
               <Tabs.Indicator />
@@ -97,6 +136,36 @@ function CalendarHostPage() {
           {isTabMounted("vista") ? (
             <ProtectedTab action="read" subject="Calendar">
               <CalendarVistaPanel />
+            </ProtectedTab>
+          ) : null}
+        </Tabs.Panel>
+        <Tabs.Panel id="dia" className="pt-4">
+          {isTabMounted("dia") ? (
+            <ProtectedTab action="read" subject="CalendarDaily">
+              <CalendarDailyPage />
+            </ProtectedTab>
+          ) : null}
+        </Tabs.Panel>
+        <Tabs.Panel id="heatmap" className="pt-4">
+          {isTabMounted("heatmap") ? (
+            <ProtectedTab action="read" subject="CalendarHeatmap">
+              <CalendarHeatmapPage />
+            </ProtectedTab>
+          ) : null}
+        </Tabs.Panel>
+        <Tabs.Panel id="clasificacion" className="pt-4">
+          {isTabMounted("clasificacion") ? (
+            <ProtectedTab action="update" subject="CalendarEvent">
+              <Suspense
+                fallback={
+                  <Skeleton
+                    aria-label="Cargando clasificación"
+                    className="h-96 w-full rounded-xl"
+                  />
+                }
+              >
+                <CalendarClassificationPage />
+              </Suspense>
             </ProtectedTab>
           ) : null}
         </Tabs.Panel>

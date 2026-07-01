@@ -13,8 +13,9 @@ import { calendarDteLinkQueries } from "@/features/calendar/queries";
 import type { CalendarEventDetail } from "@/features/calendar/types";
 import { useDisclosure } from "@/hooks/use-disclosure";
 import { chileDay, formatChile } from "@/lib/dates";
-const routeApi = getRouteApi("/_authed/clinical/day");
 import { useEffect, useMemo, useState } from "react";
+
+const routeApi = getRouteApi("/_authed/calendar/");
 
 function CalendarDailyPage() {
   const navigate = routeApi.useNavigate();
@@ -105,7 +106,7 @@ function CalendarDailyPage() {
                 onReset={() => {
                   setDraftFilters(defaults);
                   void navigate({
-                    search: (prev: Record<string, unknown>) => ({
+                    search: (prev) => ({
                       ...prev,
                       calendarId: undefined,
                       category: undefined,

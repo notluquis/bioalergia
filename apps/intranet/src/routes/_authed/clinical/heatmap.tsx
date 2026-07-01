@@ -1,29 +1,16 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { requirePermission } from "@/lib/authz/route-guards";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
-import { addMonths, endOfMonthFor, today } from "@/lib/dates";
 import { type CalendarSearchParams, calendarSearchSchema } from "@/features/calendar/types";
-import { CalendarHeatmapPage } from "@/pages/CalendarHeatmapPage";
 
+// Consolidated into `/calendar?tab=heatmap`. Kept as a redirect for deep-links.
 export const Route = createFileRoute("/_authed/clinical/heatmap")({
-  validateSearch: (search: Record<string, unknown>): CalendarSearchParams => {
-    const parsed = calendarSearchSchema.parse(search);
-    if (!parsed.from || !parsed.to) {
-      const defaultFrom = addMonths(today(), -1);
-      const defaultTo = endOfMonthFor(addMonths(today(), 1));
-      return {
-        ...parsed,
-        from: parsed.from ?? defaultFrom,
-        to: parsed.to ?? defaultTo,
-      };
-    }
-    return parsed;
+  staticData: { hideFromNav: true, title: "Heatmap clínico" },
+  validateSearch: (search: Record<string, unknown>): CalendarSearchParams =>
+    calendarSearchSchema.parse(search),
+  loaderDeps: ({ search }) => search,
+  loader: ({ deps: search }) => {
+    // eslint-disable-next-line @typescript-eslint/only-throw-error
+    throw redirect({ to: "/calendar", search: { ...search, tab: "heatmap" } });
   },
-  staticData: {
-    nav: { iconKey: "LayoutGrid", label: "Calendario — heatmap", order: 18, section: "Clínica" },
-    permission: { action: "read", subject: "CalendarHeatmap" },
-    title: "Heatmap clínico",
-  },
-  beforeLoad: requirePermission("read", "CalendarHeatmap"),
-  component: CalendarHeatmapPage,
+  component: () => null,
 });
