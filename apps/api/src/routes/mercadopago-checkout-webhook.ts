@@ -299,9 +299,13 @@ export function registerMercadopagoCheckoutWebhook(app: Hono) {
         try {
           const order = await db.order.findUnique({
             where: { id: orderId },
-            select: { number: true, customerEmail: true, accessToken: true },
+            select: { number: true, customerEmail: true, accessToken: true, status: true },
           });
-          if (order) {
+          // Guard: Checkout Pro can fire a late `rejected` for one attempt AFTER
+          // another attempt already approved the same order. Only nudge if the
+          // order is still awaiting payment — never email "payment failed" for an
+          // order that's already PAID/FULFILLED/etc.
+          if (order && order.status === "PENDING") {
             await sendPaymentFailedEmail({
               to: order.customerEmail,
               orderNumber: order.number,
