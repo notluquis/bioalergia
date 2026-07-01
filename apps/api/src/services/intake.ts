@@ -14,6 +14,7 @@ import { getR2Object, putR2Object } from "../modules/cloudflare/r2.ts";
 import { uploadMedia } from "../modules/wa-cloud/graph-client.ts";
 import {
   ABONO_WHATSAPP_SETTINGS,
+  WA_FLOW_SETTINGS,
   loadAbonoStaffNotifyConfig,
   parsePhoneNumberId,
 } from "../lib/doctoralia/abono-whatsapp-settings.ts";
@@ -23,9 +24,6 @@ import { ensureContactAndConversation } from "./wa-contacts.ts";
 import { sendFlow } from "./wa-messages.ts";
 import { fanout } from "./abono-staff-notify.ts";
 
-// DB Settings keys for the intake Flow (all config lives in Settings — no env).
-const INTAKE_FLOW_ID_SETTING = "wa.flow.intakeFlowId";
-const INTAKE_BODY_TEXT_SETTING = "wa.flow.intakeBodyText";
 // flow_history marker → the auto-send is idempotent (sent once per token).
 const INTAKE_FLOW_SENT_STEP = "intake_flow_sent";
 
@@ -129,8 +127,8 @@ export function mapFlowDataToIntake(
  */
 export async function sendIntakeFlow(tokenId: string): Promise<void> {
   const [flowIdRaw, bodyTextRaw, phoneIdRaw] = await Promise.all([
-    getSetting(INTAKE_FLOW_ID_SETTING),
-    getSetting(INTAKE_BODY_TEXT_SETTING),
+    getSetting(WA_FLOW_SETTINGS.intakeFlowId),
+    getSetting(WA_FLOW_SETTINGS.intakeBodyText),
     getSetting(ABONO_WHATSAPP_SETTINGS.phoneNumberId),
   ]);
   const flowId = flowIdRaw?.trim();

@@ -11,6 +11,14 @@ export const ABONO_WHATSAPP_SETTINGS = {
   confirmationTemplateLanguage: "doctoralia.abono.whatsapp.confirmationTemplateLanguage",
 } as const;
 
+// Patient-intake WhatsApp Flow. Secrets (privateKeyEnc/publicKey) are managed by
+// the keygen script and NOT exposed in the UI — only the non-secret operational
+// settings live here.
+export const WA_FLOW_SETTINGS = {
+  intakeFlowId: "wa.flow.intakeFlowId",
+  intakeBodyText: "wa.flow.intakeBodyText",
+} as const;
+
 export const ABONO_PAYMENT_SETTINGS = {
   fonasaFullAmountClp: "doctoralia.abono.amount.fonasaClp",
   particularFullAmountClp: "doctoralia.abono.amount.particularClp",

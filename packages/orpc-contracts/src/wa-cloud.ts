@@ -1321,6 +1321,13 @@ export const abonoAutomationSettingsSchema = z.object({
   expirationDays: z.number().int().positive().nullable(),
   publicBaseUrl: z.string(),
   statementDescriptor: z.string(),
+  // Patient-intake WhatsApp Flow + staff ficha forward (secrets excluded — the
+  // RSA keys are script-managed, never exposed in the UI).
+  intakeFlowId: z.string(),
+  intakeBodyText: z.string(),
+  staffNotifyEnabled: z.boolean(),
+  staffNotifyPhones: z.string(),
+  fichaTemplateName: z.string(),
 });
 
 export const updateAbonoAutomationSettingsInputSchema = abonoAutomationSettingsSchema;
