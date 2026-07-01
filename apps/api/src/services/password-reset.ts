@@ -12,29 +12,30 @@ const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
  * Admin invite: mint a long-lived (7-day) set-password token for a freshly
  * created PENDING_SETUP user and email a "define tu contraseña" link. Reuses
  * the same token columns + /reset-password page as forgot-password. Returns
- * whether the email actually went out (admin falls back to a manual reset if
- * not). Never throws — invite creation must not roll back on a mail outage.
+ * whether provisioning succeeded (admin falls back to a manual reset if not).
+ * Never throws — the user is already created, so a DB/mail hiccup here must not
+ * fail the invite; it just returns false so the admin resends.
  */
 export async function sendAccountInvite(args: {
   userId: number;
   to: string;
   name: string;
 }): Promise<boolean> {
-  const token = randomBytes(32).toString("hex");
-  await db.user.update({
-    where: { id: args.userId },
-    data: {
-      passwordResetTokenHash: sha256(token),
-      passwordResetExpiresAt: new Date(Date.now() + INVITE_TTL_MS),
-      passwordResetPurpose: "invite",
-    },
-  });
   try {
+    const token = randomBytes(32).toString("hex");
+    await db.user.update({
+      where: { id: args.userId },
+      data: {
+        passwordResetTokenHash: sha256(token),
+        passwordResetExpiresAt: new Date(Date.now() + INVITE_TTL_MS),
+        passwordResetPurpose: "invite",
+      },
+    });
     await sendAccountInviteEmail({ to: args.to, name: args.name, token });
     logEvent("[invite] set-password link sent", { userId: args.userId });
     return true;
   } catch {
-    logEvent("[invite] set-password email failed", { userId: args.userId });
+    logEvent("[invite] set-password provisioning failed", { userId: args.userId });
     return false;
   }
 }

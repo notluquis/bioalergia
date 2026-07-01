@@ -89,7 +89,7 @@ export async function sendAccountInviteEmail(args: {
   const url = `${appUrl()}/reset-password?token=${encodeURIComponent(args.token)}`;
   const html = shell(
     "Tu cuenta de Bioalergia está lista",
-    `<p>Hola ${args.name},</p>
+    `<p>Hola ${esc(args.name)},</p>
      <p>Se creó tu cuenta en la intranet de Bioalergia. Define tu contraseña para ingresar (enlace válido por 7 días):</p>
      <p><a href="${url}" style="display:inline-block;background:#0e64b7;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px">Definir mi contraseña</a></p>
      <p style="font-size:13px;color:#6b7280">Si no esperabas este correo, ignóralo.</p>`
