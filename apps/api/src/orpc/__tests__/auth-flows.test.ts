@@ -9,48 +9,61 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 // minimal fake Hono context and full lib mocks. A regression here breaks
 // login for a medical clinic, so these tests pin behavior precisely.
 
-const { mockDb, mockUserFindUnique, mockUserUpdate, mockQueryRaw, mockAuditCreate } = vi.hoisted(
-  () => {
-    const mockUserFindUnique = vi.fn();
-    const mockUserUpdate = vi.fn().mockResolvedValue({});
-    const mockQueryRaw = vi.fn();
-    const mockAuditCreate = vi.fn().mockResolvedValue({});
-    // $qb chainable que delega en mockQueryRaw: executeTakeFirst desenvuelve el
-    // array (findUserByLoginIdentifier ahora usa db.$qb.…executeTakeFirst()).
-    const qb: Record<string, unknown> = {};
-    for (const m of [
-      "selectFrom",
-      "innerJoin",
-      "leftJoin",
-      "select",
-      "where",
-      "limit",
-      "offset",
-      "orderBy",
-      "groupBy",
-    ]) {
-      qb[m] = () => qb;
-    }
-    qb.executeTakeFirst = async (...a: unknown[]) => {
-      const r = await mockQueryRaw(...a);
-      return Array.isArray(r) ? r[0] : r;
-    };
-    qb.execute = (...a: unknown[]) => mockQueryRaw(...a);
-    const mockDb = {
-      user: {
-        findUnique: (...a: unknown[]) => mockUserFindUnique(...a),
-        update: (...a: unknown[]) => mockUserUpdate(...a),
-      },
-      auditLog: { create: (...a: unknown[]) => mockAuditCreate(...a) },
-      pushSubscription: { deleteMany: vi.fn().mockResolvedValue({}) },
-      $queryRaw: (...a: unknown[]) => mockQueryRaw(...a),
-      $qb: qb,
-    };
-    return { mockDb, mockUserFindUnique, mockUserUpdate, mockQueryRaw, mockAuditCreate };
+const {
+  mockDb,
+  mockUserFindUnique,
+  mockUserUpdate,
+  mockQueryRaw,
+  mockAuditCreate,
+  mockPasskeyCount,
+} = vi.hoisted(() => {
+  const mockUserFindUnique = vi.fn();
+  const mockUserUpdate = vi.fn().mockResolvedValue({});
+  const mockQueryRaw = vi.fn();
+  const mockAuditCreate = vi.fn().mockResolvedValue({});
+  const mockPasskeyCount = vi.fn().mockResolvedValue(0);
+  // $qb chainable que delega en mockQueryRaw: executeTakeFirst desenvuelve el
+  // array (findUserByLoginIdentifier ahora usa db.$qb.…executeTakeFirst()).
+  const qb: Record<string, unknown> = {};
+  for (const m of [
+    "selectFrom",
+    "innerJoin",
+    "leftJoin",
+    "select",
+    "where",
+    "limit",
+    "offset",
+    "orderBy",
+    "groupBy",
+  ]) {
+    qb[m] = () => qb;
   }
-);
+  qb.executeTakeFirst = async (...a: unknown[]) => {
+    const r = await mockQueryRaw(...a);
+    return Array.isArray(r) ? r[0] : r;
+  };
+  qb.execute = (...a: unknown[]) => mockQueryRaw(...a);
+  const mockDb = {
+    user: {
+      findUnique: (...a: unknown[]) => mockUserFindUnique(...a),
+      update: (...a: unknown[]) => mockUserUpdate(...a),
+    },
+    passkey: { count: (...a: unknown[]) => mockPasskeyCount(...a) },
+    auditLog: { create: (...a: unknown[]) => mockAuditCreate(...a) },
+    pushSubscription: { deleteMany: vi.fn().mockResolvedValue({}) },
+    $queryRaw: (...a: unknown[]) => mockQueryRaw(...a),
+    $qb: qb,
+  };
+  return { mockDb, mockUserFindUnique, mockUserUpdate, mockQueryRaw, mockAuditCreate, mockPasskeyCount };
+});
 vi.mock("@finanzas/db", () => ({ db: mockDb, kysely: {} }));
 vi.mock("@finanzas/db/slices", () => ({ dbClinicalSeries: mockDb }));
+
+// auth.requireMfa setting — default OFF; individual tests flip it on.
+const { mockGetSetting } = vi.hoisted(() => ({
+  mockGetSetting: vi.fn().mockResolvedValue(null),
+}));
+vi.mock("../../lib/settings.ts", () => ({ getSetting: mockGetSetting }));
 
 // --- lib mocks ------------------------------------------------------------
 const { mockFakeVerify, mockVerifyPassword, mockHashPassword } = vi.hoisted(() => ({
@@ -185,6 +198,61 @@ beforeEach(() => {
   mockSignToken.mockResolvedValue("signed.token");
   mockGetAbilityRulesForUser.mockResolvedValue([]);
   mockHashPassword.mockResolvedValue("$argon2id$new-hash");
+  mockGetSetting.mockResolvedValue(null);
+  mockPasskeyCount.mockResolvedValue(0);
+});
+
+describe("auth.login — continuous MFA enforcement (auth.requireMfa)", () => {
+  function primePasswordOk(row: Record<string, unknown>) {
+    mockQueryRaw.mockResolvedValueOnce([
+      { id: 7, loginEmail: "user@bioalergia.cl", notificationEmail: "user@bioalergia.cl" },
+    ]);
+    mockUserFindUnique.mockResolvedValueOnce(userRow(row));
+    mockVerifyPassword.mockResolvedValueOnce({ valid: true, needsRehash: false });
+  }
+  const creds = { email: "user@bioalergia.cl", password: "correct-horse" };
+
+  it("setting OFF: mfaEnforced account with no factor still gets a normal session (no mass lockout)", async () => {
+    mockGetSetting.mockResolvedValue(null); // auth.requireMfa unset → OFF
+    primePasswordOk({ mfaEnforced: true, mfaEnabled: false });
+    const { context, setCookies } = makeCtx();
+    const res = (await call(authORPCRouter.login, creds, { context })) as { status: string };
+    expect(res.status).toBe("ok");
+    expect(setCookies.some((c) => c.startsWith("finanzas_session="))).toBe(true);
+  });
+
+  it("setting ON + enforced + no TOTP + no passkey → mfa_setup_required and NO session cookie", async () => {
+    mockGetSetting.mockResolvedValue("true");
+    mockPasskeyCount.mockResolvedValue(0);
+    primePasswordOk({ mfaEnforced: true, mfaEnabled: false });
+    const { context, setCookies } = makeCtx();
+    const res = (await call(authORPCRouter.login, creds, { context })) as {
+      status: string;
+      setupToken: string;
+    };
+    expect(res.status).toBe("mfa_setup_required");
+    expect(res.setupToken).toBe("signed.token");
+    expect(setCookies.some((c) => c.startsWith("finanzas_session="))).toBe(false);
+  });
+
+  it("setting ON + enforced + owns a passkey → 401 (must use the passkey, no session)", async () => {
+    mockGetSetting.mockResolvedValue("true");
+    mockPasskeyCount.mockResolvedValue(1);
+    primePasswordOk({ mfaEnforced: true, mfaEnabled: false });
+    const { context } = makeCtx();
+    await expect(call(authORPCRouter.login, creds, { context })).rejects.toMatchObject({
+      status: 401,
+    });
+  });
+
+  it("setting ON + PENDING_SETUP (onboarding) is NOT intercepted — keeps flowing", async () => {
+    mockGetSetting.mockResolvedValue("true");
+    primePasswordOk({ mfaEnforced: true, mfaEnabled: false, status: "PENDING_SETUP" });
+    const { context, setCookies } = makeCtx();
+    const res = (await call(authORPCRouter.login, creds, { context })) as { status: string };
+    expect(res.status).toBe("ok");
+    expect(setCookies.some((c) => c.startsWith("finanzas_session="))).toBe(true);
+  });
 });
 
 describe("auth.login", () => {

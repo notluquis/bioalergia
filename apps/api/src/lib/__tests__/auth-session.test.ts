@@ -112,6 +112,17 @@ describe("resolveSessionUserFromToken", () => {
     expect(result?.id).toBe(1);
   });
 
+  // Load-bearing default-deny behind mfa_setup_required: an ephemeral
+  // "mfa-setup" login token must never resolve to a session, so a
+  // partially-authenticated user can't reach any protected route with it.
+  it("rejects an ephemeral mfa-setup token (never a session)", async () => {
+    mockVerifyToken.mockResolvedValueOnce(sessionToken({ typ: "mfa-setup" }));
+    const result = await resolveSessionUserFromToken("tok");
+    expect(result).toBeNull();
+    // Never even reaches the DB lookup.
+    expect(mockFindUnique).not.toHaveBeenCalled();
+  });
+
   it("rejects a token whose sessionVersion no longer matches (logout-all)", async () => {
     mockVerifyToken.mockResolvedValueOnce(sessionToken({ sv: 1 }));
     mockFindUnique.mockResolvedValueOnce(makeUser({ sessionVersion: 2 }));

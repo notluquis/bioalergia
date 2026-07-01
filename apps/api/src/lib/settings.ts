@@ -41,6 +41,11 @@ export type AppSettings = {
   // (días) y del enlace de recuperación de contraseña (minutos).
   authInviteTtlDays: string;
   authPasswordResetTtlMinutes: string;
+  // Opt-in ("true"/"false"). When on, an ACTIVE mfaEnforced account that has
+  // neither TOTP nor a passkey cannot obtain a full session at login — it must
+  // enroll a second factor first. Default OFF so turning it on is a deliberate,
+  // communicated rollout (avoids locking out every existing account at once).
+  authRequireMfa: string;
 };
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -77,6 +82,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   karinReportsEmail: "denuncias@bioalergia.cl",
   authInviteTtlDays: "7",
   authPasswordResetTtlMinutes: "60",
+  authRequireMfa: "false",
 };
 
 const SETTINGS_KEY_MAP: Record<keyof AppSettings, string> = {
@@ -113,6 +119,7 @@ const SETTINGS_KEY_MAP: Record<keyof AppSettings, string> = {
   karinReportsEmail: "karin.reportsEmail",
   authInviteTtlDays: "auth.inviteTtlDays",
   authPasswordResetTtlMinutes: "auth.passwordResetTtlMinutes",
+  authRequireMfa: "auth.requireMfa",
 };
 
 export function settingsKeyToDbKey(key: keyof AppSettings): string {

@@ -6,7 +6,7 @@ import { useAuth } from "@/features/auth/hooks/use-auth";
 import { fetchPasskeyLoginOptions } from "@/features/auth/api";
 import { logger } from "@/lib/logger";
 
-export type LoginStep = "credentials" | "mfa" | "passkey";
+export type LoginStep = "credentials" | "mfa" | "mfa_setup" | "passkey";
 
 export interface LoginState {
   email: string;
@@ -14,6 +14,10 @@ export interface LoginState {
   mfaCode: string;
   step: LoginStep;
   tempMfaToken: null | string;
+  // Set when login returns mfa_setup_required: the enrollment token + the TOTP
+  // secret/QR once the user starts setup.
+  tempSetupToken: null | string;
+  mfaSecret: null | { qrCodeUrl: string; secret: string };
   formError: null | string;
   isSuccess: boolean;
 }
@@ -24,15 +28,24 @@ const INITIAL_STATE: LoginState = {
   mfaCode: "",
   step: "passkey",
   tempMfaToken: null,
+  tempSetupToken: null,
+  mfaSecret: null,
   formError: null,
   isSuccess: false,
 };
 
 export function useLoginLogic(from: string) {
-  const { login, loginWithMfa, loginWithPasskey } = useAuth();
+  const {
+    login,
+    loginWithMfa,
+    loginWithPasskey,
+    enrollMfaBegin,
+    enrollMfaComplete,
+    enrollPasskey,
+  } = useAuth();
   const navigate = useNavigate();
   const [state, setState] = useState<LoginState>(INITIAL_STATE);
-  const { email, password, mfaCode, tempMfaToken } = state;
+  const { email, password, mfaCode, tempMfaToken, tempSetupToken } = state;
   const updateState = useCallback(
     (updates: Partial<LoginState>) => setState((p) => ({ ...p, ...updates })),
     []
@@ -46,16 +59,14 @@ export function useLoginLogic(from: string) {
     }, 800);
   }, [from, navigate, updateState]);
   const credentialsMutation = useMutation({
-    mutationFn: async () => {
-      const r = await login(email, password);
-      return r.status === "mfa_required"
-        ? { requiresMfa: true, mfaToken: r.mfaToken }
-        : { requiresMfa: false };
-    },
-    onSuccess: (d) => {
-      if (d.requiresMfa) {
-        updateState({ tempMfaToken: d.mfaToken, step: "mfa" });
+    mutationFn: async () => login(email, password),
+    onSuccess: (r) => {
+      if (r.status === "mfa_required") {
+        updateState({ tempMfaToken: r.mfaToken, step: "mfa" });
         logger.info("[login-page] MFA required");
+      } else if (r.status === "mfa_setup_required") {
+        updateState({ tempSetupToken: r.setupToken, step: "mfa_setup" });
+        logger.info("[login-page] MFA enrollment required");
       } else {
         logger.info("[login-page] credentials login success", { user: email });
         redirectAfterSuccess();
@@ -66,6 +77,39 @@ export function useLoginLogic(from: string) {
       updateState({ formError: msg });
       logger.error("[login-page] credentials login error", { email, message: msg });
     },
+  });
+
+  // Enrollment (step "mfa_setup"): begin generates the QR/secret; complete
+  // verifies the TOTP and the server mints the session. Passkey enroll runs the
+  // full ceremony. All redirect on success.
+  const mfaSetupBeginMutation = useMutation({
+    mutationFn: async () => {
+      if (!tempSetupToken) throw new Error("No setup token");
+      return enrollMfaBegin(tempSetupToken);
+    },
+    onSuccess: (secret) => updateState({ mfaSecret: secret }),
+    onError: (e) =>
+      updateState({ formError: e instanceof Error ? e.message : "No se pudo iniciar MFA" }),
+  });
+  const mfaEnrollMutation = useMutation({
+    mutationFn: async () => {
+      if (!tempSetupToken) throw new Error("No setup token");
+      await enrollMfaComplete(tempSetupToken, mfaCode);
+    },
+    onSuccess: redirectAfterSuccess,
+    onError: (e) =>
+      updateState({ formError: e instanceof Error ? e.message : "Código incorrecto" }),
+  });
+  const passkeyEnrollMutation = useMutation({
+    mutationFn: async () => {
+      if (!tempSetupToken) throw new Error("No setup token");
+      await enrollPasskey(tempSetupToken);
+    },
+    onSuccess: redirectAfterSuccess,
+    onError: (e) =>
+      updateState({
+        formError: e instanceof Error ? e.message : "No se pudo registrar el passkey",
+      }),
   });
   const mfaMutation = useMutation({
     mutationFn: async () => {
@@ -110,10 +154,19 @@ export function useLoginLogic(from: string) {
   });
   return {
     state,
-    isLoading: credentialsMutation.isPending || mfaMutation.isPending || passkeyMutation.isPending,
+    isLoading:
+      credentialsMutation.isPending ||
+      mfaMutation.isPending ||
+      passkeyMutation.isPending ||
+      mfaSetupBeginMutation.isPending ||
+      mfaEnrollMutation.isPending ||
+      passkeyEnrollMutation.isPending,
     credentialsMutation,
     mfaMutation,
     passkeyMutation,
+    mfaSetupBeginMutation,
+    mfaEnrollMutation,
+    passkeyEnrollMutation,
     updateState,
     clearError,
   };

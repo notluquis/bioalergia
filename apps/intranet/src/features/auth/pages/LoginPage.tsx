@@ -5,8 +5,9 @@ import { useTheme } from "next-themes";
 import type { FormEvent } from "react";
 import { useSettings } from "@/features/settings/hooks/use-settings";
 import { useLoginLogic } from "@/features/auth/hooks/useLoginLogic";
+import { MfaStep as EnrollMfaStep } from "@/pages/onboarding/components/MfaStep";
 
-type LoginStep = "credentials" | "mfa" | "passkey";
+type LoginStep = "credentials" | "mfa" | "mfa_setup" | "passkey";
 export function LoginPage() {
   const { resolvedTheme, setTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
@@ -22,6 +23,9 @@ export function LoginPage() {
     credentialsMutation,
     mfaMutation,
     passkeyMutation,
+    mfaSetupBeginMutation,
+    mfaEnrollMutation,
+    passkeyEnrollMutation,
     updateState,
     clearError,
   } = useLoginLogic(from);
@@ -46,7 +50,34 @@ export function LoginPage() {
           fallbackLogo={fallbackLogo}
         />
 
-        {!state.isSuccess && (
+        {!state.isSuccess && state.step === "mfa_setup" && (
+          <div className="mx-auto w-full max-w-xs">
+            <p className="mb-4 text-center text-default-500 text-sm">
+              Tu cuenta requiere un segundo factor. Configúralo para continuar.
+            </p>
+            <EnrollMfaStep
+              mfaSecret={state.mfaSecret}
+              mfaCode={state.mfaCode}
+              onMfaCodeChange={(v) => updateState({ mfaCode: v })}
+              onSetupMfa={() => {
+                clearError();
+                mfaSetupBeginMutation.mutate();
+              }}
+              onVerifyMfa={() => {
+                clearError();
+                mfaEnrollMutation.mutate();
+              }}
+              onPasskeyRegister={() => {
+                clearError();
+                passkeyEnrollMutation.mutate();
+              }}
+              onSkip={() => {}}
+              isLoading={isLoading}
+              enforced
+            />
+          </div>
+        )}
+        {!state.isSuccess && state.step !== "mfa_setup" && (
           <LoginContent
             step={state.step}
             isLoading={isLoading}

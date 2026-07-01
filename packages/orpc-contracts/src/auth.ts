@@ -79,10 +79,41 @@ export const authLoginMfaRequiredResponseSchema = z.object({
   mfaToken: z.string(),
 });
 
+// Returned when an mfaEnforced account (with no TOTP nor passkey) logs in while
+// the auth.requireMfa setting is on: NO session cookie is set. The client must
+// enroll a factor via the *Pending endpoints echoing this setupToken, which then
+// mints the real session. The token is a short-lived (15m) typ "mfa-setup" PASETO
+// that resolveSessionUserFromToken rejects everywhere → no privileged access.
+export const authLoginMfaSetupRequiredResponseSchema = z.object({
+  status: z.literal("mfa_setup_required"),
+  userId: z.number().int(),
+  setupToken: z.string(),
+});
+
 export const authLoginResponseSchema = z.union([
   authLoginOkResponseSchema,
   authLoginMfaRequiredResponseSchema,
+  authLoginMfaSetupRequiredResponseSchema,
 ]);
+
+export const authMfaSetupPendingSchema = z.object({
+  setupToken: z.string().min(1),
+});
+
+export const authMfaEnablePendingSchema = z.object({
+  setupToken: z.string().min(1),
+  token: z.string().min(6, "Token inválido"),
+});
+
+export const authPasskeyRegisterPendingOptionsSchema = z.object({
+  setupToken: z.string().min(1),
+});
+
+export const authPasskeyRegisterPendingVerifySchema = z.object({
+  setupToken: z.string().min(1),
+  body: z.record(z.string(), z.unknown()),
+  challenge: z.string().min(1),
+});
 
 export const authSessionResponseSchema = z.object({
   abilityRules: z.array(z.unknown()).optional(),
@@ -243,6 +274,24 @@ export const authContract = {
     .route({ method: "POST", path: "/passkey/register/verify" })
     .input(authPasskeyResponseSchema)
     .output(authStatusResponseSchema),
+  // MFA-enrollment endpoints gated by a login "mfa-setup" token (not a session
+  // cookie). The *complete* ones mint the real session on success.
+  mfaSetupPending: oc
+    .route({ method: "POST", path: "/mfa/setup/pending" })
+    .input(authMfaSetupPendingSchema)
+    .output(authMfaSetupResponseSchema),
+  mfaEnablePending: oc
+    .route({ method: "POST", path: "/mfa/enable/pending" })
+    .input(authMfaEnablePendingSchema)
+    .output(authLoginOkResponseSchema),
+  passkeyRegisterOptionsPending: oc
+    .route({ method: "POST", path: "/passkey/register/options/pending" })
+    .input(authPasskeyRegisterPendingOptionsSchema)
+    .output(authPasskeyRegistrationOptionsSchema),
+  passkeyRegisterVerifyPending: oc
+    .route({ method: "POST", path: "/passkey/register/verify/pending" })
+    .input(authPasskeyRegisterPendingVerifySchema)
+    .output(authLoginOkResponseSchema),
   passkeyRemove: oc
     .route({ method: "DELETE", path: "/passkey/remove" })
     .input(authEmptySchema)
