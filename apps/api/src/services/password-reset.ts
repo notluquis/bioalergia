@@ -3,18 +3,26 @@ import { db } from "@finanzas/db";
 import { hashPassword } from "../lib/crypto.ts";
 import { DomainError } from "../lib/errors.ts";
 import { logEvent } from "../lib/logger.ts";
+import { loadSettings } from "../lib/settings.ts";
 import { sendAccountInviteEmail, sendPasswordResetLinkEmail } from "./email/transactional.ts";
 
-const TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
-const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+const DAY_MS = 24 * 60 * 60 * 1000;
+const MINUTE_MS = 60 * 1000;
+
+// Token validity is admin-configurable via the DB settings (auth.inviteTtlDays /
+// auth.passwordResetTtlMinutes); DEFAULT_SETTINGS supplies 7 days / 60 minutes
+// when unset. Positive integers only — a bad value falls back to the default.
+function positiveIntSetting(value: string, fallback: number): number {
+  const n = Number.parseInt(value, 10);
+  return Number.isFinite(n) && n > 0 ? n : fallback;
+}
 
 /**
- * Admin invite: mint a long-lived (7-day) set-password token for a freshly
- * created PENDING_SETUP user and email a "define tu contraseña" link. Reuses
- * the same token columns + /reset-password page as forgot-password. Returns
- * whether provisioning succeeded (admin falls back to a manual reset if not).
- * Never throws — the user is already created, so a DB/mail hiccup here must not
- * fail the invite; it just returns false so the admin resends.
+ * Admin invite: mint a set-password token for a freshly created PENDING_SETUP
+ * user and email the activation link. TTL comes from settings (auth.inviteTtlDays).
+ * Returns whether provisioning succeeded (admin falls back to a manual resend if
+ * not). Never throws — the user is already created, so a DB/mail hiccup here must
+ * not fail the invite.
  */
 export async function sendAccountInvite(args: {
   userId: number;
@@ -22,16 +30,18 @@ export async function sendAccountInvite(args: {
   name: string;
 }): Promise<boolean> {
   try {
+    const { authInviteTtlDays } = await loadSettings();
+    const ttlDays = positiveIntSetting(authInviteTtlDays, 7);
     const token = randomBytes(32).toString("hex");
     await db.user.update({
       where: { id: args.userId },
       data: {
         passwordResetTokenHash: sha256(token),
-        passwordResetExpiresAt: new Date(Date.now() + INVITE_TTL_MS),
+        passwordResetExpiresAt: new Date(Date.now() + ttlDays * DAY_MS),
         passwordResetPurpose: "invite",
       },
     });
-    await sendAccountInviteEmail({ to: args.to, name: args.name, token });
+    await sendAccountInviteEmail({ to: args.to, name: args.name, token, ttlDays });
     logEvent("[invite] set-password link sent", { userId: args.userId });
     return true;
   } catch {
@@ -71,12 +81,14 @@ export async function requestPasswordReset(rawEmail: string): Promise<void> {
     return; // silent — no enumeration
   }
 
+  const { authPasswordResetTtlMinutes } = await loadSettings();
+  const ttlMinutes = positiveIntSetting(authPasswordResetTtlMinutes, 60);
   const token = randomBytes(32).toString("hex");
   await db.user.update({
     where: { id: user.id },
     data: {
       passwordResetTokenHash: sha256(token),
-      passwordResetExpiresAt: new Date(Date.now() + TOKEN_TTL_MS),
+      passwordResetExpiresAt: new Date(Date.now() + ttlMinutes * MINUTE_MS),
       // A forgot-password token must never activate an account. Clear any stale
       // "invite" purpose so completion can't flip status (see resetPasswordWithToken).
       passwordResetPurpose: null,
@@ -84,7 +96,7 @@ export async function requestPasswordReset(rawEmail: string): Promise<void> {
   });
 
   try {
-    await sendPasswordResetLinkEmail({ to, name: user.person?.names ?? "", token });
+    await sendPasswordResetLinkEmail({ to, name: user.person?.names ?? "", token, ttlMinutes });
     logEvent("[password-reset] link sent", { userId: user.id });
   } catch {
     // Don't leak send failures to the caller (still generic 200). Logged in the
