@@ -4,7 +4,9 @@ export const DoctoraliaEventServiceSchema = z.strictObject({
   duration: z.number(),
   isDefault: z.boolean().optional(),
   price: z.number(),
-  priceFrom: z.union([z.number(), z.string()]).nullish(),
+  // Doctoralia sends `false` when a service has no "price from" range (verified
+  // in DB: values are null or boolean false, never number/string in practice).
+  priceFrom: z.union([z.number(), z.string(), z.boolean()]).nullish(),
   quantity: z.number(),
   serviceId: z.number(),
   serviceName: z.string(),

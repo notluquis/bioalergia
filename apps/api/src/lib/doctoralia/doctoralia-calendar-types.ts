@@ -36,7 +36,8 @@ export interface DoctoraliaEventService {
   serviceName: string;
   duration: number;
   price: number;
-  priceFrom?: number | string | null;
+  // Doctoralia sends `false` when there is no "price from" range.
+  priceFrom?: number | string | boolean | null;
   quantity: number;
   isDefault: boolean;
   voucherUsed: boolean;
