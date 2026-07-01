@@ -78,11 +78,11 @@ const CalendarGrid = lazy(async () => {
           )}
           eventDisplay="block"
           // FC default blue event color + white text = 3.69 contrast (fails WCAG
-          // AA). Deep brand blue (set via these props + CSS var) wins AA.
+          // AA). Deep brand blue (set via these props + CSS var) wins AA. Text
+          // color comes from `--fc-event-text-color` (#fff) in the CSS.
           eventBackgroundColor="var(--brand-blue-deep)"
           eventBorderColor="var(--brand-blue-deep)"
           events={events}
-          eventTextColor="#ffffff"
           eventTimeFormat={{
             hour: "2-digit",
             hour12: false,
@@ -117,9 +117,11 @@ const CalendarGrid = lazy(async () => {
   };
 });
 
-const TONE_DOT: Record<CalendarEventStateTone, string> = {
+// Only exceptional states get a dot on the deep-blue event; "default"
+// (programada/normal) stays clean.
+const TONE_DOT: Record<CalendarEventStateTone, null | string> = {
   danger: "bg-danger-300",
-  default: "bg-white/70",
+  default: null,
   success: "bg-success-300",
   warning: "bg-warning-300",
 };
@@ -129,15 +131,17 @@ function ClinicalEventChip({
   timeText,
 }: Readonly<{ detail: CalendarEventDetail; timeText: string }>) {
   const state = getCalendarEventStates(detail)[0];
+  const dot = state ? TONE_DOT[state.tone] : null;
   return (
     <div className="flex items-center gap-1 overflow-hidden">
-      {state ? (
+      {dot ? (
         <span
           aria-hidden="true"
-          className={cn("size-1.5 shrink-0 rounded-full", TONE_DOT[state.tone])}
-          title={state.label}
+          className={cn("size-1.5 shrink-0 rounded-full", dot)}
+          title={state?.label}
         />
       ) : null}
+      {state ? <span className="sr-only">{state.label}. </span> : null}
       {timeText ? (
         <span className="shrink-0 font-medium tabular-nums opacity-90">{timeText}</span>
       ) : null}
@@ -313,7 +317,9 @@ export function CalendarVistaPanel() {
   }, [defaults, navigate]);
 
   const calendarLoading = isGoogleSource ? loading : doctoraliaLoading;
-  const totalEvents = isGoogleSource ? (summary?.totals.events ?? 0) : displayedEvents.length;
+  // For Doctoralia, count what actually renders (fcEvents drops undated orphan
+  // emails) so the chip agrees with the grid; Google uses the server total.
+  const totalEvents = isGoogleSource ? (summary?.totals.events ?? 0) : fcEvents.length;
   const initialDate = search.from ?? search.date ?? undefined;
 
   return (

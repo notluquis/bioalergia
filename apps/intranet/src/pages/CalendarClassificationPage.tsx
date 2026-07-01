@@ -35,13 +35,17 @@ const routeApi = getRouteApi("/_authed/calendar/");
 
 const EMPTY_EVENTS: CalendarUnclassifiedEvent[] = [];
 const PAGE_SIZE = 50;
+// Safe default (parse of {} never throws) — fallback when the shared host URL
+// carries an invalid `missing`/`filterMode` so we don't crash the tab on render.
+const EMPTY_CLASSIFY_SEARCH = classifySearchSchema.parse({});
 type PendingCalendarAction = "rebuild" | "reclassify-all" | "sync";
 type MissingFilterKey = NonNullable<MissingFieldFilters["missing"]>[number];
 
 function CalendarClassificationPage() {
   const queryClient = useQueryClient();
   const navigate = routeApi.useNavigate();
-  const search = classifySearchSchema.parse(routeApi.useSearch());
+  const parsedSearch = classifySearchSchema.safeParse(routeApi.useSearch());
+  const search = parsedSearch.success ? parsedSearch.data : EMPTY_CLASSIFY_SEARCH;
 
   const page = search.page ?? 0;
   const filters: MissingFieldFilters = {
