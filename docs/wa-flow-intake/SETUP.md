@@ -74,31 +74,36 @@ Template UTILITY `abono_staff_ficha` (idioma `es` / `es_CL`):
 | `wa.flow.privateKeyEnc` | (lo escribe el keygen) |
 | `wa.flow.publicKey` | (lo escribe el keygen) |
 | `wa.flow.intakeFlowId` | Flow ID del paso 3 |
+| `wa.flow.intakeBodyText` | (opcional) texto del mensaje que acompaña el Flow |
 | `doctoralia.abono.staffNotify.enabled` | `1` |
 | `doctoralia.abono.staffNotify.phones` | números E.164 del staff, separados por coma |
 | `doctoralia.abono.staffNotify.fichaTemplateName` | `abono_staff_ficha` |
 | `doctoralia.abono.staffNotify.templateLanguage` | `es` (o el del template) |
 | `doctoralia.abono.whatsapp.phoneNumberId` | el phone number id emisor (reusa el del abono) |
 
-## 6. Disparar el Flow al paciente
+## 6. Disparar el Flow al paciente (automático)
 
-`sendFlow` (`services/wa-messages.ts:491`) con:
+`services/intake.ts::sendIntakeFlow(tokenId)` manda el Flow con:
 - `flowId` = `wa.flow.intakeFlowId`,
 - `flowToken` = **`AppointmentPaymentToken.id`** ← así el endpoint linkea la
   `IntakeSubmission` al abono/cita y rellena la fecha en el aviso al staff,
-- `flowCta` = "Completar ficha", `bodyText` = instrucción al paciente.
+- `flowCta` = "Completar ficha", `bodyText` = `wa.flow.intakeBodyText`,
+- prefill `nombre`/`telefono` vía `flow_action_payload.data` (navigate).
 
-Requiere ventana de 24h abierta (es interactive, no template). La solicitud de
-abono ya abre conversación; mandar el flow a continuación.
+**Trigger**: el Flow requiere ventana de 24h abierta (es interactive, no
+template) y un template NO la abre — sólo un mensaje entrante del paciente. Por
+eso `sendIntakeFlow` se dispara cuando el paciente **escribe su primer mensaje**
+teniendo un `AppointmentPaymentToken` PENDING (match por teléfono). El
+webhook-handler señala `intakeFlowTokenIds` en el `ProcessResult` y la ruta
+`wa-cloud-webhook` llama al servicio (patrón DAG-safe, igual que el reenvío del
+comprobante al staff). Idempotente: marca `intake_flow_sent` en `flow_history`,
+no re-envía.
 
-### Prefill opcional (nombre/teléfono)
+### Prefill (nombre/teléfono)
 
-El endpoint trae un handler `INIT` que rellena `nombre`/`telefono` desde el token.
-Sólo se ejecuta si el flow se lanza en modo **data_exchange**. Hoy
-`sendFlowMessage` (`modules/wa-cloud/graph/messages.ts:215`) lanza en modo
-`navigate`, así que el INIT no corre y el paciente teclea su nombre (campo
-requerido igual). Para activar el prefill: cambiar `flow_action` a
-`data_exchange` y pasar `flow_action_payload.data` — cambio chico, diferido.
+Se lanza en modo `navigate` con `flow_action_payload.data = { nombre, telefono }`
+tomados del token. La pantalla `FICHA` los lee con `init-value: ${data.nombre}`.
+El endpoint ya **no** tiene handler `INIT` (era código muerto con navigate).
 
 ## Flujo en runtime
 

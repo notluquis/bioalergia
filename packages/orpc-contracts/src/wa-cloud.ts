@@ -284,6 +284,8 @@ export const sendFlowInputSchema = z.object({
   footerText: z.string().max(60).optional(),
   flowToken: z.string().min(1).optional(),
   initialScreen: z.string().optional(),
+  // Static prefill for the entry screen's declared data (name/phone, etc.).
+  initialData: z.record(z.string(), z.string()).optional(),
 });
 
 export const sendMediaInputSchema = z.object({

@@ -37,26 +37,33 @@ async function buildResponse(request: FlowRequest): Promise<Record<string, unkno
     return { version, data: { acknowledged: true } };
   }
 
-  if (request.action === "INIT") {
-    // First screen — prefill name/phone from the linked payment token (the flow
-    // is sent with flow_token = AppointmentPaymentToken.id).
-    const token = request.flow_token
-      ? await db.appointmentPaymentToken.findUnique({
-          where: { id: request.flow_token },
-          select: { patientName: true, patientPhone: true },
-        })
-      : null;
-    return {
-      version,
-      screen: "FICHA",
-      data: { nombre: token?.patientName ?? "", telefono: token?.patientPhone ?? "" },
-    };
-  }
+  // NOTE: no INIT handler. The intake flow is launched with flow_action
+  // "navigate" + flow_action_payload.data (name/phone prefill, see
+  // services/intake.ts::sendIntakeFlow), so Meta never calls the endpoint on
+  // open — an INIT handler here would be dead code.
 
   if (request.action === "data_exchange") {
+    const flowToken = request.flow_token ?? null;
+    // Guard: don't persist a duplicate/late submission against a payment token
+    // that already expired or was processed. Return a validation error on the
+    // current screen instead of silently creating a stale intake row.
+    if (flowToken) {
+      const token = await db.appointmentPaymentToken.findUnique({
+        where: { id: flowToken },
+        select: { status: true },
+      });
+      if (token && token.status !== "PENDING") {
+        logEvent("wa-flow.endpoint.token_not_pending", { flowToken, status: token.status });
+        return {
+          version,
+          screen: "COMPROBANTE",
+          data: { error_message: "Este abono ya no está disponible (expiró o ya fue procesado)." },
+        };
+      }
+    }
     // Final submit: persist the intake + forward the summary to staff. The full
-    // form data (+ PhotoPicker media, later) arrives here, not in nfm_reply.
-    const { id } = await createIntakeFromFlow(request.flow_token ?? null, request.data ?? {});
+    // form data (+ PhotoPicker media) arrives here, not in nfm_reply.
+    const { id } = await createIntakeFromFlow(flowToken, request.data ?? {});
     void notifyStaffFicha(id).catch((err) =>
       logError("wa-flow.endpoint.staff_notify_failed", err, { intakeId: id })
     );

@@ -509,6 +509,7 @@ export async function sendFlow(
     footerText: payload.footerText,
     flowToken: payload.flowToken,
     initialScreen: payload.initialScreen,
+    initialData: payload.initialData,
   });
   const metaId = apiResp.messages?.[0]?.id ?? null;
   const now = new Date();

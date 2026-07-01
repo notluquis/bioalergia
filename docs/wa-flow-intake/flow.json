@@ -116,32 +116,38 @@
                 ]
               },
               {
-                "type": "TextInput",
-                "name": "tutor_nombre",
-                "label": "Nombre del tutor (solo si es menor)",
-                "input-type": "text",
-                "required": false
-              },
-              {
-                "type": "TextInput",
-                "name": "tutor_rut",
-                "label": "RUT del tutor (solo si es menor)",
-                "input-type": "text",
-                "required": false
-              },
-              {
-                "type": "TextInput",
-                "name": "tutor_telefono",
-                "label": "Teléfono del tutor (solo si es menor)",
-                "input-type": "phone",
-                "required": false
-              },
-              {
-                "type": "TextInput",
-                "name": "tutor_relacion",
-                "label": "Relación con el paciente (solo si es menor)",
-                "input-type": "text",
-                "required": false
+                "type": "If",
+                "condition": "${form.es_menor} == 'si'",
+                "then": [
+                  {
+                    "type": "TextInput",
+                    "name": "tutor_nombre",
+                    "label": "Nombre del tutor",
+                    "input-type": "text",
+                    "required": true
+                  },
+                  {
+                    "type": "TextInput",
+                    "name": "tutor_rut",
+                    "label": "RUT del tutor",
+                    "input-type": "text",
+                    "required": true
+                  },
+                  {
+                    "type": "TextInput",
+                    "name": "tutor_telefono",
+                    "label": "Teléfono del tutor",
+                    "input-type": "phone",
+                    "required": true
+                  },
+                  {
+                    "type": "TextInput",
+                    "name": "tutor_relacion",
+                    "label": "Relación con el paciente",
+                    "input-type": "text",
+                    "required": true
+                  }
+                ]
               },
               {
                 "type": "Footer",

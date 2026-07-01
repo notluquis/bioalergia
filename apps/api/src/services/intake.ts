@@ -174,6 +174,10 @@ export async function sendIntakeFlow(tokenId: string): Promise<void> {
         flowCta: "Completar ficha",
         bodyText,
         flowToken: token.id,
+        // Launch on the FICHA screen with name/phone prefilled (the screen
+        // declares `data: { nombre, telefono }` → navigate requires them).
+        initialScreen: "FICHA",
+        initialData: { nombre: token.patientName, telefono: token.patientPhone },
       },
       null
     );
