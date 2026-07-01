@@ -150,6 +150,55 @@ export async function markOrderFulfilled(id: number): Promise<OrderDetail> {
   return detail;
 }
 
+type ShippingAddressInput = {
+  street: string;
+  street_number?: string;
+  city: string;
+  region: string;
+  county_code?: string;
+  service_code?: string;
+};
+
+// Admin correction of the stored shipping address (typos) BEFORE dispatch. Only
+// PENDING/PAID (not yet handed to the courier) qualify. NOTE: if the order
+// already has a cxOtNumber the Chilexpress OT was already created on payment —
+// editing the stored address here does NOT recreate/update that OT; the UI warns
+// the operator to coordinate the correction with Chilexpress directly.
+export async function updateOrderShippingAddress(
+  id: number,
+  address: ShippingAddressInput
+): Promise<OrderDetail> {
+  const existing = await db.order.findUnique({
+    where: { id },
+    select: { status: true, shippingAddress: true },
+  });
+  if (!existing) throw new DomainError("NOT_FOUND", "Pedido no encontrado");
+  if (existing.status !== "PENDING" && existing.status !== "PAID") {
+    throw new DomainError(
+      "BAD_REQUEST",
+      "Solo se puede editar la dirección de un pedido pendiente o pagado no despachado"
+    );
+  }
+
+  // Merge onto the existing JSON so persisted-only fields (e.g. postal_code) and
+  // an existing service_code survive when the operator doesn't re-supply them.
+  // Carry only string entries forward (Json columns reject `undefined`).
+  const current = (existing.shippingAddress ?? {}) as Record<string, unknown>;
+  const merged: Record<string, string> = {};
+  for (const [k, v] of Object.entries(current)) {
+    if (typeof v === "string") merged[k] = v;
+  }
+  merged.street = address.street;
+  merged.city = address.city;
+  merged.region = address.region;
+  if (address.street_number !== undefined) merged.street_number = address.street_number;
+  if (address.county_code !== undefined) merged.county_code = address.county_code;
+  if (address.service_code !== undefined) merged.service_code = address.service_code;
+
+  await db.order.update({ where: { id }, data: { shippingAddress: merged } });
+  return getOrderById(id);
+}
+
 export async function cancelOrder(id: number): Promise<OrderDetail> {
   const existing = await db.order.findUnique({ where: { id }, select: { status: true } });
   if (!existing) throw new DomainError("NOT_FOUND", "Pedido no encontrado");

@@ -1,3 +1,4 @@
+import type { ShippingAddressPayload } from "@finanzas/orpc-contracts/orders-admin";
 import { compactORPCInput } from "@/lib/orpc-input";
 import { ordersAdminORPCClient, toOrdersAdminApiError } from "./orpc";
 import { orderDetailResponseSchema, ordersListResponseSchema } from "./schemas";
@@ -51,6 +52,20 @@ export async function cancelOrder(id: number): Promise<OrderDetail> {
 export async function refundOrder(id: number): Promise<OrderDetail> {
   try {
     const res = orderDetailResponseSchema.parse(await ordersAdminORPCClient.refund({ id }));
+    return res.data;
+  } catch (error) {
+    throw toOrdersAdminApiError(error);
+  }
+}
+
+export async function updateOrderShippingAddress(
+  id: number,
+  address: ShippingAddressPayload
+): Promise<OrderDetail> {
+  try {
+    const res = orderDetailResponseSchema.parse(
+      await ordersAdminORPCClient.updateShippingAddress({ id, address })
+    );
     return res.data;
   } catch (error) {
     throw toOrdersAdminApiError(error);
