@@ -269,6 +269,64 @@ export async function sendOrderDispatchedEmail(args: {
   });
 }
 
+/**
+ * Shop order refunded — sent when an admin refunds a paid order (money returned
+ * to the buyer's MercadoPago payment method). Best-effort at the call site: a
+ * send failure must not break the refund (the money is already back).
+ */
+export async function sendOrderRefundEmail(args: {
+  to: string;
+  orderNumber: string;
+  totalClp: number;
+  accessToken?: string | null;
+}): Promise<EmailSendResult> {
+  const statusUrl = orderStatusLink(args.orderNumber, args.to, args.accessToken);
+  const html = shell(
+    "Reembolsamos tu pedido",
+    `<p>Reembolsamos tu pedido <strong>${esc(args.orderNumber)}</strong> por <strong>${clp(args.totalClp)}</strong> a tu medio de pago.</p>
+     <p>El abono puede tardar unos días hábiles en reflejarse según tu banco o tarjeta.</p>
+     <p style="margin-top:16px"><a href="${statusUrl}" style="color:#0e64b7">Ver el estado de tu pedido</a></p>`
+  );
+  const text =
+    `Reembolsamos tu pedido ${args.orderNumber} por ${clp(args.totalClp)} a tu medio de pago.\n` +
+    `El abono puede tardar unos días hábiles en reflejarse.\nEstado: ${statusUrl}`;
+  return sendEmail({
+    to: args.to,
+    subject: `Reembolso de tu pedido ${args.orderNumber} — Bioalergia`,
+    html,
+    text,
+    idempotencyKey: `order-refund/${args.orderNumber}`,
+  });
+}
+
+/**
+ * Shop order cancelled — sent when an admin cancels an unpaid (PENDING) order.
+ * No money is involved (the order was never paid). Best-effort at the call site.
+ */
+export async function sendOrderCancelledEmail(args: {
+  to: string;
+  orderNumber: string;
+  accessToken?: string | null;
+}): Promise<EmailSendResult> {
+  const statusUrl = orderStatusLink(args.orderNumber, args.to, args.accessToken);
+  const html = shell(
+    "Cancelamos tu pedido",
+    `<p>Cancelamos tu pedido <strong>${esc(args.orderNumber)}</strong>.</p>
+     <p>Si crees que se trata de un error o quieres retomar la compra, vuelve a hacer tu pedido en nuestra tienda.</p>
+     <p style="margin-top:16px"><a href="${statusUrl}" style="color:#0e64b7">Ver el estado de tu pedido</a></p>`
+  );
+  const text =
+    `Cancelamos tu pedido ${args.orderNumber}.\n` +
+    `Si fue un error o quieres retomar la compra, vuelve a hacer tu pedido.\nEstado: ${statusUrl}`;
+  return sendEmail({
+    to: args.to,
+    subject: `Tu pedido ${args.orderNumber} fue cancelado — Bioalergia`,
+    html,
+    text,
+    idempotencyKey: `order-cancelled/${args.orderNumber}`,
+  });
+}
+
 // Fecha legible es-CL para los avisos internos (plazos legales).
 function fmtDate(d: Date): string {
   return new Intl.DateTimeFormat("es-CL", { dateStyle: "long" }).format(d);
