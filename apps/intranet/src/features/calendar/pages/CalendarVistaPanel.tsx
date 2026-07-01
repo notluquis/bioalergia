@@ -362,19 +362,15 @@ export function CalendarVistaPanel() {
           </Card>
         ) : null}
         {calendarLoading && !displayedEvents.length ? (
-          <Skeleton
-            aria-label="Cargando calendario"
-            className="h-96 w-full rounded-xl"
-            role="img"
-          />
+          <div role="status" aria-label="Cargando calendario">
+            <Skeleton aria-hidden className="h-96 w-full rounded-xl" />
+          </div>
         ) : (
           <Suspense
             fallback={
-              <Skeleton
-                aria-label="Cargando calendario"
-                className="h-96 w-full rounded-xl"
-                role="img"
-              />
+              <div role="status" aria-label="Cargando calendario">
+                <Skeleton aria-hidden className="h-96 w-full rounded-xl" />
+              </div>
             }
           >
             <CalendarGrid
