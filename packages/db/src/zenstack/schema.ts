@@ -9659,8 +9659,9 @@ export class SchemaType implements SchemaDef {
                 flowToken: {
                     name: "flowToken",
                     type: "String",
+                    unique: true,
                     optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("flow_token") }] }] as readonly AttributeApplication[]
+                    attributes: [{ name: "@unique" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("flow_token") }] }] as readonly AttributeApplication[]
                 },
                 raw: {
                     name: "raw",
@@ -9704,7 +9705,8 @@ export class SchemaType implements SchemaDef {
             ] as readonly AttributeApplication[],
             idFields: ["id"],
             uniqueFields: {
-                id: { type: "String" }
+                id: { type: "String" },
+                flowToken: { type: "String" }
             }
         },
         DoctoraliaCookieStore: {

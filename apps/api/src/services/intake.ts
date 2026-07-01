@@ -224,17 +224,34 @@ export async function createIntakeFromFlow(
     patientName: token?.patientName,
     patientPhone: token?.patientPhone,
   });
-  const created = await db.intakeSubmission.create({
-    data: {
-      appointmentPaymentTokenId: token?.id ?? null,
-      flowToken,
-      sourceChannel: "whatsapp_flow",
-      raw: data as never,
-      ...mapped,
-    },
-  });
-  logEvent("wa-flow.intake.created", { intakeId: created.id, tokenId: token?.id ?? null });
-  return { id: created.id, isNew: true };
+  try {
+    const created = await db.intakeSubmission.create({
+      data: {
+        appointmentPaymentTokenId: token?.id ?? null,
+        flowToken,
+        sourceChannel: "whatsapp_flow",
+        raw: data as never,
+        ...mapped,
+      },
+    });
+    logEvent("wa-flow.intake.created", { intakeId: created.id, tokenId: token?.id ?? null });
+    return { id: created.id, isNew: true };
+  } catch (err) {
+    // Race: a concurrent retry inserted the same flow_token between our findFirst
+    // and this create. The unique index on flow_token rejects the second insert —
+    // recover the winning row instead of surfacing the error.
+    if (flowToken) {
+      const dup = await db.intakeSubmission.findFirst({
+        where: { flowToken },
+        select: { id: true },
+      });
+      if (dup) {
+        logEvent("wa-flow.intake.duplicate_ignored_race", { flowToken, intakeId: dup.id });
+        return { id: dup.id, isNew: false };
+      }
+    }
+    throw err;
+  }
 }
 
 /** PhotoPicker receipt → download+decrypt+verify → R2. Runs in the background

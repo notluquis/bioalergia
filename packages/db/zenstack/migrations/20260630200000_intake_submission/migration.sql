@@ -37,6 +37,10 @@ CREATE TABLE IF NOT EXISTS "intake_submissions" (
 CREATE INDEX IF NOT EXISTS "intake_submissions_patient_phone_idx" ON "intake_submissions" ("patient_phone");
 CREATE INDEX IF NOT EXISTS "intake_submissions_patient_rut_idx" ON "intake_submissions" ("patient_rut");
 CREATE INDEX IF NOT EXISTS "intake_submissions_appointment_payment_token_id_idx" ON "intake_submissions" ("appointment_payment_token_id");
+-- Idempotency: one intake per flow_token (= AppointmentPaymentToken.id). Postgres
+-- treats NULLs as distinct, so walk-in flows without a token are unaffected. Makes
+-- the endpoint's create atomic against concurrent Meta data_exchange retries.
+CREATE UNIQUE INDEX IF NOT EXISTS "intake_submissions_flow_token_key" ON "intake_submissions" ("flow_token");
 
 DO $$ BEGIN
   ALTER TABLE "intake_submissions"

@@ -7917,6 +7917,7 @@ export class SchemaType implements SchemaDef {
                 flowToken: {
                     name: "flowToken",
                     type: "String",
+                    unique: true,
                     optional: true
                 },
                 raw: {
@@ -7949,7 +7950,8 @@ export class SchemaType implements SchemaDef {
             },
             idFields: ["id"],
             uniqueFields: {
-                id: { type: "String" }
+                id: { type: "String" },
+                flowToken: { type: "String" }
             }
         },
         DoctoraliaCookieStore: {

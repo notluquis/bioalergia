@@ -2700,7 +2700,7 @@ model IntakeSubmission {
   staffNotifiedAt          DateTime? @map("staff_notified_at")
 
   sourceChannel            String   @default("whatsapp_flow") @map("source_channel")
-  flowToken                String?  @map("flow_token")
+  flowToken                String?  @unique @map("flow_token")
   raw                      Json?    // payload crudo del flow (auditoría)
   submittedAt              DateTime @default(now()) @map("submitted_at") @db.Timestamptz(3)
   createdAt                DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
