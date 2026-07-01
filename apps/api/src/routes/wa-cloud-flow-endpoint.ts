@@ -18,7 +18,11 @@ import {
   decryptFlowRequest,
   encryptFlowResponse,
 } from "../lib/flow-crypto.ts";
-import { createIntakeFromFlow, notifyStaffFicha } from "../services/intake.ts";
+import {
+  createIntakeFromFlow,
+  notifyStaffFicha,
+  processIntakeReceipt,
+} from "../services/intake.ts";
 
 const PRIVATE_KEY_SETTING = "wa.flow.privateKeyEnc";
 
@@ -61,12 +65,18 @@ async function buildResponse(request: FlowRequest): Promise<Record<string, unkno
         };
       }
     }
-    // Final submit: persist the intake + forward the summary to staff. The full
-    // form data (+ PhotoPicker media) arrives here, not in nfm_reply.
-    const { id } = await createIntakeFromFlow(flowToken, request.data ?? {});
-    void notifyStaffFicha(id).catch((err) =>
-      logError("wa-flow.endpoint.staff_notify_failed", err, { intakeId: id })
-    );
+    // Final submit: persist the intake (fast, idempotent). The full form data
+    // (+ PhotoPicker media) arrives here, not in nfm_reply.
+    const data = request.data ?? {};
+    const { id, isNew } = await createIntakeFromFlow(flowToken, data);
+    if (isNew) {
+      // Background: don't block the SUCCESS response on the receipt download/
+      // decrypt/R2 upload (Meta's data_exchange call would time out). Process the
+      // receipt, THEN notify staff so the ficha carries the comprobante header.
+      void processIntakeReceipt(id, data)
+        .then(() => notifyStaffFicha(id))
+        .catch((err) => logError("wa-flow.endpoint.post_submit_failed", err, { intakeId: id }));
+    }
     return {
       version,
       screen: "SUCCESS",

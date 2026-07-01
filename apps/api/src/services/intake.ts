@@ -192,11 +192,31 @@ export async function sendIntakeFlow(tokenId: string): Promise<void> {
 }
 
 /** Persist an IntakeSubmission from a flow completion, linked to the payment
- * token via flow_token (= AppointmentPaymentToken.id). */
+ * token via flow_token (= AppointmentPaymentToken.id).
+ *
+ * Idempotent: Meta retries the data_exchange call (and the client may resubmit
+ * after a transient timeout), so we dedup by flowToken — a retry returns the
+ * existing row (`isNew: false`) instead of creating a duplicate ficha + firing a
+ * second staff notification. Receipt media is NOT processed here (see
+ * processIntakeReceipt) so the endpoint can return SUCCESS fast.
+ *
+ * ponytail: lookup-by-token dedup; Meta retries are sequential (post-timeout),
+ * so a race is unlikely. Add a partial unique index on flow_token if concurrent
+ * dups ever appear. */
 export async function createIntakeFromFlow(
   flowToken: string | null,
   data: FlowData
-): Promise<{ id: string }> {
+): Promise<{ id: string; isNew: boolean }> {
+  if (flowToken) {
+    const existing = await db.intakeSubmission.findFirst({
+      where: { flowToken },
+      select: { id: true },
+    });
+    if (existing) {
+      logEvent("wa-flow.intake.duplicate_ignored", { flowToken, intakeId: existing.id });
+      return { id: existing.id, isNew: false };
+    }
+  }
   const token = flowToken
     ? await db.appointmentPaymentToken.findUnique({ where: { id: flowToken } })
     : null;
@@ -214,25 +234,28 @@ export async function createIntakeFromFlow(
     },
   });
   logEvent("wa-flow.intake.created", { intakeId: created.id, tokenId: token?.id ?? null });
+  return { id: created.id, isNew: true };
+}
 
-  // PhotoPicker receipt → download+decrypt+verify → R2. Best-effort: a bad/absent
-  // receipt must not lose the intake (staff can still follow up).
+/** PhotoPicker receipt → download+decrypt+verify → R2. Runs in the background
+ * after the endpoint returns SUCCESS (a 10MB CDN download + decrypt + R2 upload
+ * would blow Meta's data_exchange timeout). Best-effort: a bad/absent receipt
+ * must not lose the intake (staff can still follow up). */
+export async function processIntakeReceipt(intakeId: string, data: FlowData): Promise<void> {
   const photo = extractFlowPhoto(data);
-  if (photo) {
-    try {
-      const { bytes, mimeType } = await downloadAndDecryptFlowMedia(photo);
-      const r2Key = `intake-comprobante/${created.id}`;
-      await putR2Object(r2Key, bytes, mimeType);
-      await db.intakeSubmission.update({
-        where: { id: created.id },
-        data: { comprobanteR2Key: r2Key, comprobanteMime: mimeType },
-      });
-      logEvent("wa-flow.intake.comprobante_saved", { intakeId: created.id, r2Key });
-    } catch (err) {
-      logError("wa-flow.intake.comprobante_failed", err, { intakeId: created.id });
-    }
+  if (!photo) return;
+  try {
+    const { bytes, mimeType } = await downloadAndDecryptFlowMedia(photo);
+    const r2Key = `intake-comprobante/${intakeId}`;
+    await putR2Object(r2Key, bytes, mimeType);
+    await db.intakeSubmission.update({
+      where: { id: intakeId },
+      data: { comprobanteR2Key: r2Key, comprobanteMime: mimeType },
+    });
+    logEvent("wa-flow.intake.comprobante_saved", { intakeId, r2Key });
+  } catch (err) {
+    logError("wa-flow.intake.comprobante_failed", err, { intakeId });
   }
-  return { id: created.id };
 }
 
 /** Find the PhotoPicker value in a flow payload regardless of the field key —
@@ -305,7 +328,9 @@ export async function notifyStaffFicha(intakeId: string): Promise<void> {
       `Tutor: ${[intake.guardianName, intake.guardianRut, intake.guardianPhone].filter(Boolean).join(" ")}`
     );
   }
-  const detalle = bits.join(" · ") || "—";
+  // Collapse newlines/whitespace — WhatsApp rejects template params containing
+  // newlines, and TextArea fields (motivo/alergias/…) carry them.
+  const detalle = bits.join(" · ").replace(/\s+/g, " ").trim() || "—";
   const fecha = intake.appointmentPaymentToken
     ? formatChile(intake.appointmentPaymentToken.appointmentDate, "dddd D [de] MMMM HH:mm")
     : "—";
