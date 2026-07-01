@@ -8,6 +8,20 @@ import { CLP_FORMATTER } from "@/features/shop/lib/shop-config";
 import { shopKeys } from "@/features/shop/queries";
 import { accountClient } from "@/lib/orpc-client";
 
+type OrderStatus = "PENDING" | "PAID" | "FULFILLED" | "DELIVERED" | "CANCELLED" | "REFUNDED";
+
+// Friendly Spanish label per raw status enum (mirrors the public /pedido page).
+const STATUS_LABEL: Record<OrderStatus, string> = {
+  PENDING: "Esperando pago",
+  PAID: "Pago confirmado",
+  FULFILLED: "Despachado",
+  DELIVERED: "Entregado",
+  CANCELLED: "Cancelado",
+  REFUNDED: "Reembolsado",
+};
+
+const CHILEXPRESS_TRACKING_URL = "https://www.chilexpress.cl/seguimiento";
+
 function OrderDetailPage() {
   const { number } = Route.useParams();
   const queryClient = useQueryClient();
@@ -49,7 +63,8 @@ function OrderDetailPage() {
             Pedido {order.number}
           </h1>
           <p className="text-muted text-sm">
-            {new Date(order.created_at).toLocaleString("es-CL")} · {order.status}
+            {new Date(order.created_at).toLocaleString("es-CL")} ·{" "}
+            {STATUS_LABEL[order.status as OrderStatus]}
           </p>
         </div>
         <Button
@@ -139,12 +154,37 @@ function OrderDetailPage() {
         </Card.Content>
       </Card>
 
-      {order.dte_folio && (
+      {(order.dte_folio || order.cx_ot_number || order.dte_pdf_url) && (
         <Card className="rounded-2xl border-line bg-surface">
-          <Card.Content className="p-4 text-foreground text-sm">
-            <p>
-              <strong>Documento:</strong> {order.dte_type} N° {order.dte_folio}
-            </p>
+          <Card.Content className="flex flex-col gap-2 p-4 text-foreground text-sm">
+            {order.dte_folio && (
+              <p>
+                <strong>Documento:</strong> {order.dte_type} N° {order.dte_folio}
+              </p>
+            )}
+            {order.cx_ot_number && (
+              <p>
+                <strong>Seguimiento Chilexpress:</strong>{" "}
+                <a
+                  className="font-mono text-brand-blue hover:underline"
+                  href={CHILEXPRESS_TRACKING_URL}
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
+                  {order.cx_ot_number}
+                </a>
+              </p>
+            )}
+            {order.dte_pdf_url && (
+              <a
+                className="font-semibold text-brand-blue hover:underline"
+                href={order.dte_pdf_url}
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                Descargar boleta/factura
+              </a>
+            )}
           </Card.Content>
         </Card>
       )}

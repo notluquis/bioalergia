@@ -50,6 +50,8 @@ function mapDetail(o: OrderWithItems): OrderDetail {
     shipping_clp: o.shippingClp,
     shipping_address: o.shippingAddress ?? null,
     cx_ot_number: o.cxOtNumber,
+    cx_label_base64: o.cxLabelBase64,
+    dte_pdf_url: o.dtePdfUrl,
     dte_folio: o.dteFolio,
     dte_type: o.dteType,
     notes: o.notes,

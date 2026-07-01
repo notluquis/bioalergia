@@ -32,6 +32,9 @@ export const accountOrderDetailSchema = accountOrderSummarySchema.extend({
   customer_email: z.string(),
   customer_name: z.string(),
   shipping_address: z.unknown().nullable(),
+  // Chilexpress tracking number + hosted boleta/factura PDF (set post-payment).
+  cx_ot_number: z.string().nullable(),
+  dte_pdf_url: z.string().nullable(),
   items: z.array(accountOrderItemSchema),
   payments: z.array(
     z.object({
