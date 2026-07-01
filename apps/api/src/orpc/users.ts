@@ -526,6 +526,19 @@ const usersORPCRouterBase = {
           });
         }
 
+        // Server-side MFA enforcement: an mfaEnforced account cannot be activated
+        // without a real second factor (TOTP enabled OR a registered passkey).
+        // The wizard hides the "skip" for these accounts, but that's client-side
+        // only — this closes the direct-POST bypass.
+        if (user.mfaEnforced && !user.mfaEnabled) {
+          const passkeyCount = await db.passkey.count({ where: { userId: user.id } });
+          if (passkeyCount === 0) {
+            throw new ORPCError("BAD_REQUEST", {
+              message: "Debes configurar MFA o registrar un passkey antes de activar tu cuenta.",
+            });
+          }
+        }
+
         const hash = await hashPassword(input.password);
         const normalizedNotificationEmail = normalizeEmail(user.person?.email ?? "");
         const normalizedLoginEmail = input.loginEmail ? normalizeEmail(input.loginEmail) : null;
