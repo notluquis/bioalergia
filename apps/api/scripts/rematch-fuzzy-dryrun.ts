@@ -21,7 +21,7 @@ async function pool<T>(items: T[], limit: number, fn: (t: T) => Promise<void>) {
   let i = 0;
   await Promise.all(
     Array.from({ length: Math.min(limit, items.length) }, async () => {
-      while (i < items.length) await fn(items[i++]!);
+      while (i < items.length) await fn(items[i++]);
     })
   );
 }

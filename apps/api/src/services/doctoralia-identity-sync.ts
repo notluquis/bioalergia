@@ -35,12 +35,12 @@ export type SplitName = { names: string; fatherName: string | null; motherName: 
 export function splitChileanName(title: string): SplitName {
   const tokens = title.trim().split(/\s+/).filter(Boolean);
   if (tokens.length === 0) return { names: "", fatherName: null, motherName: null };
-  if (tokens.length === 1) return { names: tokens[0]!, fatherName: null, motherName: null };
-  if (tokens.length === 2) return { names: tokens[0]!, fatherName: tokens[1]!, motherName: null };
+  if (tokens.length === 1) return { names: tokens[0], fatherName: null, motherName: null };
+  if (tokens.length === 2) return { names: tokens[0], fatherName: tokens[1], motherName: null };
   return {
     names: tokens.slice(0, tokens.length - 2).join(" "),
-    fatherName: tokens[tokens.length - 2]!,
-    motherName: tokens[tokens.length - 1]!,
+    fatherName: tokens[tokens.length - 2],
+    motherName: tokens[tokens.length - 1],
   };
 }
 
@@ -77,16 +77,20 @@ async function mapWithConcurrency<T>(
     while (cursor < items.length) {
       const idx = cursor;
       cursor += 1;
-      await fn(items[idx]!);
+      await fn(items[idx]);
     }
   });
   await Promise.all(workers);
 }
 
 export async function runDoctoraliaIdentitySync(
-  opts: { dryRun?: boolean } = {}
+  opts: { dryRun?: boolean; onlyUnlinked?: boolean } = {}
 ): Promise<DoctoraliaSyncResult> {
   const dryRun = opts.dryRun ?? true;
+  // Incremental mode: only patients that still have an unlinked appointment
+  // (patient_id IS NULL) — i.e. new arrivals. Used by the event-driven hook so
+  // the nightly/on-sync pass is O(new) instead of O(all 3.8k).
+  const unlinkedFilter = opts.onlyUnlinked ? sql`AND patient_id IS NULL` : sql``;
 
   // One row per Doctoralia patient, preferring the record that carries a
   // birthDate, then the most recent.
@@ -101,6 +105,7 @@ export async function runDoctoraliaIdentitySync(
     FROM doctoralia_calendar_appointments
     WHERE title IS NOT NULL AND title <> ''
       AND has_patient AND NOT is_block AND NOT fake AND patient_external_id > 0
+      ${unlinkedFilter}
     ORDER BY patient_external_id, (patient_birth_date IS NOT NULL) DESC, start_at DESC
   `.execute(kysely);
 
