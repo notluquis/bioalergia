@@ -1,4 +1,4 @@
-import { addDays, diffDays, isoWeekday, today, weekday } from "@/lib/dates";
+import { addDays, diffDays, today } from "@/lib/dates";
 
 import type { CalendarFilters, CalendarSearchParams } from "../types";
 
@@ -136,15 +136,4 @@ export function buildCalendarFilters(
   settings: Parameters<typeof computeDefaultFilters>[0]
 ): CalendarFilters {
   return deriveEffectiveFilters(search, computeDefaultFilters(settings));
-}
-
-export function getScheduleDefaultRange() {
-  const now = today();
-  // If it's Sunday, jump to the next week's Monday
-  const base = weekday(now) === 0 ? addDays(now, 1) : now;
-  const start = addDays(base, -(isoWeekday(base) - 1));
-  return {
-    from: start,
-    to: addDays(start, 5),
-  };
 }

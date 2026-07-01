@@ -324,7 +324,7 @@ function formatDuration(minutes: number): string {
 }
 
 /**
- * Get category-based indicator color (matches WeekGrid CSS)
+ * Get category-based indicator color for the event card.
  */
 function getCategoryIndicatorColor(category: null | string | undefined): string {
   switch (category) {

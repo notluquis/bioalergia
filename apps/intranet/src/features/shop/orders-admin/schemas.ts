@@ -6,7 +6,14 @@ import { z } from "zod";
  * revives `Date`, but we use `z.coerce.date()` to stay robust to transport drift.
  */
 
-export const orderStatusSchema = z.enum(["PENDING", "PAID", "FULFILLED", "CANCELLED", "REFUNDED"]);
+export const orderStatusSchema = z.enum([
+  "PENDING",
+  "PAID",
+  "FULFILLED",
+  "DELIVERED",
+  "CANCELLED",
+  "REFUNDED",
+]);
 
 export const billingTypeSchema = z.enum(["BOLETA", "FACTURA"]);
 
@@ -40,6 +47,7 @@ export const orderDetailSchema = orderSummarySchema.extend({
   subtotal_clp: z.number().int(),
   shipping_clp: z.number().int(),
   shipping_address: z.unknown().nullable(),
+  cx_ot_number: z.string().nullable(),
   notes: z.string().nullable(),
   items: z.array(orderItemSchema),
 });

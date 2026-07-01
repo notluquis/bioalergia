@@ -1,29 +1,21 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { requirePermission } from "@/lib/authz/route-guards";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
-import { addMonths, endOfMonthFor, today } from "@/lib/dates";
 import { type CalendarSearchParams, calendarSearchSchema } from "@/features/calendar/types";
-import { CalendarHeatmapPage } from "@/pages/CalendarHeatmapPage";
+import { addMonths, endOfMonthFor, today } from "@/lib/dates";
 
+// Consolidated into `/calendar?tab=heatmap`. Kept as a redirect for deep-links.
+// Preserves the heatmap's default ±1-month window when the link omits from/to
+// (the old route filled it in validateSearch).
 export const Route = createFileRoute("/_authed/clinical/heatmap")({
-  validateSearch: (search: Record<string, unknown>): CalendarSearchParams => {
-    const parsed = calendarSearchSchema.parse(search);
-    if (!parsed.from || !parsed.to) {
-      const defaultFrom = addMonths(today(), -1);
-      const defaultTo = endOfMonthFor(addMonths(today(), 1));
-      return {
-        ...parsed,
-        from: parsed.from ?? defaultFrom,
-        to: parsed.to ?? defaultTo,
-      };
-    }
-    return parsed;
+  staticData: { hideFromNav: true, title: "Heatmap clínico" },
+  validateSearch: (search: Record<string, unknown>): CalendarSearchParams =>
+    calendarSearchSchema.parse(search),
+  loaderDeps: ({ search }) => search,
+  loader: ({ deps: search }) => {
+    const from = search.from ?? addMonths(today(), -1);
+    const to = search.to ?? endOfMonthFor(addMonths(today(), 1));
+    // eslint-disable-next-line @typescript-eslint/only-throw-error
+    throw redirect({ to: "/calendar", search: { ...search, from, to, tab: "heatmap" } });
   },
-  staticData: {
-    nav: { iconKey: "LayoutGrid", label: "Calendario — heatmap", order: 18, section: "Clínica" },
-    permission: { action: "read", subject: "CalendarHeatmap" },
-    title: "Heatmap clínico",
-  },
-  beforeLoad: requirePermission("read", "CalendarHeatmap"),
-  component: CalendarHeatmapPage,
+  component: () => null,
 });

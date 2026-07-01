@@ -195,6 +195,34 @@ export async function refreshAllTracking(): Promise<{ updated: number; total: nu
   return { updated, total: shipments.length };
 }
 
+/**
+ * Bulk-track a set of SHOP orders by their Chilexpress OT (single /tracking/bulk
+ * request). Matches each returned entry by reference (`BIO-ORD-<number>`, the
+ * deliveryReference used when the order OT was created) and returns a
+ * reference → latest-status map. Used by the order_tracking_sync cron to detect
+ * delivered orders. Callers own the delivered heuristic + status transition.
+ */
+export async function trackOrders(
+  orders: Array<{ number: string; cxOtNumber: string }>
+): Promise<Map<string, string>> {
+  const byReference = new Map<string, string>();
+  if (orders.length === 0) return byReference;
+  const cfg = requireCxConfig();
+  const results = await trackBulkTransportOrders(cfg, {
+    rut: cfg.companyRut ?? "",
+    showTrackingEvents: false,
+    items: orders.map((o) => ({
+      transportOrderNumber: o.cxOtNumber,
+      reference: `BIO-ORD-${o.number}`,
+    })),
+  });
+  for (const r of results) {
+    const status = r.status ?? r.statusDescription;
+    if (r.reference && status) byReference.set(r.reference, status);
+  }
+  return byReference;
+}
+
 // ─── Manifiesto (certificado de transporte del día) ──────────────────────────
 //
 // El certificado activo se persiste como Setting KV (no requiere migración).
@@ -607,6 +635,128 @@ export async function createShipment(input: CreateShipmentInput) {
     barcode: result.barcode ?? null,
     certificateNumber: headerCertNum,
     labelBase64,
+  };
+}
+
+/**
+ * Auto-create a Chilexpress OT for a paid SHOP order (home delivery). Reuses the
+ * same manifest + sender/return-address + payload assembly the patient flow uses
+ * (the -7-sensitive shape battle-tested in createShipment), but takes the inline
+ * structured address captured at checkout and returns the OT data for the caller
+ * to persist on the Order — it does NOT write the patient-coupled Shipment row.
+ */
+export async function createOrderShipment(input: {
+  orderNumber: string;
+  streetName: string;
+  streetNumber: string;
+  countyCoverageCode: string;
+  serviceTypeCode: string;
+  recipientName: string;
+  recipientPhone: string;
+  recipientEmail?: string | null;
+  declaredValueClp: number;
+  weightKg: number;
+}): Promise<{
+  otNumber: string;
+  barcode: string | null;
+  labelBase64: string | null;
+  labelType: number;
+}> {
+  const cfg = requireCxConfig();
+  const activeManifest = await getActiveManifest();
+  const headerCertificateNumber = activeManifest ? Number(activeManifest.certificateNumber) : 0;
+
+  const brand = await loadSettings();
+  const senderName = brand.orgName || "Bioalergia";
+  const senderPhone = (brand.orgPhone || "").replace(/\D/g, "") || "000000000";
+  const senderMail = brand.supportEmail || "contacto@bioalergia.cl";
+  const shipmentRef = `BIO-ORD-${input.orderNumber}`;
+
+  const deliveryAddress = {
+    countyCoverageCode: input.countyCoverageCode,
+    streetName: input.streetName,
+    streetNumber: input.streetNumber,
+    supplement: "",
+    addressType: "DEST" as const,
+    deliveryOnCommercialOffice: false,
+    observation: "",
+  };
+  const returnAddress = {
+    countyCoverageCode: brand.shipmentReturnCoverageCode || cfg.originCoverageCode,
+    streetName: brand.shipmentReturnStreet || brand.orgAddress || senderName,
+    streetNumber: brand.shipmentReturnNumber || "1",
+    supplement: brand.shipmentReturnSupplement || "",
+    addressType: "DEV" as const,
+    deliveryOnCommercialOffice: false,
+    observation: "",
+  };
+
+  const otPayload = {
+    header: {
+      certificateNumber: Number.isFinite(headerCertificateNumber) ? headerCertificateNumber : 0,
+      customerCardNumber: cfg.clientRut,
+      countyOfOriginCoverageCode: cfg.originCoverageCode,
+      labelType: 2,
+    },
+    details: [
+      {
+        addresses: [deliveryAddress, returnAddress],
+        contacts: [
+          {
+            name: input.recipientName,
+            phoneNumber: input.recipientPhone,
+            mail: input.recipientEmail ?? "",
+            contactType: "D" as const,
+          },
+          {
+            name: senderName,
+            phoneNumber: senderPhone,
+            mail: senderMail,
+            contactType: "R" as const,
+          },
+        ],
+        packages: [
+          {
+            weight: String(input.weightKg),
+            height: "10",
+            width: "20",
+            length: "30",
+            serviceDeliveryCode: input.serviceTypeCode,
+            productCode: "3",
+            deliveryReference: shipmentRef,
+            groupReference: shipmentRef,
+            declaredValue: String(Math.round(input.declaredValueClp)),
+            declaredContent: "5",
+          },
+        ],
+      },
+    ],
+  };
+
+  const response = await createTransportOrder(cfg, otPayload);
+  const result = response.data?.detail?.[0];
+  if (!result?.transportOrderNumber) {
+    const reason =
+      response.data?.detail?.[0]?.statusDescription ??
+      response.statusDescription ??
+      response.message ??
+      "sin detalle";
+    console.error(
+      "[shipments.createOrderOT.failed]",
+      JSON.stringify({ orderNumber: input.orderNumber, detail: response.data?.detail })
+    );
+    const friendly = friendlyChilexpressError(
+      200,
+      JSON.stringify({ statusDescription: reason, statusCode: response.statusCode })
+    );
+    throw new Error(friendly ?? `ChileExpress no generó la OT: ${reason}`);
+  }
+
+  return {
+    otNumber: String(result.transportOrderNumber),
+    barcode: result.barcode ?? null,
+    labelBase64: result.label?.labelData ?? null,
+    labelType: typeof result.label?.labelType === "number" ? result.label.labelType : 2,
   };
 }
 

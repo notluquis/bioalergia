@@ -90,7 +90,7 @@ export const checkoutStatusInputSchema = z
 export const checkoutStatusResponseSchema = z.object({
   data: z.object({
     order_number: z.string(),
-    status: z.enum(["PENDING", "PAID", "FULFILLED", "CANCELLED", "REFUNDED"]),
+    status: z.enum(["PENDING", "PAID", "FULFILLED", "DELIVERED", "CANCELLED", "REFUNDED"]),
     total_clp: z.number().int(),
     dte_folio: z.string().nullable(),
     dte_type: z.string().nullable(),

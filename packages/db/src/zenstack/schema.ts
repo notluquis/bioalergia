@@ -506,6 +506,12 @@ export class SchemaType implements SchemaDef {
                     optional: true,
                     attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("password_reset_expires_at") }] }] as readonly AttributeApplication[]
                 },
+                passwordResetPurpose: {
+                    name: "passwordResetPurpose",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("password_reset_purpose") }] }] as readonly AttributeApplication[]
+                },
                 passkeys: {
                     name: "passkeys",
                     type: "Passkey",
@@ -20854,6 +20860,31 @@ export class SchemaType implements SchemaDef {
                     optional: true,
                     attributes: [{ name: "@unique" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("access_token") }] }] as readonly AttributeApplication[]
                 },
+                cxOtNumber: {
+                    name: "cxOtNumber",
+                    type: "String",
+                    unique: true,
+                    optional: true,
+                    attributes: [{ name: "@unique" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("cx_ot_number") }] }] as readonly AttributeApplication[]
+                },
+                cxBarcode: {
+                    name: "cxBarcode",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("cx_barcode") }] }] as readonly AttributeApplication[]
+                },
+                cxLabelBase64: {
+                    name: "cxLabelBase64",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("cx_label_base64") }] }, { name: "@db.Text" }] as readonly AttributeApplication[]
+                },
+                cxLabelType: {
+                    name: "cxLabelType",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("cx_label_type") }] }] as readonly AttributeApplication[]
+                },
                 dteFolio: {
                     name: "dteFolio",
                     type: "String",
@@ -20865,6 +20896,12 @@ export class SchemaType implements SchemaDef {
                     type: "String",
                     optional: true,
                     attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("dte_type") }] }] as readonly AttributeApplication[]
+                },
+                dtePdfUrl: {
+                    name: "dtePdfUrl",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("dte_pdf_url") }] }] as readonly AttributeApplication[]
                 },
                 notes: {
                     name: "notes",
@@ -20925,7 +20962,8 @@ export class SchemaType implements SchemaDef {
                 id: { type: "Int" },
                 number: { type: "String" },
                 mlOrderId: { type: "String" },
-                accessToken: { type: "String" }
+                accessToken: { type: "String" },
+                cxOtNumber: { type: "String" }
             }
         },
         OrderItem: {
@@ -22856,6 +22894,7 @@ export class SchemaType implements SchemaDef {
                 PENDING: "PENDING",
                 PAID: "PAID",
                 FULFILLED: "FULFILLED",
+                DELIVERED: "DELIVERED",
                 CANCELLED: "CANCELLED",
                 REFUNDED: "REFUNDED"
             }

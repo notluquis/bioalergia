@@ -464,6 +464,37 @@ const verificationRateLimiter = rateLimiter({
 });
 app.use("/api/orpc/verification/*", verificationRateLimiter);
 
+// Public checkout (no auth): the shop's commerce funnel. communes /
+// streets / streetNumbers / quote / status are read-ish lookups that back
+// the address form and shipping quote — 60/min per IP is generous for a
+// human filling out a form while blocking bulk scraping of the
+// Chilexpress coverage tables. `start` is the expensive write: it creates
+// a pending order and a payment preference (DB write + external API call),
+// so it gets a tighter 15/min per IP. Same per-IP keying (tamper-proof
+// cf-connecting-ip → rightmost X-Forwarded-For) as the auth / verification
+// limiters. In-memory MemoryStore — see the auth limiter note on the
+// single-replica caveat.
+const checkoutReadRateLimiter = rateLimiter({
+  windowMs: 60 * 1000,
+  limit: 60,
+  standardHeaders: "draft-6",
+  keyGenerator: (c) => clientIp(c) ?? "anonymous",
+  skip: (c) => c.req.method === "OPTIONS",
+});
+const checkoutStartRateLimiter = rateLimiter({
+  windowMs: 60 * 1000,
+  limit: 15,
+  standardHeaders: "draft-6",
+  keyGenerator: (c) => clientIp(c) ?? "anonymous",
+  skip: (c) => c.req.method === "OPTIONS",
+});
+// Tighter `start` limiter first (rpc-tunnel + OpenAPI REST paths), then the
+// generous group limiter. Both run for `start` (independent counters); the
+// 15-cap is reached first so it is the effective ceiling for `start`.
+app.use("/api/orpc/checkout/rpc/start", checkoutStartRateLimiter);
+app.use("/api/orpc/checkout/start", checkoutStartRateLimiter);
+app.use("/api/orpc/checkout/*", checkoutReadRateLimiter);
+
 // Body size cap on webhook ingress: Meta payloads top out near 100KB,
 // OneDrive validation tokens are small. 1 MB is a safe ceiling that
 // blocks DoS amplification (an attacker firing 100 MB JSON to keep our
@@ -475,6 +506,47 @@ app.use(
     onError: (c) => c.text("Payload too large", 413),
   })
 );
+
+// Body size cap on the oRPC surface (256 KB). The public, unauthenticated
+// namespaces (checkout, site-auth, reactivos / occupational leads, karin,
+// public-clinic, verification) only ever carry small JSON, so this ceiling
+// blocks DoS amplification — an attacker firing multi-MB JSON to pin our
+// JSON.parse / Zod validation — without rejecting any legitimate request.
+//
+// A few *authenticated* namespaces legitimately POST larger bodies
+// (file / CSV / base64 uploads); they require a valid session (far smaller
+// DoS surface) and a tight cap would break real uploads, so they are
+// exempted by path prefix — covers both the rpc tunnel and OpenAPI REST
+// paths of each:
+//   - csv-upload  → bulk row arrays (import / preview)
+//   - patients    → uploadPatientAttachment (z.file())
+//   - timesheets  → prepare / send-email carry a base64 monthly PDF
+//   - outreach    → importMineduc carries a base64 CSV
+//   - wa-cloud    → createBroadcast up to 5000 recipients w/ per-row vars (~hundreds of KB)
+// These get a larger — but still FINITE (20 MB) — cap rather than being skipped
+// entirely, so an authenticated client can't stream an unbounded body either.
+const ORPC_LARGE_BODY_PREFIXES = [
+  "/api/orpc/csv-upload/",
+  "/api/orpc/patients/",
+  "/api/orpc/timesheets/",
+  "/api/orpc/outreach/",
+  "/api/orpc/wa-cloud/",
+];
+const orpcBodyLimit = bodyLimit({
+  maxSize: 256 * 1024,
+  onError: (c) => c.text("Payload too large", 413),
+});
+const orpcLargeBodyLimit = bodyLimit({
+  maxSize: 20 * 1024 * 1024,
+  onError: (c) => c.text("Payload too large", 413),
+});
+app.use("/api/orpc/*", (c, next) => {
+  const { pathname } = new URL(c.req.url);
+  if (ORPC_LARGE_BODY_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
+    return orpcLargeBodyLimit(c, next);
+  }
+  return orpcBodyLimit(c, next);
+});
 
 // Hard request timeout: anything that takes longer than 30s is almost
 // certainly a runaway query / external API hang. Webhooks excluded —

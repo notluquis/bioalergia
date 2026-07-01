@@ -1,7 +1,14 @@
 import { oc } from "@orpc/contract";
 import { z } from "zod";
 
-export const orderStatusEnum = z.enum(["PENDING", "PAID", "FULFILLED", "CANCELLED", "REFUNDED"]);
+export const orderStatusEnum = z.enum([
+  "PENDING",
+  "PAID",
+  "FULFILLED",
+  "DELIVERED",
+  "CANCELLED",
+  "REFUNDED",
+]);
 
 export const billingTypeEnum = z.enum(["BOLETA", "FACTURA"]);
 
@@ -37,6 +44,8 @@ export const orderDetailSchema = orderSummarySchema.extend({
   shipping_clp: z.number().int(),
   // Chilexpress address JSON ({ street, city, region }) or null for pickup.
   shipping_address: z.unknown().nullable(),
+  // Chilexpress transport-order number, set once the OT is auto-created on payment.
+  cx_ot_number: z.string().nullable(),
   notes: z.string().nullable(),
   items: z.array(orderItemSchema),
 });

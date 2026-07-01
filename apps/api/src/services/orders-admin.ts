@@ -9,8 +9,12 @@ import type { OrderDetail, OrderSummary } from "@finanzas/orpc-contracts/orders-
 import { DomainError } from "../lib/errors.ts";
 import { logError } from "../lib/logger.ts";
 import { refundPayment } from "../modules/mercadopago-checkout/payment.ts";
-import { releaseReservations, restockOrderItems } from "../modules/reservations/index.ts";
-import { sendOrderDispatchedEmail } from "./email/transactional.ts";
+import { releaseReservations, restockOrderItemsTx } from "../modules/reservations/index.ts";
+import {
+  sendOrderCancelledEmail,
+  sendOrderDispatchedEmail,
+  sendOrderRefundEmail,
+} from "./email/transactional.ts";
 
 // Derive the where type from the configured client's method (not the standalone
 // alias, whose generic params don't match the options-parameterized client).
@@ -45,6 +49,7 @@ function mapDetail(o: OrderWithItems): OrderDetail {
     subtotal_clp: o.subtotalClp,
     shipping_clp: o.shippingClp,
     shipping_address: o.shippingAddress ?? null,
+    cx_ot_number: o.cxOtNumber,
     dte_folio: o.dteFolio,
     dte_type: o.dteType,
     notes: o.notes,
@@ -155,7 +160,20 @@ export async function cancelOrder(id: number): Promise<OrderDetail> {
   }
   await releaseReservations(id);
   await db.order.update({ where: { id }, data: { status: "CANCELLED" } });
-  return getOrderById(id);
+  const detail = await getOrderById(id);
+
+  // Notify the buyer their (unpaid) order was cancelled — best-effort.
+  try {
+    const tokenRow = await db.order.findUnique({ where: { id }, select: { accessToken: true } });
+    await sendOrderCancelledEmail({
+      to: detail.customer_email,
+      orderNumber: detail.number,
+      accessToken: tokenRow?.accessToken,
+    });
+  } catch (e) {
+    logError("orders-admin.cancel_email_failed", e, { orderId: id });
+  }
+  return detail;
 }
 
 export async function refundOrder(id: number): Promise<OrderDetail> {
@@ -178,9 +196,56 @@ export async function refundOrder(id: number): Promise<OrderDetail> {
     throw new DomainError("BAD_REQUEST", "No hay un pago de MercadoPago para reembolsar");
   }
 
-  await refundPayment(payment.providerPaymentId);
-  await restockOrderItems(id);
-  await db.order.update({ where: { id }, data: { status: "REFUNDED" } });
-  await db.payment.updateMany({ where: { orderId: id }, data: { status: "REFUNDED" } });
-  return getOrderById(id);
+  // Idempotency guard against a DOUBLE external refund: if a prior attempt already
+  // refunded in MercadoPago (payment row REFUNDED) but its DB txn failed, the
+  // order can still be PAID — an operator retry must NOT fire a second MP refund,
+  // only re-run the DB fix below.
+  const alreadyRefunded = existing.payments.some(
+    (p: PaymentRow) => p.status === "REFUNDED"
+  );
+
+  // The MercadoPago refund is external and NOT undoable once it succeeds. After
+  // it returns, fold the THREE DB mutations (restock items + order→REFUNDED +
+  // payment rows→REFUNDED) into a SINGLE transaction so they're all-or-nothing.
+  // If the txn fails, the money is already back but the DB is inconsistent →
+  // log at CRITICAL and surface a reconciliation error to the operator.
+  if (!alreadyRefunded) {
+    await refundPayment(payment.providerPaymentId);
+  }
+  try {
+    await db.$transaction(async (tx) => {
+      await restockOrderItemsTx(tx, id);
+      await tx.order.update({ where: { id }, data: { status: "REFUNDED" } });
+      await tx.payment.updateMany({ where: { orderId: id }, data: { status: "REFUNDED" } });
+    });
+  } catch (e) {
+    // Persist the fact that the external refund already happened (best-effort,
+    // outside the failed txn) so a retry sees payment REFUNDED and skips the
+    // second MP refund via the guard above.
+    await db.payment
+      .updateMany({ where: { orderId: id }, data: { status: "REFUNDED" } })
+      .catch(() => undefined);
+    logError("orders-admin.refund_db_inconsistent", e, { orderId: id, severity: "CRITICAL" });
+    throw new DomainError(
+      "CONFLICT",
+      `El reembolso en MercadoPago se realizó, pero no se pudo actualizar el pedido ${existing.number}. Requiere reconciliación manual: marca el pedido como reembolsado y repón el stock a mano.`,
+      { orderId: id }
+    );
+  }
+
+  const detail = await getOrderById(id);
+
+  // Confirm the refund to the buyer — best-effort (the money is already back).
+  try {
+    const tokenRow = await db.order.findUnique({ where: { id }, select: { accessToken: true } });
+    await sendOrderRefundEmail({
+      to: detail.customer_email,
+      orderNumber: detail.number,
+      totalClp: detail.total_clp,
+      accessToken: tokenRow?.accessToken,
+    });
+  } catch (e) {
+    logError("orders-admin.refund_email_failed", e, { orderId: id });
+  }
+  return detail;
 }

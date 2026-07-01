@@ -427,6 +427,11 @@ export class SchemaType implements SchemaDef {
                     type: "DateTime",
                     optional: true
                 },
+                passwordResetPurpose: {
+                    name: "passwordResetPurpose",
+                    type: "String",
+                    optional: true
+                },
                 passkeys: {
                     name: "passkeys",
                     type: "Passkey",
@@ -17113,6 +17118,27 @@ export class SchemaType implements SchemaDef {
                     unique: true,
                     optional: true
                 },
+                cxOtNumber: {
+                    name: "cxOtNumber",
+                    type: "String",
+                    unique: true,
+                    optional: true
+                },
+                cxBarcode: {
+                    name: "cxBarcode",
+                    type: "String",
+                    optional: true
+                },
+                cxLabelBase64: {
+                    name: "cxLabelBase64",
+                    type: "String",
+                    optional: true
+                },
+                cxLabelType: {
+                    name: "cxLabelType",
+                    type: "Int",
+                    optional: true
+                },
                 dteFolio: {
                     name: "dteFolio",
                     type: "String",
@@ -17120,6 +17146,11 @@ export class SchemaType implements SchemaDef {
                 },
                 dteType: {
                     name: "dteType",
+                    type: "String",
+                    optional: true
+                },
+                dtePdfUrl: {
+                    name: "dtePdfUrl",
                     type: "String",
                     optional: true
                 },
@@ -17169,7 +17200,8 @@ export class SchemaType implements SchemaDef {
                 id: { type: "Int" },
                 number: { type: "String" },
                 mlOrderId: { type: "String" },
-                accessToken: { type: "String" }
+                accessToken: { type: "String" },
+                cxOtNumber: { type: "String" }
             }
         },
         OrderItem: {
@@ -18946,6 +18978,7 @@ export class SchemaType implements SchemaDef {
                 PENDING: "PENDING",
                 PAID: "PAID",
                 FULFILLED: "FULFILLED",
+                DELIVERED: "DELIVERED",
                 CANCELLED: "CANCELLED",
                 REFUNDED: "REFUNDED"
             }

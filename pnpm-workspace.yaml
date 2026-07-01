@@ -63,6 +63,13 @@ overrides:
   # 4.17.23). NOTE: there is no 4.17.24 — the maintainers (jdalton) shipped the
   # fixes as the 4.18.0 minor, so 4.17.23 is NOT sufficient.
   lodash-es: ^4.18.0
+  # Dedupe TanStack Store: react-router@1.170 pins @tanstack/react-store@^0.9.3
+  # (→ store 0.9.3, no `nonReactive`), while react-form@1.33 + our direct deps
+  # use 0.11. Vite ended up running react-store@0.11's `useStore` against a
+  # store@0.9.3 instance → runtime crash `d.nonReactive is not an object`.
+  # Force a single 0.11 line (additive over 0.9.3, so router still works).
+  "@tanstack/store": 0.11.0
+  "@tanstack/react-store": 0.11.0
 
 patchedDependencies:
   msw@2.14.6: patches/msw@2.14.6.patch

@@ -1,11 +1,10 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { addDays, diffDays, today } from "@/lib/dates";
 import type { CalendarFilters } from "../types";
 import {
   arraysEqual,
   computeDefaultFilters,
   filtersEqual,
-  getScheduleDefaultRange,
   normalizeFilters,
   unique,
 } from "./filters";
@@ -211,36 +210,5 @@ describe("computeDefaultFilters", () => {
     const expected = addDays(today(), 7);
     // Within 1 day tolerance to absorb timezone/midnight rollover
     expect(Math.abs(diffDays(result.to, expected))).toBeLessThanOrEqual(1);
-  });
-});
-
-// ─── getScheduleDefaultRange ──────────────────────────────────────────────────
-
-describe("getScheduleDefaultRange", () => {
-  it("returns from and to strings in YYYY-MM-DD format", () => {
-    const { from, to } = getScheduleDefaultRange();
-    expect(from).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-    expect(to).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-  });
-
-  it("to is 5 days after from", () => {
-    const { from, to } = getScheduleDefaultRange();
-    const diff = diffDays(to, from);
-    expect(diff).toBe(5);
-  });
-
-  describe("Sunday handling (line 88 branch)", () => {
-    afterEach(() => {
-      vi.useRealTimers();
-    });
-    it("jumps to next Monday when today is Sunday", () => {
-      // 2026-05-17 is a Sunday
-      vi.useFakeTimers();
-      vi.setSystemTime(new Date("2026-05-17T12:00:00Z"));
-      const { from, to } = getScheduleDefaultRange();
-      // Monday after Sunday 2026-05-17 is 2026-05-18
-      expect(from).toBe("2026-05-18");
-      expect(to).toBe("2026-05-23");
-    });
   });
 });

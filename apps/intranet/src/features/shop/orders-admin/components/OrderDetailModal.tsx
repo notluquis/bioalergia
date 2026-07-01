@@ -9,6 +9,7 @@ const STATUS_LABEL: Record<OrderStatus, string> = {
   PENDING: "Pendiente",
   PAID: "Pagado",
   FULFILLED: "Despachado",
+  DELIVERED: "Entregado",
   CANCELLED: "Cancelado",
   REFUNDED: "Reembolsado",
 };
@@ -17,6 +18,7 @@ const STATUS_COLOR: Record<OrderStatus, "success" | "warning" | "danger" | "acce
   PENDING: "warning",
   PAID: "accent",
   FULFILLED: "success",
+  DELIVERED: "success",
   CANCELLED: "danger",
   REFUNDED: "default",
 };
@@ -56,6 +58,11 @@ function DetailBody({ order }: { order: OrderDetail }) {
         {order.dte_folio ? (
           <Chip size="sm" variant="soft">
             {(order.dte_type ?? "DTE") + " · " + order.dte_folio}
+          </Chip>
+        ) : null}
+        {order.cx_ot_number ? (
+          <Chip color="accent" size="sm" variant="soft">
+            {"OT Chilexpress · " + order.cx_ot_number}
           </Chip>
         ) : null}
       </div>

@@ -48,12 +48,19 @@ export default defineConfig({
             "i18next",
             "jspdf",
             "jspdf-autotable",
+            "next-themes",
             "react-i18next",
             "recharts",
           ],
         },
         test: {
           name: "storybook",
+          // Run story files one at a time in the single Chromium instance.
+          // Parallel browser-mode saturates the one Chromium process (~60
+          // story files), which both slows the run down and produces
+          // sporadic play()-timeout flakes. Serial is actually faster here
+          // (no tab thrashing) and deterministic. maxWorkers=1 is implied.
+          fileParallelism: false,
           browser: {
             enabled: true,
             provider: playwright({}),

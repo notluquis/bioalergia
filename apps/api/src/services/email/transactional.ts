@@ -37,7 +37,7 @@ export async function sendPasswordResetEmail(args: {
 }): Promise<EmailSendResult> {
   const html = shell(
     "Tu acceso fue restablecido",
-    `<p>Hola ${args.name},</p>
+    `<p>Hola ${esc(args.name)},</p>
      <p>Un administrador restableció tu contraseña. Ingresa con esta contraseña temporal y completa la configuración de tu cuenta:</p>
      <p style="font-size:18px;font-weight:bold;background:#f3f4f6;padding:12px 16px;border-radius:8px;letter-spacing:1px">${args.tempPassword}</p>
      <p><a href="${appUrl()}/login" style="color:#0e64b7">Ir al inicio de sesión</a></p>
@@ -63,7 +63,7 @@ export async function sendPasswordResetLinkEmail(args: {
   const url = `${appUrl()}/reset-password?token=${encodeURIComponent(args.token)}`;
   const html = shell(
     "Restablece tu contraseña",
-    `<p>Hola ${args.name},</p>
+    `<p>Hola ${esc(args.name)},</p>
      <p>Recibimos una solicitud para restablecer tu contraseña. Haz clic en el botón (válido por 1 hora):</p>
      <p><a href="${url}" style="display:inline-block;background:#0e64b7;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px">Restablecer contraseña</a></p>
      <p style="font-size:13px;color:#6b7280">Si no fuiste tú, ignora este correo. Tu contraseña no cambiará.</p>`
@@ -78,6 +78,32 @@ export async function sendPasswordResetLinkEmail(args: {
 }
 
 /**
+ * #5 — Admin invite: welcome a freshly created account and link to set the
+ * first password. Long-lived (7-day) token, reuses the /reset-password page.
+ */
+export async function sendAccountInviteEmail(args: {
+  to: string;
+  name: string;
+  token: string;
+}): Promise<EmailSendResult> {
+  const url = `${appUrl()}/reset-password?token=${encodeURIComponent(args.token)}`;
+  const html = shell(
+    "Tu cuenta de Bioalergia está lista",
+    `<p>Hola ${esc(args.name)},</p>
+     <p>Se creó tu cuenta en la intranet de Bioalergia. Define tu contraseña para ingresar (enlace válido por 7 días):</p>
+     <p><a href="${url}" style="display:inline-block;background:#0e64b7;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px">Definir mi contraseña</a></p>
+     <p style="font-size:13px;color:#6b7280">Si no esperabas este correo, ignóralo.</p>`
+  );
+  return sendEmail({
+    to: args.to,
+    subject: "Tu cuenta de Bioalergia está lista",
+    html,
+    text: `Hola ${args.name}, define tu contraseña para ingresar a Bioalergia (válido 7 días): ${url}`,
+    idempotencyKey: `invite/${idemDigest(args.token)}`,
+  });
+}
+
+/**
  * #4 — Shop magic-link sign-in: one-time login link for bioalergia.cl.
  * The full URL is built by the caller (shop origin, not appUrl()).
  */
@@ -88,7 +114,7 @@ export async function sendMagicLinkEmail(args: {
 }): Promise<EmailSendResult> {
   const html = shell(
     "Tu enlace de acceso",
-    `<p>Hola ${args.name},</p>
+    `<p>Hola ${esc(args.name)},</p>
      <p>Usa este botón para ingresar a tu cuenta de Bioalergia (válido por 15 minutos):</p>
      <p><a href="${args.url}" style="display:inline-block;background:#0e64b7;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px">Ingresar a mi cuenta</a></p>
      <p style="font-size:13px;color:#6b7280">Si no solicitaste este acceso, ignora este correo.</p>`
@@ -266,6 +292,125 @@ export async function sendOrderDispatchedEmail(args: {
     html,
     text,
     idempotencyKey: `order-dispatched/${args.orderNumber}`,
+  });
+}
+
+/**
+ * Shop order delivered — sent when the Chilexpress tracking sync detects the OT
+ * was delivered (FULFILLED → DELIVERED). Closes the loop for the buyer.
+ * Best-effort at the call site.
+ */
+export async function sendOrderDeliveredEmail(args: {
+  to: string;
+  orderNumber: string;
+  accessToken?: string | null;
+}): Promise<EmailSendResult> {
+  const statusUrl = orderStatusLink(args.orderNumber, args.to, args.accessToken);
+  const html = shell(
+    "Tu pedido fue entregado",
+    `<p>Tu pedido <strong>${esc(args.orderNumber)}</strong> fue entregado por Chilexpress.</p>
+     <p>Esperamos que todo haya llegado bien. Ante cualquier problema, escríbenos.</p>
+     <p style="margin-top:16px"><a href="${statusUrl}" style="color:#0e64b7">Ver el estado de tu pedido</a></p>`
+  );
+  const text =
+    `Tu pedido ${args.orderNumber} fue entregado por Chilexpress.\n` +
+    `Ante cualquier problema, escríbenos.\nEstado: ${statusUrl}`;
+  return sendEmail({
+    to: args.to,
+    subject: `Tu pedido ${args.orderNumber} fue entregado — Bioalergia`,
+    html,
+    text,
+    idempotencyKey: `order-delivered/${args.orderNumber}`,
+  });
+}
+
+/**
+ * Shop payment failed — sent when a MercadoPago payment for a PENDING order is
+ * rejected. A decline is NOT terminal (the order stays PENDING and retryable), so
+ * we nudge the buyer with a link back to the order status page. Best-effort at the
+ * call site. Idempotency-keyed by payment id so repeated retries of the SAME
+ * declined attempt don't spam (falls back to the order number).
+ */
+export async function sendPaymentFailedEmail(args: {
+  to: string;
+  orderNumber: string;
+  accessToken?: string | null;
+  paymentId?: string;
+}): Promise<EmailSendResult> {
+  const statusUrl = orderStatusLink(args.orderNumber, args.to, args.accessToken);
+  const html = shell(
+    "Tu pago no se completó",
+    `<p>No pudimos confirmar el pago de tu pedido <strong>${esc(args.orderNumber)}</strong>.</p>
+     <p>No te preocupes: tu pedido sigue reservado y podés reintentar el pago.</p>
+     <p style="margin-top:16px"><a href="${statusUrl}" style="color:#0e64b7">Reintentar el pago</a></p>`
+  );
+  const text =
+    `No pudimos confirmar el pago de tu pedido ${args.orderNumber}.\n` +
+    `Tu pedido sigue reservado y podés reintentar el pago.\nReintentar: ${statusUrl}`;
+  return sendEmail({
+    to: args.to,
+    subject: `Tu pago del pedido ${args.orderNumber} no se completó — Bioalergia`,
+    html,
+    text,
+    idempotencyKey: `payment-failed/${args.paymentId ?? args.orderNumber}`,
+  });
+}
+
+/**
+ * Shop order refunded — sent when an admin refunds a paid order (money returned
+ * to the buyer's MercadoPago payment method). Best-effort at the call site: a
+ * send failure must not break the refund (the money is already back).
+ */
+export async function sendOrderRefundEmail(args: {
+  to: string;
+  orderNumber: string;
+  totalClp: number;
+  accessToken?: string | null;
+}): Promise<EmailSendResult> {
+  const statusUrl = orderStatusLink(args.orderNumber, args.to, args.accessToken);
+  const html = shell(
+    "Reembolsamos tu pedido",
+    `<p>Reembolsamos tu pedido <strong>${esc(args.orderNumber)}</strong> por <strong>${clp(args.totalClp)}</strong> a tu medio de pago.</p>
+     <p>El abono puede tardar unos días hábiles en reflejarse según tu banco o tarjeta.</p>
+     <p style="margin-top:16px"><a href="${statusUrl}" style="color:#0e64b7">Ver el estado de tu pedido</a></p>`
+  );
+  const text =
+    `Reembolsamos tu pedido ${args.orderNumber} por ${clp(args.totalClp)} a tu medio de pago.\n` +
+    `El abono puede tardar unos días hábiles en reflejarse.\nEstado: ${statusUrl}`;
+  return sendEmail({
+    to: args.to,
+    subject: `Reembolso de tu pedido ${args.orderNumber} — Bioalergia`,
+    html,
+    text,
+    idempotencyKey: `order-refund/${args.orderNumber}`,
+  });
+}
+
+/**
+ * Shop order cancelled — sent when an admin cancels an unpaid (PENDING) order.
+ * No money is involved (the order was never paid). Best-effort at the call site.
+ */
+export async function sendOrderCancelledEmail(args: {
+  to: string;
+  orderNumber: string;
+  accessToken?: string | null;
+}): Promise<EmailSendResult> {
+  const statusUrl = orderStatusLink(args.orderNumber, args.to, args.accessToken);
+  const html = shell(
+    "Cancelamos tu pedido",
+    `<p>Cancelamos tu pedido <strong>${esc(args.orderNumber)}</strong>.</p>
+     <p>Si crees que se trata de un error o quieres retomar la compra, vuelve a hacer tu pedido en nuestra tienda.</p>
+     <p style="margin-top:16px"><a href="${statusUrl}" style="color:#0e64b7">Ver el estado de tu pedido</a></p>`
+  );
+  const text =
+    `Cancelamos tu pedido ${args.orderNumber}.\n` +
+    `Si fue un error o quieres retomar la compra, vuelve a hacer tu pedido.\nEstado: ${statusUrl}`;
+  return sendEmail({
+    to: args.to,
+    subject: `Tu pedido ${args.orderNumber} fue cancelado — Bioalergia`,
+    html,
+    text,
+    idempotencyKey: `order-cancelled/${args.orderNumber}`,
   });
 }
 

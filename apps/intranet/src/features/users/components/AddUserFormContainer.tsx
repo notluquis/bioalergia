@@ -88,8 +88,14 @@ export function AddUserFormContainer({
     onError: (err) => {
       toastError(err instanceof Error ? err.message : "Error al crear usuario");
     },
-    onSuccess: async () => {
-      success("Usuario creado exitosamente");
+    onSuccess: async (data) => {
+      if (data.emailed) {
+        success("Usuario creado. Se le envió un correo para definir su contraseña.");
+      } else {
+        toastError(
+          "Usuario creado, pero el correo de invitación no se pudo enviar. Usa 'Restablecer contraseña' para reenviarlo."
+        );
+      }
       void Promise.all([
         queryClient.invalidateQueries({ queryKey: ["users"] }),
         queryClient.invalidateQueries({ queryKey: ["people"] }),

@@ -6,6 +6,18 @@ import { db } from "@finanzas/db";
 
 const RESERVATION_TTL_MIN = Number(process.env.RESERVATION_TTL_MIN ?? "15");
 
+// Transaction client handed to the `$transaction(async (tx) => …)` callback.
+// Derived from the configured client so callers can run the restock logic
+// inside their own transaction (e.g. refund atomicity in orders-admin).
+// `Parameters<typeof db.$transaction>` collapses to the array-of-operations
+// overload (poisoning the extraction), so infer the client type from a real
+// callback-form call instead. This probe is only referenced in a type position
+// (`typeof`), never invoked at runtime.
+function txClientProbe() {
+  return db.$transaction((tx) => Promise.resolve(tx));
+}
+type TxClient = Awaited<ReturnType<typeof txClientProbe>>;
+
 export async function reserveStockForOrder(opts: {
   orderId: number;
   items: Array<{ productId: number; qty: number }>;
@@ -91,21 +103,31 @@ export async function consumeReservations(orderId: number): Promise<void> {
   });
 }
 
+/** Per-item restock loop, runnable inside an existing transaction. Lets a caller
+ *  (e.g. refund atomicity) fold the restock into the SAME txn as the order/payment
+ *  status flips so they're all-or-nothing. Unconditionally increments availableQty
+ *  — caller guards against double-calling via the order status (REFUNDED terminal). */
+export async function restockOrderItemsTx(tx: TxClient, orderId: number): Promise<void> {
+  const items = await tx.orderItem.findMany({
+    where: { orderId },
+    select: { productId: true, qty: true },
+  });
+  for (const it of items) {
+    await tx.product.update({
+      where: { id: it.productId },
+      data: { availableQty: { increment: it.qty }, version: { increment: 1 } },
+    });
+  }
+}
+
 /** Return a paid order's items to stock on refund (reservations are already
  *  CONSUMED). Caller must guard against double-calling via the order status
- *  (REFUNDED is terminal), since this unconditionally increments availableQty. */
+ *  (REFUNDED is terminal), since this unconditionally increments availableQty.
+ *  Opens its own transaction; for refund atomicity use {@link restockOrderItemsTx}
+ *  inside the caller's txn instead. */
 export async function restockOrderItems(orderId: number): Promise<void> {
   await db.$transaction(async (tx) => {
-    const items = await tx.orderItem.findMany({
-      where: { orderId },
-      select: { productId: true, qty: true },
-    });
-    for (const it of items) {
-      await tx.product.update({
-        where: { id: it.productId },
-        data: { availableQty: { increment: it.qty }, version: { increment: 1 } },
-      });
-    }
+    await restockOrderItemsTx(tx, orderId);
   });
 }
 

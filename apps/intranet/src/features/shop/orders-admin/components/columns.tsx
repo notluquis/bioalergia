@@ -27,6 +27,7 @@ const STATUS_LABEL: Record<OrderStatus, string> = {
   PENDING: "Pendiente",
   PAID: "Pagado",
   FULFILLED: "Despachado",
+  DELIVERED: "Entregado",
   CANCELLED: "Cancelado",
   REFUNDED: "Reembolsado",
 };
@@ -35,6 +36,7 @@ const STATUS_COLOR: Record<OrderStatus, "success" | "warning" | "danger" | "acce
   PENDING: "warning",
   PAID: "accent",
   FULFILLED: "success",
+  DELIVERED: "success",
   CANCELLED: "danger",
   REFUNDED: "default",
 };

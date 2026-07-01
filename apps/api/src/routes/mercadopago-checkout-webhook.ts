@@ -10,20 +10,20 @@ import { db } from "@finanzas/db";
 import type { Hono } from "hono";
 import { InvalidWebhookSignatureError, WebhookSignatureValidator } from "mercadopago";
 
-import { emitDte } from "../modules/haulmer/emit-dte.ts";
 import { refetchPayment } from "../modules/mercadopago-checkout/payment.ts";
-import { pushStockToMl } from "../modules/mercadolibre/sync.ts";
 import {
   consumeReservations,
   releaseReservations,
   reserveStockForOrder,
 } from "../modules/reservations/index.ts";
+import { enqueueJob } from "../queue/runner.ts";
+import { orderPostPaymentJobKey, runOrderPostPayment } from "../queue/tasks/order-post-payment.ts";
 import { sendAbonoConfirmation } from "../services/abono-confirmation.ts";
+import { sendPaymentFailedEmail } from "../services/email/transactional.ts";
 import { notifyStaffCardPayment } from "../services/abono-staff-notify.ts";
-import { sendOrderConfirmationEmail } from "../services/email/transactional.ts";
 import { appendAbonoFlowHistory } from "../lib/doctoralia/abono-flow-history.ts";
 import { logError } from "../lib/logger.ts";
-import { attachDteToOrder, markOrderPaid } from "../services/orders.ts";
+import { markOrderPaid } from "../services/orders.ts";
 export function registerMercadopagoCheckoutWebhook(app: Hono) {
   app.post("/api/mercadopago/webhook", async (c) => {
     const topic = c.req.query("topic") ?? c.req.query("type") ?? "";
@@ -269,77 +269,52 @@ export function registerMercadopagoCheckoutWebhook(app: Hono) {
           );
         }
 
-        // DTE emission — falla aquí NO debe perder la venta; log y sigue.
-        let dtePdfUrl: string | undefined;
-        try {
-          const order = await db.order.findUnique({
-            where: { id: orderId },
-            include: { items: true },
-          });
-          if (order) {
-            const dte = await emitDte({
-              documentType: order.billingType,
-              customerEmail: order.customerEmail,
-              customerRut: order.customerRut,
-              customerName: order.customerName,
-              totalClp: order.totalClp,
-              lines: order.items.map((i: (typeof order.items)[number]) => {
-                const snap = i.productSnapshot as { sku: string; name: string };
-                return {
-                  sku: snap.sku,
-                  name: snap.name,
-                  qty: i.qty,
-                  unitPriceClp: i.unitPriceClp,
-                };
-              }),
-            });
-            dtePdfUrl = dte.pdfUrl;
-            await attachDteToOrder(orderId, dte);
+        // Durable post-payment side-effects (DTE, Chilexpress OT, confirmation
+        // email, ML stock) run in the graphile-worker queue so a transient
+        // failure retries with backoff instead of being silently lost in an
+        // inline best-effort try/catch. Idempotent + jobKey-deduped, so a
+        // duplicate `approved` webhook re-enqueue is a no-op. preserve_run_at:
+        // don't reset the run time if a job is already queued for this order.
+        const queued = await enqueueJob(
+          "order_post_payment",
+          { orderId },
+          { jobKey: orderPostPaymentJobKey(orderId), jobKeyMode: "preserve_run_at" }
+        );
+        if (!queued) {
+          // Queue disabled (DISABLE_QUEUE_RUNNER) or not yet booted → enqueueJob
+          // is a no-op. Run the side-effects inline so a paid order still gets its
+          // DTE/OT/email instead of being lost (MP won't retry an acked webhook).
+          try {
+            await runOrderPostPayment(orderId);
+          } catch (e) {
+            logError("mp-webhook.inline_post_payment_failed", e, { orderId });
           }
-        } catch (e) {
-          console.error("[mp-webhook] DTE emit failed", e);
         }
-
-        // Order confirmation email to the buyer (best-effort — never break the
-        // webhook). Sent after DTE so the boleta/factura folio + PDF can ride
-        // along; sends regardless of whether DTE succeeded.
+      } else if (status === "rejected") {
+        // A decline is NOT terminal — the order stays PENDING and retryable.
+        // Nudge the buyer with a link back to the status page so they can retry.
+        // Best-effort: an email failure must not break the webhook. Idempotency
+        // is keyed by payment id, so repeated retries of the SAME declined
+        // attempt don't spam.
         try {
           const order = await db.order.findUnique({
             where: { id: orderId },
-            include: { items: true },
+            select: { number: true, customerEmail: true, accessToken: true, status: true },
           });
-          if (order) {
-            await sendOrderConfirmationEmail({
+          // Guard: Checkout Pro can fire a late `rejected` for one attempt AFTER
+          // another attempt already approved the same order. Only nudge if the
+          // order is still awaiting payment — never email "payment failed" for an
+          // order that's already PAID/FULFILLED/etc.
+          if (order && order.status === "PENDING") {
+            await sendPaymentFailedEmail({
               to: order.customerEmail,
               orderNumber: order.number,
-              totalClp: order.totalClp,
-              items: order.items.map((i: (typeof order.items)[number]) => {
-                const snap = i.productSnapshot as { name: string };
-                return { name: snap.name, qty: i.qty, unitPriceClp: i.unitPriceClp };
-              }),
-              billingType: order.billingType,
               accessToken: order.accessToken,
-              ...(order.dteFolio ? { dteFolio: order.dteFolio } : {}),
-              ...(dtePdfUrl ? { dtePdfUrl } : {}),
+              paymentId: String(mpPayment.id),
             });
           }
         } catch (e) {
-          logError("mp-webhook.order_confirmation_email_failed", e, { orderId });
-        }
-
-        // Push stock a ML (best-effort).
-        try {
-          const order = await db.order.findUnique({
-            where: { id: orderId },
-            include: { items: true },
-          });
-          if (order) {
-            for (const it of order.items) {
-              await pushStockToMl(it.productId).catch(() => undefined);
-            }
-          }
-        } catch (e) {
-          console.error("[mp-webhook] ML stock push failed", e);
+          logError("mp-webhook.payment_failed_email", e, { orderId });
         }
       } else if (status === "cancelled") {
         // Only a terminal cancel frees stock. A `rejected` attempt is retryable on
@@ -369,8 +344,13 @@ export function registerMercadopagoCheckoutWebhook(app: Hono) {
         },
         data: { error: msg },
       });
-      console.error("[mp-webhook] error", e);
-      return c.json({ error: msg }, 500);
+      // Return 5xx so MercadoPago retries a TRANSIENT failure (refetchPayment 5xx,
+      // DB blip) — acking 200 here would drop the delivery and leave an approved
+      // payment unprocessed. The stored WebhookEvent captures the error for
+      // diagnosis; the response body is GENERIC so we never leak internals.
+      // MP's retry schedule is finite, so a truly permanent error won't storm.
+      logError("mp-webhook.handler_error", e, { topic, dataId: String(dataId) });
+      return c.json({ error: "internal_error" }, 500);
     }
   });
 }

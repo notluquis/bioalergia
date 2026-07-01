@@ -181,6 +181,11 @@ model User {
   // email + its expiry (1h). Never store the plaintext token. Cleared on use.
   passwordResetTokenHash  String?                  @map("password_reset_token_hash")
   passwordResetExpiresAt  DateTime?                @map("password_reset_expires_at")
+  // What the live token was minted for. "invite" → completing it activates a
+  // PENDING_SETUP account (skips onboarding). null/"reset" → forgot-password,
+  // which must NEVER change status. Distinguishes the two flows that share the
+  // hash columns above. Cleared on use.
+  passwordResetPurpose    String?                  @map("password_reset_purpose")
 
 
   // Relationships
@@ -6335,6 +6340,7 @@ enum OrderStatus {
   PENDING
   PAID
   FULFILLED
+  DELIVERED
   CANCELLED
   REFUNDED
 }
@@ -6624,8 +6630,14 @@ model Order {
   // Opaque per-order token for the public status page, so the link carries no
   // email (PII) in the URL. Nullable for orders created before this column.
   accessToken       String?             @unique @map("access_token")
+  // Chilexpress transport order (OT) auto-created when a chilexpress order is paid.
+  cxOtNumber        String?             @unique @map("cx_ot_number")
+  cxBarcode         String?             @map("cx_barcode")
+  cxLabelBase64     String?             @map("cx_label_base64") @db.Text
+  cxLabelType       Int?                @map("cx_label_type")
   dteFolio          String?             @map("dte_folio")
   dteType           String?             @map("dte_type")
+  dtePdfUrl         String?             @map("dte_pdf_url")
   notes             String?
   createdAt         DateTime            @default(now()) @map("created_at")
   updatedAt         DateTime            @default(now()) @updatedAt @map("updated_at")
