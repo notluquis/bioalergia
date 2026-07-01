@@ -12,8 +12,22 @@ import { logError, logEvent } from "../lib/logger.ts";
 import { type FlowPhoto, downloadAndDecryptFlowMedia } from "../lib/flow-media.ts";
 import { getR2Object, putR2Object } from "../modules/cloudflare/r2.ts";
 import { uploadMedia } from "../modules/wa-cloud/graph-client.ts";
-import { loadAbonoStaffNotifyConfig } from "../lib/doctoralia/abono-whatsapp-settings.ts";
+import {
+  ABONO_WHATSAPP_SETTINGS,
+  loadAbonoStaffNotifyConfig,
+  parsePhoneNumberId,
+} from "../lib/doctoralia/abono-whatsapp-settings.ts";
+import { appendAbonoFlowHistory } from "../lib/doctoralia/abono-flow-history.ts";
+import { getSetting } from "../lib/settings.ts";
+import { ensureContactAndConversation } from "./wa-contacts.ts";
+import { sendFlow } from "./wa-messages.ts";
 import { fanout } from "./abono-staff-notify.ts";
+
+// DB Settings keys for the intake Flow (all config lives in Settings — no env).
+const INTAKE_FLOW_ID_SETTING = "wa.flow.intakeFlowId";
+const INTAKE_BODY_TEXT_SETTING = "wa.flow.intakeBodyText";
+// flow_history marker → the auto-send is idempotent (sent once per token).
+const INTAKE_FLOW_SENT_STEP = "intake_flow_sent";
 
 type FlowData = Record<string, unknown>;
 
@@ -96,6 +110,78 @@ export function mapFlowDataToIntake(
     guardianPhone: str(data.tutor_telefono),
     guardianRelationship: str(data.tutor_relacion),
   };
+}
+
+/**
+ * Auto-send the patient-intake Flow to the patient linked to a PENDING abono
+ * token. Reusable + idempotent: guarded by a `flow_history` marker so it fires
+ * at most once per token.
+ *
+ * TRIGGER (see wa-cloud-webhook route): we call this when the patient sends
+ * their FIRST inbound message in a conversation that has a PENDING
+ * AppointmentPaymentToken (matched by phone). This is the ONLY correct moment —
+ * interactive Flow messages require an open 24h customer-service window, and a
+ * template does NOT open it (only an inbound patient message does). Sending the
+ * Flow right after the abono REQUEST template would fail with "window closed".
+ *
+ * No-op (with a log) when the Flow id isn't configured yet. Does NOT create a
+ * Patient — staff still create the record by hand from the forwarded ficha.
+ */
+export async function sendIntakeFlow(tokenId: string): Promise<void> {
+  const [flowIdRaw, bodyTextRaw, phoneIdRaw] = await Promise.all([
+    getSetting(INTAKE_FLOW_ID_SETTING),
+    getSetting(INTAKE_BODY_TEXT_SETTING),
+    getSetting(ABONO_WHATSAPP_SETTINGS.phoneNumberId),
+  ]);
+  const flowId = flowIdRaw?.trim();
+  if (!flowId) {
+    logEvent("wa-flow.intake.autosend_skipped_no_flow_id", { tokenId });
+    return;
+  }
+  const phoneNumberId = parsePhoneNumberId(phoneIdRaw);
+  if (phoneNumberId == null) {
+    logEvent("wa-flow.intake.autosend_skipped_no_phone", { tokenId });
+    return;
+  }
+
+  const token = await db.appointmentPaymentToken.findUnique({ where: { id: tokenId } });
+  if (!token || token.status !== "PENDING") return;
+
+  // Idempotency guard: don't re-send if we already sent the Flow for this token.
+  const history: unknown[] = Array.isArray(token.flowHistory) ? token.flowHistory : [];
+  const alreadySent = history.some(
+    (e) => (e as { step?: string } | null)?.step === INTAKE_FLOW_SENT_STEP
+  );
+  if (alreadySent) return;
+
+  const { conversationId } = await ensureContactAndConversation(
+    token.patientPhone,
+    token.patientName,
+    phoneNumberId
+  );
+  const bodyText =
+    bodyTextRaw?.trim() ||
+    "Para agilizar tu atención, completa tu ficha de ingreso tocando el botón 📋";
+  try {
+    await sendFlow(
+      {
+        conversationId,
+        phoneNumberId,
+        flowId,
+        flowCta: "Completar ficha",
+        bodyText,
+        flowToken: token.id,
+      },
+      null
+    );
+    // Mark BEFORE any further processing so a later re-trigger short-circuits.
+    await appendAbonoFlowHistory(token.id, INTAKE_FLOW_SENT_STEP, {});
+    logEvent("wa-flow.intake.autosent", { tokenId, flowId });
+  } catch (err) {
+    // Best-effort: window may have just closed, or Meta hiccup. Staff still get
+    // the abono request; the patient can retry by messaging again.
+    logError("wa-flow.intake.autosend_failed", err, { tokenId });
+  }
 }
 
 /** Persist an IntakeSubmission from a flow completion, linked to the payment

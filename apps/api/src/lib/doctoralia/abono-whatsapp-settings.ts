@@ -75,7 +75,7 @@ function parseEnabled(raw: string | null): boolean {
   return false;
 }
 
-function parsePhoneNumberId(raw: string | null): number | null {
+export function parsePhoneNumberId(raw: string | null): number | null {
   const trimmed = raw?.trim();
   if (!trimmed) return null;
   if (!/^\d+$/.test(trimmed)) return null;

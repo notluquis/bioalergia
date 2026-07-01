@@ -490,7 +490,7 @@ export async function sendMedia(
 
 export async function sendFlow(
   payload: SendFlowPayload,
-  sentByUserId: number
+  sentByUserId: number | null
 ): Promise<SendMessageResponse> {
   const conv = await loadConversation(payload.conversationId);
   if (!windowOpen(conv.lastInboundAt)) {

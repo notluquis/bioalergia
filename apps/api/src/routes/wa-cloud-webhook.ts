@@ -9,6 +9,7 @@ import { waPersistMediaJobKey } from "../queue/tasks/wa-persist-media.ts";
 import { syncTemplates } from "../services/wa-templates.ts";
 import { getPhoneHealth } from "../services/wa-analytics.ts";
 import { notifyStaffComprobante } from "../services/abono-staff-notify.ts";
+import { sendIntakeFlow } from "../services/intake.ts";
 
 function timingSafeStringEq(a: string, b: string): boolean {
   const ab = Buffer.from(a);
@@ -126,6 +127,16 @@ waCloudWebhookRoutes.post("/whatsapp", async (c) => {
       void notifyStaffComprobante(messageId).catch((err) =>
         logWarn("[wa-cloud.webhook] staff comprobante notify failed", {
           messageId,
+          error: err instanceof Error ? err.message : String(err),
+        })
+      );
+    }
+    // Patient with a PENDING abono just messaged (window open) → auto-send the
+    // intake Flow. Idempotent in the service (flow_history marker). Fire-and-forget.
+    for (const tokenId of new Set(result.intakeFlowTokenIds)) {
+      void sendIntakeFlow(tokenId).catch((err) =>
+        logWarn("[wa-cloud.webhook] intake flow auto-send failed", {
+          tokenId,
           error: err instanceof Error ? err.message : String(err),
         })
       );

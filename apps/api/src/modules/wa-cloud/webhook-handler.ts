@@ -427,6 +427,11 @@ export type ProcessResult = {
   // Inbound IMAGE WaMessage ids from a patient with a pending abono token — the
   // route forwards them to staff as a payment receipt (services tier).
   staffComprobanteMessageIds: number[];
+  // AppointmentPaymentToken ids (PENDING) whose patient just sent an inbound
+  // message → the route auto-sends the intake Flow (services tier). The 24h
+  // window is now open, so an interactive Flow message will be accepted. The
+  // service guards against re-sending, so pushing the same id repeatedly is safe.
+  intakeFlowTokenIds: string[];
 };
 
 export async function processWebhookPayload(payload: MetaWebhookPayload): Promise<ProcessResult> {
@@ -437,6 +442,7 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
     templateSyncAccountIds: [],
     phoneHealthRefreshIds: [],
     staffComprobanteMessageIds: [],
+    intakeFlowTokenIds: [],
   };
   for (const entry of payload.entry ?? []) {
     // Meta dashboard "Send test event" / Subscribe button: entry.id === "0" with
@@ -946,16 +952,19 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
             // Has media → persist a durable R2 copy (route enqueues the job).
             if (mediaMime) out.mediaMessageIds.push(insertedInbound.id);
 
-            // Payment receipt: an inbound IMAGE from a patient who has a PENDING
-            // abono → forward it to the clinic staff's WhatsApp (the route uploads
-            // the media + sends the template — services tier, DAG). The staff work
-            // from WhatsApp, not the intranet, so this is how they see the proof.
-            if (msgType === "IMAGE") {
-              const pendingAbono = await db.appointmentPaymentToken.findFirst({
-                where: { patientPhone: normalizeToE164(m.from), status: "PENDING" },
-                select: { id: true },
-              });
-              if (pendingAbono) out.staffComprobanteMessageIds.push(insertedInbound.id);
+            // A patient with a PENDING abono just messaged us → the 24h window is
+            // now open. Two follow-ups (both services tier, signalled via the
+            // return — DAG: modules can't import services):
+            //   1. Auto-send the intake Flow (once; guarded in the service).
+            //   2. If this inbound is an IMAGE, forward it to staff as a payment
+            //      receipt (they work from WhatsApp, not the intranet).
+            const pendingAbono = await db.appointmentPaymentToken.findFirst({
+              where: { patientPhone: normalizeToE164(m.from), status: "PENDING" },
+              select: { id: true },
+            });
+            if (pendingAbono) {
+              out.intakeFlowTokenIds.push(pendingAbono.id);
+              if (msgType === "IMAGE") out.staffComprobanteMessageIds.push(insertedInbound.id);
             }
 
             // Referral → tag conversation with utm-style label so staff filter
