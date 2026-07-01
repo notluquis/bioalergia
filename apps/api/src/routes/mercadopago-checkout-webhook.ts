@@ -19,6 +19,7 @@ import {
 import { enqueueJob } from "../queue/runner.ts";
 import { orderPostPaymentJobKey } from "../queue/tasks/order-post-payment.ts";
 import { sendAbonoConfirmation } from "../services/abono-confirmation.ts";
+import { sendPaymentFailedEmail } from "../services/email/transactional.ts";
 import { notifyStaffCardPayment } from "../services/abono-staff-notify.ts";
 import { appendAbonoFlowHistory } from "../lib/doctoralia/abono-flow-history.ts";
 import { logError } from "../lib/logger.ts";
@@ -279,6 +280,28 @@ export function registerMercadopagoCheckoutWebhook(app: Hono) {
           { orderId },
           { jobKey: orderPostPaymentJobKey(orderId), jobKeyMode: "preserve_run_at" }
         );
+      } else if (status === "rejected") {
+        // A decline is NOT terminal — the order stays PENDING and retryable.
+        // Nudge the buyer with a link back to the status page so they can retry.
+        // Best-effort: an email failure must not break the webhook. Idempotency
+        // is keyed by payment id, so repeated retries of the SAME declined
+        // attempt don't spam.
+        try {
+          const order = await db.order.findUnique({
+            where: { id: orderId },
+            select: { number: true, customerEmail: true, accessToken: true },
+          });
+          if (order) {
+            await sendPaymentFailedEmail({
+              to: order.customerEmail,
+              orderNumber: order.number,
+              accessToken: order.accessToken,
+              paymentId: String(mpPayment.id),
+            });
+          }
+        } catch (e) {
+          logError("mp-webhook.payment_failed_email", e, { orderId });
+        }
       } else if (status === "cancelled") {
         // Only a terminal cancel frees stock. A `rejected` attempt is retryable on
         // the hosted checkout, so keep the reservation (the TTL sweep frees it if

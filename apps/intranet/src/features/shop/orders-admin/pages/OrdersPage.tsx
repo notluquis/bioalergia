@@ -21,6 +21,7 @@ const STATUS_OPTIONS: { id: OrderStatus | "ALL"; label: string }[] = [
   { id: "PENDING", label: "Pendiente" },
   { id: "PAID", label: "Pagado" },
   { id: "FULFILLED", label: "Despachado" },
+  { id: "DELIVERED", label: "Entregado" },
   { id: "CANCELLED", label: "Cancelado" },
   { id: "REFUNDED", label: "Reembolsado" },
 ];

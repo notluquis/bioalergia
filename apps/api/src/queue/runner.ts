@@ -110,6 +110,22 @@ export async function startQueueRunner(): Promise<void> {
       identifier: "reservation_sweep",
       options: { backfillPeriod: 0 },
     },
+    {
+      // Sync Chilexpress tracking for shipped orders (FULFILLED + OT) → flip to
+      // DELIVERED + email the buyer when the OT lands. TZ-insensitive interval.
+      task: "order_tracking_sync",
+      match: "*/30 * * * *",
+      identifier: "order_tracking_sync",
+      options: { backfillPeriod: 0 },
+    },
+    {
+      // Cancel abandoned (PENDING > 3 days, never paid) shop orders + release
+      // any stock still held for them. 03:00 America/Santiago.
+      task: "abandoned_order_sweep",
+      match: "30 3 * * *",
+      identifier: "abandoned_order_sweep",
+      options: { backfillPeriod: 0 },
+    },
   ];
 
   // Breach / anomaly detection over audit_logs (ANCI 3h alert chain). Schedule

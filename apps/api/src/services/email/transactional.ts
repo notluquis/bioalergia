@@ -270,6 +270,67 @@ export async function sendOrderDispatchedEmail(args: {
 }
 
 /**
+ * Shop order delivered — sent when the Chilexpress tracking sync detects the OT
+ * was delivered (FULFILLED → DELIVERED). Closes the loop for the buyer.
+ * Best-effort at the call site.
+ */
+export async function sendOrderDeliveredEmail(args: {
+  to: string;
+  orderNumber: string;
+  accessToken?: string | null;
+}): Promise<EmailSendResult> {
+  const statusUrl = orderStatusLink(args.orderNumber, args.to, args.accessToken);
+  const html = shell(
+    "Tu pedido fue entregado",
+    `<p>Tu pedido <strong>${esc(args.orderNumber)}</strong> fue entregado por Chilexpress.</p>
+     <p>Esperamos que todo haya llegado bien. Ante cualquier problema, escríbenos.</p>
+     <p style="margin-top:16px"><a href="${statusUrl}" style="color:#0e64b7">Ver el estado de tu pedido</a></p>`
+  );
+  const text =
+    `Tu pedido ${args.orderNumber} fue entregado por Chilexpress.\n` +
+    `Ante cualquier problema, escríbenos.\nEstado: ${statusUrl}`;
+  return sendEmail({
+    to: args.to,
+    subject: `Tu pedido ${args.orderNumber} fue entregado — Bioalergia`,
+    html,
+    text,
+    idempotencyKey: `order-delivered/${args.orderNumber}`,
+  });
+}
+
+/**
+ * Shop payment failed — sent when a MercadoPago payment for a PENDING order is
+ * rejected. A decline is NOT terminal (the order stays PENDING and retryable), so
+ * we nudge the buyer with a link back to the order status page. Best-effort at the
+ * call site. Idempotency-keyed by payment id so repeated retries of the SAME
+ * declined attempt don't spam (falls back to the order number).
+ */
+export async function sendPaymentFailedEmail(args: {
+  to: string;
+  orderNumber: string;
+  accessToken?: string | null;
+  paymentId?: string;
+}): Promise<EmailSendResult> {
+  const statusUrl = orderStatusLink(args.orderNumber, args.to, args.accessToken);
+  const html = shell(
+    "Tu pago no se completó",
+    `<p>No pudimos confirmar el pago de tu pedido <strong>${esc(args.orderNumber)}</strong>.</p>
+     <p>No te preocupes: tu pedido sigue reservado y podés reintentar el pago.</p>
+     <p style="margin-top:16px"><a href="${statusUrl}" style="color:#0e64b7">Reintentar el pago</a></p>`
+  );
+  const text =
+    `No pudimos confirmar el pago de tu pedido ${args.orderNumber}.\n` +
+    `Tu pedido sigue reservado y podés reintentar el pago.\nReintentar: ${statusUrl}`;
+  return sendEmail({
+    to: args.to,
+    subject: `Tu pago del pedido ${args.orderNumber} no se completó — Bioalergia`,
+    html,
+    text,
+    idempotencyKey: `payment-failed/${args.paymentId ?? args.orderNumber}`,
+  });
+}
+
+/**
  * Shop order refunded — sent when an admin refunds a paid order (money returned
  * to the buyer's MercadoPago payment method). Best-effort at the call site: a
  * send failure must not break the refund (the money is already back).

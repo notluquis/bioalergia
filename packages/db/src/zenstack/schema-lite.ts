@@ -16978,6 +16978,11 @@ export class SchemaType implements SchemaDef {
                     type: "String",
                     optional: true
                 },
+                dtePdfUrl: {
+                    name: "dtePdfUrl",
+                    type: "String",
+                    optional: true
+                },
                 notes: {
                     name: "notes",
                     type: "String",
@@ -18802,6 +18807,7 @@ export class SchemaType implements SchemaDef {
                 PENDING: "PENDING",
                 PAID: "PAID",
                 FULFILLED: "FULFILLED",
+                DELIVERED: "DELIVERED",
                 CANCELLED: "CANCELLED",
                 REFUNDED: "REFUNDED"
             }

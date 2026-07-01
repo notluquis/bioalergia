@@ -195,6 +195,34 @@ export async function refreshAllTracking(): Promise<{ updated: number; total: nu
   return { updated, total: shipments.length };
 }
 
+/**
+ * Bulk-track a set of SHOP orders by their Chilexpress OT (single /tracking/bulk
+ * request). Matches each returned entry by reference (`BIO-ORD-<number>`, the
+ * deliveryReference used when the order OT was created) and returns a
+ * reference → latest-status map. Used by the order_tracking_sync cron to detect
+ * delivered orders. Callers own the delivered heuristic + status transition.
+ */
+export async function trackOrders(
+  orders: Array<{ number: string; cxOtNumber: string }>
+): Promise<Map<string, string>> {
+  const byReference = new Map<string, string>();
+  if (orders.length === 0) return byReference;
+  const cfg = requireCxConfig();
+  const results = await trackBulkTransportOrders(cfg, {
+    rut: cfg.companyRut ?? "",
+    showTrackingEvents: false,
+    items: orders.map((o) => ({
+      transportOrderNumber: o.cxOtNumber,
+      reference: `BIO-ORD-${o.number}`,
+    })),
+  });
+  for (const r of results) {
+    const status = r.status ?? r.statusDescription;
+    if (r.reference && status) byReference.set(r.reference, status);
+  }
+  return byReference;
+}
+
 // ─── Manifiesto (certificado de transporte del día) ──────────────────────────
 //
 // El certificado activo se persiste como Setting KV (no requiere migración).
