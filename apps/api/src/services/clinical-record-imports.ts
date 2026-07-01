@@ -1,5 +1,5 @@
 import { createId } from "@paralleldrive/cuid2";
-import { kysely } from "@finanzas/db";
+import { db, kysely } from "@finanzas/db";
 import type { SchemaType } from "@finanzas/db/schema";
 import { sql, type Transaction } from "kysely";
 import { logAuditEvent } from "../lib/audit-log.ts";
@@ -8,6 +8,8 @@ import { DomainError } from "../lib/errors.ts";
 import { downloadOneDriveItem } from "../lib/microsoft/onedrive.ts";
 import { logEvent, logWarn } from "../lib/logger.ts";
 import { matchPatientForRecord } from "../modules/clinical-records/match.ts";
+import { createPersonWithoutRut } from "./people-factory.ts";
+import { splitChileanName } from "./doctoralia-identity-sync.ts";
 
 type Trx = Transaction<SchemaType>;
 import {
@@ -380,6 +382,33 @@ async function reprocessInLock(
     WHERE id = ${id}
   `.execute(trx);
   return { status: "PENDING_REVIEW", candidates: match.candidates.length };
+}
+
+// Create a brand-new Patient from a ficha whose person exists nowhere (no RUT,
+// no candidate) and approve the import into it. Operator-driven only — the
+// identity resolver refuses name-only creation (Ruminot-dup risk), so this is a
+// deliberate per-import action the reviewer takes when no candidate matches.
+// Identity is name + (relative) ageLabel; birthDate stays null (ageLabel is not
+// an absolute date). Reuses approveClinicalRecordImport for the materialize.
+export async function createPatientFromImport(
+  id: string,
+  reviewedBy: number,
+  notes?: string
+): Promise<{ patientId: number }> {
+  const r = await sql<{ parsedPayload: ParsedClinicalRecord | null }>`
+    SELECT parsed_payload AS "parsedPayload" FROM clinical_record_imports WHERE id = ${id}
+  `.execute(kysely);
+  const parsed = r.rows[0]?.parsedPayload;
+  const patientName = parsed?.patientName?.trim();
+  if (!patientName) {
+    throw new DomainError("UNPROCESSABLE_ENTITY", "Import has no parsed patient name");
+  }
+  const { names, fatherName, motherName } = splitChileanName(patientName);
+  const personId = await createPersonWithoutRut({ rut: null, names, fatherName, motherName });
+  const patient = await db.patient.create({ data: { personId }, select: { id: true } });
+  await approveClinicalRecordImport(id, patient.id, reviewedBy, notes ?? "paciente creado desde ficha");
+  logEvent("[clinical-record] patient created from import", { id, patientId: patient.id, personId });
+  return { patientId: patient.id };
 }
 
 export async function approveClinicalRecordImport(
