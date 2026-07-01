@@ -1,5 +1,7 @@
 import { kysely } from "@finanzas/db";
 import { sql } from "kysely";
+import jaroWinkler from "talisman/metrics/jaro-winkler.js";
+import { symmetric as mongeElkanSymmetric } from "talisman/metrics/monge-elkan.js";
 import { dbDateToISO, dbDateToMs } from "../../lib/time.ts";
 import type { ParsedClinicalRecord } from "./parser.ts";
 
@@ -24,6 +26,9 @@ export type MatchCandidate = {
   rut: string | null;
   birthDate: string | null;
   score: number;
+  /** Name-only similarity (before age adjustment). Auto-match gates on this so
+   *  an age coincidence can never manufacture a match to a wrong patient. */
+  baseScore: number;
   reason: string;
 };
 
@@ -46,12 +51,16 @@ function tokens(s: string): string[] {
   return normalize(s).split(" ").filter(Boolean);
 }
 
-function tokenOverlapScore(a: string[], b: string[]): number {
+// Monge-Elkan (symmetric) over Jaro-Winkler per-token — the Splink (UK MoJ
+// record-linkage) name-field algorithm, already used in dte-event-linking.ts.
+// Replaces the old exact token-overlap: it scores typo'd surnames
+// ("Villegas"~"Vellegas" JW≈0.94) and reordered names as near-matches, and the
+// symmetric average doesn't penalise an extra middle name on either side. This
+// lifts genuine same-person near-misses toward the 0.9 auto-threshold WITHOUT
+// lowering that threshold. Tokens are sorted so word order doesn't matter.
+function fuzzyNameScore(a: string[], b: string[]): number {
   if (a.length === 0 || b.length === 0) return 0;
-  const setB = new Set(b);
-  let hits = 0;
-  for (const t of a) if (setB.has(t)) hits += 1;
-  return hits / Math.max(a.length, b.length);
+  return mongeElkanSymmetric(jaroWinkler, [...a].sort(), [...b].sort());
 }
 
 // Convert Chilean age expressions to fractional years. Returns null
@@ -173,7 +182,7 @@ export async function matchPatientForRecord(parsed: ParsedClinicalRecord): Promi
     const candTokens = tokens(fullName);
     const candNorm = normalize(fullName);
     const exact = candNorm === norm;
-    const baseScore = exact ? 1 : tokenOverlapScore(target, candTokens);
+    const baseScore = exact ? 1 : fuzzyNameScore(target, candTokens);
     if (baseScore < 0.5) continue;
     const ageBoost = ageAdjustment(parsedYears, row.birthDate, parsed.consultDate);
     const finalScore = Math.max(0, Math.min(1, baseScore + ageBoost));
@@ -187,6 +196,7 @@ export async function matchPatientForRecord(parsed: ParsedClinicalRecord): Promi
       rut: row.rut,
       birthDate: dbDateToISO(row.birthDate),
       score: Math.round(finalScore * 100) / 100,
+      baseScore: Math.round(baseScore * 100) / 100,
       reason: reasons.join("+"),
     });
   }
@@ -194,11 +204,13 @@ export async function matchPatientForRecord(parsed: ParsedClinicalRecord): Promi
   candidates.sort((a, b) => b.score - a.score);
 
   const top = candidates[0];
-  // Auto-match: only when a single high-confidence (>=0.9) candidate
-  // dominates the second-best by a clear margin.
-  if (top && top.score >= 0.9) {
+  // Auto-match: single high-confidence candidate that dominates the runner-up.
+  // The gate is on baseScore (name-only) ≥ 0.9, NOT the age-boosted score — an
+  // age coincidence must never lift a weak name ("Alonso Silva" vs "Domenica
+  // Sunino Silva") over the bar. Age only re-ranks among strong name matches.
+  if (top && top.score >= 0.9 && (top.baseScore >= 0.9 || top.reason.startsWith("exact"))) {
     const second = candidates[1];
-    if (!second || top.score - second.score >= 0.2 || top.reason === "exact_normalised_name") {
+    if (!second || top.score - second.score >= 0.2 || top.reason.startsWith("exact")) {
       return { matchedPatientId: top.patientId, candidates: candidates.slice(0, 5) };
     }
   }

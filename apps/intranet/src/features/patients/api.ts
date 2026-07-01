@@ -221,3 +221,11 @@ export async function fetchPatientSkinTests(patientId: number) {
     throw toPatientsApiError(error);
   }
 }
+
+export async function fetchPatientDoctoraliaAppointments(patientId: number) {
+  try {
+    return await patientsORPCClient.getDoctoraliaAppointments({ patientId });
+  } catch (error) {
+    throw toPatientsApiError(error);
+  }
+}

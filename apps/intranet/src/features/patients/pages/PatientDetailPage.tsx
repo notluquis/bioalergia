@@ -12,6 +12,7 @@ import {
   Download,
   ExternalLink,
   FileText,
+  CalendarClock,
   FlaskConical,
   HeartPulse,
   Mail,
@@ -37,6 +38,7 @@ import { NewAttachmentModal } from "@/features/patients/components/NewAttachment
 import { NewBudgetModal } from "@/features/patients/components/NewBudgetModal";
 import { NewConsultationModal } from "@/features/patients/components/NewConsultationModal";
 import { NewPaymentModal } from "@/features/patients/components/NewPaymentModal";
+import { DoctoraliaAppointmentsList } from "@/features/patients/components/DoctoraliaAppointmentsList";
 import { SkinTestsList } from "@/features/patients/components/SkinTestsList";
 import { useCan } from "@/hooks/use-can";
 import { useLazyTabs } from "@/hooks/use-lazy-tabs";
@@ -68,6 +70,7 @@ export function PatientDetailsPage() {
     | "adherence"
     | "budgets"
     | "certificates"
+    | "citas"
     | "clinical-records"
     | "clinical-series"
     | "diary"
@@ -81,6 +84,7 @@ export function PatientDetailsPage() {
     | "adherence"
     | "budgets"
     | "certificates"
+    | "citas"
     | "clinical-records"
     | "clinical-series"
     | "diary"
@@ -159,6 +163,7 @@ export function PatientDetailsPage() {
                 | "adherence"
                 | "budgets"
                 | "certificates"
+                | "citas"
                 | "clinical-records"
                 | "clinical-series"
                 | "diary"
@@ -176,6 +181,7 @@ export function PatientDetailsPage() {
                 keyValue === "clinical-records" ||
                 keyValue === "adherence" ||
                 keyValue === "diary" ||
+                keyValue === "citas" ||
                 keyValue === "skin-tests"
                   ? keyValue
                   : "history";
@@ -216,6 +222,11 @@ export function PatientDetailsPage() {
                 <Tabs.Tab id="skin-tests" className="min-w-max gap-2 font-semibold">
                   <FlaskConical size={18} />
                   <span>Exámenes</span>
+                  <Tabs.Indicator />
+                </Tabs.Tab>
+                <Tabs.Tab id="citas" className="min-w-max gap-2 font-semibold">
+                  <CalendarClock size={18} />
+                  <span>Citas</span>
                   <Tabs.Indicator />
                 </Tabs.Tab>
                 <Tabs.Tab id="info" className="min-w-max gap-2 font-semibold">
@@ -414,6 +425,10 @@ export function PatientDetailsPage() {
 
             <Tabs.Panel id="skin-tests" className="py-4">
               {isTabMounted("skin-tests") ? <SkinTestsList patientId={patient.id} /> : null}
+            </Tabs.Panel>
+
+            <Tabs.Panel id="citas" className="py-4">
+              {isTabMounted("citas") ? <DoctoraliaAppointmentsList patientId={patient.id} /> : null}
             </Tabs.Panel>
 
             <Tabs.Panel id="clinical-records" className="py-4">

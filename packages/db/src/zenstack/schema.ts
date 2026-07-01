@@ -74,6 +74,13 @@ export class SchemaType implements SchemaDef {
                     attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("NATURAL") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("person_type") }] }] as readonly AttributeApplication[],
                     default: "NATURAL" as FieldDefault
                 },
+                doctoraliaExternalId: {
+                    name: "doctoraliaExternalId",
+                    type: "Int",
+                    unique: true,
+                    optional: true,
+                    attributes: [{ name: "@unique" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("doctoralia_external_id") }] }] as readonly AttributeApplication[]
+                },
                 emailMarketingOptIn: {
                     name: "emailMarketingOptIn",
                     type: "Boolean",
@@ -153,6 +160,13 @@ export class SchemaType implements SchemaDef {
                     type: "OccTestSubject",
                     array: true,
                     relation: { opposite: "person" }
+                },
+                guardedPatients: {
+                    name: "guardedPatients",
+                    type: "Patient",
+                    array: true,
+                    attributes: [{ name: "@relation", args: [{ name: "name", value: ExpressionUtils.literal("PatientGuardian") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "guardianPerson", name: "PatientGuardian" }
                 }
             },
             attributes: [
@@ -166,6 +180,7 @@ export class SchemaType implements SchemaDef {
                 id: { type: "Int" },
                 rut: { type: "String" },
                 email: { type: "String" },
+                doctoraliaExternalId: { type: "Int" },
                 emailUnsubscribeToken: { type: "String" }
             }
         },
@@ -9032,11 +9047,27 @@ export class SchemaType implements SchemaDef {
                     attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }, { name: "@db.Timestamptz", args: [{ name: "x", value: ExpressionUtils.literal(3) }] }] as readonly AttributeApplication[],
                     default: ExpressionUtils.call("now") as FieldDefault
                 },
+                patientId: {
+                    name: "patientId",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("patient_id") }] }] as readonly AttributeApplication[],
+                    foreignKeyFor: [
+                        "patient"
+                    ] as readonly string[]
+                },
                 schedule: {
                     name: "schedule",
                     type: "DoctoraliaSchedule",
                     attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("scheduleId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }] as readonly AttributeApplication[],
                     relation: { opposite: "appointments", fields: ["scheduleId"], references: ["id"], onDelete: "Cascade" }
+                },
+                patient: {
+                    name: "patient",
+                    type: "Patient",
+                    optional: true,
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("patientId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("SetNull") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "doctoraliaAppointments", fields: ["patientId"], references: ["id"], onDelete: "SetNull" }
                 },
                 emailNotifications: {
                     name: "emailNotifications",
@@ -9056,6 +9087,7 @@ export class SchemaType implements SchemaDef {
                 { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("scheduleId")]) }] },
                 { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("startAt")]) }] },
                 { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("patientExternalId")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("patientId")]) }] },
                 { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
                 { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
                 { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
@@ -10397,6 +10429,21 @@ export class SchemaType implements SchemaDef {
                     type: "String",
                     optional: true
                 },
+                guardianPersonId: {
+                    name: "guardianPersonId",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("guardian_person_id") }] }] as readonly AttributeApplication[],
+                    foreignKeyFor: [
+                        "guardianPerson"
+                    ] as readonly string[]
+                },
+                guardianRelationship: {
+                    name: "guardianRelationship",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("guardian_relationship") }] }] as readonly AttributeApplication[]
+                },
                 createdAt: {
                     name: "createdAt",
                     type: "DateTime",
@@ -10415,6 +10462,19 @@ export class SchemaType implements SchemaDef {
                     type: "Person",
                     attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("personId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }] as readonly AttributeApplication[],
                     relation: { opposite: "patient", fields: ["personId"], references: ["id"], onDelete: "Cascade" }
+                },
+                guardianPerson: {
+                    name: "guardianPerson",
+                    type: "Person",
+                    optional: true,
+                    attributes: [{ name: "@relation", args: [{ name: "name", value: ExpressionUtils.literal("PatientGuardian") }, { name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("guardianPersonId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("SetNull") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "guardedPatients", name: "PatientGuardian", fields: ["guardianPersonId"], references: ["id"], onDelete: "SetNull" }
+                },
+                doctoraliaAppointments: {
+                    name: "doctoraliaAppointments",
+                    type: "DoctoraliaCalendarAppointment",
+                    array: true,
+                    relation: { opposite: "patient" }
                 },
                 consultations: {
                     name: "consultations",
@@ -10526,6 +10586,7 @@ export class SchemaType implements SchemaDef {
                 }
             },
             attributes: [
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("guardianPersonId")]) }] },
                 { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
                 { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
                 { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },

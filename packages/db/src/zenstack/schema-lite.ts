@@ -66,6 +66,12 @@ export class SchemaType implements SchemaDef {
                     type: "PersonType",
                     default: "NATURAL" as FieldDefault
                 },
+                doctoraliaExternalId: {
+                    name: "doctoraliaExternalId",
+                    type: "Int",
+                    unique: true,
+                    optional: true
+                },
                 emailMarketingOptIn: {
                     name: "emailMarketingOptIn",
                     type: "Boolean",
@@ -139,6 +145,12 @@ export class SchemaType implements SchemaDef {
                     type: "OccTestSubject",
                     array: true,
                     relation: { opposite: "person" }
+                },
+                guardedPatients: {
+                    name: "guardedPatients",
+                    type: "Patient",
+                    array: true,
+                    relation: { opposite: "guardianPerson", name: "PatientGuardian" }
                 }
             },
             idFields: ["id"],
@@ -146,6 +158,7 @@ export class SchemaType implements SchemaDef {
                 id: { type: "Int" },
                 rut: { type: "String" },
                 email: { type: "String" },
+                doctoraliaExternalId: { type: "Int" },
                 emailUnsubscribeToken: { type: "String" }
             }
         },
@@ -7413,10 +7426,24 @@ export class SchemaType implements SchemaDef {
                     updatedAt: true,
                     default: ExpressionUtils.call("now") as FieldDefault
                 },
+                patientId: {
+                    name: "patientId",
+                    type: "Int",
+                    optional: true,
+                    foreignKeyFor: [
+                        "patient"
+                    ] as readonly string[]
+                },
                 schedule: {
                     name: "schedule",
                     type: "DoctoraliaSchedule",
                     relation: { opposite: "appointments", fields: ["scheduleId"], references: ["id"], onDelete: "Cascade" }
+                },
+                patient: {
+                    name: "patient",
+                    type: "Patient",
+                    optional: true,
+                    relation: { opposite: "doctoraliaAppointments", fields: ["patientId"], references: ["id"], onDelete: "SetNull" }
                 },
                 emailNotifications: {
                     name: "emailNotifications",
@@ -8521,6 +8548,19 @@ export class SchemaType implements SchemaDef {
                     type: "String",
                     optional: true
                 },
+                guardianPersonId: {
+                    name: "guardianPersonId",
+                    type: "Int",
+                    optional: true,
+                    foreignKeyFor: [
+                        "guardianPerson"
+                    ] as readonly string[]
+                },
+                guardianRelationship: {
+                    name: "guardianRelationship",
+                    type: "String",
+                    optional: true
+                },
                 createdAt: {
                     name: "createdAt",
                     type: "DateTime",
@@ -8536,6 +8576,18 @@ export class SchemaType implements SchemaDef {
                     name: "person",
                     type: "Person",
                     relation: { opposite: "patient", fields: ["personId"], references: ["id"], onDelete: "Cascade" }
+                },
+                guardianPerson: {
+                    name: "guardianPerson",
+                    type: "Person",
+                    optional: true,
+                    relation: { opposite: "guardedPatients", name: "PatientGuardian", fields: ["guardianPersonId"], references: ["id"], onDelete: "SetNull" }
+                },
+                doctoraliaAppointments: {
+                    name: "doctoraliaAppointments",
+                    type: "DoctoraliaCalendarAppointment",
+                    array: true,
+                    relation: { opposite: "patient" }
                 },
                 consultations: {
                     name: "consultations",
