@@ -118,6 +118,26 @@ export async function startQueueRunner(): Promise<void> {
       identifier: "abandoned_order_sweep",
       options: { backfillPeriod: 0 },
     },
+    // Identity-hub feeders (gated by IDENTITY_FEEDERS_ENABLED — no-op otherwise).
+    // Staggered across the late-night window; each is idempotent.
+    {
+      task: "doctoralia_identity_sync",
+      match: "0 22 * * *",
+      identifier: "doctoralia_identity_sync",
+      options: { backfillPeriod: 0 },
+    },
+    {
+      task: "dte_titular_sync",
+      match: "0 23 * * *",
+      identifier: "dte_titular_sync",
+      options: { backfillPeriod: 0 },
+    },
+    {
+      task: "identity_series_backfill",
+      match: "30 23 * * *",
+      identifier: "identity_series_backfill",
+      options: { backfillPeriod: 0 },
+    },
   ];
 
   // Breach / anomaly detection over audit_logs (ANCI 3h alert chain). Schedule

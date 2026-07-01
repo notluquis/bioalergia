@@ -15,6 +15,11 @@ import { audit_anomaly } from "./audit-anomaly.ts";
 import { audit_chain_verify } from "./audit-chain-verify.ts";
 import { doctoralia_calendar_sync } from "./doctoralia-calendar-sync.ts";
 import { dte_sync } from "./dte-sync.ts";
+import {
+  doctoralia_identity_sync,
+  dte_titular_sync,
+  identity_series_backfill,
+} from "./identity-hub-cron.ts";
 import { job_radar_sync } from "./job-radar-sync.ts";
 import { onedrive_renew } from "./onedrive-renew.ts";
 import { order_post_payment } from "./order-post-payment.ts";
@@ -52,4 +57,7 @@ export const taskList: TaskList = {
   adherence_reminder_send,
   abono_wa_retry,
   wa_persist_media,
+  doctoralia_identity_sync,
+  dte_titular_sync,
+  identity_series_backfill,
 };
