@@ -8,6 +8,7 @@
 // Phase 1: ping + INIT/data_exchange skeleton. The intake screens + receipt
 // handling land in later phases.
 
+import { db } from "@finanzas/db";
 import { Hono } from "hono";
 import { getSetting } from "../lib/settings.ts";
 import { decryptSecret } from "../lib/secret-cipher.ts";
@@ -17,6 +18,11 @@ import {
   decryptFlowRequest,
   encryptFlowResponse,
 } from "../lib/flow-crypto.ts";
+import {
+  createIntakeFromFlow,
+  notifyStaffFicha,
+  processIntakeReceipt,
+} from "../services/intake.ts";
 
 const PRIVATE_KEY_SETTING = "wa.flow.privateKeyEnc";
 
@@ -25,19 +31,8 @@ async function loadPrivateKey(): Promise<string | null> {
   return decryptSecret(stored);
 }
 
-// Decide the next screen + data for a non-ping action. Phase 1 returns a
-// terminal acknowledgement; later phases route the intake screens + persist.
 // Every response MUST echo the request `version` (Meta requirement).
-function handleAction(request: FlowRequest): Record<string, unknown> {
-  if (request.action === "INIT") {
-    // First screen of the flow. Real screens are added with the Flow JSON.
-    return { screen: "FICHA", data: {} };
-  }
-  // data_exchange / BACK — acknowledge for now.
-  return { screen: "SUCCESS", data: { extension_message_response: { params: {} } } };
-}
-
-function buildResponse(request: FlowRequest): Record<string, unknown> {
+async function buildResponse(request: FlowRequest): Promise<Record<string, unknown>> {
   const version = request.version ?? "3.0";
   // Health check.
   if (request.action === "ping") return { version, data: { status: "active" } };
@@ -45,7 +40,58 @@ function buildResponse(request: FlowRequest): Record<string, unknown> {
   if ((request.data as { error?: unknown } | undefined)?.error) {
     return { version, data: { acknowledged: true } };
   }
-  return { version, ...handleAction(request) };
+
+  // NOTE: no INIT handler. The intake flow is launched with flow_action
+  // "navigate" + flow_action_payload.data (name/phone prefill, see
+  // services/intake.ts::sendIntakeFlow), so Meta never calls the endpoint on
+  // open — an INIT handler here would be dead code.
+
+  if (request.action === "data_exchange") {
+    const flowToken = request.flow_token ?? null;
+    // Guard: don't persist a duplicate/late submission against a payment token
+    // that already expired or was processed. Return a validation error on the
+    // current screen instead of silently creating a stale intake row.
+    if (flowToken) {
+      const token = await db.appointmentPaymentToken.findUnique({
+        where: { id: flowToken },
+        select: { status: true, expiresAt: true },
+      });
+      // Reject a token that's no longer usable: wrong status OR past its expiry
+      // (the sweep may not have flipped it to EXPIRED yet).
+      const unusable = token != null && (token.status !== "PENDING" || token.expiresAt < new Date());
+      if (unusable) {
+        logEvent("wa-flow.endpoint.token_not_pending", {
+          flowToken,
+          status: token.status,
+          expiresAt: token.expiresAt.toISOString(),
+        });
+        return {
+          version,
+          screen: "COMPROBANTE",
+          data: { error_message: "Este abono ya no está disponible (expiró o ya fue procesado)." },
+        };
+      }
+    }
+    // Final submit: persist the intake (fast, idempotent). The full form data
+    // (+ PhotoPicker media) arrives here, not in nfm_reply.
+    const data = request.data ?? {};
+    const { id, isNew } = await createIntakeFromFlow(flowToken, data);
+    if (isNew) {
+      // Background: don't block the SUCCESS response on the receipt download/
+      // decrypt/R2 upload (Meta's data_exchange call would time out). Process the
+      // receipt, THEN notify staff so the ficha carries the comprobante header.
+      void processIntakeReceipt(id, data)
+        .then(() => notifyStaffFicha(id))
+        .catch((err) => logError("wa-flow.endpoint.post_submit_failed", err, { intakeId: id }));
+    }
+    return {
+      version,
+      screen: "SUCCESS",
+      data: { extension_message_response: { params: { flow_token: request.flow_token ?? "" } } },
+    };
+  }
+
+  return { version, data: { acknowledged: true } };
 }
 
 export const waCloudFlowRoutes = new Hono();
@@ -79,7 +125,7 @@ waCloudFlowRoutes.post("/", async (c) => {
   }
 
   try {
-    const response = buildResponse(request);
+    const response = await buildResponse(request);
     logEvent("wa-flow.endpoint.handled", { action: request.action, screen: request.screen });
     c.header("Content-Type", "text/plain");
     return c.text(encryptFlowResponse(response, aesKey, iv));

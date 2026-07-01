@@ -11,6 +11,14 @@ export const ABONO_WHATSAPP_SETTINGS = {
   confirmationTemplateLanguage: "doctoralia.abono.whatsapp.confirmationTemplateLanguage",
 } as const;
 
+// Patient-intake WhatsApp Flow. Secrets (privateKeyEnc/publicKey) are managed by
+// the keygen script and NOT exposed in the UI — only the non-secret operational
+// settings live here.
+export const WA_FLOW_SETTINGS = {
+  intakeFlowId: "wa.flow.intakeFlowId",
+  intakeBodyText: "wa.flow.intakeBodyText",
+} as const;
+
 export const ABONO_PAYMENT_SETTINGS = {
   fonasaFullAmountClp: "doctoralia.abono.amount.fonasaClp",
   particularFullAmountClp: "doctoralia.abono.amount.particularClp",
@@ -67,7 +75,7 @@ export type AbonoPricingSettings = Pick<
   "fonasaFullAmountClp" | "particularFullAmountClp"
 >;
 
-function parseEnabled(raw: string | null): boolean {
+export function parseEnabled(raw: string | null): boolean {
   if (raw == null || raw.trim() === "") return false;
   const value = raw.trim().toLowerCase();
   if (["0", "false", "no", "off"].includes(value)) return false;
@@ -75,7 +83,7 @@ function parseEnabled(raw: string | null): boolean {
   return false;
 }
 
-function parsePhoneNumberId(raw: string | null): number | null {
+export function parsePhoneNumberId(raw: string | null): number | null {
   const trimmed = raw?.trim();
   if (!trimmed) return null;
   if (!/^\d+$/.test(trimmed)) return null;
@@ -193,6 +201,7 @@ export const ABONO_STAFF_NOTIFY_SETTINGS = {
   phones: "doctoralia.abono.staffNotify.phones",
   cardTemplateName: "doctoralia.abono.staffNotify.cardTemplateName",
   comprobanteTemplateName: "doctoralia.abono.staffNotify.comprobanteTemplateName",
+  fichaTemplateName: "doctoralia.abono.staffNotify.fichaTemplateName",
   templateLanguage: "doctoralia.abono.staffNotify.templateLanguage",
 } as const;
 
@@ -201,19 +210,22 @@ export type AbonoStaffNotifyConfig = {
   phones: string[];
   cardTemplateName: string | null;
   comprobanteTemplateName: string | null;
+  fichaTemplateName: string | null;
   language: string | null;
   phoneNumberId: number | null;
 };
 
 export async function loadAbonoStaffNotifyConfig(): Promise<AbonoStaffNotifyConfig> {
-  const [enabledRaw, phonesRaw, cardRaw, compRaw, langRaw, phoneIdRaw] = await Promise.all([
-    getSetting(ABONO_STAFF_NOTIFY_SETTINGS.enabled),
-    getSetting(ABONO_STAFF_NOTIFY_SETTINGS.phones),
-    getSetting(ABONO_STAFF_NOTIFY_SETTINGS.cardTemplateName),
-    getSetting(ABONO_STAFF_NOTIFY_SETTINGS.comprobanteTemplateName),
-    getSetting(ABONO_STAFF_NOTIFY_SETTINGS.templateLanguage),
-    getSetting(ABONO_WHATSAPP_SETTINGS.phoneNumberId),
-  ]);
+  const [enabledRaw, phonesRaw, cardRaw, compRaw, fichaRaw, langRaw, phoneIdRaw] =
+    await Promise.all([
+      getSetting(ABONO_STAFF_NOTIFY_SETTINGS.enabled),
+      getSetting(ABONO_STAFF_NOTIFY_SETTINGS.phones),
+      getSetting(ABONO_STAFF_NOTIFY_SETTINGS.cardTemplateName),
+      getSetting(ABONO_STAFF_NOTIFY_SETTINGS.comprobanteTemplateName),
+      getSetting(ABONO_STAFF_NOTIFY_SETTINGS.fichaTemplateName),
+      getSetting(ABONO_STAFF_NOTIFY_SETTINGS.templateLanguage),
+      getSetting(ABONO_WHATSAPP_SETTINGS.phoneNumberId),
+    ]);
   // Accept comma/space/semicolon separated E.164; normalize a leading +.
   const phones = (phonesRaw ?? "")
     .split(/[\s,;]+/)
@@ -225,6 +237,7 @@ export async function loadAbonoStaffNotifyConfig(): Promise<AbonoStaffNotifyConf
     phones,
     cardTemplateName: cardRaw?.trim() || null,
     comprobanteTemplateName: compRaw?.trim() || null,
+    fichaTemplateName: fichaRaw?.trim() || null,
     language: langRaw?.trim() || null,
     phoneNumberId: parsePhoneNumberId(phoneIdRaw),
   };

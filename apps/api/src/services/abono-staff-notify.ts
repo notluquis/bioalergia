@@ -27,7 +27,7 @@ function fechaCita(date: Date): string {
 }
 
 // Send one template to every configured staff phone (best-effort per phone).
-async function fanout(
+export async function fanout(
   cfg: AbonoStaffNotifyConfig,
   templateName: string,
   bodyNamedParams: Array<{ name: string; text: string }>,

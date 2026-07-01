@@ -123,6 +123,7 @@ import { complaintsORPCHandler } from "./orpc/complaints.ts";
 import { karinORPCHandler } from "./orpc/karin.ts";
 import { operationalRegistersORPCHandler } from "./orpc/operational-registers.ts";
 import { securityAlertsORPCHandler } from "./orpc/security-alerts.ts";
+import { intakeORPCHandler } from "./orpc/intake.ts";
 import { processingActivitiesORPCHandler } from "./orpc/processing-activities.ts";
 import { consentORPCHandler } from "./orpc/consent.ts";
 import { clinicalConsentORPCHandler } from "./orpc/clinical-consent.ts";
@@ -156,6 +157,7 @@ import { waCloudMediaRoutes } from "./routes/wa-cloud-media.ts";
 import { waCloudSseRoutes } from "./routes/wa-cloud-sse.ts";
 import { waCloudWebhookRoutes } from "./routes/wa-cloud-webhook.ts";
 import { waCloudFlowRoutes } from "./routes/wa-cloud-flow-endpoint.ts";
+import { intakeMediaRoutes } from "./routes/intake-media.ts";
 import { errorReply } from "./utils/error-reply.ts";
 import { normalizeErrorResponse } from "./utils/normalize-error-response.ts";
 import { reply, replyRaw } from "./utils/reply.ts";
@@ -1966,6 +1968,19 @@ app.use("/api/orpc/security-alerts/rpc/*", async (c, next) => {
   return next();
 });
 
+app.use("/api/orpc/intake/rpc/*", async (c, next) => {
+  const { matched, response } = await intakeORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/intake/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
 app.use("/api/orpc/processing-activities/rpc/*", async (c, next) => {
   const { matched, response } = await processingActivitiesORPCHandler.handle(
     createHonoORPCRequest(c),
@@ -2998,7 +3013,11 @@ app.route("/api/webhooks/onedrive", onedriveWebhookRoutes);
 app.route("/api/webhooks/meta", waCloudWebhookRoutes);
 app.route("/api/wa-cloud/media", waCloudMediaRoutes);
 app.route("/api/wa-cloud/sse", waCloudSseRoutes);
-app.route("/api/wa-cloud/flow", waCloudFlowRoutes);
+// Meta Flows data-exchange endpoint — mounted under /api/webhooks/* (NOT
+// /api/wa-cloud/*) so it's exempt from the SPA CSRF middleware; Meta's
+// server-to-server POST carries no CSRF token. Trust is the RSA/AES crypto.
+app.route("/api/webhooks/wa-flow", waCloudFlowRoutes);
+app.route("/api/intake-media", intakeMediaRoutes);
 app.route("/api/icd11", icd11TokenRoutes);
 app.route("/api/certificates/medical", medicalCertificatePdfRoutes);
 app.route("/api/certificates/prescription", prescriptionPdfRoutes);

@@ -490,7 +490,7 @@ export async function sendMedia(
 
 export async function sendFlow(
   payload: SendFlowPayload,
-  sentByUserId: number
+  sentByUserId: number | null
 ): Promise<SendMessageResponse> {
   const conv = await loadConversation(payload.conversationId);
   if (!windowOpen(conv.lastInboundAt)) {
@@ -509,6 +509,7 @@ export async function sendFlow(
     footerText: payload.footerText,
     flowToken: payload.flowToken,
     initialScreen: payload.initialScreen,
+    initialData: payload.initialData,
   });
   const metaId = apiResp.messages?.[0]?.id ?? null;
   const now = new Date();

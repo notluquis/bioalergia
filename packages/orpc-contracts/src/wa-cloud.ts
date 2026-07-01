@@ -284,6 +284,8 @@ export const sendFlowInputSchema = z.object({
   footerText: z.string().max(60).optional(),
   flowToken: z.string().min(1).optional(),
   initialScreen: z.string().optional(),
+  // Static prefill for the entry screen's declared data (name/phone, etc.).
+  initialData: z.record(z.string(), z.string()).optional(),
 });
 
 export const sendMediaInputSchema = z.object({
@@ -1321,6 +1323,14 @@ export const abonoAutomationSettingsSchema = z.object({
   expirationDays: z.number().int().positive().nullable(),
   publicBaseUrl: z.string(),
   statementDescriptor: z.string(),
+  // Patient-intake WhatsApp Flow + staff ficha forward (secrets excluded — the
+  // RSA keys are script-managed, never exposed in the UI).
+  intakeFlowId: z.string(),
+  intakeBodyText: z.string(),
+  staffNotifyEnabled: z.boolean(),
+  staffNotifyPhones: z.string(),
+  fichaTemplateName: z.string(),
+  staffNotifyLanguage: z.string(),
 });
 
 export const updateAbonoAutomationSettingsInputSchema = abonoAutomationSettingsSchema;

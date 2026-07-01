@@ -276,6 +276,67 @@ function AbonoAutomationCard({ accounts }: { accounts: AccountsData }) {
           value={numberValue(data.expirationDays)}
           onValueChange={(value) => set("expirationDays", parseNumber(value))}
         />
+
+        <div className="md:col-span-2 mt-2 border-default-200 border-t pt-3">
+          <h4 className="font-semibold text-sm">Ficha de ingreso (WhatsApp Flow)</h4>
+          <p className="text-default-500 text-xs">
+            El Flow se envía automáticamente cuando el paciente escribe (ventana 24h abierta). Las
+            claves RSA se gestionan por script, no aquí.
+          </p>
+        </div>
+        <TextInput
+          label="Flow ID (ficha de ingreso)"
+          value={data.intakeFlowId}
+          onValueChange={(value) => set("intakeFlowId", value)}
+          placeholder="123456789012345"
+        />
+        <TextInput
+          label="Mensaje del Flow"
+          value={data.intakeBodyText}
+          onValueChange={(value) => set("intakeBodyText", value)}
+          placeholder="Completa tu ficha de ingreso…"
+        />
+        <Switch
+          isSelected={data.staffNotifyEnabled}
+          onChange={(checked) => set("staffNotifyEnabled", checked)}
+        >
+          <Switch.Content>
+            <Switch.Control>
+              <Switch.Thumb />
+            </Switch.Control>
+            <span className="text-sm">Avisar ficha al staff por WhatsApp</span>
+          </Switch.Content>
+        </Switch>
+        <TextInput
+          label="Teléfonos staff (E.164, separados por coma)"
+          value={data.staffNotifyPhones}
+          onValueChange={(value) => set("staffNotifyPhones", value)}
+          placeholder="+56911111111, +56922222222"
+        />
+        <label className="space-y-1">
+          <span className="font-medium text-sm">Template ficha (staff)</span>
+          <select
+            className="h-10 w-full rounded-lg border border-default-300 bg-background px-3 text-sm"
+            value={data.fichaTemplateName}
+            onChange={(e) =>
+              pickTemplate("fichaTemplateName", "staffNotifyLanguage", e.target.value)
+            }
+          >
+            <option value="">Sin configurar</option>
+            {data.fichaTemplateName &&
+              !tplOptions.some((t) => t.name === data.fichaTemplateName) && (
+                <option value={data.fichaTemplateName}>{data.fichaTemplateName} (actual)</option>
+              )}
+            {tplOptions.map((t) => (
+              <option key={t.id} value={t.name}>
+                {t.name} ({t.language})
+              </option>
+            ))}
+          </select>
+          <span className="text-default-500 text-xs">
+            Idioma: {data.staffNotifyLanguage || "— (se toma del template elegido)"}
+          </span>
+        </label>
       </Card.Content>
       <Card.Footer className="flex justify-end border-default-200 border-t pt-4">
         <Button

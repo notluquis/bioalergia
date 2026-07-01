@@ -199,12 +199,26 @@ export type SendFlowInput = {
   footerText?: string;
   flowToken?: string;
   initialScreen?: string;
+  // Static prefill for the entry screen's declared `data` (navigate launch).
+  // Meta requires screen data when the entry screen declares any, so passing
+  // this both prefills fields (init-value ${data.x}) and satisfies that.
+  initialData?: Record<string, string>;
 };
 
 export async function sendFlowMessage(input: SendFlowInput) {
   const phone = await getAccountForPhoneNumber(input.phoneNumberId);
   const v = phone.account.graphApiVersion;
   const token = requireSystemUserToken(phone);
+  // flow_action_payload carries the entry screen + its prefill data (navigate).
+  const flowActionPayload =
+    input.initialScreen || input.initialData
+      ? {
+          flow_action_payload: {
+            ...(input.initialScreen ? { screen: input.initialScreen } : {}),
+            ...(input.initialData ? { data: input.initialData } : {}),
+          },
+        }
+      : {};
   const interactive: Record<string, unknown> = {
     type: "flow",
     body: { text: input.bodyText },
@@ -216,7 +230,7 @@ export async function sendFlowMessage(input: SendFlowInput) {
         flow_token: input.flowToken ?? `tok_${Date.now()}`,
         flow_id: input.flowId,
         flow_cta: input.flowCta,
-        ...(input.initialScreen ? { flow_action_payload: { screen: input.initialScreen } } : {}),
+        ...flowActionPayload,
       },
     },
   };

@@ -115,7 +115,10 @@ import { getSetting, updateSettings } from "../lib/settings.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
 import {
   ABONO_PAYMENT_SETTINGS,
+  ABONO_STAFF_NOTIFY_SETTINGS,
   ABONO_WHATSAPP_SETTINGS,
+  WA_FLOW_SETTINGS,
+  parseEnabled,
 } from "../lib/doctoralia/abono-whatsapp-settings.ts";
 import {
   getBusinessProfile,
@@ -357,6 +360,12 @@ const waRouterBase = {
         expirationDays,
         publicBaseUrl,
         statementDescriptor,
+        intakeFlowId,
+        intakeBodyText,
+        staffNotifyEnabled,
+        staffNotifyPhones,
+        fichaTemplateName,
+        staffNotifyLanguage,
       ] = await Promise.all([
         getSetting(ABONO_WHATSAPP_SETTINGS.requestEnabled),
         getSetting(ABONO_WHATSAPP_SETTINGS.confirmationEnabled),
@@ -370,6 +379,12 @@ const waRouterBase = {
         getSetting(ABONO_PAYMENT_SETTINGS.expirationDays),
         getSetting(ABONO_PAYMENT_SETTINGS.publicBaseUrl),
         getSetting(ABONO_PAYMENT_SETTINGS.statementDescriptor),
+        getSetting(WA_FLOW_SETTINGS.intakeFlowId),
+        getSetting(WA_FLOW_SETTINGS.intakeBodyText),
+        getSetting(ABONO_STAFF_NOTIFY_SETTINGS.enabled),
+        getSetting(ABONO_STAFF_NOTIFY_SETTINGS.phones),
+        getSetting(ABONO_STAFF_NOTIFY_SETTINGS.fichaTemplateName),
+        getSetting(ABONO_STAFF_NOTIFY_SETTINGS.templateLanguage),
       ]);
 
       return {
@@ -385,6 +400,12 @@ const waRouterBase = {
         expirationDays: positiveIntOrNull(expirationDays),
         publicBaseUrl: publicBaseUrl ?? "",
         statementDescriptor: statementDescriptor ?? "",
+        intakeFlowId: intakeFlowId ?? "",
+        intakeBodyText: intakeBodyText ?? "",
+        staffNotifyEnabled: parseEnabled(staffNotifyEnabled),
+        staffNotifyPhones: staffNotifyPhones ?? "",
+        fichaTemplateName: fichaTemplateName ?? "",
+        staffNotifyLanguage: staffNotifyLanguage ?? "",
       };
     }),
 
@@ -416,6 +437,12 @@ const waRouterBase = {
           : "",
         [ABONO_PAYMENT_SETTINGS.publicBaseUrl]: input.publicBaseUrl.trim(),
         [ABONO_PAYMENT_SETTINGS.statementDescriptor]: input.statementDescriptor.trim(),
+        [WA_FLOW_SETTINGS.intakeFlowId]: input.intakeFlowId.trim(),
+        [WA_FLOW_SETTINGS.intakeBodyText]: input.intakeBodyText.trim(),
+        [ABONO_STAFF_NOTIFY_SETTINGS.enabled]: String(input.staffNotifyEnabled),
+        [ABONO_STAFF_NOTIFY_SETTINGS.phones]: input.staffNotifyPhones.trim(),
+        [ABONO_STAFF_NOTIFY_SETTINGS.fichaTemplateName]: input.fichaTemplateName.trim(),
+        [ABONO_STAFF_NOTIFY_SETTINGS.templateLanguage]: input.staffNotifyLanguage.trim(),
       });
       return { status: "ok" as const };
     }),
