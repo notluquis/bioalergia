@@ -278,6 +278,8 @@ const statusRoute = base
         total_clp: order.totalClp,
         dte_folio: order.dteFolio,
         dte_type: order.dteType,
+        cx_ot_number: order.cxOtNumber,
+        dte_pdf_url: order.dtePdfUrl,
       },
       status: "ok" as const,
     };

@@ -94,6 +94,9 @@ export const checkoutStatusResponseSchema = z.object({
     total_clp: z.number().int(),
     dte_folio: z.string().nullable(),
     dte_type: z.string().nullable(),
+    // Buyer-facing tracking + boleta/factura download (set post-payment).
+    cx_ot_number: z.string().nullable(),
+    dte_pdf_url: z.string().nullable(),
   }),
   status: z.literal("ok"),
 });

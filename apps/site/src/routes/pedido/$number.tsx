@@ -14,6 +14,31 @@ const searchSchema = z
   .object({ token: z.string().optional(), email: z.string().email().optional() })
   .refine((s) => Boolean(s.token) || Boolean(s.email));
 
+type OrderStatus = "PENDING" | "PAID" | "FULFILLED" | "DELIVERED" | "CANCELLED" | "REFUNDED";
+
+// Friendly Spanish label + short explanation for each raw status enum. Keeps the
+// buyer from seeing the raw uppercase enum.
+const STATUS_META: Record<OrderStatus, { label: string; help: string }> = {
+  PENDING: { label: "Esperando pago", help: "Esperando confirmación de pago" },
+  PAID: { label: "Pago confirmado", help: "Pago confirmado, preparando tu pedido" },
+  FULFILLED: { label: "Despachado", help: "Despachado" },
+  DELIVERED: { label: "Entregado", help: "Entregado" },
+  CANCELLED: { label: "Cancelado", help: "Cancelado" },
+  REFUNDED: { label: "Reembolsado", help: "Reembolsado" },
+};
+
+// Terminal states: once here the order won't change, so stop polling.
+const TERMINAL_STATUSES = new Set<OrderStatus>([
+  "PAID",
+  "FULFILLED",
+  "DELIVERED",
+  "CANCELLED",
+  "REFUNDED",
+]);
+
+// Chilexpress lets the buyer paste the OT number into its public tracking portal.
+const CHILEXPRESS_TRACKING_URL = "https://www.chilexpress.cl/seguimiento";
+
 function PedidoPage() {
   const { number } = Route.useParams();
   const { token, email } = Route.useSearch();
@@ -26,10 +51,10 @@ function PedidoPage() {
         ...(token ? { token } : {}),
         ...(email ? { email } : {}),
       }),
-    refetchInterval: (q) =>
-      q.state.data?.data.status === "PAID" || q.state.data?.data.status === "CANCELLED"
-        ? false
-        : 5000,
+    refetchInterval: (q) => {
+      const status = q.state.data?.data.status;
+      return status && TERMINAL_STATUSES.has(status) ? false : 5000;
+    },
   });
 
   return (
@@ -48,7 +73,11 @@ function PedidoPage() {
           </h1>
         </header>
 
-        {isLoading && <Skeleton className="h-32 w-full rounded-2xl" />}
+        {isLoading && (
+          <output aria-busy="true" aria-label="Cargando estado del pedido" className="block">
+            <Skeleton className="h-32 w-full rounded-2xl" />
+          </output>
+        )}
         {error && (
           <Alert status="danger">
             <Alert.Content>
@@ -61,8 +90,9 @@ function PedidoPage() {
             <Card.Header className="gap-2">
               <Eyebrow tone="muted">Estado del pedido</Eyebrow>
               <Card.Title className="font-display text-2xl text-foreground">
-                {data.data.status}
+                {STATUS_META[data.data.status].label}
               </Card.Title>
+              <p className="text-muted text-sm">{STATUS_META[data.data.status].help}</p>
             </Card.Header>
             <Card.Content className="space-y-4 pb-6 text-sm">
               <div className="flex items-center justify-between border-line border-t pt-4">
@@ -76,6 +106,29 @@ function PedidoPage() {
                   <span className="text-muted">DTE folio ({data.data.dte_type})</span>
                   <span className="font-mono text-foreground">{data.data.dte_folio}</span>
                 </div>
+              )}
+              {data.data.cx_ot_number && (
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-muted">Seguimiento Chilexpress</span>
+                  <a
+                    className="font-mono text-brand-blue hover:underline"
+                    href={CHILEXPRESS_TRACKING_URL}
+                    rel="noopener noreferrer"
+                    target="_blank"
+                  >
+                    {data.data.cx_ot_number}
+                  </a>
+                </div>
+              )}
+              {data.data.dte_pdf_url && (
+                <a
+                  className="inline-flex font-semibold text-brand-blue hover:underline"
+                  href={data.data.dte_pdf_url}
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
+                  Descargar boleta/factura
+                </a>
               )}
               {data.data.status === "PAID" && (
                 <Alert status="success">

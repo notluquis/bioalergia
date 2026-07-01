@@ -35,14 +35,47 @@ function ShippingAddress({ value }: { value: unknown }) {
   }
   if (typeof value === "object") {
     const addr = value as Record<string, unknown>;
-    const parts = [addr.street, addr.city, addr.region].filter(
-      (p): p is string => typeof p === "string" && p.length > 0
-    );
+    const str = (k: string): string =>
+      typeof addr[k] === "string" && (addr[k] as string).length > 0 ? (addr[k] as string) : "";
+    const streetLine = [str("street"), str("street_number")].filter(Boolean).join(" ");
+    const parts = [streetLine, str("city"), str("region")].filter((p) => p.length > 0);
     if (parts.length > 0) {
       return <span className="text-foreground text-sm">{parts.join(", ")}</span>;
     }
   }
-  return <span className="font-mono text-default-600 text-xs">{JSON.stringify(value)}</span>;
+  return <span className="text-default-500 text-sm">Dirección registrada</span>;
+}
+
+/**
+ * Operator downloads for a fulfilled order: the emitted DTE PDF (hosted URL) and
+ * the Chilexpress thermal label (base64 → data-URL anchor download). Both are
+ * rendered only when present.
+ */
+function OrderDownloads({ order }: { order: OrderDetail }) {
+  if (!order.dte_pdf_url && !order.cx_label_base64) return null;
+  return (
+    <section className="flex flex-wrap gap-3">
+      {order.dte_pdf_url ? (
+        <a
+          className="inline-flex items-center rounded-lg border border-default-200 px-3 py-1.5 font-medium text-primary text-sm hover:bg-default-50"
+          href={order.dte_pdf_url}
+          rel="noopener noreferrer"
+          target="_blank"
+        >
+          Descargar boleta/factura
+        </a>
+      ) : null}
+      {order.cx_label_base64 ? (
+        <a
+          className="inline-flex items-center rounded-lg border border-default-200 px-3 py-1.5 font-medium text-primary text-sm hover:bg-default-50"
+          download={`etiqueta-${order.number}.pdf`}
+          href={`data:application/pdf;base64,${order.cx_label_base64}`}
+        >
+          Descargar etiqueta Chilexpress
+        </a>
+      ) : null}
+    </section>
+  );
 }
 
 function DetailBody({ order }: { order: OrderDetail }) {
@@ -122,6 +155,8 @@ function DetailBody({ order }: { order: OrderDetail }) {
         <span className="font-semibold text-default-600 text-sm">Dirección de despacho</span>
         <ShippingAddress value={order.shipping_address} />
       </section>
+
+      <OrderDownloads order={order} />
 
       {order.notes ? (
         <section className="flex flex-col gap-1">

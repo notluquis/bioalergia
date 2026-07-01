@@ -118,6 +118,8 @@ export async function getMyOrderByNumber(userId: number, input: MyOrderByNumberP
       customer_email: order.customerEmail,
       customer_name: order.customerName,
       shipping_address: order.shippingAddress as unknown,
+      cx_ot_number: order.cxOtNumber,
+      dte_pdf_url: order.dtePdfUrl,
       items: order.items.map((i: ItemRow) => ({
         id: i.id,
         product_id: i.productId,

@@ -46,6 +46,10 @@ export const orderDetailSchema = orderSummarySchema.extend({
   shipping_address: z.unknown().nullable(),
   // Chilexpress transport-order number, set once the OT is auto-created on payment.
   cx_ot_number: z.string().nullable(),
+  // Base64 thermal shipping label (Chilexpress OT), downloadable by the operator.
+  cx_label_base64: z.string().nullable(),
+  // Hosted PDF of the emitted boleta/factura (DTE), downloadable by the operator.
+  dte_pdf_url: z.string().nullable(),
   notes: z.string().nullable(),
   items: z.array(orderItemSchema),
 });
