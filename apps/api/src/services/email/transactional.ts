@@ -78,27 +78,28 @@ export async function sendPasswordResetLinkEmail(args: {
 }
 
 /**
- * #5 — Admin invite: welcome a freshly created account and link to set the
- * first password. Long-lived (7-day) token, reuses the /reset-password page.
+ * #5 — Admin invite: welcome a freshly created account and link to the
+ * onboarding wizard (set password + profile + bank + MFA). Long-lived (7-day)
+ * single-use token consumed by /accept-invite, which starts the session.
  */
 export async function sendAccountInviteEmail(args: {
   to: string;
   name: string;
   token: string;
 }): Promise<EmailSendResult> {
-  const url = `${appUrl()}/reset-password?token=${encodeURIComponent(args.token)}`;
+  const url = `${appUrl()}/accept-invite?token=${encodeURIComponent(args.token)}`;
   const html = shell(
     "Tu cuenta de Bioalergia está lista",
     `<p>Hola ${esc(args.name)},</p>
-     <p>Se creó tu cuenta en la intranet de Bioalergia. Define tu contraseña para ingresar (enlace válido por 7 días):</p>
-     <p><a href="${url}" style="display:inline-block;background:#0e64b7;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px">Definir mi contraseña</a></p>
+     <p>Se creó tu cuenta en la intranet de Bioalergia. Actívala y completa tu configuración (enlace válido por 7 días):</p>
+     <p><a href="${url}" style="display:inline-block;background:#0e64b7;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px">Activar mi cuenta</a></p>
      <p style="font-size:13px;color:#6b7280">Si no esperabas este correo, ignóralo.</p>`
   );
   return sendEmail({
     to: args.to,
     subject: "Tu cuenta de Bioalergia está lista",
     html,
-    text: `Hola ${args.name}, define tu contraseña para ingresar a Bioalergia (válido 7 días): ${url}`,
+    text: `Hola ${args.name}, activa tu cuenta de Bioalergia y complétala (válido 7 días): ${url}`,
     idempotencyKey: `invite/${idemDigest(args.token)}`,
   });
 }

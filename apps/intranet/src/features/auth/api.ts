@@ -138,3 +138,11 @@ export async function resetPasswordWithToken(token: string, password: string): P
     throw toAuthApiError(error);
   }
 }
+
+export async function acceptInvite(token: string): Promise<void> {
+  try {
+    await authORPCClient.acceptInvite({ token });
+  } catch (error) {
+    throw toAuthApiError(error);
+  }
+}

@@ -49,6 +49,10 @@ export const resetPasswordTokenResponseSchema = z.object({
   status: z.literal("ok"),
 });
 
+export const acceptInviteSchema = z.object({
+  token: z.string().min(1),
+});
+
 export const authUserSchema = z.object({
   email: z.string(),
   hasPasskey: z.boolean().optional(),
@@ -199,6 +203,10 @@ export const authContract = {
   resetPassword: oc
     .route({ method: "POST", path: "/reset-password" })
     .input(resetPasswordTokenSchema)
+    .output(resetPasswordTokenResponseSchema),
+  acceptInvite: oc
+    .route({ method: "POST", path: "/accept-invite" })
+    .input(acceptInviteSchema)
     .output(resetPasswordTokenResponseSchema),
   session: oc.route({ method: "GET", path: "/me/session" }).output(authSessionResponseSchema),
   issueDebugToken: oc

@@ -93,6 +93,62 @@ export async function requestPasswordReset(rawEmail: string): Promise<void> {
 }
 
 /**
+ * Accept an admin invite: validate the emailed token (hash + purpose "invite" +
+ * not expired) for a still-PENDING_SETUP account, consume it (single-use), and
+ * return the data needed to mint an onboarding session. The caller (auth router)
+ * sets the session cookie so the invitee lands directly in the onboarding
+ * wizard, where they set their password + profile + bank + MFA. Requiring
+ * purpose "invite" prevents a forgot-password token from logging anyone in.
+ */
+export async function consumeInviteToken(token: string): Promise<{
+  userId: number;
+  loginEmail: string;
+  roles: string[];
+  sessionVersion: number;
+}> {
+  const tokenHash = sha256(token.trim());
+  const user = await db.user.findFirst({
+    where: { passwordResetTokenHash: tokenHash, passwordResetPurpose: "invite" },
+    select: {
+      id: true,
+      status: true,
+      sessionVersion: true,
+      loginEmail: true,
+      passwordResetExpiresAt: true,
+      person: { select: { email: true } },
+      roles: { select: { role: { select: { name: true } } } },
+    },
+  });
+
+  if (
+    !user ||
+    !user.passwordResetExpiresAt ||
+    user.passwordResetExpiresAt < new Date() ||
+    user.status !== "PENDING_SETUP"
+  ) {
+    throw new DomainError("BAD_REQUEST", "La invitación es inválida o expiró. Pide una nueva.", {});
+  }
+
+  await db.user.update({
+    where: { id: user.id },
+    data: {
+      passwordResetTokenHash: null,
+      passwordResetExpiresAt: null,
+      passwordResetPurpose: null,
+    },
+  });
+  logEvent("[invite] accepted → onboarding session", { userId: user.id });
+
+  const loginEmail = user.loginEmail?.trim() || user.person?.email?.trim() || "";
+  return {
+    userId: user.id,
+    loginEmail,
+    roles: user.roles.map((r: { role: { name: string } }) => r.role.name),
+    sessionVersion: user.sessionVersion,
+  };
+}
+
+/**
  * Complete the reset: validates the token (hash match + not expired), sets the
  * new password, clears the token, and bumps sessionVersion to kill any existing
  * sessions. Throws BAD_REQUEST on an invalid/expired token.
@@ -101,24 +157,21 @@ export async function resetPasswordWithToken(token: string, newPassword: string)
   const tokenHash = sha256(token.trim());
   const user = await db.user.findFirst({
     where: { passwordResetTokenHash: tokenHash },
-    select: { id: true, status: true, passwordResetExpiresAt: true, passwordResetPurpose: true },
+    select: { id: true, passwordResetExpiresAt: true },
   });
 
   if (!user || !user.passwordResetExpiresAt || user.passwordResetExpiresAt < new Date()) {
     throw new DomainError("BAD_REQUEST", "El enlace es inválido o expiró. Solicita uno nuevo.", {});
   }
 
-  // Activate ONLY when this token was minted by an admin invite AND the account
-  // is still PENDING_SETUP. A forgot-password token (purpose null/"reset") never
-  // changes status, so an account put back into onboarding can't bypass the
-  // wizard via self-service reset; SUSPENDED/ACTIVE are likewise untouched.
-  const activate = user.passwordResetPurpose === "invite" && user.status === "PENDING_SETUP";
+  // NOTE: never touch `status` here. Forgot-password must not activate a
+  // PENDING_SETUP account nor unsuspend a SUSPENDED one. Invited users onboard
+  // via the wizard (see consumeInviteToken), not this path.
   const passwordHash = await hashPassword(newPassword);
   await db.user.update({
     where: { id: user.id },
     data: {
       passwordHash,
-      ...(activate ? { status: "ACTIVE" as const } : {}),
       passwordResetTokenHash: null,
       passwordResetExpiresAt: null,
       passwordResetPurpose: null,

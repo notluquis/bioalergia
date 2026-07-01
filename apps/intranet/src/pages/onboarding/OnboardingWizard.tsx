@@ -68,10 +68,12 @@ function ProgressBar({ currentStep }: { currentStep: number }) {
 function StepContent({
   currentStep,
   logic,
+  mfaEnforced,
   userEmail,
 }: {
   currentStep: number;
   logic: ReturnType<typeof useOnboardingForm>;
+  mfaEnforced: boolean;
   userEmail: string;
 }) {
   if (!logic.profile) {
@@ -129,6 +131,7 @@ function StepContent({
           onPasskeyRegister={() => logic.mutations.passkeyRegister.mutate()}
           onSkip={logic.handleNext}
           isLoading={logic.isLoading}
+          enforced={mfaEnforced}
         />
       );
       break;
@@ -189,6 +192,7 @@ export function OnboardingWizard() {
           <StepContent
             currentStep={logic.currentStep}
             logic={logic}
+            mfaEnforced={user?.mfaEnforced ?? false}
             userEmail={user?.email ?? ""}
           />
         </div>
