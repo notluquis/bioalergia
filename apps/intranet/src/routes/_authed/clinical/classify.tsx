@@ -1,92 +1,16 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { requirePermission } from "@/lib/authz/route-guards";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
-import { z } from "zod";
+import { classifySearchSchema } from "@/features/calendar/types";
 
-import { calendarQueries } from "@/features/calendar/queries";
-import { CalendarClassificationPage } from "@/pages/CalendarClassificationPage";
-
-import type { MissingFieldFilters } from "@/features/calendar/api";
-
-const MISSING_FILTER_KEYS = [
-  "missingCategory",
-  "missingAmountExpected",
-  "missingAmountPaid",
-  "missingAttended",
-  "missingDosage",
-  "missingTreatmentStage",
-] as const;
-
-function isMissingFilterKey(value: string): boolean {
-  return (MISSING_FILTER_KEYS as readonly string[]).includes(value);
-}
-
-const arrayPreprocess = (val: unknown) => {
-  if (!val) {
-    return undefined;
-  }
-  if (Array.isArray(val)) {
-    return val;
-  }
-  return [val];
-};
-
-const classifySearchSchema = z
-  .object({
-    page: z.coerce.number().optional().catch(0),
-    missing: z
-      .preprocess(arrayPreprocess, z.array(z.string()).optional())
-      .refine((values) => !values || values.every(isMissingFilterKey), {
-        message: "Invalid missing filter key",
-      }),
-    filterMode: z.enum(["AND", "OR"]).optional(),
-    calendarId: z
-      .union([z.string(), z.array(z.string())])
-      .optional()
-      .transform((val) => {
-        if (!val) {
-          return undefined;
-        }
-        return Array.isArray(val) ? val : [val];
-      }),
-  })
-  .transform((search) => ({
-    page: search.page ?? 0,
-    missing: search.missing?.length ? [...new Set(search.missing)] : undefined,
-    filterMode: search.filterMode,
-    calendarId: search.calendarId,
-  }));
-
-type ClassifySearchParams = z.infer<typeof classifySearchSchema>;
-type MissingFilterKey = NonNullable<MissingFieldFilters["missing"]>[number];
-
+// Consolidated into `/calendar?tab=clasificacion`. Kept as a redirect so
+// deep-links (missing-field filters, pages) keep resolving.
 export const Route = createFileRoute("/_authed/clinical/classify")({
-  staticData: {
-    nav: {
-      iconKey: "ClipboardCheck",
-      label: "Calendario — clasificación",
-      order: 19,
-      section: "Clínica",
-    },
-    permission: { action: "update", subject: "CalendarEvent" },
-    title: "Clasificación clínica",
-  },
-  beforeLoad: requirePermission("update", "CalendarEvent"),
-  validateSearch: (search: Record<string, unknown>): ClassifySearchParams =>
-    classifySearchSchema.parse(search),
+  staticData: { hideFromNav: true, title: "Clasificación clínica" },
+  validateSearch: (search: Record<string, unknown>) => classifySearchSchema.parse(search),
   loaderDeps: ({ search }) => search,
-  component: CalendarClassificationPage,
-  loader: async ({ context, deps: search }) => {
-    const filters: MissingFieldFilters = {
-      missing: search.missing as MissingFilterKey[] | undefined,
-      filterMode: search.filterMode,
-    };
-
-    await Promise.all([
-      context.queryClient.ensureQueryData(
-        calendarQueries.unclassified(search.page ?? 0, 50, filters)
-      ),
-      context.queryClient.ensureQueryData(calendarQueries.options()),
-    ]);
+  loader: ({ deps: search }) => {
+    // eslint-disable-next-line @typescript-eslint/only-throw-error
+    throw redirect({ to: "/calendar", search: { ...search, tab: "clasificacion" } });
   },
+  component: () => null,
 });
