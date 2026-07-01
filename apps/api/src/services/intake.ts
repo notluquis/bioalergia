@@ -210,6 +210,12 @@ export async function createIntakeFromFlow(
   flowToken: string | null,
   data: FlowData
 ): Promise<{ id: string; isNew: boolean }> {
+  // ponytail: dedup only fires WHEN flowToken is set (the @unique index is on a
+  // nullable column, so null tokens don't collide). Safe today — sendIntakeFlow
+  // always sets a flow_token. Ceiling: if a token-less launch is ever enabled
+  // (the deferred INIT-prefill path, see wa-cloud-flow-endpoint comment ~l.44),
+  // Meta data_exchange retries would create duplicate fichas. Upgrade path then:
+  // require flow_token, or dedup on a stable hash of the payload.
   if (flowToken) {
     const existing = await db.intakeSubmission.findFirst({
       where: { flowToken },
