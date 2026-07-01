@@ -1,6 +1,7 @@
 import { dbClinicalSeries as db } from "@finanzas/db/slices";
 
 import { parseCalendarMetadata } from "../../../lib/parsers.ts";
+import { resolvePerson } from "../../identity-resolver.ts";
 
 import { buildSeriesDisplayName } from "../classification/display.ts";
 import { inferSeriesKind } from "../classification/kind.ts";
@@ -64,6 +65,23 @@ export async function assignEventToSeries(
 
   const extractedPhones = extractSeriesPhones(event.summary, event.description);
 
+  // Identity hub: resolve a real Patient for RUT-bearing events so the series
+  // hangs off Person instead of only carrying a denormalized rut/name. Name-only
+  // events resolve to `review` (patientId null) → behaviour unchanged. See
+  // identity-resolver.ts. The patient is the beneficiary (child), so we resolve
+  // patientRut, not the payer/titular.
+  const resolvedPatientId = identity.patientRut
+    ? (
+        await resolvePerson(
+          {
+            rut: identity.patientRut,
+            names: identity.patientName ?? identity.patientRut,
+          },
+          { createPatient: true }
+        )
+      ).patientId
+    : null;
+
   // Always call findMatchingSeries first — it returns the oldest
   // canonical series for this patient+kind by ordering candidates id
   // ASC and preferring the one with the smallest date distance. This
@@ -120,6 +138,7 @@ export async function assignEventToSeries(
             ? event.seriesStageNumber
             : null,
         kind,
+        patientId: resolvedPatientId,
         patientName: identity.patientName,
         patientRut: identity.patientRut,
       },
@@ -157,6 +176,16 @@ export async function assignEventToSeries(
     await db.event.update({
       where: { id: event.eventId },
       data: { clinicalSeries: { connect: { id: seriesId } } },
+    });
+  }
+
+  // Link the series to the resolved Patient when it isn't already (matched or
+  // pre-existing series created before the identity hub). Guarded on NULL so we
+  // never overwrite an operator-set patient.
+  if (resolvedPatientId != null) {
+    await db.clinicalSeries.updateMany({
+      where: { id: seriesId, patientId: null },
+      data: { patientId: resolvedPatientId },
     });
   }
 

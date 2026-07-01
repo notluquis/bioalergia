@@ -1,5 +1,5 @@
 import type { AttachmentType } from "@finanzas/db";
-import { db } from "@finanzas/db";
+import { db, kysely } from "@finanzas/db";
 import { Decimal } from "decimal.js";
 import { Hono } from "hono";
 import { sql } from "kysely";
@@ -10,6 +10,7 @@ import { requirePermission, requireSession } from "../lib/legacy-route.ts";
 import { canonicalRutFilter, normalizeRut, requireCanonicalRut } from "../lib/rut.ts";
 import { dbDateToISO, instantToChileDate, parseChileDateOnly } from "../lib/time.ts";
 import { findOrCreatePerson } from "./people-factory.ts";
+import { resolvePerson } from "./identity-resolver.ts";
 import { writeTempUpload } from "../lib/temp-file.ts";
 import { zValidator } from "../lib/zod-validator.ts";
 import { uploadPatientAttachmentToDrive } from "./patient-attachments-drive.ts";
@@ -41,6 +42,15 @@ type DteSalesSyncOptions = {
   documentTypes?: number[];
   limit?: number;
   period?: string;
+  /**
+   * When true, resolve each boleta client RUT to a Person (titular) via the
+   * shared identity resolver and stamp the bridge with patientId when that
+   * titular is also a patient. Off by default so the plain endpoint keeps its
+   * lightweight upsert behaviour — enabled by the identity backfill runner.
+   * The titular is the payer, NOT necessarily the patient: createPatient is
+   * false, so payers become Person-only until they attend.
+   */
+  resolveTitular?: boolean;
 };
 
 type NormalizedDteClientRow = {
@@ -184,6 +194,17 @@ export async function syncPatientDteSaleSources(options: DteSalesSyncOptions) {
 
   const existingByRut = new Map(existingRows.map((row) => [row.clientRUT, row]));
 
+  // Company RUTs must never become a natural Person — a boleta to a company
+  // (factura clients) is not a patient identity. Loaded once when resolving
+  // titulares.
+  const companyRuts = new Set<string>();
+  if (options.resolveTitular) {
+    const companies = await sql<{ rut: string }>`
+      SELECT regexp_replace(upper(coalesce(rut, '')), '[^0-9K]', '', 'g') AS rut FROM companies
+    `.execute(kysely);
+    for (const c of companies.rows) if (c.rut) companyRuts.add(c.rut);
+  }
+
   let inserted = 0;
   let updated = 0;
   let skipped = 0;
@@ -199,12 +220,27 @@ export async function syncPatientDteSaleSources(options: DteSalesSyncOptions) {
       sourceUpdatedAt: row.sourceUpdatedAt,
     };
 
+    // Resolve the titular (payer) to a Person; stamp patientId only when that
+    // Person is already a patient. Skip company RUTs.
+    let resolvedPatientId: number | null = null;
+    if (options.resolveTitular && !options.dryRun) {
+      const canonical = row.clientRUT.replace(/[^0-9K]/g, "");
+      if (!companyRuts.has(canonical)) {
+        const resolved = await resolvePerson(
+          { rut: row.clientRUT, names: row.clientName },
+          { createPatient: false }
+        );
+        resolvedPatientId = resolved.patientId;
+      }
+    }
+
     if (!existing) {
       inserted += 1;
       if (!options.dryRun) {
         await db.patientDteSaleSource.create({
           data: {
             clientRUT: row.clientRUT,
+            patientId: resolvedPatientId,
             ...nextData,
           },
         });
@@ -212,7 +248,11 @@ export async function syncPatientDteSaleSources(options: DteSalesSyncOptions) {
       continue;
     }
 
-    if (!hasSourceChanges(existing, nextData)) {
+    // Stamp a newly-resolved patientId even when the DTE source fields are
+    // unchanged (the bridge existed but was never linked).
+    const shouldStampPatient = resolvedPatientId != null && existing.patientId == null;
+
+    if (!hasSourceChanges(existing, nextData) && !shouldStampPatient) {
       skipped += 1;
       continue;
     }
@@ -221,7 +261,7 @@ export async function syncPatientDteSaleSources(options: DteSalesSyncOptions) {
     if (!options.dryRun) {
       await db.patientDteSaleSource.update({
         where: { clientRUT: row.clientRUT },
-        data: nextData,
+        data: shouldStampPatient ? { ...nextData, patientId: resolvedPatientId } : nextData,
       });
     }
   }
@@ -665,6 +705,37 @@ export async function getPatientSkinTests(patientId: number) {
     resultsCount: t._count.results,
     seriesId: t.clinicalSeriesId,
     seriesKind: t.clinicalSeries.kind,
+  }));
+}
+
+// PHI read. Doctoralia appointments linked to this patient (via the identity
+// feeder). Authz (read-Patient) enforced by handler middleware before call.
+export async function getPatientDoctoraliaAppointments(patientId: number) {
+  const appts = await db.doctoraliaCalendarAppointment.findMany({
+    where: { patientId },
+    orderBy: { startAt: "desc" },
+    select: {
+      id: true,
+      title: true,
+      startAt: true,
+      endAt: true,
+      serviceName: true,
+      insuranceName: true,
+      comments: true,
+      attendance: true,
+      status: true,
+    },
+  });
+  return appts.map((a) => ({
+    id: a.id,
+    title: a.title,
+    startAt: a.startAt.toISOString(),
+    endAt: a.endAt.toISOString(),
+    serviceName: a.serviceName,
+    insuranceName: a.insuranceName,
+    comments: a.comments,
+    attendance: a.attendance,
+    status: a.status,
   }));
 }
 
