@@ -31,9 +31,13 @@
     "src/services/identity-feeders.ts",
     "src/modules/social/publish-runner.ts",
     "src/modules/clinical-records/match.ts",
+    "src/services/orders-admin.ts",
+    "src/services/order-tracking.ts",
+    "src/queue/tasks/order-post-payment.ts",
     "!src/services/**/*.test.ts",
     "!src/services/**/__tests__/**",
     "!src/services/**/*.d.ts",
+    "!src/queue/**/*.test.ts",
     "!src/modules/**/*.test.ts",
     "!src/modules/**/__tests__/**",
     "!src/modules/**/*.d.ts"
