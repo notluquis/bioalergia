@@ -86,6 +86,17 @@ export async function startQueueRunner(): Promise<void> {
       options: { backfillPeriod: 0 },
     },
     {
+      // IntakeSubmission retention purge (Ley 21.719 — transient staging PHI).
+      // 04:30 America/Santiago, after the generic retention_sweep (04:00),
+      // before audit_chain_verify (05:00). R2 receipt + row deletes gated by
+      // INTAKE_RETENTION_PURGE=1 (unset = dry-run). Window from the
+      // intake.retentionDays Setting (default 180d).
+      task: "intake_retention",
+      match: "30 4 * * *",
+      identifier: "intake_retention",
+      options: { backfillPeriod: 0 },
+    },
+    {
       // Daily pollen forecast cache refresh (widget /polen). 06:00
       // America/Santiago. No-op si falta GOOGLE_PLACES_API_KEY.
       task: "pollen_sync",

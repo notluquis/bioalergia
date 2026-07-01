@@ -15,6 +15,7 @@ import { audit_anomaly } from "./audit-anomaly.ts";
 import { audit_chain_verify } from "./audit-chain-verify.ts";
 import { doctoralia_calendar_sync } from "./doctoralia-calendar-sync.ts";
 import { dte_sync } from "./dte-sync.ts";
+import { intake_retention } from "./intake-retention.ts";
 import { job_radar_sync } from "./job-radar-sync.ts";
 import { onedrive_renew } from "./onedrive-renew.ts";
 import { order_post_payment } from "./order-post-payment.ts";
@@ -38,6 +39,7 @@ export const taskList: TaskList = {
   pollen_sync,
   reservation_sweep,
   retention_sweep,
+  intake_retention,
   audit_chain_verify,
   audit_anomaly,
   skin_test_sync,

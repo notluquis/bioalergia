@@ -2731,6 +2731,16 @@ model IntakeSubmission {
   appointmentPaymentToken  AppointmentPaymentToken? @relation(fields: [appointmentPaymentTokenId], references: [id], onDelete: SetNull)
 
   @@deny('all', auth() == null)
+  // Schema-level PHI reads in this project are staff-wide by convention: the
+  // most sensitive PHI models (ClinicalRecord, KarinReport) all gate reads on
+  // `auth().status == 'ACTIVE'`, and no model uses a role-scoped read policy
+  // (`auth().roles?[...]` is only ever used for ADMIN create/update/delete on
+  // config models). Role-based access to this data is enforced one layer up, at
+  // the route: the oRPC surface (orpc/intake.ts) requires the CASL
+  // `read WaBusinessAccount` permission before it ever queries here. Mirroring
+  // that convention (not inventing a new schema-level authz mechanism) keeps
+  // this consistent with the rest of the PHI surface; the route gate is the
+  // real per-role control.
   @@allow('read', auth().status == 'ACTIVE')
   @@index([patientPhone])
   @@index([patientRut])

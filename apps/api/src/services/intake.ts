@@ -210,6 +210,12 @@ export async function createIntakeFromFlow(
   flowToken: string | null,
   data: FlowData
 ): Promise<{ id: string; isNew: boolean }> {
+  // ponytail: dedup only fires WHEN flowToken is set (the @unique index is on a
+  // nullable column, so null tokens don't collide). Safe today — sendIntakeFlow
+  // always sets a flow_token. Ceiling: if a token-less launch is ever enabled
+  // (the deferred INIT-prefill path, see wa-cloud-flow-endpoint comment ~l.44),
+  // Meta data_exchange retries would create duplicate fichas. Upgrade path then:
+  // require flow_token, or dedup on a stable hash of the payload.
   if (flowToken) {
     const existing = await db.intakeSubmission.findFirst({
       where: { flowToken },
@@ -233,7 +239,12 @@ export async function createIntakeFromFlow(
         appointmentPaymentTokenId: token?.id ?? null,
         flowToken,
         sourceChannel: "whatsapp_flow",
-        raw: data as never,
+        // Persist a redacted copy: the raw payload's PhotoPicker arrays carry
+        // per-photo AES/HMAC decryption keys + a transient signed cdn_url. Those
+        // are secrets-at-rest we must not keep next to PHI. The un-redacted
+        // `data` is still passed to processIntakeReceipt (from the endpoint) for
+        // the actual download/decrypt — it never reads from this stored `raw`.
+        raw: redactFlowMediaSecrets(data) as never,
         ...mapped,
       },
     });
@@ -278,16 +289,40 @@ export async function processIntakeReceipt(intakeId: string, data: FlowData): Pr
   }
 }
 
+/** A PhotoPicker field value: an array whose first element carries
+ * encryption_metadata. Regardless of the field key (comprobante/etc). Shared by
+ * extractFlowPhoto (download) + redactFlowMediaSecrets (persist). */
+function isFlowPhotoArray(v: unknown): v is FlowPhoto[] {
+  return Array.isArray(v) && Boolean((v[0] as FlowPhoto | undefined)?.encryption_metadata);
+}
+
 /** Find the PhotoPicker value in a flow payload regardless of the field key —
- * any array whose first element carries encryption_metadata. */
+ * any array whose first element carries encryption_metadata + a cdn_url to
+ * download. */
 function extractFlowPhoto(data: FlowData): FlowPhoto | null {
   for (const v of Object.values(data)) {
-    if (Array.isArray(v)) {
-      const first = v[0] as FlowPhoto | undefined;
-      if (first?.encryption_metadata && first.cdn_url) return first;
-    }
+    if (isFlowPhotoArray(v) && v[0]?.cdn_url) return v[0];
   }
   return null;
+}
+
+/** Deep-clone `data` and strip media secrets from every PhotoPicker array before
+ * it's persisted as `raw`. Removes each photo's `encryption_metadata` (AES +
+ * HMAC keys for the CDN blob) and `cdn_url` (a transient signed URL of no lasting
+ * value); keeps `media_id` + `file_name` (harmless, useful for audit). The
+ * original `data` is left untouched so the in-memory download/decrypt path
+ * (processIntakeReceipt) still has the real keys. */
+function redactFlowMediaSecrets(data: FlowData): FlowData {
+  const clone = structuredClone(data);
+  for (const v of Object.values(clone)) {
+    if (isFlowPhotoArray(v)) {
+      for (const photo of v) {
+        delete photo.encryption_metadata;
+        delete photo.cdn_url;
+      }
+    }
+  }
+  return clone;
 }
 
 /** Paginated, newest-first list of intake submissions for the read-only viewer.
