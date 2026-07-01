@@ -15,6 +15,7 @@ import { logAuditFromContext } from "../lib/audit-log.ts";
 import { getSessionUser, hasPermission } from "../lib/auth.ts";
 import { logError } from "../lib/logger.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
+import { refreshOrderTrackingIfStale } from "../services/order-tracking.ts";
 import {
   cancelOrder,
   getOrderById,
@@ -65,6 +66,9 @@ const detailRoute = requireRead
   .input(orderIdInputSchema)
   .output(orderDetailResponseSchema)
   .handler(async ({ input }) => {
+    // Lazy on-view tracking refresh (W3-C): refresh Chilexpress status when an
+    // admin opens a shipped order's detail (best-effort, throttled per-order).
+    await refreshOrderTrackingIfStale(input.id);
     return { data: await getOrderById(input.id), status: "ok" as const };
   });
 

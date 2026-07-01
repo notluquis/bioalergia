@@ -199,8 +199,9 @@ export async function refreshAllTracking(): Promise<{ updated: number; total: nu
  * Bulk-track a set of SHOP orders by their Chilexpress OT (single /tracking/bulk
  * request). Matches each returned entry by reference (`BIO-ORD-<number>`, the
  * deliveryReference used when the order OT was created) and returns a
- * reference → latest-status map. Used by the order_tracking_sync cron to detect
- * delivered orders. Callers own the delivered heuristic + status transition.
+ * reference → latest-status map. Used by the lazy on-view tracking refresh
+ * (services/order-tracking.ts) to detect delivered orders. Callers own the
+ * delivered heuristic + status transition.
  */
 export async function trackOrders(
   orders: Array<{ number: string; cxOtNumber: string }>

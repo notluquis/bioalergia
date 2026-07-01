@@ -17008,6 +17008,11 @@ export class SchemaType implements SchemaDef {
                     type: "String",
                     optional: true
                 },
+                trackingCheckedAt: {
+                    name: "trackingCheckedAt",
+                    type: "DateTime",
+                    optional: true
+                },
                 createdAt: {
                     name: "createdAt",
                     type: "DateTime",

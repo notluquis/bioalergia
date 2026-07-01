@@ -18,7 +18,6 @@ import { dte_sync } from "./dte-sync.ts";
 import { job_radar_sync } from "./job-radar-sync.ts";
 import { onedrive_renew } from "./onedrive-renew.ts";
 import { order_post_payment } from "./order-post-payment.ts";
-import { order_tracking_sync } from "./order-tracking-sync.ts";
 import { orphan_cleanup } from "./orphan-cleanup.ts";
 import { pollen_sync } from "./pollen-sync.ts";
 import { reservation_sweep } from "./reservation-sweep.ts";
@@ -34,7 +33,6 @@ import { social_publish_tick } from "./social-publish-tick.ts";
 export const taskList: TaskList = {
   dte_sync,
   order_post_payment,
-  order_tracking_sync,
   abandoned_order_sweep,
   orphan_cleanup,
   pollen_sync,
