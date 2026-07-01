@@ -39,8 +39,9 @@ export function orderPostPaymentJobKey(orderId: number): string {
  * detail-level error from createOrderShipment — those throw a friendly message
  * ("Chilexpress: …") or the "no generó la OT" fallback. Anything else (network,
  * 5xx, unexpected) is treated as TRANSIENT → rethrow so graphile-worker retries.
+ * Exported for unit testing (pure fn).
  */
-function isPermanentChilexpressError(message: string): boolean {
+export function isPermanentChilexpressError(message: string): boolean {
   return /no gener[oó] la OT/i.test(message) || /^chilexpress:/i.test(message.trim());
 }
 
