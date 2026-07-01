@@ -66,11 +66,7 @@ function AuthedLayout() {
 
   // Navigation state from TanStack Router
   const isNavigating = useRouterState({ select: (s) => s.status === "pending" });
-  const contentPaddingClass = useRouterState({
-    select: (s) => {
-      return s.location.pathname.startsWith("/clinical/day") ? "p-1" : "p-2 md:p-3";
-    },
-  });
+  const contentPaddingClass = "p-2 md:p-3";
 
   // Sidebar state: visible/hidden
   const [sidebarOpen, setSidebarOpen] = useState(true);
