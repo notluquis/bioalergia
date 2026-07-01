@@ -16,10 +16,14 @@ import {
   authLoginOkResponseSchema,
   authLoginResponseSchema,
   authLoginSchema,
+  authMfaEnablePendingSchema,
   authMfaEnableSchema,
   authMfaLoginSchema,
+  authMfaSetupPendingSchema,
   authMfaSetupResponseSchema,
   authPasskeyLoginOptionsSchema,
+  authPasskeyRegisterPendingOptionsSchema,
+  authPasskeyRegisterPendingVerifySchema,
   authPasskeyRegistrationOptionsSchema,
   authPasskeyResponseSchema,
   authPasskeyVerifySchema,
@@ -56,6 +60,7 @@ import {
   recordEmailLoginFailure,
 } from "../lib/login-throttle.ts";
 import { signToken, verifyToken } from "../lib/paseto.ts";
+import { getSetting } from "../lib/settings.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
 import {
   consumeDebugTokenRecord,
@@ -180,6 +185,92 @@ async function getEffectiveLoginEmailByUserId(userId: number, fallbackEmail: str
   const explicitLoginEmail = row?.loginEmail?.trim();
   const notificationEmail = row?.person?.email?.trim();
   return explicitLoginEmail || notificationEmail || fallbackEmail;
+}
+
+type UserWithRoles = {
+  id: number;
+  mfaEnabled: boolean;
+  mfaSecret: null | string;
+  sessionVersion: number;
+  status: string;
+  person: { email: null | string; names: null | string } | null;
+  roles: Array<{ role: { name: string } }>;
+};
+
+// Mint a real session cookie + return the ok-login payload. Shared by loginMfa,
+// passkey login, and the MFA-enrollment completion endpoints so the
+// session-issue tail lives in one place.
+async function mintSessionResponse(context: AuthORPCContext, user: UserWithRoles) {
+  const roles = user.roles.map((r) => r.role.name);
+  const notificationEmail = user.person?.email ?? "";
+  const loginEmail = await getEffectiveLoginEmailByUserId(user.id, notificationEmail);
+  await recordLoginSuccess(user.id, ipFromContext(context.hono));
+  clearEmailLoginFailure(loginEmail);
+  const token = await issueToken({
+    email: loginEmail,
+    roles,
+    sessionVersion: user.sessionVersion,
+    userId: user.id,
+  });
+  setCookie(context.hono, COOKIE_NAME, token, COOKIE_OPTIONS);
+  await touchLastActivity(user.id);
+  const abilityRules = (await getAbilityRulesForUser(user.id)) as RawRuleOf<AnyAbility>[];
+  return {
+    abilityRules,
+    status: "ok" as const,
+    user: {
+      email: loginEmail,
+      id: user.id,
+      loginEmail,
+      mfaEnabled: user.mfaEnabled,
+      name: user.person?.names || null,
+      notificationEmail,
+      roles,
+      status: user.status,
+    },
+  };
+}
+
+// Validate a login-issued "mfa-setup" token and return the ACTIVE, still-
+// MFA-less user it authorizes to enroll. Mirrors loginMfa's mfa-pending
+// consumption. Rejects anything else — a bare userId can never enroll.
+async function resolveMfaSetupToken(setupToken: string): Promise<UserWithRoles> {
+  let setupUserId: number;
+  let setupSessionVersion: number | undefined;
+  try {
+    const decoded = await verifyToken(setupToken);
+    if (decoded.typ !== "mfa-setup" || typeof decoded.sub !== "number") {
+      throw new Error("invalid mfa-setup token");
+    }
+    setupUserId = decoded.sub;
+    setupSessionVersion = typeof decoded.sv === "number" ? decoded.sv : undefined;
+  } catch {
+    authError("UNAUTHORIZED", "Sesión de configuración expirada. Inicia sesión nuevamente.");
+  }
+
+  const user = await db.user.findUnique({
+    where: { id: setupUserId },
+    include: { person: true, roles: { include: { role: true } } },
+  });
+  // Bind to sessionVersion so a password reset / admin revocation (which bumps
+  // sessionVersion) kills an outstanding setup token — a stolen password can't
+  // finish enrollment after the user resets.
+  if (
+    !user ||
+    user.status !== "ACTIVE" ||
+    user.mfaEnabled ||
+    user.sessionVersion !== setupSessionVersion
+  ) {
+    authError("BAD_REQUEST", "No se puede configurar MFA para esta cuenta.");
+  }
+  // Once ANY factor is bound the token is spent: a passkey leaves mfaEnabled
+  // false, so without this a retained token could register a second factor or
+  // re-mint a session for 15 min. Reject as soon as a passkey exists.
+  const passkeyCount = await db.passkey.count({ where: { userId: user.id } });
+  if (passkeyCount > 0) {
+    authError("BAD_REQUEST", "Tu cuenta ya tiene un método de autenticación configurado.");
+  }
+  return user;
 }
 
 function getRequiredToken(context: AuthORPCContext) {
@@ -359,6 +450,37 @@ const authORPCRouterBase = {
         // multi-step authentication).
         const mfaToken = await signToken({ typ: "mfa-pending", sub: user.id }, "5m");
         return { status: "mfa_required" as const, userId: user.id, mfaToken };
+      }
+
+      // Continuous MFA enforcement (opt-in via the auth.requireMfa setting; OFF
+      // by default so this never mass-locks existing accounts). An ACTIVE
+      // mfaEnforced user with no TOTP AND no passkey gets NO session — only a
+      // short-lived mfa-setup token to enroll a factor, after which the *Pending
+      // endpoints mint the real session. NOTE: gated on status === "ACTIVE" so
+      // PENDING_SETUP invitees keep flowing to onboarding untouched.
+      if (
+        user.status === "ACTIVE" &&
+        user.mfaEnforced &&
+        (await getSetting("auth.requireMfa")) === "true"
+      ) {
+        const passkeyCount = await db.passkey.count({ where: { userId: user.id } });
+        if (passkeyCount > 0) {
+          // Owns a passkey but authenticated with a password — owning ≠ using.
+          // Refuse the password session and force the phishing-resistant factor.
+          authError("UNAUTHORIZED", "Tu cuenta usa passkey. Inicia sesión con tu passkey.");
+        }
+        clearEmailLoginFailure(normalizedEmail);
+        await logAuditFromContext(context.hono, {
+          kind: "LOGIN_SUCCESS",
+          userId: user.id,
+          actorLabel: normalizedEmail,
+          message: "mfa_enrollment_required",
+        });
+        const setupToken = await signToken(
+          { typ: "mfa-setup", sub: user.id, sv: user.sessionVersion },
+          "15m"
+        );
+        return { status: "mfa_setup_required" as const, userId: user.id, setupToken };
       }
 
       await recordLoginSuccess(user.id, ipFromContext(context.hono));
@@ -1134,6 +1256,157 @@ const authORPCRouterBase = {
         message: "Passkey registrado exitosamente",
         status: "ok" as const,
       };
+    }),
+
+  // ── MFA-enrollment endpoints (login mfa-setup token, NOT a session cookie) ──
+  mfaSetupPending: base
+    .route({ method: "POST", path: "/mfa/setup/pending", summary: "Setup MFA (enrollment)", tags: ["Auth"] })
+    .input(authMfaSetupPendingSchema)
+    .output(authMfaSetupResponseSchema)
+    .handler(async ({ input }) => {
+      const user = await resolveMfaSetupToken(input.setupToken);
+      const email = user.person?.email ?? String(user.id);
+      const { generateMfaSecret } = await import("../services/mfa.ts");
+      const { qrCodeUrl, secret } = await generateMfaSecret(email);
+      const { encryptSecret } = await import("../lib/secret-cipher.ts");
+      await db.user.update({
+        where: { id: user.id },
+        data: { mfaEnabled: false, mfaSecret: encryptSecret(secret) },
+      });
+      return { qrCodeUrl, secret, status: "ok" as const };
+    }),
+
+  mfaEnablePending: base
+    .route({
+      method: "POST",
+      path: "/mfa/enable/pending",
+      summary: "Enable MFA (enrollment) and start the session",
+      tags: ["Auth"],
+    })
+    .input(authMfaEnablePendingSchema)
+    .output(authLoginOkResponseSchema)
+    .handler(async ({ context, input }) => {
+      const user = await resolveMfaSetupToken(input.setupToken);
+      if (!user.mfaSecret) {
+        authError("BAD_REQUEST", "MFA setup no iniciado");
+      }
+      const { verifyMfaToken } = await import("../services/mfa.ts");
+      const { decryptSecret } = await import("../lib/secret-cipher.ts");
+      const isValid = await verifyMfaToken(input.token, decryptSecret(user.mfaSecret) ?? "");
+      if (!isValid) {
+        authError("BAD_REQUEST", "Código incorrecto");
+      }
+      await db.user.update({ where: { id: user.id }, data: { mfaEnabled: true } });
+      await logAuditFromContext(context.hono, { kind: "MFA_SUCCESS", userId: user.id });
+      // Session minted only AFTER mfaEnabled is persisted.
+      return mintSessionResponse(context, { ...user, mfaEnabled: true });
+    }),
+
+  passkeyRegisterOptionsPending: base
+    .route({
+      method: "POST",
+      path: "/passkey/register/options/pending",
+      summary: "Passkey register options (enrollment)",
+      tags: ["Auth"],
+    })
+    .input(authPasskeyRegisterPendingOptionsSchema)
+    .output(authPasskeyRegistrationOptionsSchema)
+    .handler(async ({ input }) => {
+      const user = await resolveMfaSetupToken(input.setupToken);
+      const email = user.person?.email ?? String(user.id);
+      const { generateRegistrationOptions } = await import("@simplewebauthn/server");
+      const options = await generateRegistrationOptions({
+        attestationType: "none",
+        authenticatorSelection: {
+          authenticatorAttachment: "platform",
+          residentKey: "required",
+          userVerification: "required",
+        },
+        rpID: RP_ID,
+        rpName: RP_NAME,
+        userDisplayName: user.person?.names || email,
+        userID: new Uint8Array(Buffer.from(String(user.id))),
+        userName: email,
+      });
+
+      storeChallenge(`register:${options.challenge}`, options.challenge, user.id);
+      return {
+        attestation: options.attestation,
+        authenticatorSelection: options.authenticatorSelection,
+        challenge: options.challenge,
+        excludeCredentials: options.excludeCredentials?.map((credential) => ({
+          id: credential.id,
+          transports: credential.transports,
+          type: credential.type,
+        })),
+        extensions: toRecordExtensions(options.extensions),
+        pubKeyCredParams: options.pubKeyCredParams.map((param) => ({
+          alg: param.alg,
+          type: param.type,
+        })),
+        rp: { id: options.rp.id, name: options.rp.name },
+        timeout: options.timeout,
+        user: {
+          displayName: options.user.displayName,
+          id: options.user.id,
+          name: options.user.name,
+        },
+      };
+    }),
+
+  passkeyRegisterVerifyPending: base
+    .route({
+      method: "POST",
+      path: "/passkey/register/verify/pending",
+      summary: "Verify passkey registration (enrollment) and start the session",
+      tags: ["Auth"],
+    })
+    .input(authPasskeyRegisterPendingVerifySchema)
+    .output(authLoginOkResponseSchema)
+    .handler(async ({ context, input }) => {
+      const user = await resolveMfaSetupToken(input.setupToken);
+      const storedChallenge = getChallenge(`register:${input.challenge}`);
+      if (!storedChallenge || storedChallenge.userId !== user.id) {
+        authError("BAD_REQUEST", "Challenge inválido");
+      }
+
+      const responseBody = input.body as unknown as RegistrationResponseJSON;
+      let verification;
+      try {
+        const { verifyRegistrationResponse } = await import("@simplewebauthn/server");
+        verification = await verifyRegistrationResponse({
+          expectedChallenge: input.challenge,
+          expectedOrigin: ORIGIN,
+          expectedRPID: RP_ID,
+          response: responseBody,
+        });
+      } catch (err) {
+        authError("BAD_REQUEST", err instanceof Error ? err.message : "Verificación fallida");
+      }
+
+      if (!verification.verified || !verification.registrationInfo) {
+        authError("BAD_REQUEST", "Verificación fallida");
+      }
+
+      const { credential, credentialBackedUp, credentialDeviceType } =
+        verification.registrationInfo;
+
+      await db.passkey.create({
+        data: {
+          backedUp: credentialBackedUp,
+          counter: BigInt(credential.counter),
+          credentialId: credential.id,
+          deviceType: credentialDeviceType,
+          friendlyName: `Passkey (${new Date().toLocaleDateString()})`,
+          publicKey: Buffer.from(credential.publicKey),
+          transports: responseBody.response.transports ?? undefined,
+          userId: user.id,
+          webAuthnUserID: String(user.id),
+        },
+      });
+      await logAuditFromContext(context.hono, { kind: "MFA_SUCCESS", userId: user.id });
+      // Session minted only AFTER the passkey row is persisted.
+      return mintSessionResponse(context, user);
     }),
 
   passkeyRemove: base

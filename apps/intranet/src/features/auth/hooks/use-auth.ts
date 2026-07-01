@@ -11,6 +11,8 @@ import {
   AuthSessionResponseSchema,
   LoginMfaResponseSchema,
   LoginResponseSchema,
+  MfaSetupResponseSchema,
+  PasskeyRegistrationOptionsSchema,
   StatusResponseSchema,
 } from "../schemas";
 import { authStore, setImpersonatedRole } from "./../store/auth-store";
@@ -75,6 +77,15 @@ export function useAuth() {
       };
     }
 
+    if (payload.status === "mfa_setup_required") {
+      logger.info("[auth] login:mfa_setup_required", { userId: payload.userId });
+      return {
+        status: "mfa_setup_required",
+        userId: payload.userId ?? 0,
+        setupToken: payload.setupToken ?? "",
+      };
+    }
+
     if (payload.status === "ok" && payload.user) {
       await queryClient.refetchQueries({ queryKey: ["auth", "session"] });
       logger.info("[auth] login:success", payload.user);
@@ -113,6 +124,44 @@ export function useAuth() {
 
     await queryClient.refetchQueries({ queryKey: ["auth", "session"] });
     logger.info("[auth] passkey:success", payload.user);
+  };
+
+  // ── MFA enrollment at login (mfa_setup_required) — driven by the login
+  // setupToken, NOT a session cookie. The complete steps mint the real session
+  // server-side, then we refetch it. ────────────────────────────────────────
+  const enrollMfaBegin = async (setupToken: string) => {
+    return MfaSetupResponseSchema.parse(await authORPCClient.mfaSetupPending({ setupToken }));
+  };
+
+  const enrollMfaComplete = async (setupToken: string, token: string) => {
+    const payload = LoginMfaResponseSchema.parse(
+      await authORPCClient.mfaEnablePending({ setupToken, token })
+    );
+    if (payload.status !== "ok" || !payload.user) {
+      throw new Error(payload.message ?? "Código MFA inválido");
+    }
+    await queryClient.refetchQueries({ queryKey: ["auth", "session"] });
+  };
+
+  const enrollPasskey = async (setupToken: string) => {
+    const options = PasskeyRegistrationOptionsSchema.parse(
+      await authORPCClient.passkeyRegisterOptionsPending({ setupToken })
+    );
+    const { startRegistration } = await import("@simplewebauthn/browser");
+    const attestation = await startRegistration({
+      optionsJSON: options as Parameters<typeof startRegistration>[0]["optionsJSON"],
+    });
+    const payload = LoginMfaResponseSchema.parse(
+      await authORPCClient.passkeyRegisterVerifyPending({
+        setupToken,
+        body: attestation as unknown as Record<string, unknown>,
+        challenge: options.challenge,
+      })
+    );
+    if (payload.status !== "ok" || !payload.user) {
+      throw new Error(payload.message ?? "Error registrando passkey");
+    }
+    await queryClient.refetchQueries({ queryKey: ["auth", "session"] });
   };
 
   const logout = async () => {
@@ -206,6 +255,9 @@ export function useAuth() {
     can,
     ensureSession,
     checkRole: hasRole, // Alias for internal use if needed
+    enrollMfaBegin,
+    enrollMfaComplete,
+    enrollPasskey,
     hasRole,
     impersonate,
     impersonatedRole,
@@ -225,6 +277,9 @@ export type AuthContextType = {
   can: (action: string, subject: string, field?: string) => boolean;
   ensureSession: () => Promise<AuthUser | null>;
   checkRole: (...roles: string[]) => boolean;
+  enrollMfaBegin: (setupToken: string) => Promise<{ qrCodeUrl: string; secret: string }>;
+  enrollMfaComplete: (setupToken: string, token: string) => Promise<void>;
+  enrollPasskey: (setupToken: string) => Promise<void>;
   hasRole: (...roles: string[]) => boolean;
   impersonate: (role: Role) => void;
   impersonatedRole: Role | null;

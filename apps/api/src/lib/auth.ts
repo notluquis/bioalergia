@@ -85,6 +85,10 @@ export async function resolveSessionUserFromToken(token: string): Promise<AuthSe
     }
 
     const tokenType = typeof decoded.typ === "string" ? decoded.typ : "session";
+    // Only real session tokens authorize the app. Ephemeral login tokens —
+    // "mfa-pending" (password step) and "mfa-setup" (MFA-enrollment gate) — are
+    // rejected here, so a partially-authenticated user can never reach any oRPC
+    // route with them. This is the load-bearing guarantee behind mfa_setup_required.
     if (tokenType !== "session" && tokenType !== "debug-session") {
       return null;
     }
