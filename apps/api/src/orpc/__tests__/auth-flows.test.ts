@@ -255,6 +255,45 @@ describe("auth.login — continuous MFA enforcement (auth.requireMfa)", () => {
   });
 });
 
+describe("auth MFA enrollment — setup-token guards", () => {
+  const enrollUser = {
+    id: 7,
+    status: "ACTIVE",
+    mfaEnabled: false,
+    mfaSecret: "enc",
+    sessionVersion: 1,
+    person: { email: "user@bioalergia.cl", names: "Ada" },
+    roles: [{ role: { name: "Admin", permissions: [] } }],
+  };
+
+  it("rejects a setup token whose sessionVersion is stale (revoked by password reset)", async () => {
+    mockVerifyToken.mockResolvedValueOnce({ typ: "mfa-setup", sub: 7, sv: 1 });
+    mockUserFindUnique.mockResolvedValueOnce({ ...enrollUser, sessionVersion: 2 }); // bumped
+    const { context } = makeCtx();
+    await expect(
+      call(authORPCRouter.mfaEnablePending, { setupToken: "x", token: "123456" }, { context })
+    ).rejects.toMatchObject({ status: 400 });
+  });
+
+  it("rejects once the account already has a passkey (token is spent after first factor)", async () => {
+    mockVerifyToken.mockResolvedValueOnce({ typ: "mfa-setup", sub: 7, sv: 1 });
+    mockUserFindUnique.mockResolvedValueOnce(enrollUser);
+    mockPasskeyCount.mockResolvedValueOnce(1);
+    const { context } = makeCtx();
+    await expect(
+      call(authORPCRouter.mfaEnablePending, { setupToken: "x", token: "123456" }, { context })
+    ).rejects.toMatchObject({ status: 400 });
+  });
+
+  it("rejects a token that is not typ mfa-setup", async () => {
+    mockVerifyToken.mockResolvedValueOnce({ typ: "session", sub: 7, sv: 1 });
+    const { context } = makeCtx();
+    await expect(
+      call(authORPCRouter.mfaEnablePending, { setupToken: "x", token: "123456" }, { context })
+    ).rejects.toMatchObject({ status: 401 });
+  });
+});
+
 describe("auth.login", () => {
   it("success: returns ok + user + abilityRules, sets cookie, stamps lastActivityAt", async () => {
     mockQueryRaw.mockResolvedValueOnce([

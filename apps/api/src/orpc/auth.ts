@@ -236,12 +236,14 @@ async function mintSessionResponse(context: AuthORPCContext, user: UserWithRoles
 // consumption. Rejects anything else — a bare userId can never enroll.
 async function resolveMfaSetupToken(setupToken: string): Promise<UserWithRoles> {
   let setupUserId: number;
+  let setupSessionVersion: number | undefined;
   try {
     const decoded = await verifyToken(setupToken);
     if (decoded.typ !== "mfa-setup" || typeof decoded.sub !== "number") {
       throw new Error("invalid mfa-setup token");
     }
     setupUserId = decoded.sub;
+    setupSessionVersion = typeof decoded.sv === "number" ? decoded.sv : undefined;
   } catch {
     authError("UNAUTHORIZED", "Sesión de configuración expirada. Inicia sesión nuevamente.");
   }
@@ -250,8 +252,23 @@ async function resolveMfaSetupToken(setupToken: string): Promise<UserWithRoles> 
     where: { id: setupUserId },
     include: { person: true, roles: { include: { role: true } } },
   });
-  if (!user || user.status !== "ACTIVE" || user.mfaEnabled) {
+  // Bind to sessionVersion so a password reset / admin revocation (which bumps
+  // sessionVersion) kills an outstanding setup token — a stolen password can't
+  // finish enrollment after the user resets.
+  if (
+    !user ||
+    user.status !== "ACTIVE" ||
+    user.mfaEnabled ||
+    user.sessionVersion !== setupSessionVersion
+  ) {
     authError("BAD_REQUEST", "No se puede configurar MFA para esta cuenta.");
+  }
+  // Once ANY factor is bound the token is spent: a passkey leaves mfaEnabled
+  // false, so without this a retained token could register a second factor or
+  // re-mint a session for 15 min. Reject as soon as a passkey exists.
+  const passkeyCount = await db.passkey.count({ where: { userId: user.id } });
+  if (passkeyCount > 0) {
+    authError("BAD_REQUEST", "Tu cuenta ya tiene un método de autenticación configurado.");
   }
   return user;
 }
@@ -459,7 +476,10 @@ const authORPCRouterBase = {
           actorLabel: normalizedEmail,
           message: "mfa_enrollment_required",
         });
-        const setupToken = await signToken({ typ: "mfa-setup", sub: user.id }, "15m");
+        const setupToken = await signToken(
+          { typ: "mfa-setup", sub: user.id, sv: user.sessionVersion },
+          "15m"
+        );
         return { status: "mfa_setup_required" as const, userId: user.id, setupToken };
       }
 
