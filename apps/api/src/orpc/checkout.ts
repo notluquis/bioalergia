@@ -116,10 +116,15 @@ function largestPackageDims(
 ): { height: number; width: number; length: number } {
   let best: { height: number; width: number; length: number } | null = null;
   for (const p of products) {
-    if (p.heightCm == null || p.widthCm == null || p.lengthCm == null) continue;
-    const vol = p.heightCm * p.widthCm * p.lengthCm;
+    // Default each incomplete product to the 10×20×30 baseline BEFORE comparing —
+    // skipping a null-dim product would let a smaller product win the volume race
+    // and underquote shipping for the unknown one.
+    const height = p.heightCm ?? DEFAULT_PACKAGE_DIMS.height;
+    const width = p.widthCm ?? DEFAULT_PACKAGE_DIMS.width;
+    const length = p.lengthCm ?? DEFAULT_PACKAGE_DIMS.length;
+    const vol = height * width * length;
     if (!best || vol > best.height * best.width * best.length) {
-      best = { height: p.heightCm, width: p.widthCm, length: p.lengthCm };
+      best = { height, width, length };
     }
   }
   return best ?? { ...DEFAULT_PACKAGE_DIMS };

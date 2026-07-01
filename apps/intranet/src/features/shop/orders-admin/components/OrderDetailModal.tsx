@@ -68,8 +68,8 @@ function OrderDownloads({ order }: { order: OrderDetail }) {
       {order.cx_label_base64 ? (
         <a
           className="inline-flex items-center rounded-lg border border-default-200 px-3 py-1.5 font-medium text-primary text-sm hover:bg-default-50"
-          download={`etiqueta-${order.number}.pdf`}
-          href={`data:application/pdf;base64,${order.cx_label_base64}`}
+          download={`etiqueta-${order.number}.png`}
+          href={`data:image/png;base64,${order.cx_label_base64}`}
         >
           Descargar etiqueta Chilexpress
         </a>

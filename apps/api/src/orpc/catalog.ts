@@ -321,10 +321,13 @@ const adminUpdateRoute = requireStaff
           priceClp: p.price_clp,
           compareAtPriceClp: p.compare_at_price_clp ?? undefined,
           costClp: p.cost_clp ?? undefined,
-          weightGrams: p.weight_grams ?? undefined,
-          widthCm: p.width_cm ?? undefined,
-          heightCm: p.height_cm ?? undefined,
-          lengthCm: p.length_cm ?? undefined,
+          // Pass null through (don't coalesce to undefined): these nullable
+          // shipping fields must be CLEARABLE — the form sends null for an empty
+          // input, and stripUndefined only drops undefined (field-not-sent).
+          weightGrams: p.weight_grams,
+          widthCm: p.width_cm,
+          heightCm: p.height_cm,
+          lengthCm: p.length_cm,
           barcode: p.barcode ?? undefined,
           requiresPrescription: p.requires_prescription,
           status: p.status,

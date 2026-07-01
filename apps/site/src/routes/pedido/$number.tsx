@@ -27,14 +27,11 @@ const STATUS_META: Record<OrderStatus, { label: string; help: string }> = {
   REFUNDED: { label: "Reembolsado", help: "Reembolsado" },
 };
 
-// Terminal states: once here the order won't change, so stop polling.
-const TERMINAL_STATUSES = new Set<OrderStatus>([
-  "PAID",
-  "FULFILLED",
-  "DELIVERED",
-  "CANCELLED",
-  "REFUNDED",
-]);
+// Terminal states: once here the order won't change, so stop polling. PAID and
+// FULFILLED are NOT terminal — the DTE PDF + Chilexpress OT attach asynchronously
+// after PAID (queued job) and FULFILLED flips to DELIVERED via the tracking cron,
+// so keep polling through them or those links/states never appear without a reload.
+const TERMINAL_STATUSES = new Set<OrderStatus>(["DELIVERED", "CANCELLED", "REFUNDED"]);
 
 // Chilexpress lets the buyer paste the OT number into its public tracking portal.
 const CHILEXPRESS_TRACKING_URL = "https://www.chilexpress.cl/seguimiento";
