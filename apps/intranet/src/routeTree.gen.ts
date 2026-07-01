@@ -57,6 +57,7 @@ import { Route as AuthedSettingsOccupationalRouteImport } from "./routes/_authed
 import { Route as AuthedSettingsNoticiasRouteImport } from "./routes/_authed/settings/noticias"
 import { Route as AuthedSettingsImmunotherapyRouteImport } from "./routes/_authed/settings/immunotherapy"
 import { Route as AuthedSettingsHaulmerRouteImport } from "./routes/_authed/settings/haulmer"
+import { Route as AuthedSettingsFichasIngresoRouteImport } from "./routes/_authed/settings/fichas-ingreso"
 import { Route as AuthedSettingsDoctoraliaRouteImport } from "./routes/_authed/settings/doctoralia"
 import { Route as AuthedSettingsDataRightsRouteImport } from "./routes/_authed/settings/data-rights"
 import { Route as AuthedSettingsConsentRouteImport } from "./routes/_authed/settings/consent"
@@ -357,6 +358,12 @@ const AuthedSettingsHaulmerRoute = AuthedSettingsHaulmerRouteImport.update({
   path: "/haulmer",
   getParentRoute: () => AuthedSettingsRoute,
 } as any)
+const AuthedSettingsFichasIngresoRoute =
+  AuthedSettingsFichasIngresoRouteImport.update({
+    id: "/fichas-ingreso",
+    path: "/fichas-ingreso",
+    getParentRoute: () => AuthedSettingsRoute,
+  } as any)
 const AuthedSettingsDoctoraliaRoute =
   AuthedSettingsDoctoraliaRouteImport.update({
     id: "/doctoralia",
@@ -706,6 +713,7 @@ export interface FileRoutesByFullPath {
   "/settings/consent": typeof AuthedSettingsConsentRoute
   "/settings/data-rights": typeof AuthedSettingsDataRightsRoute
   "/settings/doctoralia": typeof AuthedSettingsDoctoraliaRoute
+  "/settings/fichas-ingreso": typeof AuthedSettingsFichasIngresoRoute
   "/settings/haulmer": typeof AuthedSettingsHaulmerRoute
   "/settings/immunotherapy": typeof AuthedSettingsImmunotherapyRoute
   "/settings/noticias": typeof AuthedSettingsNoticiasRoute
@@ -800,6 +808,7 @@ export interface FileRoutesByTo {
   "/settings/consent": typeof AuthedSettingsConsentRoute
   "/settings/data-rights": typeof AuthedSettingsDataRightsRoute
   "/settings/doctoralia": typeof AuthedSettingsDoctoraliaRoute
+  "/settings/fichas-ingreso": typeof AuthedSettingsFichasIngresoRoute
   "/settings/haulmer": typeof AuthedSettingsHaulmerRoute
   "/settings/immunotherapy": typeof AuthedSettingsImmunotherapyRoute
   "/settings/noticias": typeof AuthedSettingsNoticiasRoute
@@ -903,6 +912,7 @@ export interface FileRoutesById {
   "/_authed/settings/consent": typeof AuthedSettingsConsentRoute
   "/_authed/settings/data-rights": typeof AuthedSettingsDataRightsRoute
   "/_authed/settings/doctoralia": typeof AuthedSettingsDoctoraliaRoute
+  "/_authed/settings/fichas-ingreso": typeof AuthedSettingsFichasIngresoRoute
   "/_authed/settings/haulmer": typeof AuthedSettingsHaulmerRoute
   "/_authed/settings/immunotherapy": typeof AuthedSettingsImmunotherapyRoute
   "/_authed/settings/noticias": typeof AuthedSettingsNoticiasRoute
@@ -1006,6 +1016,7 @@ export interface FileRouteTypes {
     | "/settings/consent"
     | "/settings/data-rights"
     | "/settings/doctoralia"
+    | "/settings/fichas-ingreso"
     | "/settings/haulmer"
     | "/settings/immunotherapy"
     | "/settings/noticias"
@@ -1100,6 +1111,7 @@ export interface FileRouteTypes {
     | "/settings/consent"
     | "/settings/data-rights"
     | "/settings/doctoralia"
+    | "/settings/fichas-ingreso"
     | "/settings/haulmer"
     | "/settings/immunotherapy"
     | "/settings/noticias"
@@ -1202,6 +1214,7 @@ export interface FileRouteTypes {
     | "/_authed/settings/consent"
     | "/_authed/settings/data-rights"
     | "/_authed/settings/doctoralia"
+    | "/_authed/settings/fichas-ingreso"
     | "/_authed/settings/haulmer"
     | "/_authed/settings/immunotherapy"
     | "/_authed/settings/noticias"
@@ -1585,6 +1598,13 @@ declare module "@tanstack/react-router" {
       path: "/haulmer"
       fullPath: "/settings/haulmer"
       preLoaderRoute: typeof AuthedSettingsHaulmerRouteImport
+      parentRoute: typeof AuthedSettingsRoute
+    }
+    "/_authed/settings/fichas-ingreso": {
+      id: "/_authed/settings/fichas-ingreso"
+      path: "/fichas-ingreso"
+      fullPath: "/settings/fichas-ingreso"
+      preLoaderRoute: typeof AuthedSettingsFichasIngresoRouteImport
       parentRoute: typeof AuthedSettingsRoute
     }
     "/_authed/settings/doctoralia": {
@@ -2139,6 +2159,7 @@ interface AuthedSettingsRouteChildren {
   AuthedSettingsConsentRoute: typeof AuthedSettingsConsentRoute
   AuthedSettingsDataRightsRoute: typeof AuthedSettingsDataRightsRoute
   AuthedSettingsDoctoraliaRoute: typeof AuthedSettingsDoctoraliaRoute
+  AuthedSettingsFichasIngresoRoute: typeof AuthedSettingsFichasIngresoRoute
   AuthedSettingsHaulmerRoute: typeof AuthedSettingsHaulmerRoute
   AuthedSettingsImmunotherapyRoute: typeof AuthedSettingsImmunotherapyRoute
   AuthedSettingsNoticiasRoute: typeof AuthedSettingsNoticiasRoute
@@ -2162,6 +2183,7 @@ const AuthedSettingsRouteChildren: AuthedSettingsRouteChildren = {
   AuthedSettingsConsentRoute: AuthedSettingsConsentRoute,
   AuthedSettingsDataRightsRoute: AuthedSettingsDataRightsRoute,
   AuthedSettingsDoctoraliaRoute: AuthedSettingsDoctoraliaRoute,
+  AuthedSettingsFichasIngresoRoute: AuthedSettingsFichasIngresoRoute,
   AuthedSettingsHaulmerRoute: AuthedSettingsHaulmerRoute,
   AuthedSettingsImmunotherapyRoute: AuthedSettingsImmunotherapyRoute,
   AuthedSettingsNoticiasRoute: AuthedSettingsNoticiasRoute,

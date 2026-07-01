@@ -42,6 +42,7 @@ export {
   type UpdateProductInput,
   type HideableSection,
 } from "./immunotherapy.ts";
+export * from "./intake.ts";
 export * from "./inventory.ts";
 export * from "./integrations.ts";
 export * from "./loans.ts";

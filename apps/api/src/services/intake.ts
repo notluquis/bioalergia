@@ -10,7 +10,7 @@ import { normalizeRut, validateRut } from "../lib/rut.ts";
 import { formatChile } from "../lib/time.ts";
 import { logError, logEvent } from "../lib/logger.ts";
 import { type FlowPhoto, downloadAndDecryptFlowMedia } from "../lib/flow-media.ts";
-import { getR2Object, putR2Object } from "../modules/cloudflare/r2.ts";
+import { cdnUrlForKey, getR2Object, putR2Object } from "../modules/cloudflare/r2.ts";
 import { uploadMedia } from "../modules/wa-cloud/graph-client.ts";
 import {
   ABONO_WHATSAPP_SETTINGS,
@@ -20,6 +20,11 @@ import {
 } from "../lib/doctoralia/abono-whatsapp-settings.ts";
 import { appendAbonoFlowHistory } from "../lib/doctoralia/abono-flow-history.ts";
 import { getSetting } from "../lib/settings.ts";
+import type {
+  IntakeSubmissionListItemDto,
+  listIntakeSubmissionsInputSchema,
+} from "@finanzas/orpc-contracts/intake";
+import type { z } from "zod";
 import { ensureContactAndConversation } from "./wa-contacts.ts";
 import { sendFlow } from "./wa-messages.ts";
 import { fanout } from "./abono-staff-notify.ts";
@@ -236,6 +241,39 @@ function extractFlowPhoto(data: FlowData): FlowPhoto | null {
     }
   }
   return null;
+}
+
+/** Paginated, newest-first list of intake submissions for the read-only viewer.
+ * comprobanteUrl is a CDN url derived from the stored R2 key (null when none). */
+export async function listIntakeSubmissions(
+  input: z.infer<typeof listIntakeSubmissionsInputSchema>
+): Promise<{ items: IntakeSubmissionListItemDto[]; total: number }> {
+  const { page, pageSize } = input;
+  const [rows, total] = await Promise.all([
+    db.intakeSubmission.findMany({
+      orderBy: { submittedAt: "desc" },
+      skip: page * pageSize,
+      take: pageSize,
+      include: { appointmentPaymentToken: { select: { appointmentDate: true } } },
+    }),
+    db.intakeSubmission.count(),
+  ]);
+  const items: IntakeSubmissionListItemDto[] = rows.map((r) => ({
+    id: r.id,
+    patientName: r.patientName,
+    patientPhone: r.patientPhone,
+    patientRut: r.patientRut,
+    patientEmail: r.patientEmail,
+    healthInsurance: r.healthInsurance,
+    isapreName: r.isapreName,
+    reason: r.reason,
+    isMinor: r.isMinor,
+    appointmentDate: r.appointmentPaymentToken?.appointmentDate ?? null,
+    comprobanteUrl: r.comprobanteR2Key ? cdnUrlForKey(r.comprobanteR2Key) : null,
+    staffNotifiedAt: r.staffNotifiedAt,
+    submittedAt: r.submittedAt,
+  }));
+  return { items, total };
 }
 
 /** Forward the intake summary to the clinic staff's WhatsApp so they create the

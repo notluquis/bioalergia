@@ -123,6 +123,7 @@ import { complaintsORPCHandler } from "./orpc/complaints.ts";
 import { karinORPCHandler } from "./orpc/karin.ts";
 import { operationalRegistersORPCHandler } from "./orpc/operational-registers.ts";
 import { securityAlertsORPCHandler } from "./orpc/security-alerts.ts";
+import { intakeORPCHandler } from "./orpc/intake.ts";
 import { processingActivitiesORPCHandler } from "./orpc/processing-activities.ts";
 import { consentORPCHandler } from "./orpc/consent.ts";
 import { clinicalConsentORPCHandler } from "./orpc/clinical-consent.ts";
@@ -1884,6 +1885,19 @@ app.use("/api/orpc/operational-registers/rpc/*", async (c, next) => {
 app.use("/api/orpc/security-alerts/rpc/*", async (c, next) => {
   const { matched, response } = await securityAlertsORPCHandler.handle(createHonoORPCRequest(c), {
     prefix: "/api/orpc/security-alerts/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
+app.use("/api/orpc/intake/rpc/*", async (c, next) => {
+  const { matched, response } = await intakeORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/intake/rpc",
     context: { hono: c },
   });
 
