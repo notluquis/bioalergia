@@ -6280,6 +6280,7 @@ enum OrderStatus {
   PENDING
   PAID
   FULFILLED
+  DELIVERED
   CANCELLED
   REFUNDED
 }
@@ -6576,6 +6577,7 @@ model Order {
   cxLabelType       Int?                @map("cx_label_type")
   dteFolio          String?             @map("dte_folio")
   dteType           String?             @map("dte_type")
+  dtePdfUrl         String?             @map("dte_pdf_url")
   notes             String?
   createdAt         DateTime            @default(now()) @map("created_at")
   updatedAt         DateTime            @default(now()) @updatedAt @map("updated_at")

@@ -82,10 +82,17 @@ export async function markOrderPaid(orderId: number) {
   });
 }
 
-export async function attachDteToOrder(orderId: number, dte: { folio: string; type: string }) {
+export async function attachDteToOrder(
+  orderId: number,
+  dte: { folio: string; type: string; pdfUrl?: string }
+) {
   await db.order.update({
     where: { id: orderId },
-    data: { dteFolio: dte.folio, dteType: dte.type },
+    data: {
+      dteFolio: dte.folio,
+      dteType: dte.type,
+      ...(dte.pdfUrl ? { dtePdfUrl: dte.pdfUrl } : {}),
+    },
   });
 }
 

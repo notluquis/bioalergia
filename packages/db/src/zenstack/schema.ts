@@ -20693,6 +20693,12 @@ export class SchemaType implements SchemaDef {
                     optional: true,
                     attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("dte_type") }] }] as readonly AttributeApplication[]
                 },
+                dtePdfUrl: {
+                    name: "dtePdfUrl",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("dte_pdf_url") }] }] as readonly AttributeApplication[]
+                },
                 notes: {
                     name: "notes",
                     type: "String",
@@ -22684,6 +22690,7 @@ export class SchemaType implements SchemaDef {
                 PENDING: "PENDING",
                 PAID: "PAID",
                 FULFILLED: "FULFILLED",
+                DELIVERED: "DELIVERED",
                 CANCELLED: "CANCELLED",
                 REFUNDED: "REFUNDED"
             }

@@ -1,7 +1,14 @@
 import { oc } from "@orpc/contract";
 import { z } from "zod";
 
-export const orderStatusEnum = z.enum(["PENDING", "PAID", "FULFILLED", "CANCELLED", "REFUNDED"]);
+export const orderStatusEnum = z.enum([
+  "PENDING",
+  "PAID",
+  "FULFILLED",
+  "DELIVERED",
+  "CANCELLED",
+  "REFUNDED",
+]);
 
 export const billingTypeEnum = z.enum(["BOLETA", "FACTURA"]);
 
