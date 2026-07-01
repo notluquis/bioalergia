@@ -116,3 +116,42 @@ test("/checkout renders its contact + shipping form for a populated cart", async
   await expect(page.getByText("Paso 2")).toBeVisible();
   await expect(page.getByText("Paso 3")).toBeVisible();
 });
+
+test("/carrito surfaces the Agotado chip + out-of-stock banner for a depleted line", async ({
+  page,
+}) => {
+  // Re-install with a cart whose line dropped to 0 stock since it was added. The
+  // later route registration shadows the beforeEach default for this test.
+  await installShopMocks(page, { cartOutOfStock: true });
+
+  await page.goto("/carrito", { waitUntil: "domcontentloaded" });
+  await expect(page.getByRole("heading", { level: 1, name: "Mi carrito" })).toBeVisible();
+
+  // Per-line "Agotado" chip.
+  await expect(page.getByText("Agotado", { exact: true })).toBeVisible();
+  // Banner above the total prompting the buyer to fix the cart before checkout.
+  await expect(
+    page.getByText(/Hay productos agotados en tu carrito/)
+  ).toBeVisible();
+});
+
+test("/checkout shows the Chilexpress delivery estimate on a quoted option", async ({ page }) => {
+  await page.goto("/checkout", { waitUntil: "domcontentloaded" });
+  await expect(page.getByRole("heading", { level: 1, name: "Checkout" })).toBeVisible();
+
+  // Switch to Chilexpress → reveals the comuna picker + "Cotizar envío".
+  await page.getByRole("button", { name: "Chilexpress" }).click();
+
+  // Comuna is a React Aria ComboBox: type to filter, then pick the option.
+  const comuna = page.getByRole("combobox").first();
+  await comuna.click();
+  await comuna.fill("Santiago");
+  await page.getByRole("option", { name: /Santiago/ }).click();
+
+  // Quote the comuna → renders the shipping options (mock returns EXP 1-2 + STD 3-5).
+  await page.getByRole("button", { name: "Cotizar envío" }).click();
+
+  // The delivery estimate string is derived from `delivery_time_days` on the quote.
+  await expect(page.getByText("Entrega: 1-2 días hábiles")).toBeVisible();
+  await expect(page.getByText("Entrega: 3-5 días hábiles")).toBeVisible();
+});

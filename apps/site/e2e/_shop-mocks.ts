@@ -176,7 +176,7 @@ function productBySlug(slug: string): ProductFixture {
   return PRODUCTS.find((p) => p.slug === slug) ?? firstProduct();
 }
 
-function cartFixture() {
+function cartFixture(opts: { outOfStock?: boolean } = {}) {
   const p = firstProduct();
   const qty = 2;
   const subtotal = p.price_clp * qty;
@@ -196,7 +196,9 @@ function cartFixture() {
           name: p.name,
           brand: p.brand,
           primary_image_url: p.images[0]?.cdn_url ?? null,
-          available_qty: p.available_qty,
+          // `outOfStock` drops the line's snapshot stock to 0 → CartView shows the
+          // "Agotado" chip + the out-of-stock banner above the total.
+          available_qty: opts.outOfStock ? 0 : p.available_qty,
         },
       },
     ],
@@ -206,6 +208,13 @@ function cartFixture() {
   };
 }
 
+// Chilexpress comunas for the checkout comuna picker (checkout.communes).
+const COMMUNES = [
+  { code: "STGO", name: "Santiago", region: "Metropolitana de Santiago" },
+  { code: "CCP", name: "Concepción", region: "Biobío" },
+  { code: "VINA", name: "Viña del Mar", region: "Valparaíso" },
+];
+
 // ---------------------------------------------------------------------------
 // Response builders (catalog/cart/checkout) → superjson envelopes
 // ---------------------------------------------------------------------------
@@ -213,10 +222,17 @@ function cartFixture() {
 type Json = Record<string, unknown>;
 
 /** Maps a procedure name (last URL segment) to the data object it returns. */
-function responseFor(proc: string, body: Json): unknown | undefined {
+function responseFor(
+  proc: string,
+  body: Json,
+  opts: { cartOutOfStock?: boolean } = {}
+): unknown | undefined {
   switch (proc) {
     case "publicConfig":
       return { data: { low_stock_threshold: 3 }, status: "ok" };
+
+    case "communes":
+      return { data: { communes: COMMUNES }, status: "ok" };
 
     case "list": {
       // Honor category_slug filtering so RelatedProducts gets a sane set, and
@@ -247,7 +263,7 @@ function responseFor(proc: string, body: Json): unknown | undefined {
     case "addItem":
     case "updateItem":
     case "removeItem":
-      return { data: cartFixture(), status: "ok" };
+      return { data: cartFixture({ outOfStock: opts.cartOutOfStock }), status: "ok" };
 
     case "clear":
       return { status: "ok" };
@@ -310,7 +326,10 @@ async function fulfillSuperjson(route: Route, data: unknown): Promise<void> {
  * `{ json: { ok: true }, meta: [] }` 200 so nothing in the page hangs on a
  * pending request.
  */
-export async function installShopMocks(page: Page): Promise<void> {
+export async function installShopMocks(
+  page: Page,
+  opts: { cartOutOfStock?: boolean } = {}
+): Promise<void> {
   await page.route("**/api/orpc/**", async (route) => {
     const url = new URL(route.request().url());
     // path: /api/orpc/<ns>/rpc/<proc>
@@ -323,7 +342,7 @@ export async function installShopMocks(page: Page): Promise<void> {
       body = {};
     }
 
-    const data = responseFor(proc, body);
+    const data = responseFor(proc, body, opts);
     if (data === undefined) {
       // Generic deterministic fallback — keeps unknown procs from hanging.
       await route.fulfill({

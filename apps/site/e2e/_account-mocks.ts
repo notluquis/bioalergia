@@ -67,19 +67,52 @@ const INVALID_DOCUMENT = { valid: false as const };
 // Checkout status fixture (checkoutStatusResponseSchema)
 // ---------------------------------------------------------------------------
 
-export type OrderStatus = "PENDING" | "PAID" | "FULFILLED" | "CANCELLED" | "REFUNDED";
+export type OrderStatus =
+  | "PENDING"
+  | "PAID"
+  | "FULFILLED"
+  | "DELIVERED"
+  | "CANCELLED"
+  | "REFUNDED";
 
-export function paidOrder(orderNumber: string) {
+// Full contract shape (checkoutStatusResponseSchema.data): every nullable field
+// is present so the fixture round-trips through superjson exactly like the API.
+type OrderStatusData = {
+  order_number: string;
+  status: OrderStatus;
+  total_clp: number;
+  dte_folio: string | null;
+  dte_type: string | null;
+  cx_ot_number: string | null;
+  dte_pdf_url: string | null;
+};
+
+/**
+ * Build a `checkout.status` response for an order. Defaults to a PAID boleta with
+ * a DTE folio and no tracking/PDF; pass `overrides` to flip the status or attach
+ * the Chilexpress OT / boleta PDF that appear post-payment.
+ */
+export function orderStatusResponse(
+  orderNumber: string,
+  overrides: Partial<OrderStatusData> = {}
+) {
   return {
     status: "ok" as const,
     data: {
       order_number: orderNumber,
-      status: "PAID" as OrderStatus,
+      status: "PAID",
       total_clp: 23980,
       dte_folio: "10042",
       dte_type: "BOLETA",
-    },
+      cx_ot_number: null,
+      dte_pdf_url: null,
+      ...overrides,
+    } satisfies OrderStatusData,
   };
+}
+
+export function paidOrder(orderNumber: string) {
+  return orderStatusResponse(orderNumber);
 }
 
 // ---------------------------------------------------------------------------
@@ -110,7 +143,7 @@ type AccountMockOptions = {
   /** Document returned by verification.verify; `"invalid"` → not-found state. */
   verification?: VerifiedDocument | "invalid";
   /** Response for checkout.status (order lookup). `"error"` → 404 so the route shows its error state. */
-  orderStatus?: ReturnType<typeof paidOrder> | "error";
+  orderStatus?: ReturnType<typeof orderStatusResponse> | "error";
   /** site-auth.me session. Defaults to anonymous (so /mi-cuenta redirects to /login). */
   session?: "anon" | "authed";
 };
