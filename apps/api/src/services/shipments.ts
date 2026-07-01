@@ -199,8 +199,9 @@ export async function refreshAllTracking(): Promise<{ updated: number; total: nu
  * Bulk-track a set of SHOP orders by their Chilexpress OT (single /tracking/bulk
  * request). Matches each returned entry by reference (`BIO-ORD-<number>`, the
  * deliveryReference used when the order OT was created) and returns a
- * reference → latest-status map. Used by the order_tracking_sync cron to detect
- * delivered orders. Callers own the delivered heuristic + status transition.
+ * reference → latest-status map. Used by the lazy on-view tracking refresh
+ * (services/order-tracking.ts) to detect delivered orders. Callers own the
+ * delivered heuristic + status transition.
  */
 export async function trackOrders(
   orders: Array<{ number: string; cxOtNumber: string }>
@@ -656,6 +657,11 @@ export async function createOrderShipment(input: {
   recipientEmail?: string | null;
   declaredValueClp: number;
   weightKg: number;
+  // Real package dims (cm). Optional — default to the legacy 10×20×30 so callers
+  // that don't have product dims keep the prior behaviour.
+  heightCm?: number;
+  widthCm?: number;
+  lengthCm?: number;
 }): Promise<{
   otNumber: string;
   barcode: string | null;
@@ -718,9 +724,9 @@ export async function createOrderShipment(input: {
         packages: [
           {
             weight: String(input.weightKg),
-            height: "10",
-            width: "20",
-            length: "30",
+            height: String(input.heightCm ?? 10),
+            width: String(input.widthCm ?? 20),
+            length: String(input.lengthCm ?? 30),
             serviceDeliveryCode: input.serviceTypeCode,
             productCode: "3",
             deliveryReference: shipmentRef,

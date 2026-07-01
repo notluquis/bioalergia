@@ -52,19 +52,32 @@ export async function sendPasswordResetEmail(args: {
   });
 }
 
+// Human-readable minutes → "1 hora" / "2 horas" / "45 minutos" for the email copy
+// (keeps the wording in sync with the configurable TTL, nothing hardcoded twice).
+function minutesLabel(minutes: number): string {
+  if (minutes % 60 === 0) {
+    const hours = minutes / 60;
+    return hours === 1 ? "1 hora" : `${hours} horas`;
+  }
+  return `${minutes} minutos`;
+}
+
 /**
- * #3 — Self-service forgot password: send a one-time reset link.
+ * #3 — Self-service forgot password: send a one-time reset link. Validity
+ * (`ttlMinutes`) is passed in from the caller's DB setting.
  */
 export async function sendPasswordResetLinkEmail(args: {
   to: string;
   name: string;
   token: string;
+  ttlMinutes: number;
 }): Promise<EmailSendResult> {
   const url = `${appUrl()}/reset-password?token=${encodeURIComponent(args.token)}`;
+  const validez = minutesLabel(args.ttlMinutes);
   const html = shell(
     "Restablece tu contraseña",
     `<p>Hola ${esc(args.name)},</p>
-     <p>Recibimos una solicitud para restablecer tu contraseña. Haz clic en el botón (válido por 1 hora):</p>
+     <p>Recibimos una solicitud para restablecer tu contraseña. Haz clic en el botón (válido por ${validez}):</p>
      <p><a href="${url}" style="display:inline-block;background:#0e64b7;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px">Restablecer contraseña</a></p>
      <p style="font-size:13px;color:#6b7280">Si no fuiste tú, ignora este correo. Tu contraseña no cambiará.</p>`
   );
@@ -72,33 +85,36 @@ export async function sendPasswordResetLinkEmail(args: {
     to: args.to,
     subject: "Restablece tu contraseña — Bioalergia",
     html,
-    text: `Hola ${args.name}, restablece tu contraseña aquí (válido 1 hora): ${url}`,
+    text: `Hola ${args.name}, restablece tu contraseña aquí (válido ${validez}): ${url}`,
     idempotencyKey: `pwlink/${idemDigest(args.token)}`,
   });
 }
 
 /**
- * #5 — Admin invite: welcome a freshly created account and link to set the
- * first password. Long-lived (7-day) token, reuses the /reset-password page.
+ * #5 — Admin invite: welcome a freshly created account and link to the
+ * onboarding wizard (set password + profile + bank + MFA). Long-lived (7-day)
+ * single-use token consumed by /accept-invite, which starts the session.
  */
 export async function sendAccountInviteEmail(args: {
   to: string;
   name: string;
   token: string;
+  ttlDays: number;
 }): Promise<EmailSendResult> {
-  const url = `${appUrl()}/reset-password?token=${encodeURIComponent(args.token)}`;
+  const url = `${appUrl()}/accept-invite?token=${encodeURIComponent(args.token)}`;
+  const validez = args.ttlDays === 1 ? "1 día" : `${args.ttlDays} días`;
   const html = shell(
     "Tu cuenta de Bioalergia está lista",
     `<p>Hola ${esc(args.name)},</p>
-     <p>Se creó tu cuenta en la intranet de Bioalergia. Define tu contraseña para ingresar (enlace válido por 7 días):</p>
-     <p><a href="${url}" style="display:inline-block;background:#0e64b7;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px">Definir mi contraseña</a></p>
+     <p>Se creó tu cuenta en la intranet de Bioalergia. Actívala y completa tu configuración (enlace válido por ${validez}):</p>
+     <p><a href="${url}" style="display:inline-block;background:#0e64b7;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px">Activar mi cuenta</a></p>
      <p style="font-size:13px;color:#6b7280">Si no esperabas este correo, ignóralo.</p>`
   );
   return sendEmail({
     to: args.to,
     subject: "Tu cuenta de Bioalergia está lista",
     html,
-    text: `Hola ${args.name}, define tu contraseña para ingresar a Bioalergia (válido 7 días): ${url}`,
+    text: `Hola ${args.name}, activa tu cuenta de Bioalergia y complétala (válido ${validez}): ${url}`,
     idempotencyKey: `invite/${idemDigest(args.token)}`,
   });
 }

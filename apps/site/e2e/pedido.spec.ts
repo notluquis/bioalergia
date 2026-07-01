@@ -26,9 +26,11 @@ test("a found order renders its status summary and total", async ({ page }) => {
   await expect(
     page.getByRole("heading", { level: 1, name: `Pedido ${ORDER_NUMBER}` })
   ).toBeVisible();
-  // Status block from the mocked PAID order (editorial: "Estado del pedido" label + value).
+  // Status block from the mocked PAID order (editorial: "Estado del pedido" label
+  // + the friendly Spanish status value; the raw PAID enum is intentionally hidden
+  // from buyers via STATUS_META).
   await expect(page.getByText("Estado del pedido")).toBeVisible();
-  await expect(page.getByText("PAID", { exact: true })).toBeVisible();
+  await expect(page.getByText("Pago confirmado", { exact: true })).toBeVisible();
   // PAID confirmation alert.
   await expect(page.getByText(/¡Pago confirmado!/)).toBeVisible();
   // DTE folio echoed.

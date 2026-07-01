@@ -22,6 +22,7 @@ import {
   deleteUser,
   deleteUserPasskey,
   fetchUsers,
+  resendUserInvite,
   resetUserPassword,
   toggleUserMfa,
   updateUserProfile,
@@ -171,6 +172,23 @@ function useUserManagementActions(params: {
     [invalidateUsers, params]
   );
 
+  const handleResendInvite = useCallback(
+    async (id: number) => {
+      try {
+        const emailed = await resendUserInvite(id);
+        invalidateUsers();
+        if (emailed) {
+          params.successToast("Invitación reenviada. Revisa el correo del usuario.");
+        } else {
+          params.errorToast("No se pudo enviar el correo de invitación. Intenta más tarde.");
+        }
+      } catch (error_) {
+        params.errorToast(error_ instanceof Error ? error_.message : "Error al reenviar");
+      }
+    },
+    [invalidateUsers, params]
+  );
+
   const handleToggleMfa = useCallback(
     async (id: number, current: boolean) => {
       const action = current ? "desactivar" : "activar";
@@ -263,6 +281,7 @@ function useUserManagementActions(params: {
       onDeletePasskey: handleDeletePasskey,
       onDeleteUser: handleDeleteUser,
       onEditRole: handleEditRole,
+      onResendInvite: handleResendInvite,
       onResetPassword: handleResetPassword,
       onSetStatus: handleSetStatus,
       onToggleMfa: handleToggleMfa,
@@ -271,6 +290,7 @@ function useUserManagementActions(params: {
       handleDeletePasskey,
       handleDeleteUser,
       handleEditRole,
+      handleResendInvite,
       handleResetPassword,
       handleSetStatus,
       handleToggleMfa,

@@ -15,6 +15,9 @@ interface MfaStepProps {
   onPasskeyRegister: () => void;
   onSkip: () => void;
   isLoading?: boolean;
+  /** When true (account flagged mfaEnforced) the "skip" escape is hidden — the
+   * user must activate MFA or register a passkey to finish onboarding. */
+  enforced?: boolean;
 }
 
 export function MfaStep({
@@ -26,6 +29,7 @@ export function MfaStep({
   onPasskeyRegister,
   onSkip,
   isLoading,
+  enforced,
 }: MfaStepProps) {
   if (isLoading && !mfaSecret) {
     return (
@@ -125,17 +129,23 @@ export function MfaStep({
           </Button>
         </div>
 
-        <div className="flex justify-center">
-          <Button
-            className="text-default-400 hover:text-foreground"
-            isDisabled={isLoading}
-            onPress={onSkip}
-            size="sm"
-            variant="outline"
-          >
-            Omitir por ahora
-          </Button>
-        </div>
+        {enforced ? (
+          <p className="text-center text-default-400 text-xs">
+            Tu cuenta requiere un segundo factor: activa MFA o registra un passkey para continuar.
+          </p>
+        ) : (
+          <div className="flex justify-center">
+            <Button
+              className="text-default-400 hover:text-foreground"
+              isDisabled={isLoading}
+              onPress={onSkip}
+              size="sm"
+              variant="outline"
+            >
+              Omitir por ahora
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );

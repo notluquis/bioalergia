@@ -27,6 +27,7 @@ import { getCommunes, getRegions, quoteCourier } from "../modules/chilexpress/cl
 import { createCheckoutPreference } from "../modules/mercadopago-checkout/payment.ts";
 import { reserveStockForOrder } from "../modules/reservations/index.ts";
 import { createOrderFromCart, getOrderByNumber } from "../services/orders.ts";
+import { refreshOrderTrackingIfStale } from "../services/order-tracking.ts";
 import { fetchStreetNumbers, fetchStreets } from "../services/shipments.ts";
 
 type OrderWithItems = Awaited<ReturnType<typeof createOrderFromCart>>;
@@ -106,6 +107,30 @@ const streetNumbersRoute = base
 
 type CheckoutCart = NonNullable<Awaited<ReturnType<typeof findCartByToken>>>;
 
+// Chilexpress package dims default when a product has no real dimensions stored.
+const DEFAULT_PACKAGE_DIMS = { height: 10, width: 20, length: 30 } as const;
+
+// Single-package heuristic: the box we quote/ship is the largest single product
+// by volume (falling back to the 10×20×30 default for products with no dims).
+function largestPackageDims(
+  products: Array<{ heightCm: number | null; widthCm: number | null; lengthCm: number | null }>
+): { height: number; width: number; length: number } {
+  let best: { height: number; width: number; length: number } | null = null;
+  for (const p of products) {
+    // Default each incomplete product to the 10×20×30 baseline BEFORE comparing —
+    // skipping a null-dim product would let a smaller product win the volume race
+    // and underquote shipping for the unknown one.
+    const height = p.heightCm ?? DEFAULT_PACKAGE_DIMS.height;
+    const width = p.widthCm ?? DEFAULT_PACKAGE_DIMS.width;
+    const length = p.lengthCm ?? DEFAULT_PACKAGE_DIMS.length;
+    const vol = height * width * length;
+    if (!best || vol > best.height * best.width * best.length) {
+      best = { height, width, length };
+    }
+  }
+  return best ?? { ...DEFAULT_PACKAGE_DIMS };
+}
+
 // Shared by /quote and /start: the server is the single source of the shipping
 // fee, so /start re-quotes (never trusts a client amount) before charging.
 async function quoteShippingOptions(cart: CheckoutCart, destinationCountyCode: string) {
@@ -123,10 +148,16 @@ async function quoteShippingOptions(cart: CheckoutCart, destinationCountyCode: s
     0
   );
 
+  // Chilexpress bills volumetric weight (H×W×L)/5000, so quote with real dims
+  // when the products carry them. ponytail: single-package heuristic — use the
+  // largest single item's dims (falling back to 10×20×30 when unset), refine if
+  // multi-box shipping is ever needed.
+  const pkg = largestPackageDims(cart.items.map((i: CartLine) => i.product));
+
   const res = await quoteCourier(chilexpressConfig, {
     originCountyCode: chilexpressConfig.originCoverageCode,
     destinationCountyCode,
-    package: { weight: totalKg, height: 10, width: 20, length: 30 },
+    package: { weight: totalKg, ...pkg },
     productType: 3,
     contentType: 1,
     declaredWorth: String(declaredWorth),
@@ -264,13 +295,22 @@ const statusRoute = base
   .input(checkoutStatusInputSchema)
   .output(checkoutStatusResponseSchema)
   .handler(async ({ input }) => {
-    const order = await getOrderByNumber(input.order_number, {
+    const found = await getOrderByNumber(input.order_number, {
       token: input.token,
       email: input.email,
     });
-    if (!order) {
+    if (!found) {
       throw new ORPCError("NOT_FOUND", { message: "Pedido no encontrado" });
     }
+    // Lazy on-view tracking refresh (W3-C): if this is a shipped order and its
+    // tracking is stale, refresh it (best-effort) so a just-delivered order
+    // surfaces DELIVERED here. Throttled per-order; carrier errors are swallowed.
+    await refreshOrderTrackingIfStale(found.id);
+    const order =
+      (await getOrderByNumber(input.order_number, {
+        token: input.token,
+        email: input.email,
+      })) ?? found;
     return {
       data: {
         order_number: order.number,
@@ -278,6 +318,8 @@ const statusRoute = base
         total_clp: order.totalClp,
         dte_folio: order.dteFolio,
         dte_type: order.dteType,
+        cx_ot_number: order.cxOtNumber,
+        dte_pdf_url: order.dtePdfUrl,
       },
       status: "ok" as const,
     };

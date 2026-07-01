@@ -5,6 +5,7 @@ import {
   orderIdInputSchema,
   ordersListInputSchema,
   ordersListResponseSchema,
+  updateShippingAddressInputSchema,
 } from "@finanzas/orpc-contracts/orders-admin";
 import type { OrdersAdminContract } from "@finanzas/orpc-contracts/orders-admin";
 import { ORPCError, onError, os } from "@orpc/server";
@@ -15,12 +16,14 @@ import { logAuditFromContext } from "../lib/audit-log.ts";
 import { getSessionUser, hasPermission } from "../lib/auth.ts";
 import { logError } from "../lib/logger.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
+import { refreshOrderTrackingIfStale } from "../services/order-tracking.ts";
 import {
   cancelOrder,
   getOrderById,
   listOrders,
   markOrderFulfilled,
   refundOrder,
+  updateOrderShippingAddress,
 } from "../services/orders-admin.ts";
 import { SuperJSONRPCHandler } from "./superjson.ts";
 
@@ -65,6 +68,9 @@ const detailRoute = requireRead
   .input(orderIdInputSchema)
   .output(orderDetailResponseSchema)
   .handler(async ({ input }) => {
+    // Lazy on-view tracking refresh (W3-C): refresh Chilexpress status when an
+    // admin opens a shipped order's detail (best-effort, throttled per-order).
+    await refreshOrderTrackingIfStale(input.id);
     return { data: await getOrderById(input.id), status: "ok" as const };
   });
 
@@ -130,12 +136,37 @@ const refundRoute = requireWrite
     return { data: order, status: "ok" as const };
   });
 
+const updateShippingAddressRoute = requireWrite
+  .route({
+    method: "POST",
+    path: "/orders/shipping-address",
+    summary: "Edit shipping address (PENDING/PAID)",
+    tags: ["Orders"],
+  })
+  .input(updateShippingAddressInputSchema)
+  .output(orderDetailResponseSchema)
+  .handler(async ({ input, context }) => {
+    const order = await updateOrderShippingAddress(input.id, input.address);
+    await logAuditFromContext(context.hono, {
+      kind: "DATA_UPDATE",
+      userId: context.user.id,
+      actorLabel: context.user.email,
+      resource: "order",
+      resourceId: order.id,
+      outcome: "ok",
+      message: `Pedido ${order.number}: dirección de despacho editada`,
+      metadata: { number: order.number, cxOtNumber: order.cx_ot_number },
+    });
+    return { data: order, status: "ok" as const };
+  });
+
 const ordersAdminORPCRouterBase = {
   list: listRoute,
   detail: detailRoute,
   markFulfilled: markFulfilledRoute,
   cancel: cancelRoute,
   refund: refundRoute,
+  updateShippingAddress: updateShippingAddressRoute,
 } satisfies Record<keyof OrdersAdminContract, unknown>;
 
 export const ordersAdminORPCRouter = base

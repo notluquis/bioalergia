@@ -46,6 +46,10 @@ export const orderDetailSchema = orderSummarySchema.extend({
   shipping_address: z.unknown().nullable(),
   // Chilexpress transport-order number, set once the OT is auto-created on payment.
   cx_ot_number: z.string().nullable(),
+  // Base64 thermal shipping label (Chilexpress OT), downloadable by the operator.
+  cx_label_base64: z.string().nullable(),
+  // Hosted PDF of the emitted boleta/factura (DTE), downloadable by the operator.
+  dte_pdf_url: z.string().nullable(),
   notes: z.string().nullable(),
   items: z.array(orderItemSchema),
 });
@@ -66,6 +70,22 @@ export const ordersListResponseSchema = z.object({
 });
 
 export const orderIdInputSchema = z.object({ id: z.number().int() });
+
+// Admin correction of a shop order's shipping address (typos, before it ships).
+// Mirrors the checkout `shippingAddress` fields: street/city/region required,
+// the Chilexpress structured bits (number, county coverage + service code)
+// optional so the OT can still be created with the right data.
+export const updateShippingAddressInputSchema = z.object({
+  id: z.number().int(),
+  address: z.object({
+    street: z.string().min(2),
+    street_number: z.string().optional(),
+    city: z.string().min(2),
+    region: z.string().min(2),
+    county_code: z.string().optional(),
+    service_code: z.string().optional(),
+  }),
+});
 
 export const orderDetailResponseSchema = z.object({
   data: orderDetailSchema,
@@ -93,8 +113,14 @@ export const ordersAdminContract = {
     .route({ method: "POST", path: "/orders/refund" })
     .input(orderIdInputSchema)
     .output(orderDetailResponseSchema),
+  updateShippingAddress: oc
+    .route({ method: "POST", path: "/orders/shipping-address" })
+    .input(updateShippingAddressInputSchema)
+    .output(orderDetailResponseSchema),
 };
 
 export type OrdersAdminContract = typeof ordersAdminContract;
 export type OrderSummary = z.infer<typeof orderSummarySchema>;
 export type OrderDetail = z.infer<typeof orderDetailSchema>;
+export type UpdateShippingAddressInput = z.infer<typeof updateShippingAddressInputSchema>;
+export type ShippingAddressPayload = UpdateShippingAddressInput["address"];

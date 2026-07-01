@@ -9,6 +9,7 @@ import {
   authIssueDebugTokenResponseSchema,
   authIssueDebugTokenSchema,
   forgotPasswordResponseSchema,
+  acceptInviteSchema,
   forgotPasswordSchema,
   resetPasswordTokenResponseSchema,
   resetPasswordTokenSchema,
@@ -43,7 +44,11 @@ import { ipFromContext, logAuditFromContext } from "../lib/audit-log.ts";
 import { fakeVerifyPassword } from "../lib/crypto.ts";
 import { DomainError } from "../lib/errors.ts";
 import { logError, logEvent } from "../lib/logger.ts";
-import { requestPasswordReset, resetPasswordWithToken } from "../services/password-reset.ts";
+import {
+  consumeInviteToken,
+  requestPasswordReset,
+  resetPasswordWithToken,
+} from "../services/password-reset.ts";
 import { rehashPassword, touchLastActivity } from "../services/auth-user.ts";
 import {
   clearEmailLoginFailure,
@@ -528,6 +533,36 @@ const authORPCRouterBase = {
     .output(resetPasswordTokenResponseSchema)
     .handler(async ({ input }) => {
       await resetPasswordWithToken(input.token, input.password);
+      return { status: "ok" as const };
+    }),
+
+  acceptInvite: base
+    .route({
+      method: "POST",
+      path: "/accept-invite",
+      summary: "Accept an admin invite and start an onboarding session",
+      tags: ["Auth"],
+    })
+    .input(acceptInviteSchema)
+    .output(authStatusResponseSchema)
+    .handler(async ({ context, input }) => {
+      // Consume the single-use invite token and mint a PENDING_SETUP session so
+      // the invitee lands in the onboarding wizard (set password + profile +
+      // bank + MFA). The _authed guard keeps them on /onboarding until setup.
+      const session = await consumeInviteToken(input.token);
+      const token = await issueToken({
+        email: session.loginEmail,
+        roles: session.roles,
+        sessionVersion: session.sessionVersion,
+        userId: session.userId,
+      });
+      setCookie(context.hono, COOKIE_NAME, token, COOKIE_OPTIONS);
+      await touchLastActivity(session.userId);
+      await logAuditFromContext(context.hono, {
+        kind: "LOGIN_SUCCESS",
+        userId: session.userId,
+        actorLabel: session.loginEmail,
+      });
       return { status: "ok" as const };
     }),
 

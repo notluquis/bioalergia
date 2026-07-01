@@ -100,10 +100,38 @@ export async function runOrderPostPayment(orderId: number): Promise<void> {
     addr.street &&
     addr.street_number
   ) {
+    // The OrderItem snapshot doesn't carry weight/dims — fetch the products so the
+    // OT declares real volumetric data (Chilexpress bills (H×W×L)/5000). Fall back
+    // to 250g / 10×20×30 for products with no dims stored.
+    const productIds = [
+      ...new Set<number>(order.items.map((i: (typeof order.items)[number]) => i.productId)),
+    ];
+    const products = await db.product.findMany({
+      where: { id: { in: productIds } },
+      select: { id: true, weightGrams: true, widthCm: true, heightCm: true, lengthCm: true },
+    });
+    type ShipDims = (typeof products)[number];
+    const byId = new Map<number, ShipDims>(products.map((p: ShipDims) => [p.id, p]));
     const totalGrams = order.items.reduce(
-      (acc: number, i: (typeof order.items)[number]) => acc + 250 * i.qty,
+      (acc: number, i: (typeof order.items)[number]) =>
+        acc + (byId.get(i.productId)?.weightGrams ?? 250) * i.qty,
       0
     );
+    // Single-package heuristic: largest single product by volume. Default each
+    // product's missing dims to 10×20×30 BEFORE comparing — skipping a null-dim
+    // product would let a smaller product win and under-declare the OT package.
+    let dims: { heightCm: number; widthCm: number; lengthCm: number } | undefined;
+    for (const i of order.items) {
+      const p = byId.get(i.productId);
+      if (!p) continue;
+      const heightCm = p.heightCm ?? 10;
+      const widthCm = p.widthCm ?? 20;
+      const lengthCm = p.lengthCm ?? 30;
+      const vol = heightCm * widthCm * lengthCm;
+      if (!dims || vol > dims.heightCm * dims.widthCm * dims.lengthCm) {
+        dims = { heightCm, widthCm, lengthCm };
+      }
+    }
     try {
       const ot = await createOrderShipment({
         orderNumber: order.number,
@@ -116,6 +144,7 @@ export async function runOrderPostPayment(orderId: number): Promise<void> {
         recipientEmail: order.customerEmail,
         declaredValueClp: order.totalClp,
         weightKg: Math.max(0.3, totalGrams / 1000),
+        ...(dims ?? {}),
       });
       await db.order.update({
         where: { id: orderId },

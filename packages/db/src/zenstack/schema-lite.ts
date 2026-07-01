@@ -16560,6 +16560,21 @@ export class SchemaType implements SchemaDef {
                     type: "Int",
                     optional: true
                 },
+                widthCm: {
+                    name: "widthCm",
+                    type: "Int",
+                    optional: true
+                },
+                heightCm: {
+                    name: "heightCm",
+                    type: "Int",
+                    optional: true
+                },
+                lengthCm: {
+                    name: "lengthCm",
+                    type: "Int",
+                    optional: true
+                },
                 barcode: {
                     name: "barcode",
                     type: "String",
@@ -17157,6 +17172,11 @@ export class SchemaType implements SchemaDef {
                 notes: {
                     name: "notes",
                     type: "String",
+                    optional: true
+                },
+                trackingCheckedAt: {
+                    name: "trackingCheckedAt",
+                    type: "DateTime",
                     optional: true
                 },
                 createdAt: {

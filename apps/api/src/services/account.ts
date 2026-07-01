@@ -9,6 +9,7 @@ import type { z } from "zod";
 
 import { DomainError } from "../lib/errors.ts";
 import { addItemToCart } from "./cart.ts";
+import { refreshOrderTrackingIfStale } from "./order-tracking.ts";
 
 // Lógica de negocio de la cuenta de cliente del shop (bioalergia.cl), fuera de
 // los handlers oRPC. Los servicios hacen queries/validaciones y lanzan
@@ -89,13 +90,24 @@ export async function listMyOrders(userId: number, input: MyOrdersPayload) {
 }
 
 export async function getMyOrderByNumber(userId: number, input: MyOrderByNumberPayload) {
-  const order = await db.order.findUnique({
+  const initial = await db.order.findUnique({
     where: { number: input.number },
-    include: { items: true, payments: true },
+    select: { id: true, userId: true },
   });
   // Scoping de seguridad: aunque la query es por `number`, exigimos que el
   // pedido pertenezca al cliente logueado, si no → NOT_FOUND (no se filtra
   // existencia de pedidos ajenos).
+  if (!initial || initial.userId !== userId) {
+    throw new DomainError("NOT_FOUND", "Pedido no encontrado");
+  }
+  // Lazy on-view tracking refresh (W3-C): shipped orders get their Chilexpress
+  // status refreshed (best-effort, throttled) so this page shows DELIVERED when
+  // the OT lands, without a polling cron. Then re-read to serialize fresh state.
+  await refreshOrderTrackingIfStale(initial.id);
+  const order = await db.order.findUnique({
+    where: { number: input.number },
+    include: { items: true, payments: true },
+  });
   if (!order || order.userId !== userId) {
     throw new DomainError("NOT_FOUND", "Pedido no encontrado");
   }
@@ -118,6 +130,8 @@ export async function getMyOrderByNumber(userId: number, input: MyOrderByNumberP
       customer_email: order.customerEmail,
       customer_name: order.customerName,
       shipping_address: order.shippingAddress as unknown,
+      cx_ot_number: order.cxOtNumber,
+      dte_pdf_url: order.dtePdfUrl,
       items: order.items.map((i: ItemRow) => ({
         id: i.id,
         product_id: i.productId,

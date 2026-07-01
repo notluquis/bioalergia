@@ -20179,6 +20179,24 @@ export class SchemaType implements SchemaDef {
                     optional: true,
                     attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("weight_grams") }] }] as readonly AttributeApplication[]
                 },
+                widthCm: {
+                    name: "widthCm",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("width_cm") }] }] as readonly AttributeApplication[]
+                },
+                heightCm: {
+                    name: "heightCm",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("height_cm") }] }] as readonly AttributeApplication[]
+                },
+                lengthCm: {
+                    name: "lengthCm",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("length_cm") }] }] as readonly AttributeApplication[]
+                },
                 barcode: {
                     name: "barcode",
                     type: "String",
@@ -20907,6 +20925,12 @@ export class SchemaType implements SchemaDef {
                     name: "notes",
                     type: "String",
                     optional: true
+                },
+                trackingCheckedAt: {
+                    name: "trackingCheckedAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("tracking_checked_at") }] }] as readonly AttributeApplication[]
                 },
                 createdAt: {
                     name: "createdAt",

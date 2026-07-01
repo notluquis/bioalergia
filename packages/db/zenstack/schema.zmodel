@@ -6447,6 +6447,9 @@ model Product {
   compareAtPriceClp   Int?                @map("compare_at_price_clp")
   costClp             Int?                @map("cost_clp")
   weightGrams         Int?                @map("weight_grams")
+  widthCm             Int?                @map("width_cm")
+  heightCm            Int?                @map("height_cm")
+  lengthCm            Int?                @map("length_cm")
   barcode             String?
   requiresPrescription Boolean            @default(false) @map("requires_prescription")
   status              ProductStatus       @default(DRAFT)
@@ -6639,6 +6642,9 @@ model Order {
   dteType           String?             @map("dte_type")
   dtePdfUrl         String?             @map("dte_pdf_url")
   notes             String?
+  // Last time Chilexpress tracking was refreshed for this order (lazy on-view,
+  // W3-C). Throttles the carrier call so a polling status page doesn't hammer it.
+  trackingCheckedAt DateTime?           @map("tracking_checked_at")
   createdAt         DateTime            @default(now()) @map("created_at")
   updatedAt         DateTime            @default(now()) @updatedAt @map("updated_at")
 
