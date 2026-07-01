@@ -5,6 +5,7 @@ import {
   Breadcrumbs,
   Button,
   Card,
+  CloseButton,
   ComboBox,
   Input,
   Label,
@@ -85,7 +86,10 @@ export function CheckoutView({
   const [streetNameId, setStreetNameId] = useState<number | null>(null);
   const [streetName, setStreetName] = useState("");
   const [streetNumber, setStreetNumber] = useState("");
-  const [, setAddressId] = useState<number | null>(null);
+  // Tracks whether the chosen house number is linked to a Chilexpress-registered
+  // address (address_id) or was typed by hand (null = custom / unvalidated).
+  const [addressId, setAddressId] = useState<number | null>(null);
+  const [addressWarnDismissed, setAddressWarnDismissed] = useState(false);
   const [shippingMethod, setShippingMethod] = useState<"pickup" | "chilexpress">("pickup");
   const [shippingClp, setShippingClp] = useState(0);
   const [quoteOptions, setQuoteOptions] = useState<QuoteOption[]>([]);
@@ -136,7 +140,18 @@ export function CheckoutView({
     setStreetName("");
     setStreetNumber("");
     setAddressId(null);
+    setAddressWarnDismissed(false);
   };
+
+  // The user typed a house number by hand (not picked from the Chilexpress list),
+  // so the address may not deliver. Warn but don't block — some valid addresses
+  // simply aren't in Chilexpress's registry.
+  const showAddressWarning =
+    shippingMethod === "chilexpress" &&
+    streetNameId != null &&
+    streetNumber.trim().length >= 1 &&
+    addressId == null &&
+    !addressWarnDismissed;
 
   const runQuote = () => {
     setIsQuoting(true);
@@ -329,8 +344,28 @@ export function CheckoutView({
                     <span>{o.service_description}</span>
                     <span className="font-bold">{CLP_FORMATTER.format(o.shipping_clp)}</span>
                   </span>
+                  {o.delivery_time_days && (
+                    <span className="mt-0.5 block text-muted text-xs">
+                      Entrega: {o.delivery_time_days} días hábiles
+                    </span>
+                  )}
                 </button>
               ))}
+
+              {showAddressWarning && (
+                <Alert status="warning">
+                  <Alert.Indicator />
+                  <Alert.Content>
+                    <Alert.Description>
+                      Esta dirección no está validada por Chilexpress — verifica que sea correcta.
+                    </Alert.Description>
+                  </Alert.Content>
+                  <CloseButton
+                    aria-label="Descartar aviso"
+                    onPress={() => setAddressWarnDismissed(true)}
+                  />
+                </Alert>
+              )}
             </div>
           )}
         </Card.Content>

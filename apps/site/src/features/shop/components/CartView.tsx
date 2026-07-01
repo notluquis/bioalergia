@@ -1,5 +1,5 @@
 import type { CartContract } from "@finanzas/orpc-contracts/cart";
-import { Breadcrumbs, Button, Card, Label, NumberField, Skeleton } from "@heroui/react";
+import { Alert, Breadcrumbs, Button, Card, Chip, Label, NumberField, Skeleton } from "@heroui/react";
 import type { InferContractRouterOutputs } from "@orpc/contract";
 import { Link } from "@tanstack/react-router";
 import { Trash2 } from "lucide-react";
@@ -39,6 +39,9 @@ export function CartView({ cart, isLoading, onUpdateQty, onRemove }: CartViewPro
   }
 
   const empty = !cart || cart.items.length === 0;
+  // Any line whose snapshot stock dropped to 0 since it was added — surfaced as a
+  // banner above the total so the user fixes it before hitting checkout.
+  const hasOutOfStock = (cart?.items ?? []).some((i) => i.product.available_qty <= 0);
 
   return (
     <main className="mx-auto max-w-4xl space-y-8 px-4 py-12 sm:px-6">
@@ -67,7 +70,11 @@ export function CartView({ cart, isLoading, onUpdateQty, onRemove }: CartViewPro
       ) : (
         <>
           <div className="space-y-4">
-            {cart.items.map((item: CartItem) => (
+            {cart.items.map((item: CartItem) => {
+              const availableQty = item.product.available_qty;
+              const lineOutOfStock = availableQty <= 0;
+              const lineLowStock = availableQty > 0 && availableQty <= 5;
+              return (
               <Card className="rounded-3xl border-line bg-surface" key={item.id} variant="default">
                 <Card.Content className="flex items-center gap-4 p-5">
                   <div className="flex-shrink-0 overflow-hidden rounded-2xl bg-surface-2 size-20">
@@ -90,9 +97,19 @@ export function CartView({ cart, isLoading, onUpdateQty, onRemove }: CartViewPro
                     <p className="text-muted text-xs">
                       {CLP_FORMATTER.format(item.unit_price_clp)} c/u
                     </p>
+                    {lineOutOfStock && (
+                      <Chip className="mt-1" color="danger" size="sm" variant="soft">
+                        Agotado
+                      </Chip>
+                    )}
+                    {lineLowStock && (
+                      <Chip className="mt-1" color="warning" size="sm" variant="soft">
+                        Pocas unidades
+                      </Chip>
+                    )}
                   </div>
                   <NumberField
-                    maxValue={Math.max(1, item.product.available_qty)}
+                    maxValue={lineOutOfStock ? item.qty : Math.max(1, availableQty)}
                     minValue={0}
                     onChange={(v) =>
                       onUpdateQty({
@@ -125,14 +142,27 @@ export function CartView({ cart, isLoading, onUpdateQty, onRemove }: CartViewPro
                   </Button>
                 </Card.Content>
               </Card>
-            ))}
+              );
+            })}
           </div>
+
+          {hasOutOfStock && (
+            <Alert status="warning">
+              <Alert.Indicator />
+              <Alert.Content>
+                <Alert.Description>
+                  Hay productos agotados en tu carrito. Quítalos o reduce la cantidad para poder
+                  continuar al checkout.
+                </Alert.Description>
+              </Alert.Content>
+            </Alert>
+          )}
 
           <Card className="rounded-3xl border-line bg-surface" variant="default">
             <Card.Header className="gap-1">
               <Eyebrow tone="muted">Resumen</Eyebrow>
               <Card.Title className="font-display text-2xl text-foreground">
-                Total estimado
+                Resumen del carrito
               </Card.Title>
             </Card.Header>
             <Card.Content className="space-y-3 text-sm">
@@ -140,14 +170,11 @@ export function CartView({ cart, isLoading, onUpdateQty, onRemove }: CartViewPro
                 <span className="text-muted">Subtotal</span>
                 <span>{CLP_FORMATTER.format(cart.subtotal_clp)}</span>
               </div>
-              <div className="flex justify-between text-muted text-xs">
-                <span>Envío</span>
-                <span>Se calcula en checkout</span>
-              </div>
               <div className="flex justify-between border-line border-t pt-3 font-bold text-base text-foreground">
-                <span>Total estimado</span>
+                <span>Subtotal</span>
                 <span>{CLP_FORMATTER.format(cart.total_clp)}</span>
               </div>
+              <p className="text-muted text-xs">El envío se calcula en el checkout.</p>
             </Card.Content>
             <Card.Footer>
               <Link className={ctaClass("primary", "w-full")} to="/checkout">

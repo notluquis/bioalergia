@@ -1,5 +1,7 @@
+import { Spinner } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
 
 import { ShopShell } from "@/components/ShopShell";
 import { CheckoutView } from "@/features/shop/components/CheckoutView";
@@ -9,6 +11,10 @@ import { checkoutClient } from "@/lib/orpc-client";
 function CheckoutPage() {
   const cartQ = useQuery(shopKeys.cart());
   const cart = cartQ.data?.data;
+  // Full-screen feedback while we hand off to MercadoPago: on slow networks the
+  // `start()` round-trip + redirect can take a few seconds, and without this the
+  // button looks stuck. Stays mounted until navigation (the page unmounts itself).
+  const [isRedirecting, setIsRedirecting] = useState(false);
   // Static list (communes change ~never) → cache hard so the picker is instant.
   const communesQ = useQuery({
     queryKey: ["shop", "communes"],
@@ -58,9 +64,17 @@ function CheckoutPage() {
           });
           // Checkout Pro: hand off to the MP-hosted checkout (all payment methods).
           // It redirects back to /pedido/$number (back_urls) where status polls.
+          setIsRedirecting(true);
           window.location.href = res.data.init_point;
         }}
       />
+      {isRedirecting && (
+        <output className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-surface/90 backdrop-blur-sm">
+          <Spinner size="lg" />
+          <p className="font-semibold text-foreground text-lg">Redirigiendo a Mercado Pago…</p>
+          <p className="text-muted text-sm">No cierres esta ventana.</p>
+        </output>
+      )}
     </ShopShell>
   );
 }
