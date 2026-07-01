@@ -129,14 +129,25 @@ export async function consumeInviteToken(token: string): Promise<{
     throw new DomainError("BAD_REQUEST", "La invitación es inválida o expiró. Pide una nueva.", {});
   }
 
-  await db.user.update({
-    where: { id: user.id },
+  // Atomic single-use consume: the WHERE still matches the token hash + purpose,
+  // so under a race (double-click / concurrent link use) only the first update
+  // clears it — the rest see count 0 and are rejected. A bare update-by-id would
+  // let two racers both mint a session.
+  const consumed = await db.user.updateMany({
+    where: {
+      id: user.id,
+      passwordResetTokenHash: tokenHash,
+      passwordResetPurpose: "invite",
+    },
     data: {
       passwordResetTokenHash: null,
       passwordResetExpiresAt: null,
       passwordResetPurpose: null,
     },
   });
+  if (consumed.count === 0) {
+    throw new DomainError("BAD_REQUEST", "La invitación ya fue utilizada. Pide una nueva.", {});
+  }
   logEvent("[invite] accepted → onboarding session", { userId: user.id });
 
   const loginEmail = user.loginEmail?.trim() || user.person?.email?.trim() || "";

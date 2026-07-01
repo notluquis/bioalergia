@@ -1,36 +1,37 @@
-import { Card } from "@heroui/react";
+import { Button, Card } from "@heroui/react";
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { KeyRound, Loader2 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { acceptInvite } from "../api";
 import { useAuth } from "../hooks/use-auth";
 
-// Landing for the admin invite email link. Consumes the single-use token
-// (starts a PENDING_SETUP session on the server), refreshes the client session,
-// then drops the invitee into the onboarding wizard where they set their
-// password + profile + bank + MFA.
+// Landing for the admin invite email link. Consumption is behind an explicit
+// button press — the token is single-use, so we must NOT burn it on mount (mail
+// security crawlers / link-preview bots execute the SPA and would consume it
+// before the human sees it). On click it starts a PENDING_SETUP session and
+// drops the invitee into the onboarding wizard (password + profile + bank + MFA).
 export function AcceptInvitePage() {
   const { token } = useSearch({ from: "/accept-invite" });
   const { refreshSession } = useAuth();
   const navigate = useNavigate();
-  const [failed, setFailed] = useState(!token);
-  const ran = useRef(false);
+  const [pending, setPending] = useState(false);
+  const [failed, setFailed] = useState(false);
 
-  useEffect(() => {
-    if (!token || ran.current) {
+  const handleActivate = async () => {
+    if (!token) {
       return;
     }
-    ran.current = true;
-    void (async () => {
-      try {
-        await acceptInvite(token);
-        await refreshSession();
-        await navigate({ replace: true, to: "/onboarding" });
-      } catch {
-        setFailed(true);
-      }
-    })();
-  }, [token, refreshSession, navigate]);
+    setPending(true);
+    setFailed(false);
+    try {
+      await acceptInvite(token);
+      await refreshSession();
+      await navigate({ replace: true, to: "/onboarding" });
+    } catch {
+      setFailed(true);
+      setPending(false);
+    }
+  };
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-default-50 p-4">
@@ -41,20 +42,39 @@ export function AcceptInvitePage() {
           </h1>
         </Card.Header>
         <Card.Content className="space-y-4 p-5 text-sm">
-          {failed ? (
+          {token ? (
             <>
-              <p>La invitación no es válida o expiró.</p>
               <p className="text-default-600">
-                Pide a un administrador que te reenvíe la invitación, o usa{" "}
-                <Link to="/forgot-password" className="text-primary">
-                  recuperar contraseña
-                </Link>{" "}
-                si ya tienes cuenta.
+                Haz clic para activar tu cuenta y completar tu configuración.
               </p>
+              <Button
+                className="w-full"
+                isDisabled={pending}
+                onPress={() => void handleActivate()}
+                variant="primary"
+              >
+                {pending ? (
+                  <span className="flex items-center gap-2">
+                    <Loader2 className="size-4 animate-spin" /> Activando…
+                  </span>
+                ) : (
+                  "Activar mi cuenta"
+                )}
+              </Button>
+              {failed ? (
+                <p className="text-danger-600">
+                  La invitación no es válida o expiró. Pide una nueva a un administrador.
+                </p>
+              ) : null}
             </>
           ) : (
-            <p className="flex items-center gap-2 text-default-600">
-              <Loader2 className="size-4 animate-spin" /> Activando tu cuenta…
+            <p className="text-default-600">
+              El enlace no es válido o está incompleto. Pide a un administrador que te reenvíe la
+              invitación, o usa{" "}
+              <Link to="/forgot-password" className="text-primary">
+                recuperar contraseña
+              </Link>
+              .
             </p>
           )}
         </Card.Content>

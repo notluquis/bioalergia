@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { mockDb } = vi.hoisted(() => {
   const mockDb = {
-    user: { findFirst: vi.fn(), update: vi.fn() },
+    user: { findFirst: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
   };
   return { mockDb };
 });
@@ -21,6 +21,7 @@ const past = new Date(Date.now() - 60_000);
 beforeEach(() => {
   vi.clearAllMocks();
   mockDb.user.update.mockResolvedValue({});
+  mockDb.user.updateMany.mockResolvedValue({ count: 1 });
 });
 
 describe("resetPasswordWithToken", () => {
@@ -67,11 +68,14 @@ describe("consumeInviteToken", () => {
       roles: ["Socio", "VIEWER"],
       sessionVersion: 3,
     });
-    // Single-use: the token fields are cleared, status is left for the wizard.
-    const data = mockDb.user.update.mock.calls[0][0].data;
-    expect(data.passwordResetTokenHash).toBeNull();
-    expect(data.passwordResetPurpose).toBeNull();
-    expect(data).not.toHaveProperty("status");
+    // Atomic single-use: the conditional updateMany still matches the token
+    // hash + purpose, and status is left for the wizard.
+    const call = mockDb.user.updateMany.mock.calls[0][0];
+    expect(call.where.passwordResetPurpose).toBe("invite");
+    expect(typeof call.where.passwordResetTokenHash).toBe("string");
+    expect(call.data.passwordResetTokenHash).toBeNull();
+    expect(call.data.passwordResetPurpose).toBeNull();
+    expect(call.data).not.toHaveProperty("status");
   });
 
   it("falls back to the person email when loginEmail is empty", async () => {
@@ -80,16 +84,22 @@ describe("consumeInviteToken", () => {
     expect(res.loginEmail).toBe("person@bioalergia.cl");
   });
 
+  it("rejects the loser of a race (updateMany affected 0 rows)", async () => {
+    mockDb.user.findFirst.mockResolvedValue(validInvitee);
+    mockDb.user.updateMany.mockResolvedValueOnce({ count: 0 }); // another request already consumed it
+    await expect(consumeInviteToken("tok")).rejects.toThrow();
+  });
+
   it("rejects an expired invite", async () => {
     mockDb.user.findFirst.mockResolvedValue({ ...validInvitee, passwordResetExpiresAt: past });
     await expect(consumeInviteToken("tok")).rejects.toThrow();
-    expect(mockDb.user.update).not.toHaveBeenCalled();
+    expect(mockDb.user.updateMany).not.toHaveBeenCalled();
   });
 
   it("rejects when the account is no longer PENDING_SETUP (already onboarded)", async () => {
     mockDb.user.findFirst.mockResolvedValue({ ...validInvitee, status: "ACTIVE" });
     await expect(consumeInviteToken("tok")).rejects.toThrow();
-    expect(mockDb.user.update).not.toHaveBeenCalled();
+    expect(mockDb.user.updateMany).not.toHaveBeenCalled();
   });
 
   it("rejects an unknown token (only purpose=invite matches the query → null)", async () => {
