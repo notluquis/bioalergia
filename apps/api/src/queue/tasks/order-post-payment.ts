@@ -117,14 +117,19 @@ export async function runOrderPostPayment(orderId: number): Promise<void> {
         acc + (byId.get(i.productId)?.weightGrams ?? 250) * i.qty,
       0
     );
-    // Single-package heuristic: largest single product by volume (dims-set only).
+    // Single-package heuristic: largest single product by volume. Default each
+    // product's missing dims to 10×20×30 BEFORE comparing — skipping a null-dim
+    // product would let a smaller product win and under-declare the OT package.
     let dims: { heightCm: number; widthCm: number; lengthCm: number } | undefined;
     for (const i of order.items) {
       const p = byId.get(i.productId);
-      if (p?.heightCm == null || p?.widthCm == null || p?.lengthCm == null) continue;
-      const vol = p.heightCm * p.widthCm * p.lengthCm;
+      if (!p) continue;
+      const heightCm = p.heightCm ?? 10;
+      const widthCm = p.widthCm ?? 20;
+      const lengthCm = p.lengthCm ?? 30;
+      const vol = heightCm * widthCm * lengthCm;
       if (!dims || vol > dims.heightCm * dims.widthCm * dims.lengthCm) {
-        dims = { heightCm: p.heightCm, widthCm: p.widthCm, lengthCm: p.lengthCm };
+        dims = { heightCm, widthCm, lengthCm };
       }
     }
     try {
