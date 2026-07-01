@@ -71,9 +71,12 @@ export const Route = createFileRoute("/_authed/calendar/")({
   loaderDeps: ({ search }) => search,
   loader: async ({ context, deps: search }) => {
     await context.queryClient.ensureQueryData(calendarSyncQueries.logs(50));
-    // Vista/día/heatmap all read the shared summary+daily payload. Skip for the
-    // Doctoralia source (it fetches its own merged view).
-    if (search.source === "doctoralia") {
+    // Only vista/día/heatmap read the shared summary+daily payload — skip the
+    // prefetch for historial/clasificación tabs and the Doctoralia source
+    // (which fetches its own merged view).
+    const needsCalendarData =
+      search.tab === "vista" || search.tab === "dia" || search.tab === "heatmap";
+    if (!needsCalendarData || search.source === "doctoralia") {
       return;
     }
     const filters = buildCalendarFilters(search, {});
