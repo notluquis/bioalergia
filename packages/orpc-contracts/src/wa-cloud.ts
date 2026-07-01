@@ -1330,6 +1330,7 @@ export const abonoAutomationSettingsSchema = z.object({
   staffNotifyEnabled: z.boolean(),
   staffNotifyPhones: z.string(),
   fichaTemplateName: z.string(),
+  staffNotifyLanguage: z.string(),
 });
 
 export const updateAbonoAutomationSettingsInputSchema = abonoAutomationSettingsSchema;

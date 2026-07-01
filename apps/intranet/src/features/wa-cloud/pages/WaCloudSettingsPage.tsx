@@ -318,7 +318,9 @@ function AbonoAutomationCard({ accounts }: { accounts: AccountsData }) {
           <select
             className="h-10 w-full rounded-lg border border-default-300 bg-background px-3 text-sm"
             value={data.fichaTemplateName}
-            onChange={(e) => set("fichaTemplateName", e.target.value)}
+            onChange={(e) =>
+              pickTemplate("fichaTemplateName", "staffNotifyLanguage", e.target.value)
+            }
           >
             <option value="">Sin configurar</option>
             {data.fichaTemplateName &&
@@ -331,6 +333,9 @@ function AbonoAutomationCard({ accounts }: { accounts: AccountsData }) {
               </option>
             ))}
           </select>
+          <span className="text-default-500 text-xs">
+            Idioma: {data.staffNotifyLanguage || "— (se toma del template elegido)"}
+          </span>
         </label>
       </Card.Content>
       <Card.Footer className="flex justify-end border-default-200 border-t pt-4">

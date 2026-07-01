@@ -365,6 +365,7 @@ const waRouterBase = {
         staffNotifyEnabled,
         staffNotifyPhones,
         fichaTemplateName,
+        staffNotifyLanguage,
       ] = await Promise.all([
         getSetting(ABONO_WHATSAPP_SETTINGS.requestEnabled),
         getSetting(ABONO_WHATSAPP_SETTINGS.confirmationEnabled),
@@ -383,6 +384,7 @@ const waRouterBase = {
         getSetting(ABONO_STAFF_NOTIFY_SETTINGS.enabled),
         getSetting(ABONO_STAFF_NOTIFY_SETTINGS.phones),
         getSetting(ABONO_STAFF_NOTIFY_SETTINGS.fichaTemplateName),
+        getSetting(ABONO_STAFF_NOTIFY_SETTINGS.templateLanguage),
       ]);
 
       return {
@@ -403,6 +405,7 @@ const waRouterBase = {
         staffNotifyEnabled: parseEnabled(staffNotifyEnabled),
         staffNotifyPhones: staffNotifyPhones ?? "",
         fichaTemplateName: fichaTemplateName ?? "",
+        staffNotifyLanguage: staffNotifyLanguage ?? "",
       };
     }),
 
@@ -439,6 +442,7 @@ const waRouterBase = {
         [ABONO_STAFF_NOTIFY_SETTINGS.enabled]: String(input.staffNotifyEnabled),
         [ABONO_STAFF_NOTIFY_SETTINGS.phones]: input.staffNotifyPhones.trim(),
         [ABONO_STAFF_NOTIFY_SETTINGS.fichaTemplateName]: input.fichaTemplateName.trim(),
+        [ABONO_STAFF_NOTIFY_SETTINGS.templateLanguage]: input.staffNotifyLanguage.trim(),
       });
       return { status: "ok" as const };
     }),

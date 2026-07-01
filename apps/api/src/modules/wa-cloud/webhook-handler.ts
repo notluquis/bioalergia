@@ -960,15 +960,18 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
             //      receipt (they work from WhatsApp, not the intranet).
             const pendingAbonos = await db.appointmentPaymentToken.findMany({
               where: { patientPhone: normalizeToE164(m.from), status: "PENDING" },
-              select: { id: true },
-              take: 2,
+              select: { id: true, expiresAt: true },
+              take: 3,
             });
             if (pendingAbonos.length > 0) {
-              // Only auto-send the intake Flow when the pending abono is
-              // unambiguous — with several pending tokens we can't tell which
-              // appointment the flow is for. (The comprobante forward handles its
-              // own ambiguity downstream, so it still fires.)
-              if (pendingAbonos.length === 1) out.intakeFlowTokenIds.push(pendingAbonos[0].id);
+              // Auto-send the intake Flow only when exactly one NON-expired pending
+              // abono matches — with several we can't tell which appointment it's
+              // for, and an expired token the sweep hasn't flipped yet must not
+              // count (it would both fake ambiguity and get rejected on submit).
+              const now = new Date();
+              const active = pendingAbonos.filter((t) => t.expiresAt > now);
+              if (active.length === 1) out.intakeFlowTokenIds.push(active[0].id);
+              // The comprobante forward handles its own token/ambiguity downstream.
               if (msgType === "IMAGE") out.staffComprobanteMessageIds.push(insertedInbound.id);
             }
 
