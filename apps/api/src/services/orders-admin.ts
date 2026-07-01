@@ -196,12 +196,22 @@ export async function refundOrder(id: number): Promise<OrderDetail> {
     throw new DomainError("BAD_REQUEST", "No hay un pago de MercadoPago para reembolsar");
   }
 
+  // Idempotency guard against a DOUBLE external refund: if a prior attempt already
+  // refunded in MercadoPago (payment row REFUNDED) but its DB txn failed, the
+  // order can still be PAID — an operator retry must NOT fire a second MP refund,
+  // only re-run the DB fix below.
+  const alreadyRefunded = existing.payments.some(
+    (p: PaymentRow) => p.status === "REFUNDED"
+  );
+
   // The MercadoPago refund is external and NOT undoable once it succeeds. After
   // it returns, fold the THREE DB mutations (restock items + order→REFUNDED +
   // payment rows→REFUNDED) into a SINGLE transaction so they're all-or-nothing.
   // If the txn fails, the money is already back but the DB is inconsistent →
   // log at CRITICAL and surface a reconciliation error to the operator.
-  await refundPayment(payment.providerPaymentId);
+  if (!alreadyRefunded) {
+    await refundPayment(payment.providerPaymentId);
+  }
   try {
     await db.$transaction(async (tx) => {
       await restockOrderItemsTx(tx, id);
@@ -209,6 +219,12 @@ export async function refundOrder(id: number): Promise<OrderDetail> {
       await tx.payment.updateMany({ where: { orderId: id }, data: { status: "REFUNDED" } });
     });
   } catch (e) {
+    // Persist the fact that the external refund already happened (best-effort,
+    // outside the failed txn) so a retry sees payment REFUNDED and skips the
+    // second MP refund via the guard above.
+    await db.payment
+      .updateMany({ where: { orderId: id }, data: { status: "REFUNDED" } })
+      .catch(() => undefined);
     logError("orders-admin.refund_db_inconsistent", e, { orderId: id, severity: "CRITICAL" });
     throw new DomainError(
       "CONFLICT",
