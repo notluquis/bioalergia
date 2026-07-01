@@ -118,6 +118,7 @@ import {
   ABONO_STAFF_NOTIFY_SETTINGS,
   ABONO_WHATSAPP_SETTINGS,
   WA_FLOW_SETTINGS,
+  parseEnabled,
 } from "../lib/doctoralia/abono-whatsapp-settings.ts";
 import {
   getBusinessProfile,
@@ -399,7 +400,7 @@ const waRouterBase = {
         statementDescriptor: statementDescriptor ?? "",
         intakeFlowId: intakeFlowId ?? "",
         intakeBodyText: intakeBodyText ?? "",
-        staffNotifyEnabled: staffNotifyEnabled === "true",
+        staffNotifyEnabled: parseEnabled(staffNotifyEnabled),
         staffNotifyPhones: staffNotifyPhones ?? "",
         fichaTemplateName: fichaTemplateName ?? "",
       };

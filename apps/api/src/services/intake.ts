@@ -148,7 +148,10 @@ export async function sendIntakeFlow(tokenId: string): Promise<void> {
   }
 
   const token = await db.appointmentPaymentToken.findUnique({ where: { id: tokenId } });
-  if (!token || token.status !== "PENDING") return;
+  // Skip a token that's not usable — wrong status OR already past expiry (the
+  // sweep may not have flipped it to EXPIRED yet). Otherwise the patient could
+  // complete an intake Flow only for the endpoint to reject it on submit.
+  if (!token || token.status !== "PENDING" || token.expiresAt < new Date()) return;
 
   // Idempotency guard: don't re-send if we already sent the Flow for this token.
   const history: unknown[] = Array.isArray(token.flowHistory) ? token.flowHistory : [];

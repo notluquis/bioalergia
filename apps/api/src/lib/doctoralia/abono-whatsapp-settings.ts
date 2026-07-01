@@ -75,7 +75,7 @@ export type AbonoPricingSettings = Pick<
   "fonasaFullAmountClp" | "particularFullAmountClp"
 >;
 
-function parseEnabled(raw: string | null): boolean {
+export function parseEnabled(raw: string | null): boolean {
   if (raw == null || raw.trim() === "") return false;
   const value = raw.trim().toLowerCase();
   if (["0", "false", "no", "off"].includes(value)) return false;
