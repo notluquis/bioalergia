@@ -656,6 +656,11 @@ export async function createOrderShipment(input: {
   recipientEmail?: string | null;
   declaredValueClp: number;
   weightKg: number;
+  // Real package dims (cm). Optional — default to the legacy 10×20×30 so callers
+  // that don't have product dims keep the prior behaviour.
+  heightCm?: number;
+  widthCm?: number;
+  lengthCm?: number;
 }): Promise<{
   otNumber: string;
   barcode: string | null;
@@ -718,9 +723,9 @@ export async function createOrderShipment(input: {
         packages: [
           {
             weight: String(input.weightKg),
-            height: "10",
-            width: "20",
-            length: "30",
+            height: String(input.heightCm ?? 10),
+            width: String(input.widthCm ?? 20),
+            length: String(input.lengthCm ?? 30),
             serviceDeliveryCode: input.serviceTypeCode,
             productCode: "3",
             deliveryReference: shipmentRef,

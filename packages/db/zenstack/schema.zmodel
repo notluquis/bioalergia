@@ -6392,6 +6392,9 @@ model Product {
   compareAtPriceClp   Int?                @map("compare_at_price_clp")
   costClp             Int?                @map("cost_clp")
   weightGrams         Int?                @map("weight_grams")
+  widthCm             Int?                @map("width_cm")
+  heightCm            Int?                @map("height_cm")
+  lengthCm            Int?                @map("length_cm")
   barcode             String?
   requiresPrescription Boolean            @default(false) @map("requires_prescription")
   status              ProductStatus       @default(DRAFT)

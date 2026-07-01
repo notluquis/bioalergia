@@ -45,6 +45,9 @@ export type ProductFormValues = {
   compare_at_price_clp: number | null;
   cost_clp: number | null;
   weight_grams: number | null;
+  width_cm: number | null;
+  height_cm: number | null;
+  length_cm: number | null;
   barcode: string;
   requires_prescription: boolean;
   status: "DRAFT" | "ACTIVE" | "ARCHIVED";
@@ -66,6 +69,9 @@ const EMPTY: ProductFormValues = {
   compare_at_price_clp: null,
   cost_clp: null,
   weight_grams: null,
+  width_cm: null,
+  height_cm: null,
+  length_cm: null,
   barcode: "",
   requires_prescription: false,
   status: "DRAFT",
@@ -305,6 +311,46 @@ export function ProductForm({ initial, onCancel, onSave, saving }: ProductFormPr
             <NumberField.Input />
           </NumberField.Group>
           <Description>Para Chilexpress</Description>
+        </NumberField>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <NumberField
+          minValue={0}
+          name="width_cm"
+          onChange={(v) => setField("width_cm", v ?? null)}
+          step={1}
+          value={form.width_cm ?? Number.NaN}
+        >
+          <Label>Ancho (cm)</Label>
+          <NumberField.Group className="grid-cols-1">
+            <NumberField.Input />
+          </NumberField.Group>
+          <Description>Para peso volumétrico Chilexpress</Description>
+        </NumberField>
+        <NumberField
+          minValue={0}
+          name="height_cm"
+          onChange={(v) => setField("height_cm", v ?? null)}
+          step={1}
+          value={form.height_cm ?? Number.NaN}
+        >
+          <Label>Alto (cm)</Label>
+          <NumberField.Group className="grid-cols-1">
+            <NumberField.Input />
+          </NumberField.Group>
+        </NumberField>
+        <NumberField
+          minValue={0}
+          name="length_cm"
+          onChange={(v) => setField("length_cm", v ?? null)}
+          step={1}
+          value={form.length_cm ?? Number.NaN}
+        >
+          <Label>Largo (cm)</Label>
+          <NumberField.Group className="grid-cols-1">
+            <NumberField.Input />
+          </NumberField.Group>
         </NumberField>
       </div>
 

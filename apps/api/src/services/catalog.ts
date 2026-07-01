@@ -12,6 +12,9 @@ type ProductCreateInput = {
   compareAtPriceClp?: number | null;
   costClp?: number | null;
   weightGrams?: number | null;
+  widthCm?: number | null;
+  heightCm?: number | null;
+  lengthCm?: number | null;
   barcode?: string | null;
   requiresPrescription?: boolean;
   status?: "DRAFT" | "ACTIVE" | "ARCHIVED";
@@ -106,6 +109,9 @@ export async function createProduct(input: ProductCreateInput) {
       compareAtPriceClp: input.compareAtPriceClp ?? null,
       costClp: input.costClp ?? null,
       weightGrams: input.weightGrams ?? null,
+      widthCm: input.widthCm ?? null,
+      heightCm: input.heightCm ?? null,
+      lengthCm: input.lengthCm ?? null,
       barcode: input.barcode ?? null,
       requiresPrescription: input.requiresPrescription ?? false,
       status: input.status ?? "DRAFT",
@@ -138,6 +144,9 @@ export async function updateProduct(id: number, input: ProductUpdateInput) {
       }),
       ...(input.costClp !== undefined && { costClp: input.costClp }),
       ...(input.weightGrams !== undefined && { weightGrams: input.weightGrams }),
+      ...(input.widthCm !== undefined && { widthCm: input.widthCm }),
+      ...(input.heightCm !== undefined && { heightCm: input.heightCm }),
+      ...(input.lengthCm !== undefined && { lengthCm: input.lengthCm }),
       ...(input.barcode !== undefined && { barcode: input.barcode }),
       ...(input.requiresPrescription !== undefined && {
         requiresPrescription: input.requiresPrescription,
