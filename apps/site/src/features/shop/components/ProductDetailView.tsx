@@ -279,7 +279,7 @@ export function ProductDetailView({
             <Button
               className="rounded-[3px] bg-brand-amber font-bold text-brand-amber-ink hover:brightness-[1.04]"
               isDisabled={isAdding}
-              onPress={() => onAddToCart(1)}
+              onPress={() => onAddToCart(qty)}
               size="lg"
               variant="primary"
             >
