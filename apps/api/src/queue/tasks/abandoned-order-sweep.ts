@@ -10,8 +10,12 @@ import { releaseReservations } from "../../modules/reservations/index.ts";
 
 export const abandoned_order_sweep: Task = async () => {
   const started = Date.now();
-  // ponytail: 3-day cutoff, config later if needed
-  const cutoff = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
+  // 7-day cutoff: beyond the expiry of any MercadoPago deferred/cash voucher
+  // (Chile tickets expire in ~3-5 days), so by day 7 a pending payment has
+  // either approved (order is no longer PENDING → not swept) or expired — this
+  // avoids cancelling an order whose deferred payment could still confirm.
+  // ponytail: 7-day cutoff, make configurable if deferred methods grow.
+  const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
   const stale = await db.order.findMany({
     where: { status: "PENDING", createdAt: { lt: cutoff } },
     select: { id: true },

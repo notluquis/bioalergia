@@ -16,7 +16,7 @@ export const accountOrderItemSchema = z.object({
 export const accountOrderSummarySchema = z.object({
   id: z.number().int(),
   number: z.string(),
-  status: z.enum(["PENDING", "PAID", "FULFILLED", "CANCELLED", "REFUNDED"]),
+  status: z.enum(["PENDING", "PAID", "FULFILLED", "DELIVERED", "CANCELLED", "REFUNDED"]),
   channel: z.enum(["WEB", "ML", "POS", "PHONE"]),
   total_clp: z.number().int(),
   subtotal_clp: z.number().int(),
