@@ -181,6 +181,7 @@ export const PatientAttachmentListSchema = z.array(AttachmentSchema);
 // non-omitted Person field still trips the guard.
 type PersonProjected = Omit<
   Person,
+  | "doctoraliaExternalId"
   | "emailMarketingOptIn"
   | "emailMarketingOptInAt"
   | "emailUnsubscribeToken"
@@ -188,9 +189,14 @@ type PersonProjected = Omit<
   | "rutLegacyInvalid"
 >;
 
+// Guardian link is written by the identity feeder, not surfaced in the patient
+// detail view yet — projected out so the drift guard stays honest for the
+// fields this view actually reads.
+type PatientProjected = Omit<Patient, "guardianPersonId" | "guardianRelationship">;
+
 const _driftGuards: [
   SchemaCoversModel<PersonProjected, z.infer<typeof PersonSchema>>,
-  SchemaCoversModel<Patient, z.infer<typeof PatientDetailSchema>>,
+  SchemaCoversModel<PatientProjected, z.infer<typeof PatientDetailSchema>>,
   SchemaCoversModel<Consultation, z.infer<typeof ConsultationSchema>>,
   SchemaCoversModel<MedicalCertificate, z.infer<typeof MedicalCertificateSchema>>,
   SchemaCoversModel<MedicalPrescription, z.infer<typeof MedicalPrescriptionSchema>>,

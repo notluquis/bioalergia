@@ -38,7 +38,7 @@ export function AcceptInvitePage() {
       <Card className="w-full max-w-sm border-none shadow-md">
         <Card.Header>
           <h1 className="flex items-center gap-2 text-lg font-semibold text-primary">
-            <KeyRound size={18} /> Activar cuenta
+            <KeyRound aria-hidden size={18} /> Activar cuenta
           </h1>
         </Card.Header>
         <Card.Content className="space-y-4 p-5 text-sm">
@@ -55,7 +55,7 @@ export function AcceptInvitePage() {
               >
                 {pending ? (
                   <span className="flex items-center gap-2">
-                    <Loader2 className="size-4 animate-spin" /> Activando…
+                    <Loader2 aria-hidden className="size-4 animate-spin" /> Activando…
                   </span>
                 ) : (
                   "Activar mi cuenta"

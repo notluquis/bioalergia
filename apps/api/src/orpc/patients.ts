@@ -24,6 +24,7 @@ import {
   createPatientConsultation,
   createPatientPayment,
   getPatientClinicalSeries,
+  getPatientDoctoraliaAppointments,
   getPatientDetail,
   getPatientSkinTests,
   listPatientBudgets,
@@ -631,6 +632,39 @@ const patientsORPCRouterBase = {
         resource: "Patient",
         resourceId: input.patientId,
         message: "ficha:skin-tests",
+      });
+      return { items };
+    }),
+
+  getDoctoraliaAppointments: readPatients
+    .route({ method: "GET", path: "/:patientId/doctoralia-appointments", tags: ["Patients"] })
+    .input(z.object({ patientId: z.number().int() }))
+    .output(
+      z.object({
+        items: z.array(
+          z.object({
+            id: z.number(),
+            title: z.string(),
+            startAt: z.string(),
+            endAt: z.string(),
+            serviceName: z.string(),
+            insuranceName: z.string().nullable(),
+            comments: z.string().nullable(),
+            attendance: z.number(),
+            status: z.number(),
+          })
+        ),
+      })
+    )
+    .handler(async ({ context, input }) => {
+      const items = await getPatientDoctoraliaAppointments(input.patientId);
+      void logAuditFromContext(context.hono, {
+        kind: "CLINICAL_RECORD_READ",
+        userId: context.user.id,
+        actorLabel: context.user.email,
+        resource: "Patient",
+        resourceId: input.patientId,
+        message: "ficha:doctoralia-appointments",
       });
       return { items };
     }),

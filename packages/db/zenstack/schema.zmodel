@@ -46,6 +46,11 @@ model Person {
   email      String?    @unique
   phone      String?
   personType PersonType @default(NATURAL) @map("person_type")
+  // Doctoralia patient id (Docplanner internal). Stable identity key for
+  // patients ingested from the calendar feed — appointments carry no RUT,
+  // so this is the dedup key that lets the identity resolver enrich instead
+  // of duplicating on re-sync. @unique enforces one Person per Doctoralia id.
+  doctoraliaExternalId Int? @unique @map("doctoralia_external_id")
   // Email marketing consent (Ley 21.719). Broadcasts go ONLY to persons with
   // emailMarketingOptIn = true AND emailUnsubscribedAt = null. Transactional
   // mail (resets, reminders) ignores these flags — it's not marketing.
@@ -64,6 +69,11 @@ model Person {
   companyContacts CompanyContact[]
   consentRecords  ConsentRecord[]
   occTestSubjects OccTestSubject[]
+  // Patients for whom this Person is the legal guardian / payer (titular).
+  // A parent (this Person) can be guardian of N child Patients; the reverse
+  // side of Patient.guardianPerson. Named relation to disambiguate from the
+  // 1:1 Person↔Patient link (personId).
+  guardedPatients Patient[] @relation("PatientGuardian")
 
   // Access policies
   @@deny('all', auth() == null)
@@ -2506,7 +2516,13 @@ model DoctoraliaCalendarAppointment {
   followUpDate               DateTime?          @map("follow_up_date") @db.Timestamptz(3) // followUpDateWithSameDoctor: próximo control
   createdAt                  DateTime                     @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt                  DateTime                     @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+  // Internal patient link, resolved by the identity feeder from
+  // patient_external_id → Person (doctoraliaExternalId) → Patient. Nullable
+  // until the feeder runs; onDelete SetNull keeps the calendar row if the
+  // patient is deleted.
+  patientId                  Int?               @map("patient_id")
   schedule                   DoctoraliaSchedule           @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  patient                    Patient?                     @relation(fields: [patientId], references: [id], onDelete: SetNull)
   emailNotifications         DoctoraliaEmailNotification[]
   paymentToken               AppointmentPaymentToken?
 
@@ -2514,6 +2530,7 @@ model DoctoraliaCalendarAppointment {
   @@index([scheduleId])
   @@index([startAt])
   @@index([patientExternalId])
+  @@index([patientId])
   @@deny('all', auth() == null)
   @@allow('read', true)
   @@allow('create,update,delete', auth().status == 'ACTIVE')
@@ -3211,10 +3228,20 @@ model Patient {
   bloodType           String?                @map("blood_type")
   notes               String?  // Notas generales del paciente
 
+  // Guardian / payer (titular) when the patient is a minor or someone else
+  // pays. Boleta RUT ≠ patient RUT: the parent is the titular, the child is
+  // the beneficiary. Nullable — most patients are their own guardian.
+  // Relationship vocab mirrors signerRelationship: paciente | representante_legal
+  // | apoderado | tutor.
+  guardianPersonId    Int?                   @map("guardian_person_id")
+  guardianRelationship String?               @map("guardian_relationship")
+
   createdAt           DateTime               @default(now()) @map("created_at")
   updatedAt           DateTime               @default(now()) @updatedAt @map("updated_at")
 
   person              Person                 @relation(fields: [personId], references: [id], onDelete: Cascade)
+  guardianPerson      Person?                @relation("PatientGuardian", fields: [guardianPersonId], references: [id], onDelete: SetNull)
+  doctoraliaAppointments DoctoraliaCalendarAppointment[]
   consultations       Consultation[]
   medicalCertificates MedicalCertificate[]
   medicalPrescriptions MedicalPrescription[]
@@ -3233,6 +3260,8 @@ model Patient {
   clinicalConsents    ClinicalConsent[]
   reminderSchedules   ReminderSchedule[]
   allergyDiaryEntries AllergyDiaryEntry[]
+
+  @@index([guardianPersonId])
 
   @@deny('all', auth() == null)
   @@allow('read', auth().status == 'ACTIVE')

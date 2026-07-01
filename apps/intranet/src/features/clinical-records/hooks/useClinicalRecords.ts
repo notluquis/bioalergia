@@ -48,6 +48,15 @@ export function useRejectClinicalRecordImport() {
   });
 }
 
+export function useCreatePatientFromImport() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { id: string; notes?: string }) =>
+      clinicalRecordsORPCClient.createPatientFromImport(input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
+  });
+}
+
 export function useStartBulkReprocess() {
   const qc = useQueryClient();
   return useMutation({

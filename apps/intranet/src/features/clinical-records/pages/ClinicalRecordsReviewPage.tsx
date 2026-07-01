@@ -31,6 +31,7 @@ import {
   useActiveBulkJob,
   useApproveClinicalRecordImport,
   useApproveClinicalRecordImports,
+  useCreatePatientFromImport,
   useBulkJobStatus,
   useCancelBulkJob,
   useClinicalRecordImports,
@@ -80,6 +81,7 @@ export function ClinicalRecordsReviewPage() {
   });
   const reprocess = useReprocessClinicalRecordImport();
   const approve = useApproveClinicalRecordImport();
+  const createPatient = useCreatePatientFromImport();
   const reject = useRejectClinicalRecordImport();
   const approveMany = useApproveClinicalRecordImports();
   const rejectMany = useRejectClinicalRecordImports();
@@ -473,6 +475,27 @@ export function ClinicalRecordsReviewPage() {
                           isPending={approve.isPending && approve.variables?.id === it.id}
                         >
                           <span>Aprobar → {top.fullName}</span>
+                        </Button>
+                      )}
+                      {it.status === "PENDING_REVIEW" && (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onPress={() =>
+                            void (async () => {
+                              const ok = await confirmAction({
+                                title: "Crear paciente nuevo",
+                                description: `Se creará un paciente nuevo desde "${it.parsedPayload?.patientName ?? it.filename}" (sin RUT) y se aprobará la ficha. Úsalo solo si ningún candidato corresponde.`,
+                                confirmLabel: "Crear paciente",
+                              });
+                              if (ok) createPatient.mutate({ id: it.id });
+                            })()
+                          }
+                          isPending={
+                            createPatient.isPending && createPatient.variables?.id === it.id
+                          }
+                        >
+                          <span>Crear paciente</span>
                         </Button>
                       )}
                       {it.status === "PENDING_REVIEW" && (

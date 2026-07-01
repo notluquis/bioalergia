@@ -3,6 +3,7 @@
 
 import type { Task } from "graphile-worker";
 import { syncDTEs } from "../../services/dte-sync.ts";
+import { feedDteTitular } from "../../services/identity-feeders.ts";
 import { logEvent } from "../../lib/logger.ts";
 
 export const dte_sync: Task = async (_payload, helpers) => {
@@ -24,5 +25,10 @@ export const dte_sync: Task = async (_payload, helpers) => {
     period: result.period,
     logId: result.logId,
     ...totals,
+  });
+  // Event-driven identity feed: resolve boleta titulares into the bridge after
+  // the DTE pull (incremental, DB-toggle gated). Never fails the sync.
+  await feedDteTitular("cron:dte_sync").catch((err) => {
+    helpers.logger.error(`dte_sync.identity_feed_failed: ${String(err)}`);
   });
 };

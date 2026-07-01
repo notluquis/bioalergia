@@ -394,6 +394,26 @@ export const patientsContract = {
         ),
       })
     ),
+  getDoctoraliaAppointments: oc
+    .route({ method: "GET", path: "/{patientId}/doctoralia-appointments" })
+    .input(z.object({ patientId: z.number().int() }))
+    .output(
+      z.object({
+        items: z.array(
+          z.object({
+            id: z.number(),
+            title: z.string(),
+            startAt: z.string(),
+            endAt: z.string(),
+            serviceName: z.string(),
+            insuranceName: z.string().nullable(),
+            comments: z.string().nullable(),
+            attendance: z.number(),
+            status: z.number(),
+          })
+        ),
+      })
+    ),
 };
 
 export type PatientsContract = typeof patientsContract;

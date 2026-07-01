@@ -19,6 +19,7 @@ import { logError } from "../lib/logger.ts";
 import { configureSuperjson } from "../lib/superjson-config.ts";
 import {
   approveClinicalRecordImport,
+  createPatientFromImport,
   approveClinicalRecordImports,
   rejectClinicalRecordImport,
   rejectClinicalRecordImports,
@@ -174,6 +175,20 @@ const routerBase = {
     .handler(async ({ input, context }) => {
       await approveClinicalRecordImport(input.id, input.patientId, context.user.id, input.notes);
       return { status: "ok" as const };
+    }),
+
+  createPatientFromImport: updateClinicalRecords
+    .route({ method: "POST", path: "/imports/create-patient", tags: ["Clinical Records"] })
+    .input(
+      z.object({
+        id: z.string().min(1),
+        notes: z.string().optional(),
+      })
+    )
+    .output(z.object({ status: z.literal("ok"), patientId: z.number().int() }))
+    .handler(async ({ input, context }) => {
+      const { patientId } = await createPatientFromImport(input.id, context.user.id, input.notes);
+      return { status: "ok" as const, patientId };
     }),
 
   rejectImport: updateClinicalRecords

@@ -118,6 +118,8 @@ export async function startQueueRunner(): Promise<void> {
       identifier: "abandoned_order_sweep",
       options: { backfillPeriod: 0 },
     },
+    // NOTE: identity-hub feeders are NOT cron'd — they ride doctoralia_calendar_sync
+    // + dte_sync (event-driven, incremental). See services/identity-feeders.ts.
   ];
 
   // Breach / anomaly detection over audit_logs (ANCI 3h alert chain). Schedule

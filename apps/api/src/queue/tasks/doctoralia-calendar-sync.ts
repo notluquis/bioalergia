@@ -6,8 +6,15 @@
 
 import type { Task } from "graphile-worker";
 import { runDoctoraliaCalendarAutoSync } from "../../services/doctoralia-calendar-scheduler.ts";
+import { feedDoctoraliaIdentity } from "../../services/identity-feeders.ts";
 
 export const doctoralia_calendar_sync: Task = async (_payload, helpers) => {
   helpers.logger.info("doctoralia_calendar_sync.start");
   await runDoctoraliaCalendarAutoSync({ trigger: "cron:doctoralia_calendar_sync" });
+  // Event-driven identity feed: resolve any freshly-synced appointments to
+  // Person/Patient (incremental, DB-toggle gated). Failures here never fail the
+  // calendar sync.
+  await feedDoctoraliaIdentity("cron:doctoralia_calendar_sync").catch((err) => {
+    helpers.logger.error(`doctoralia_calendar_sync.identity_feed_failed: ${String(err)}`);
+  });
 };

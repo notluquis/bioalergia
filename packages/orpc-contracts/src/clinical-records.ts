@@ -199,6 +199,16 @@ export const clinicalRecordsContract = {
     )
     .output(z.object({ status: z.literal("ok") })),
 
+  createPatientFromImport: oc
+    .route({ method: "POST", path: "/imports/create-patient", tags: ["Clinical Records"] })
+    .input(
+      z.object({
+        id: z.string().min(1),
+        notes: z.string().optional(),
+      })
+    )
+    .output(z.object({ status: z.literal("ok"), patientId: z.number().int() })),
+
   rejectImport: oc
     .route({ method: "POST", path: "/imports/reject", tags: ["Clinical Records"] })
     .input(

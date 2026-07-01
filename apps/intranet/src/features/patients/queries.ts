@@ -2,6 +2,7 @@ import { queryOptions } from "@tanstack/react-query";
 import { findPersonByRut } from "@/features/people/api";
 import {
   fetchPatientClinicalSeries,
+  fetchPatientDoctoraliaAppointments,
   fetchPatientDteSources,
   fetchPatients,
   fetchPatientSkinTests,
@@ -25,6 +26,8 @@ export const patientKeys = {
   // name-search query — that prefix relationship is intentional.
   all: ["patients"] as const,
   clinicalSeries: (patientId: number) => ["patient-clinical-series", patientId] as const,
+  doctoraliaAppointments: (patientId: number) =>
+    ["patient-doctoralia-appointments", patientId] as const,
   // Singular "patient" detail entry, keyed by route/string id (see cross-file note).
   detail: (id: number | string) => ["patient", id] as const,
   // DTE-source list (patient-source register tab). `dteSourcesAll` is a structural
@@ -48,6 +51,12 @@ export const patientQueries = {
     queryOptions({
       queryFn: () => fetchPatientClinicalSeries(patientId),
       queryKey: patientKeys.clinicalSeries(patientId),
+      staleTime: 1000 * 60,
+    }),
+  doctoraliaAppointments: (patientId: number) =>
+    queryOptions({
+      queryFn: () => fetchPatientDoctoraliaAppointments(patientId),
+      queryKey: patientKeys.doctoraliaAppointments(patientId),
       staleTime: 1000 * 60,
     }),
   dteSources: (q: string) =>
