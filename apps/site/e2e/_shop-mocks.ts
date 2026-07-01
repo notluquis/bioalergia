@@ -92,6 +92,9 @@ type ProductFixture = {
   compare_at_price_clp: number | null;
   cost_clp: number | null;
   weight_grams: number | null;
+  width_cm: number | null;
+  height_cm: number | null;
+  length_cm: number | null;
   barcode: string | null;
   requires_prescription: boolean;
   status: "DRAFT" | "ACTIVE" | "ARCHIVED";
@@ -119,6 +122,9 @@ function product(
     compare_at_price_clp: null,
     cost_clp: null,
     weight_grams: 250,
+    width_cm: 10,
+    height_cm: 8,
+    length_cm: 15,
     barcode: null,
     requires_prescription: false,
     status: "ACTIVE",

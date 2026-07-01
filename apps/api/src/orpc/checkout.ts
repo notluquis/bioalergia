@@ -106,6 +106,25 @@ const streetNumbersRoute = base
 
 type CheckoutCart = NonNullable<Awaited<ReturnType<typeof findCartByToken>>>;
 
+// Chilexpress package dims default when a product has no real dimensions stored.
+const DEFAULT_PACKAGE_DIMS = { height: 10, width: 20, length: 30 } as const;
+
+// Single-package heuristic: the box we quote/ship is the largest single product
+// by volume (falling back to the 10×20×30 default for products with no dims).
+function largestPackageDims(
+  products: Array<{ heightCm: number | null; widthCm: number | null; lengthCm: number | null }>
+): { height: number; width: number; length: number } {
+  let best: { height: number; width: number; length: number } | null = null;
+  for (const p of products) {
+    if (p.heightCm == null || p.widthCm == null || p.lengthCm == null) continue;
+    const vol = p.heightCm * p.widthCm * p.lengthCm;
+    if (!best || vol > best.height * best.width * best.length) {
+      best = { height: p.heightCm, width: p.widthCm, length: p.lengthCm };
+    }
+  }
+  return best ?? { ...DEFAULT_PACKAGE_DIMS };
+}
+
 // Shared by /quote and /start: the server is the single source of the shipping
 // fee, so /start re-quotes (never trusts a client amount) before charging.
 async function quoteShippingOptions(cart: CheckoutCart, destinationCountyCode: string) {
@@ -123,10 +142,16 @@ async function quoteShippingOptions(cart: CheckoutCart, destinationCountyCode: s
     0
   );
 
+  // Chilexpress bills volumetric weight (H×W×L)/5000, so quote with real dims
+  // when the products carry them. ponytail: single-package heuristic — use the
+  // largest single item's dims (falling back to 10×20×30 when unset), refine if
+  // multi-box shipping is ever needed.
+  const pkg = largestPackageDims(cart.items.map((i: CartLine) => i.product));
+
   const res = await quoteCourier(chilexpressConfig, {
     originCountyCode: chilexpressConfig.originCoverageCode,
     destinationCountyCode,
-    package: { weight: totalKg, height: 10, width: 20, length: 30 },
+    package: { weight: totalKg, ...pkg },
     productType: 3,
     contentType: 1,
     declaredWorth: String(declaredWorth),
