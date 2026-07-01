@@ -20728,6 +20728,12 @@ export class SchemaType implements SchemaDef {
                     type: "String",
                     optional: true
                 },
+                trackingCheckedAt: {
+                    name: "trackingCheckedAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("tracking_checked_at") }] }] as readonly AttributeApplication[]
+                },
                 createdAt: {
                     name: "createdAt",
                     type: "DateTime",

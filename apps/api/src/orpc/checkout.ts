@@ -27,6 +27,7 @@ import { getCommunes, getRegions, quoteCourier } from "../modules/chilexpress/cl
 import { createCheckoutPreference } from "../modules/mercadopago-checkout/payment.ts";
 import { reserveStockForOrder } from "../modules/reservations/index.ts";
 import { createOrderFromCart, getOrderByNumber } from "../services/orders.ts";
+import { refreshOrderTrackingIfStale } from "../services/order-tracking.ts";
 import { fetchStreetNumbers, fetchStreets } from "../services/shipments.ts";
 
 type OrderWithItems = Awaited<ReturnType<typeof createOrderFromCart>>;
@@ -294,13 +295,22 @@ const statusRoute = base
   .input(checkoutStatusInputSchema)
   .output(checkoutStatusResponseSchema)
   .handler(async ({ input }) => {
-    const order = await getOrderByNumber(input.order_number, {
+    const found = await getOrderByNumber(input.order_number, {
       token: input.token,
       email: input.email,
     });
-    if (!order) {
+    if (!found) {
       throw new ORPCError("NOT_FOUND", { message: "Pedido no encontrado" });
     }
+    // Lazy on-view tracking refresh (W3-C): if this is a shipped order and its
+    // tracking is stale, refresh it (best-effort) so a just-delivered order
+    // surfaces DELIVERED here. Throttled per-order; carrier errors are swallowed.
+    await refreshOrderTrackingIfStale(found.id);
+    const order =
+      (await getOrderByNumber(input.order_number, {
+        token: input.token,
+        email: input.email,
+      })) ?? found;
     return {
       data: {
         order_number: order.number,
